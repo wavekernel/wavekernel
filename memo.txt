@@ -1,0 +1,13 @@
+- use profiler
+valgrind
+perf
+Dyninst?
+- check memory usage
+- partial eigenvalue computation
+pdsyevx
+pdstein & pdstebz
+
+- 勤務報告書
+13 藤原研サーバーで星先生からいただいたオリジナルのソルバーの性能を評価, ScaLAPACK を用いた分散並列版を作成開始
+20 ScaLAPACK 版完成, 物性研スパコンシステム C で動作確認
+27 ScaLAPACK 版を Eigen Test (http://www.damp.tottori-u.ac.jp/~hoshi/eigen_test/) に組み込み, 物性研スパコンで性能評価, 藤原研サーバーで動作確認

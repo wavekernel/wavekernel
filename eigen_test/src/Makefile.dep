@@ -1,0 +1,3 @@
+eigen-test-main.o : lib_misc/lib-check-master.o lib_misc/lib-wrap-data-and-time.o lib_misc/lib-create-dense-matrix.o lib_misc/lib-read-matrix-file.o lib_misc/lib-read-command-argument.o lib_eigen/lib-eigen-main.o
+lib_eigen/lib-eigen-main.o : lib_eigen/lib-eigen-solver-lapack.o lib_eigen/lib-eigen-solver-scalapack.o
+lib_eigen/lib-eigen-solver-lapack.o : lib_misc/lib-get-wclock-time.o

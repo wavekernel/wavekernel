@@ -1,0 +1,14 @@
+# Directories
+matrix/
+old/
+
+# Objects
+*.o
+
+# Executables
+eigen
+*.out
+
+# Misc
+*.mod
+*~
