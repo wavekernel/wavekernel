@@ -1,1 +1,1 @@
-OBJS-LIB-EIGEN	= lib_eigen/lib-eigen-main.o lib_eigen/lib-eigen-solver-lapack.o lib_eigen/lib-eigen-solver-scalapack.o
+OBJS-LIB-EIGEN	= lib_eigen/lib-eigen-main.o lib_eigen/lib-eigen-solver-lapack.o lib_eigen/lib-eigen-solver-scalapack-all.o lib_eigen/lib-eigen-solver-scalapack-select.o

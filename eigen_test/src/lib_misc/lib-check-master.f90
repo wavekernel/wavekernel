@@ -14,11 +14,14 @@ contains
     select case (trim(solver_type))
     case ('lapack')
        is_master = .true.
-    case ('scalapack')
+    case ('scalapack_all')
+       call blacs_pinfo(my_rank, n_procs)
+       is_master = (my_rank == 0)
+    case ('scalapack_select')
        call blacs_pinfo(my_rank, n_procs)
        is_master = (my_rank == 0)
     case default
-       write(*,*) 'Error(lib_check_master): unknown solver type', trim(solver_type)
+       write(*,*) 'Error(lib_check_master): unknown solver type ', trim(solver_type)
        stop
     end select
 !

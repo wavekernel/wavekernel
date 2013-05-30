@@ -56,7 +56,8 @@ module M_lib_eigen_routines
   subroutine lib_eigen_solver(a,eigen_level,solver_type,n_vec)
 !
    use M_lib_eigen_solver_lapack, only : eigen_solver_lapack
-   use M_lib_eigen_solver_scalapack, only : eigen_solver_scalapack
+   use M_lib_eigen_solver_scalapack_all, only : eigen_solver_scalapack_all
+   use M_lib_eigen_solver_scalapack_select, only : eigen_solver_scalapack_select
    implicit none
    real(kind(1.d0)), intent(inout) :: a(:,:)
    real(kind(1.d0)), intent(out)   :: eigen_level(:)
@@ -84,8 +85,10 @@ module M_lib_eigen_routines
    select case (trim(solver_type))
      case ('lapack')
        call eigen_solver_lapack(a,eigen_level)
-    case ('scalapack')
-       call eigen_solver_scalapack(a,eigen_level)
+    case ('scalapack_all')
+       call eigen_solver_scalapack_all(a,eigen_level)
+    case ('scalapack_select')
+       call eigen_solver_scalapack_select(a,eigen_level)
      case default
        write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
        stop
