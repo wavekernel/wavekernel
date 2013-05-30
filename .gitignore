@@ -10,5 +10,6 @@ eigen
 *.out
 
 # Misc
+Makefile.in
 *.mod
 *~

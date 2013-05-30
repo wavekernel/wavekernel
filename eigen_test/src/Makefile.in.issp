@@ -1,0 +1,3 @@
+FC = mpifrtpx
+FFLAGS = -O3 -Kfast
+LIBS = -SCALAPACK -SSL2BLAMP

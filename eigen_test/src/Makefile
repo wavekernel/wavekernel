@@ -1,9 +1,8 @@
-FC = mpif90
-FFLAGS = -O3 -Wall -Wno-uninitialized
+include ./Makefile.in
+
 #FFLAGS = -O3 -mcmodel=medium -i-dynamic -openmp
 #FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv
 LDFLAGS = $(FFLAGS)
-LIBS = -L /usr/lib/openmpi/lib -lscalapack -llapack -lrefblas -lgomp -lmpi
 #LIBS = -L /opt/intel/Compiler/11.1/069/mkl/lib/em64t -lmkl_lapack -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 #LIBS  = /opt/acml4.4.0/ifort64_mp/lib/libacml_mp.a /opt/acml4.4.0/ifort64_mp/lib/libacml_mv.a  -lguide -lpthread
 ######################################################
@@ -28,8 +27,8 @@ F90 ?= $(FC)
 
 OBJS-TEST = eigen-test-main.o
 
-include lib_misc/Makefile.in
-include lib_eigen/Makefile.in
+include lib_misc/Makefile_misc.in
+include lib_eigen/Makefile_eigen.in
 
 eigen : $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC)
 	$(F90) $(LDFLAGS) $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC) $(LIBS) -o $@
