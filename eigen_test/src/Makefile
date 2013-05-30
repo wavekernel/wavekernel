@@ -1,5 +1,5 @@
 FC = mpif90
-FFLAGS = -O3
+FFLAGS = -O3 -Wall -Wno-uninitialized
 #FFLAGS = -O3 -mcmodel=medium -i-dynamic -openmp
 #FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv
 LDFLAGS = $(FFLAGS)
