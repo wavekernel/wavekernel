@@ -12,13 +12,13 @@ module M_lib_eigen_routines
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-  subroutine lib_eigen_checker(a, v, eigen_level, n_vec, rn_ave, rn_max)
+  subroutine lib_eigen_checker(a, v, eigen_level, n_vec, n_check_vec, rn_ave, rn_max)
 !
     implicit none
     real(kind(1.d0)),  intent(in) :: a(:,:)
     real(kind(1.d0)),  intent(in) :: v(:,:)
     real(kind(1.d0)),  intent(in) :: eigen_level(:)
-    integer,           intent(in) :: n_vec
+    integer,           intent(in) :: n_vec, n_check_vec
     real(kind(1.d0)), intent(out) :: rn_ave, rn_max      ! residual norm average, max
 !
     real(kind(1.d0)), allocatable :: r(:)   ! residual vector (work array)
@@ -28,19 +28,19 @@ module M_lib_eigen_routines
 !
     n=size(a,1)
 !
-    if ((n_vec < 1 ) .or. (n_vec > n)) then
-      write(*,*)'ERROR(lib_eigen_checker):n,n_vec=',n,n_vec
+    if ((n_check_vec < 1) .or. (n_check_vec > n_vec)) then
+      print *, 'ERROR(lib_eigen_checker): n, n_vec, n_check_vec = ', n, n_vec, n_check_vec
       stop
     endif
 !
     allocate(r(n), stat=ierr)
     if (ierr /= 0) stop 'Alloc error (la_eigen_solver_check) for w'
 !
-    allocate(rn(n_vec), stat=ierr)
+    allocate(rn(n_check_vec), stat=ierr)
     if (ierr /= 0) stop 'Alloc error (la_eigen_solver_check) for rn'
     rn(:)=0.0d0
 !
-    do j=1,n_vec
+    do j=1,n_check_vec
       r(:)=matmul(a,v(:,j))-eigen_level(j)*v(:,j)  ! redisual vector
       rn(j)=sqrt(abs(dot_product(r,r)))/sqrt(abs(dot_product(v(:,j),v(:,j))))
     enddo

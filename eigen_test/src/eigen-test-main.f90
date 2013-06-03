@@ -17,7 +17,7 @@ program eigen_test
 !
   integer :: matrix_size, num_non_zeros
 !
-  integer :: n_vec
+  integer :: n_vec = -1, n_check_vec = -1
   integer :: j, iunit
   integer, parameter :: num_filename = 2
   character(len=256) :: matrix_filename(num_filename)
@@ -36,22 +36,33 @@ program eigen_test
   logical :: is_master
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-  call read_command_argument(verbose_level, matrix_filename, eqn_type, matrix_type, solver_type)
+  call read_command_argument(verbose_level, matrix_filename, eqn_type, matrix_type, solver_type, n_vec, n_check_vec)
+
+  call read_matrix_file(verbose_level, matrix_filename(1), matrix_type, matrix_size, num_non_zeros, mat_value, mat_suffix)
+
+  if (n_vec == -1) then ! unspecified in command line arguments
+    n_vec = matrix_size
+  end if
+
+  if (n_check_vec == -1) then
+    n_check_vec = n_vec
+  end if
 
   call check_master(solver_type, is_master)
 
   if (is_master) then
-     write(*,'(a)') '--------------------------------------'
-     write(*,'(a)') 'Eigen test'
-     write(*,'(a)') '--------------------------------------'
+     print *, '--------------------------------------'
+     print *, 'Eigen test'
+     print *, '--------------------------------------'
      call data_and_time_wrapper(chara_data_time)
-     write(*,*) '  ',trim(chara_data_time)
-
-     write(*,*)'  verbose level    = ',verbose_level
-     write(*,*)'  equation type    = ',trim(eqn_type)
-     write(*,*)'  matrix type      = ',trim(matrix_type)
-     write(*,*)'  solver type      = ',trim(solver_type)
-     write(*,*)'  matrix filename  = ',trim(matrix_filename(1))
+     print *, '  ', trim(chara_data_time)
+     print *, '  verbose level        = ', verbose_level
+     print *, '  equation type        = ', trim(eqn_type)
+     print *, '  matrix type          = ', trim(matrix_type)
+     print *, '  solver type          = ', trim(solver_type)
+     print *, '  matrix filename      = ', trim(matrix_filename(1))
+     print *, '  required eigenvalues = ', n_vec
+     print *, '  checked eigenvalues  = ', n_check_vec
   end if
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -59,20 +70,18 @@ program eigen_test
 !
 !
 !
-  call read_matrix_file(verbose_level, matrix_filename(1), matrix_type, matrix_size, num_non_zeros, mat_value, mat_suffix)
 !
   call create_dense_matrix(verbose_level, matrix_size, num_non_zeros, mat_value, mat_suffix, mat, mat_bak, eig)
 !
-  n_vec=matrix_size
-!
   call lib_eigen_solver(mat, eig, solver_type, n_vec)
-!
+
   if (.not. is_master) then
      stop
   end if
+
 !
-  if (n_vec /=0) then
-    call lib_eigen_checker(mat_bak, mat, eig, n_vec, rn_ave, rn_max)
+  if (n_check_vec /= 0) then
+    call lib_eigen_checker(mat_bak, mat, eig, n_vec, n_check_vec, rn_ave, rn_max)
     write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
   endif
 !
