@@ -1,6 +1,7 @@
 # Directories
 matrix/
 old/
+out/
 
 # Objects
 *.o
@@ -8,6 +9,7 @@ old/
 # Executables
 eigen
 *.out
+job*.sh
 
 # Misc
 Makefile.in
