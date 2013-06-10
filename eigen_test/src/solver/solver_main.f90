@@ -92,6 +92,9 @@ module solver_main
     call eigen_solver_lapack(a, eigenvalues)
     eigenvectors = a
   case ('scalapack_all')
+    if (n_vec < n) then
+      stop 'Error(lib_eigen_solver): this solver does not support partial eigenvalue computation'
+    end if
     call setup_distribution(n, conf)
     call setup_distributed_matrix(conf, desc, mat_dist)
     call copy_global_dense_matrix_to_local(a, desc, mat_dist)
@@ -100,7 +103,7 @@ module solver_main
     call setup_distribution(n, conf)
     call setup_distributed_matrix(conf, desc, mat_dist)
     call copy_global_dense_matrix_to_local(a, desc, mat_dist)
-    call eigen_solver_scalapack_select(conf, desc, mat_dist, eigenvalues, eigenvectors)
+    call eigen_solver_scalapack_select(conf, desc, mat_dist, n_vec, eigenvalues, eigenvectors)
   case default
     write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
     stop

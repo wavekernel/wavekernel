@@ -17,13 +17,13 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine eigen_solver_scalapack_select(conf, desc_A, A, eigen_level, eigenvectors_global)
+  subroutine eigen_solver_scalapack_select(conf, desc_A, A, n_vec, eigen_level, eigenvectors_global)
     !
     implicit none
     include 'mpif.h'
 
     type(conf_distribution) :: conf
-    integer, intent(in) :: desc_A(9)
+    integer, intent(in) :: desc_A(9), n_vec
     real(kind(1.d0)), intent(in) :: A(:, :)
     real(kind(1.d0)), intent(out)   :: eigen_level(:), eigenvectors_global(:, :)
 
@@ -70,11 +70,11 @@ contains
     allocate(gap(conf%n_procs_row * conf%n_procs_col))
 
     jobz = 'V'
-    range = 'A'
+    range = 'I'
     abstol = 2.0 * pdlamch(desc_A(2), 'S')
     orfac = 1.e-3_8
     call pdsyevx(jobz, range, 'L', conf%dim, A, 1, 1, Desc_A, &
-         0, 0, 0, 0, abstol, n_eigenvalues, n_eigenvectors, eigenvalues, &
+         0, 0, 1, n_vec, abstol, n_eigenvalues, n_eigenvectors, eigenvalues, &
          orfac, Eigenvectors, 1, 1, desc_Eigenvectors, &
          work, work_size, iwork, iwork_size, &
          ifail, iclustr, gap, info)
