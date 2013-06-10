@@ -2,7 +2,7 @@ program eigen_test
 !
   use solver_main, only : lib_eigen_solver, lib_eigen_checker !(routine)
   use command_argument, only : read_command_argument !(routine)
-  use matrix_io, only : read_matrix_file !(rouine)
+  use matrix_io, only : sparse_mat, read_matrix_file !(type, rouine)
   use distribute_matrix, only : create_dense_matrix !(routine)
   use time, only : data_and_time_wrapper !(routine)
   use processes, only : check_master !(routine)
@@ -10,6 +10,7 @@ program eigen_test
   implicit none
   integer :: verbose_level
 !
+  type(sparse_mat) :: mat_in
   real(kind(1.d0)), allocatable :: mat(:,:)
   real(kind(1.d0)), allocatable :: mat_bak(:,:)
   real(kind(1.d0)), allocatable :: eig(:)
@@ -38,10 +39,10 @@ program eigen_test
 !
   call read_command_argument(verbose_level, matrix_filename, eqn_type, matrix_type, solver_type, n_vec, n_check_vec)
 
-  call read_matrix_file(verbose_level, matrix_filename(1), matrix_type, matrix_size, num_non_zeros, mat_value, mat_suffix)
+  call read_matrix_file(verbose_level, matrix_filename(1), matrix_type, mat_in)
 
   if (n_vec == -1) then ! unspecified in command line arguments
-    n_vec = matrix_size
+    n_vec = mat_in%size
   end if
 
   if (n_check_vec == -1) then
@@ -64,15 +65,15 @@ program eigen_test
      print *, '  required eigenvalues = ', n_vec
      print *, '  checked eigenvalues  = ', n_check_vec
   end if
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!
-!
-!
-!
-  call create_dense_matrix(verbose_level, matrix_size, num_non_zeros, mat_value, mat_suffix, mat, mat_bak, eig)
-!
+
+  call create_dense_matrix(verbose_level, mat_in, mat)
+
+  allocate(mat_bak(mat_in%size, mat_in%size))
+  mat_bak(:, :) = mat(:, :)
+
+  allocate(eig(mat_in%size))
+  eig(:) = 0.0d0
+
   call lib_eigen_solver(mat, eig, solver_type, n_vec)
 
   if (.not. is_master) then

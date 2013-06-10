@@ -9,18 +9,14 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-  subroutine create_dense_matrix(verbose_level, matrix_size, num_non_zeros, mat_value, mat_suffix, mat, mat_bak, eig)
+  subroutine create_dense_matrix(verbose_level, mat_in, mat)
+    use matrix_io, only : sparse_mat
     implicit none
     integer,             intent(in) :: verbose_level
-    integer,             intent(in) :: matrix_size
-    integer,             intent(in) :: num_non_zeros
-    real(kind(1.d0)), allocatable   :: mat_value(:,:)
-    integer,          allocatable   :: mat_suffix(:,:)
-    real(kind(1.d0)), allocatable   :: mat(:,:)
-    real(kind(1.d0)), allocatable   :: mat_bak(:,:)
-    real(kind(1.d0)), allocatable   :: eig(:)
-    integer,          allocatable   :: mat_chk(:,:)
-!
+    type(sparse_mat), intent(in) :: mat_in
+    real(kind(1.d0)), intent(out), allocatable :: mat(:,:)
+
+    integer, allocatable :: mat_chk(:,:)
     integer :: k, i, j, n
     integer :: ierr
 !
@@ -32,7 +28,7 @@ contains
       debug_mode = .false.
     endif
 !
-    n=matrix_size
+    n=mat_in%size
 !
     if (debug_mode) write(*,*)'@@ create_dense_matrix'
 !
@@ -42,15 +38,7 @@ contains
     allocate(mat(n,n),stat=ierr)
     if (ierr /= 0) stop 'Stop:error in alloc. for mat'
     mat(:,:)=0.0d0
-!
-    allocate(mat_bak(n,n),stat=ierr)
-    if (ierr /= 0) stop 'Stop:error in alloc. for mat'
-    mat_bak(:,:)=0.0d0
-!
-    allocate(eig(n),stat=ierr)
-    if (ierr /= 0) stop 'Stop:error in alloc. for eig'
-    eig(:)=0.0d0
-!
+
     allocate(mat_chk(n,n),stat=ierr)
     if (ierr /= 0) stop 'Stop:error in alloc. for mat'
     mat_chk(:,:)=0
@@ -58,18 +46,16 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Set the element of the dense matrix
 !
-    do k=1, num_non_zeros
-      i=mat_suffix(1,k)
-      j=mat_suffix(2,k)
-      mat(i,j)=mat_value(k,1)
+    do k=1, mat_in%num_non_zeros
+      i=mat_in%suffix(1,k)
+      j=mat_in%suffix(2,k)
+      mat(i,j)=mat_in%value(k,1)
       mat_chk(i,j)=mat_chk(i,j)+1
       if (i /= j) then
-        mat(j,i)=mat_value(k,1)
+        mat(j,i)=mat_in%value(k,1)
         mat_chk(j,i)=mat_chk(j,i)+1
       endif
     enddo
-!
-    mat_bak(:,:)=mat(:,:)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Check the multiple record

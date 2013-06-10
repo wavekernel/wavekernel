@@ -1,22 +1,26 @@
 module matrix_io
   implicit none
+
+  type sparse_mat
+    integer :: size, num_non_zeros
+    real(kind(1.d0)), allocatable :: value(:, :)
+    integer, allocatable :: suffix(:, :)
+  end type sparse_mat
+
   private
-  public :: read_matrix_file, print_matrix
+  public :: read_matrix_file, print_matrix, sparse_mat
 !
 contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine read_matrix_file(verbose_level, mtx_filename, matrix_type, mat_size, num_non_zeros, mat_value, mat_suffix)
+  subroutine read_matrix_file(verbose_level, mtx_filename, matrix_type, mat)
     implicit none
     integer,             intent(in) :: verbose_level
     character(len=256),  intent(in) :: mtx_filename
     character(len=256),  intent(in) :: matrix_type
-    integer,             intent(out) :: mat_size
-    integer,             intent(out) :: num_non_zeros
-    real(kind(1.d0)), allocatable    :: mat_value(:,:)
-    integer,          allocatable    :: mat_suffix(:,:)
+    type(sparse_mat), intent(out) :: mat
     integer,             parameter :: unit_num=1
     integer :: ierr
     logical :: debug_mode
@@ -35,16 +39,16 @@ contains
 !
     open(unit_num,file=mtx_filename)
 !
-    call read_matrix_file_header(verbose_level, unit_num, matrix_type, mat_size, num_non_zeros)
+    call read_matrix_file_header(verbose_level, unit_num, matrix_type, mat%size, mat%num_non_zeros)
 !
-    allocate (mat_suffix(2, num_non_zeros),  stat=ierr)
+    allocate (mat%suffix(2, mat%num_non_zeros),  stat=ierr)
     if (ierr /= 0) then
       write(*,*)'ERROR in allocation : mat_suffix'
       stop
     endif
 !
     if (trim(matrix_type) == 'real_symmetric') then
-      allocate (mat_value(num_non_zeros,1),  stat=ierr)
+      allocate (mat%value(mat%num_non_zeros,1),  stat=ierr)
       if (ierr /= 0) then
         write(*,*)'ERROR in allocation : mat_value'
         stop
@@ -53,12 +57,12 @@ contains
       write(*,*) 'ERROR:unsuported matrix type = ',trim(matrix_type)
     endif
 !
-    call read_matrix_file_value(verbose_level, unit_num, mat_size, num_non_zeros, mat_value, mat_suffix)
+    call read_matrix_file_value(verbose_level, unit_num, mat%size, mat%num_non_zeros, mat%value, mat%suffix)
 !
     close(unit_num)
 !
   end subroutine read_matrix_file
-!
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
