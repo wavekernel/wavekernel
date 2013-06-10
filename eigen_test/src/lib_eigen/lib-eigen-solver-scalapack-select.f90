@@ -36,9 +36,11 @@ contains
     integer, allocatable :: iwork(:)
 
     ! For pdsyevx
+    character :: jobz, range
     integer :: n_eigenvalues, n_eigenvectors
     integer, allocatable :: ifail(:), iclustr(:)
     real(kind(1.d0)), allocatable :: eigenvalues(:), gap(:)
+    real(kind(1.d0)) :: abstol, orfac
 
     ! Time
     integer, parameter :: n_intervals = 1
@@ -49,6 +51,7 @@ contains
 
     ! Functions
     integer :: numroc
+    real(kind(1.d0)) :: pdlamch
 
     call get_wclock_time(t_init)
 
@@ -84,7 +87,7 @@ contains
     call copy_global_matrix_to_local(mat, desc_A, A)
     Eigenvectors(:, :) = 0.0
 
-    work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim)) + 100000
+    work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))
     iwork_size = 6 * max(dim, n_procs_row * n_procs_col + 1, 4)
     allocate(eigenvalues(dim))
     allocate(work(work_size))
@@ -93,15 +96,18 @@ contains
     allocate(iclustr(2 * n_procs_row * n_procs_col))
     allocate(gap(n_procs_row * n_procs_col))
 
-    call pdsyevx('V', 'A', 'L', dim, A, 1, 1, Desc_A, &
-         0, 0, 0, 0, -1.0, n_eigenvalues, n_eigenvectors, eigenvalues, &
-         0.0, Eigenvectors, 1, 1, desc_Eigenvectors, &
+    jobz = 'V'
+    range = 'A'
+    abstol = 2.0 * pdlamch(desc_A(2), 'S')
+    orfac = 1.e-3_8
+    call pdsyevx(jobz, range, 'L', dim, A, 1, 1, Desc_A, &
+         0, 0, 0, 0, abstol, n_eigenvalues, n_eigenvectors, eigenvalues, &
+         orfac, Eigenvectors, 1, 1, desc_Eigenvectors, &
          work, work_size, iwork, iwork_size, &
          ifail, iclustr, gap, info)
     if (my_rank == 0) then
-      print *, 'info: ', info
-      print *, 'eigenvalues found: ', n_eigenvalues
-      print *, 'eigenvectors computed: ', n_eigenvectors
+      call pdsyevx_report(context, jobz, abstol, orfac, info, &
+           n_eigenvalues, n_eigenvectors, ifail, iclustr)
     end if
 
     eigen_level(:) = eigenvalues(:)
@@ -415,11 +421,40 @@ contains
             nb_a * nb_a
     end if
   end function work_size_for_pdormtr
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
+
+  subroutine pdsyevx_report(context, jobz, abstol, orfac, info, &
+       n_eigenvalues, n_eigenvectors, ifail, iclustr)
+    integer, intent(in) :: context, info, n_eigenvalues, n_eigenvectors, ifail(:), iclustr(:)
+    character, intent(in) :: jobz
+    real(kind(1.d0)) :: abstol, orfac
+
+    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
+    integer :: i
+
+    print *, 'PDSYEVX report'
+    print *, ' found eigenvalues: ', n_eigenvalues
+    print *, ' computed eigenvectors: ', n_eigenvectors
+    print *, ' abstol: ', abstol
+    print *, ' orfac: ', orfac
+    print *, ' info: ', info
+    if (info /= 0 .and. jobz == 'V') then
+      if (mod(info, 2) /= 0) then
+        print *, ' ifail: ', ifail(n_eigenvalues + 1 :)
+      end if
+      write (*, '(A)', advance = 'no') '  iclustr: '
+      call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
+      do i = 1, n_procs_row * n_procs_col
+        write (*, '(I6, A, I6)', advance = 'no') iclustr(2 * i - 1), ' - ', iclustr(2 * i)
+        if (iclustr(2 * i) /= 0 .and. iclustr(2 * i + 1) == 0) then
+          print *
+          exit
+        else
+          write (*, '(A)', advance = 'no') ', '
+        end if
+      end do
+    end if
+  end subroutine pdsyevx_report
+
 end module M_lib_eigen_solver_scalapack_select
 
 
