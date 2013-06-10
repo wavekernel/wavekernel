@@ -3,7 +3,7 @@ module matrix_io
 
   type sparse_mat
     integer :: size, num_non_zeros
-    real(kind(1.d0)), allocatable :: value(:, :)
+    real(kind(1.d0)), allocatable :: value(:)
     integer, allocatable :: suffix(:, :)
   end type sparse_mat
 
@@ -48,7 +48,7 @@ contains
     endif
 !
     if (trim(matrix_type) == 'real_symmetric') then
-      allocate (mat%value(mat%num_non_zeros,1),  stat=ierr)
+      allocate (mat%value(mat%num_non_zeros),  stat=ierr)
       if (ierr /= 0) then
         write(*,*)'ERROR in allocation : mat_value'
         stop
@@ -252,7 +252,7 @@ contains
     integer,            intent(in)  :: unit_num
     integer,            intent(in)  :: mat_size
     integer,            intent(in)  :: num_non_zeros
-    real(kind(1.d0)),  allocatable, intent(inout) :: mat_value(:,:)
+    real(kind(1.d0)),  allocatable, intent(inout) :: mat_value(:)
     integer, allocatable, intent(inout) :: mat_suffix(:,:)
 !
     integer :: line_count
@@ -269,19 +269,13 @@ contains
     if (debug_mode) write(*,'(a)')'@@ read_matrix_file_value'
     if (debug_mode) write(*,'(a)')' ONLY REAL-SYMMETRIC MATRIX is supported'
 !
-    if (debug_mode) write(*,*)'size(mat_value,1)=',size(mat_value,1)
-    if (debug_mode) write(*,*)'size(mat_value,2)=',size(mat_value,2)
+    if (debug_mode) write(*,*)'size(mat_value)=',size(mat_value)
 !
     if (debug_mode) write(*,*)'size(mat_suffix,1)=',size(mat_suffix,1)
     if (debug_mode) write(*,*)'size(mat_suffix,2)=',size(mat_suffix,2)
 !
     if (size(mat_value,1) /= num_non_zeros) then
       write(*,*)'ERROR(read_matrix_file_value): size(mat_value,1)=',size(mat_value,1)
-      stop
-    endif
-!
-    if (size(mat_value,2) /= 1) then
-      write(*,*)'ERROR(read_matrix_file_value): size(mat_value,2)=',size(mat_value,2)
       stop
     endif
 !
@@ -306,7 +300,7 @@ contains
         stop
       endif
 !
-      mat_value(line_count, 1) = value_wrk
+      mat_value(line_count) = value_wrk
       mat_suffix(1,line_count) = i
       mat_suffix(2,line_count) = j
     enddo

@@ -18,7 +18,7 @@ contains
     !
     use time, only : get_wclock_time !(routine)
     use processes, only : layout_procs
-    use distribute_matrix, only : gather_matrix, copy_global_matrix_to_local, allgather_row_wise
+    use distribute_matrix, only : gather_matrix, copy_global_dense_matrix_to_local, allgather_row_wise
     implicit none
     include 'mpif.h'
 
@@ -82,7 +82,7 @@ contains
 
     allocate(A(1 : n_local_row, 1 : n_local_col))
 
-    call copy_global_matrix_to_local(mat, desc_A, A)
+    call copy_global_dense_matrix_to_local(mat, desc_A, A)
 
     diag_size = numroc(dim, block_size, my_proc_col, 0, n_procs_col)
     subdiag_size = numroc(dim - 1, block_size, my_proc_col, 0, n_procs_col)

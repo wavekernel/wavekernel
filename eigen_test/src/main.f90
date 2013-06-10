@@ -13,7 +13,7 @@ program eigen_test
   type(sparse_mat) :: mat_in
   real(kind(1.d0)), allocatable :: mat(:,:)
   real(kind(1.d0)), allocatable :: mat_bak(:,:)
-  real(kind(1.d0)), allocatable :: eig(:)
+  real(kind(1.d0)), allocatable :: eigenvalues(:), eigenvectors(:, :)
   real(kind(1.d0)) :: rn_ave, rn_max
 !
   integer :: matrix_size, num_non_zeros
@@ -66,15 +66,7 @@ program eigen_test
      print *, '  checked eigenvalues  = ', n_check_vec
   end if
 
-  call create_dense_matrix(verbose_level, mat_in, mat)
-
-  allocate(mat_bak(mat_in%size, mat_in%size))
-  mat_bak(:, :) = mat(:, :)
-
-  allocate(eig(mat_in%size))
-  eig(:) = 0.0d0
-
-  call lib_eigen_solver(mat, eig, solver_type, n_vec)
+  call lib_eigen_solver(mat_in, solver_type, n_vec, eigenvalues, eigenvectors)
 
   if (.not. is_master) then
      stop
@@ -82,7 +74,8 @@ program eigen_test
 
 !
   if (n_check_vec /= 0) then
-    call lib_eigen_checker(mat_bak, mat, eig, n_vec, n_check_vec, rn_ave, rn_max)
+    call create_dense_matrix(verbose_level, mat_in, mat)
+    call lib_eigen_checker(mat, n_vec, n_check_vec, eigenvalues, eigenvectors, rn_ave, rn_max)
     write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
   endif
 !
@@ -90,7 +83,7 @@ program eigen_test
   iunit=70
   open (iunit, file=filename, status='unknown')
   do j=1,n_vec
-    write(iunit,'(i10,f20.12)') j, eig(j)
+    write(iunit,'(i10,f20.12)') j, eigenvalues(j)
   enddo
 !
   write(*,'(a)') '...the program ends'

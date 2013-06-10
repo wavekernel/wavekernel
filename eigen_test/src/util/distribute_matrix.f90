@@ -1,7 +1,8 @@
 module distribute_matrix
   implicit none
   private
-  public :: create_dense_matrix, gather_matrix, copy_global_matrix_to_local, allgather_row_wise
+  public :: create_dense_matrix, gather_matrix, &
+       copy_global_dense_matrix_to_local, copy_global_sparse_matrix_to_local, allgather_row_wise
 !
 contains
 !
@@ -49,10 +50,10 @@ contains
     do k=1, mat_in%num_non_zeros
       i=mat_in%suffix(1,k)
       j=mat_in%suffix(2,k)
-      mat(i,j)=mat_in%value(k,1)
+      mat(i,j)=mat_in%value(k)
       mat_chk(i,j)=mat_chk(i,j)+1
       if (i /= j) then
-        mat(j,i)=mat_in%value(k,1)
+        mat(j,i)=mat_in%value(k)
         mat_chk(j,i)=mat_chk(j,i)+1
       endif
     enddo
@@ -140,7 +141,7 @@ contains
     end if
   end subroutine gather_matrix
 
-  subroutine copy_global_matrix_to_local(global_mat, desc, local_mat)
+  subroutine copy_global_dense_matrix_to_local(global_mat, desc, local_mat)
     real(kind(1.d0)), intent(in) :: global_mat(:, :) ! assumed to be same in all the procs
     integer, intent(in) :: desc(9)
     real(kind(1.d0)), intent(out) :: local_mat(:, :)
@@ -180,7 +181,20 @@ contains
                n_start_global : n_start_global + n_end - n_start)
        end do
     end do
-  end subroutine copy_global_matrix_to_local
+  end subroutine copy_global_dense_matrix_to_local
+
+  subroutine copy_global_sparse_matrix_to_local()
+!    do k=1, mat_in%num_non_zeros
+!      i=mat_in%suffix(1,k)
+!      j=mat_in%suffix(2,k)
+!      mat(i,j)=mat_in%value(k)
+!      mat_chk(i,j)=mat_chk(i,j)+1
+!      if (i /= j) then
+!        mat(j,i)=mat_in%value(k)
+!        mat_chk(j,i)=mat_chk(j,i)+1
+!      endif
+!    enddo
+  end subroutine copy_global_sparse_matrix_to_local
 
   subroutine allgather_row_wise(array_local, context, block_size, array_global)
     real(kind(1.d0)), intent(in) :: array_local(:)

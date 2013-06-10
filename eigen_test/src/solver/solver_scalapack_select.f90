@@ -18,7 +18,7 @@ contains
     !
     use time, only : get_wclock_time !(routine)
     use processes, only : layout_procs
-    use distribute_matrix, only : gather_matrix, copy_global_matrix_to_local, allgather_row_wise
+    use distribute_matrix, only : gather_matrix, copy_global_dense_matrix_to_local, allgather_row_wise
     implicit none
     include 'mpif.h'
 
@@ -86,7 +86,7 @@ contains
     allocate(A(1 : n_local_row, 1 : n_local_col))
     allocate(Eigenvectors(1 : n_local_row, 1 : n_local_col))
 
-    call copy_global_matrix_to_local(mat, desc_A, A)
+    call copy_global_dense_matrix_to_local(mat, desc_A, A)
     Eigenvectors(:, :) = 0.0
 
     work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))

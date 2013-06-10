@@ -1,4 +1,5 @@
 module solver_main
+  use distribute_matrix, only : create_dense_matrix !(routine)
 
   implicit none
 
@@ -12,8 +13,7 @@ module solver_main
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  subroutine lib_eigen_checker(a, v, eigen_level, n_vec, n_check_vec, rn_ave, rn_max)
-
+  subroutine lib_eigen_checker(a, n_vec, n_check_vec, eigen_level, v, rn_ave, rn_max)
     implicit none
     real(kind(1.d0)),  intent(in) :: a(:,:)
     real(kind(1.d0)),  intent(in) :: v(:,:)
@@ -53,46 +53,48 @@ module solver_main
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine lib_eigen_solver(a,eigen_level,solver_type,n_vec)
+  subroutine lib_eigen_solver(mat, solver_type, n_vec, eigenvalues, eigenvectors)
 
    use solver_lapack, only : eigen_solver_lapack
    use solver_scalapack_all, only : eigen_solver_scalapack_all
    use solver_scalapack_select, only : eigen_solver_scalapack_select
+   use matrix_io, only : sparse_mat
    implicit none
-   real(kind(1.d0)), intent(inout) :: a(:,:)
-   real(kind(1.d0)), intent(out)   :: eigen_level(:)
-   character(len=*)      , intent(in)    :: solver_type
-   integer               , intent(in)    :: n_vec
+   type(sparse_mat), intent(in) :: mat
+   character(len=*), intent(in) :: solver_type
+   integer, intent(in) :: n_vec
+   real(kind(1.d0)), intent(out), allocatable :: eigenvalues(:), eigenvectors(:, :)
+
    integer :: n
+   real(kind(1.d0)), allocatable :: a(:, :)
 
-   if (size(a,1) /= size(a,2)) then
-     write(*,*)'ERROR(ext_eigen_solver_wrapper):size=',size(a,1), size(a,2)
-     stop
-   endif
-
-   if (size(a,1) /= size(eigen_level,1)) then
-     write(*,*)'ERROR(ext_eigen_solver_wrapper):size=',size(a,1), size(eigen_level,1)
-     stop
-   endif
-
-   n=size(a,1)
+   n = mat%size
 
    if ((n_vec < 0) .or. (n_vec > n)) then
      write(*,*) 'Error(lib_eigen_solver):n, n_vec=',n,n_vec
      stop
    endif
 
-   select case (trim(solver_type))
-     case ('lapack')
-       call eigen_solver_lapack(a,eigen_level)
-    case ('scalapack_all')
-       call eigen_solver_scalapack_all(a,eigen_level)
-    case ('scalapack_select')
-       call eigen_solver_scalapack_select(a,eigen_level)
-     case default
-       write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
-       stop
-   end select
+  call create_dense_matrix(0, mat, a)
+
+  allocate(eigenvalues(n))
+  eigenvalues(:) = 0.0d0
+  allocate(eigenvectors(n, n))
+  eigenvectors(:, :) = 0.0d0
+
+  select case (trim(solver_type))
+  case ('lapack')
+    call eigen_solver_lapack(a, eigenvalues)
+  case ('scalapack_all')
+    call eigen_solver_scalapack_all(a, eigenvalues)
+  case ('scalapack_select')
+    call eigen_solver_scalapack_select(a, eigenvalues)
+  case default
+    write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
+    stop
+  end select
+
+  eigenvectors = a
 
   end subroutine lib_eigen_solver
 
