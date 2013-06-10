@@ -56,11 +56,14 @@ module solver_main
   subroutine lib_eigen_solver(mat, solver_type, n_vec, eigenvalues, eigenvectors)
 
    use solver_lapack, only : eigen_solver_lapack
-   use solver_scalapack_all, only : conf_distribution, setup_distribution, &
-        distribute_dense, eigen_solver_scalapack_all
+   use solver_scalapack_all, only : eigen_solver_scalapack_all
    use solver_scalapack_select, only : eigen_solver_scalapack_select
    use matrix_io, only : sparse_mat
+   use distribute_matrix, only : conf_distribution, setup_distribution, &
+        setup_distributed_matrix, copy_global_dense_matrix_to_local
+
    implicit none
+
    type(sparse_mat), intent(in) :: mat
    character(len=*), intent(in) :: solver_type
    integer, intent(in) :: n_vec
@@ -85,20 +88,23 @@ module solver_main
   eigenvectors(:, :) = 0.0d0
 
   select case (trim(solver_type))
-!  case ('lapack')
-!    call eigen_solver_lapack(a, eigenvalues)
+  case ('lapack')
+    call eigen_solver_lapack(a, eigenvalues)
+    eigenvectors = a
   case ('scalapack_all')
     call setup_distribution(n, conf)
-    call distribute_dense(conf, a, desc, mat_dist)
+    call setup_distributed_matrix(conf, desc, mat_dist)
+    call copy_global_dense_matrix_to_local(a, desc, mat_dist)
     call eigen_solver_scalapack_all(conf, desc, mat_dist, eigenvalues, eigenvectors)
-!  case ('scalapack_select')
-!    call eigen_solver_scalapack_select(a, eigenvalues)
+  case ('scalapack_select')
+    call setup_distribution(n, conf)
+    call setup_distributed_matrix(conf, desc, mat_dist)
+    call copy_global_dense_matrix_to_local(a, desc, mat_dist)
+    call eigen_solver_scalapack_select(conf, desc, mat_dist, eigenvalues, eigenvectors)
   case default
     write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
     stop
   end select
-
-!  eigenvectors = a
 
   end subroutine lib_eigen_solver
 

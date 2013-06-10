@@ -1,15 +1,73 @@
 module distribute_matrix
+
+  use processes, only : layout_procs
+
   implicit none
+
+  type conf_distribution
+    integer :: dim, my_rank, n_procs, context
+    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
+    integer :: block_size, n_local_row, n_local_col
+  end type conf_distribution
+
   private
-  public :: create_dense_matrix, gather_matrix, &
-       copy_global_dense_matrix_to_local, copy_global_sparse_matrix_to_local, allgather_row_wise
-!
+  public :: conf_distribution, setup_distribution, setup_distributed_matrix, &
+       copy_global_dense_matrix_to_local, copy_global_sparse_matrix_to_local, &
+       create_dense_matrix, gather_matrix, allgather_row_wise
 contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
+  subroutine setup_distribution(dim, conf)
+    integer, intent(in) :: dim
+    type(conf_distribution), intent(out) :: conf
+    integer :: info
+
+    ! Functions
+    integer :: numroc, iceil
+
+    conf%dim = dim
+
+    call blacs_pinfo(conf%my_rank, conf%n_procs)
+    call layout_procs(conf%n_procs, conf%n_procs_row, conf%n_procs_col)
+    call blacs_get(-1, 0, conf%context)
+    call blacs_gridinit(conf%context, 'R', conf%n_procs_row, conf%n_procs_col)
+    call blacs_gridinfo(conf%context, conf%n_procs_row, conf%n_procs_col, &
+         conf%my_proc_row, conf%my_proc_col)
+
+    conf%block_size = min(32, dim / max(conf%n_procs_row, conf%n_procs_col))
+
+    if (conf%my_rank == 0) then
+       print '( "block size:", I7 )', conf%block_size
+       print '( "procs: ", I5, " x ", I5, " (", I5, ")" )', &
+            conf%n_procs_row, conf%n_procs_col, conf%n_procs
+    end if
+
+    if (conf%my_proc_row >= conf%n_procs_row .or. conf%my_proc_col >= conf%n_procs_col) then
+       call blacs_exit(0)
+       stop 'out of process grid'
+    end if
+
+    conf%n_local_row = max(1, numroc(dim, conf%block_size, &
+         conf%my_proc_row, 0, conf%n_procs_row))
+    conf%n_local_col = max(1, numroc(dim, conf%block_size, &
+         conf%my_proc_col, 0, conf%n_procs_col))
+  end subroutine setup_distribution
+
+  subroutine setup_distributed_matrix(conf, desc, mat)
+    type(conf_distribution), intent(in) :: conf
+    integer, intent(out) :: desc(9)
+    real(kind(1.d0)), intent(out), allocatable :: mat(:, :)
+
+    integer :: info
+
+    call descinit(desc, conf%dim, conf%dim, conf%block_size, conf%block_size, &
+         0, 0, conf%context, conf%n_local_row, info)
+    allocate(mat(1 : conf%n_local_row, 1 : conf%n_local_col))
+  end subroutine setup_distributed_matrix
+
   subroutine create_dense_matrix(verbose_level, mat_in, mat)
     use matrix_io, only : sparse_mat
     implicit none

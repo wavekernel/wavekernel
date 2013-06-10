@@ -3,6 +3,9 @@
 ! Copyright (C) ELSES. 2007-2011 all rights reserved
 !================================================================
 module solver_scalapack_select
+
+  use time, only : get_wclock_time
+  use distribute_matrix, only : conf_distribution, gather_matrix, allgather_row_wise
   !
   implicit none
   !
@@ -14,25 +17,20 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine eigen_solver_scalapack_select(mat, eigen_level)
+  subroutine eigen_solver_scalapack_select(conf, desc_A, A, eigen_level, eigenvectors_global)
     !
-    use time, only : get_wclock_time !(routine)
-    use processes, only : layout_procs
-    use distribute_matrix, only : gather_matrix, copy_global_dense_matrix_to_local, allgather_row_wise
     implicit none
     include 'mpif.h'
 
-    real(kind(1.d0)), intent(inout) :: mat(:,:)   ! ( n x n ) matrix
-    real(kind(1.d0)), intent(out)   :: eigen_level(:)
-
-    integer :: my_rank, n_procs, block_size, n_procs_row, n_procs_col, context
-    integer :: my_proc_row, my_proc_col
+    type(conf_distribution) :: conf
+    integer, intent(in) :: desc_A(9)
+    real(kind(1.d0)), intent(in) :: A(:, :)
+    real(kind(1.d0)), intent(out)   :: eigen_level(:), eigenvectors_global(:, :)
 
     integer :: ierr, info
-    integer :: dim, n_local_row, n_local_col, work_size, iwork_size
-    integer :: desc_A(9), desc_Eigenvectors(9)
+    integer :: work_size, iwork_size
+    integer :: desc_Eigenvectors(9)
 
-    real(kind(1.d0)), allocatable :: A(:,:)
     real(kind(1.d0)), allocatable :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: work(:), work_print(:)
     integer, allocatable :: iwork(:)
@@ -57,70 +55,41 @@ contains
 
     call get_wclock_time(t_init)
 
-    dim = size(mat, 1)
-
-    call blacs_pinfo(my_rank, n_procs)
-    call layout_procs(n_procs, n_procs_row, n_procs_col)
-    call blacs_get(-1, 0, context)
-    call blacs_gridinit(context, 'R', n_procs_row, n_procs_col)
-    call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
-
-    block_size = min(32, dim / max(n_procs_row, n_procs_col))
-
-    if (my_rank == 0) then
-       print '( "block size:", I7 )', block_size
-       print '( "procs: ", I5, " x ", I5, " (", I5, ")" )', n_procs_row, n_procs_col, n_procs
-    end if
-
-    if (my_proc_row >= n_procs_row .or. my_proc_col >= n_procs_col) then
-       call blacs_exit(0)
-       stop 'out of process grid'
-    end if
-
-    n_local_row = max(1, numroc(dim, block_size, my_proc_row, 0, n_procs_row))
-    n_local_col = max(1, numroc(dim, block_size, my_proc_col, 0, n_procs_col))
-
-    call descinit(desc_A, dim, dim, block_size, block_size, 0, 0, context, n_local_row, info)
-    call descinit(desc_Eigenvectors, dim, dim, block_size, block_size, 0, 0, context, n_local_row, info)
-
-    allocate(A(1 : n_local_row, 1 : n_local_col))
-    allocate(Eigenvectors(1 : n_local_row, 1 : n_local_col))
-
-    call copy_global_dense_matrix_to_local(mat, desc_A, A)
+    allocate(Eigenvectors(1 : conf%n_local_row, 1 : conf%n_local_col))
     Eigenvectors(:, :) = 0.0
 
-    work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))
-    iwork_size = 6 * max(dim, n_procs_row * n_procs_col + 1, 4)
-    allocate(eigenvalues(dim))
+    work_size = max(3, work_size_for_pdsyevx('V', conf%dim, desc_A, conf%dim))
+    iwork_size = 6 * max(conf%dim, conf%n_procs_row * conf%n_procs_col + 1, 4)
+    allocate(eigenvalues(conf%dim))
     allocate(work(work_size))
     allocate(iwork(iwork_size))
-    allocate(ifail(dim))
-    allocate(iclustr(2 * n_procs_row * n_procs_col))
-    allocate(gap(n_procs_row * n_procs_col))
+    allocate(ifail(conf%dim))
+    allocate(iclustr(2 * conf%n_procs_row * conf%n_procs_col))
+    allocate(gap(conf%n_procs_row * conf%n_procs_col))
 
     jobz = 'V'
     range = 'A'
     abstol = 2.0 * pdlamch(desc_A(2), 'S')
     orfac = 1.e-3_8
-    call pdsyevx(jobz, range, 'L', dim, A, 1, 1, Desc_A, &
+    call pdsyevx(jobz, range, 'L', conf%dim, A, 1, 1, Desc_A, &
          0, 0, 0, 0, abstol, n_eigenvalues, n_eigenvectors, eigenvalues, &
          orfac, Eigenvectors, 1, 1, desc_Eigenvectors, &
          work, work_size, iwork, iwork_size, &
          ifail, iclustr, gap, info)
-    if (my_rank == 0) then
-      call pdsyevx_report(context, jobz, abstol, orfac, info, &
+    if (conf%my_rank == 0) then
+      call pdsyevx_report(conf%context, jobz, abstol, orfac, info, &
            n_eigenvalues, n_eigenvectors, ifail, iclustr)
     end if
 
     eigen_level(:) = eigenvalues(:)
 
-    call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, mat)
+    call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
 
     call get_wclock_time(t_all_end)
 
     t_intervals(1) = t_all_end - t_init
 
-    if (my_rank == 0) then
+    if (conf%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
        print *, 'Elapse time (sec)'
        do i = 1, n_intervals
