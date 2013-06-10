@@ -2,21 +2,22 @@
 ! ELSES version 0.03
 ! Copyright (C) ELSES. 2007-2011 all rights reserved
 !================================================================
-module M_lib_eigen_solver_scalapack_select
+module solver_scalapack_all
   !
   implicit none
   !
   private
-  public :: eigen_solver_scalapack_select
+  public :: eigen_solver_scalapack_all
   !
 contains
   !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine eigen_solver_scalapack_select(mat, eigen_level)
+  subroutine eigen_solver_scalapack_all(mat,eigen_level)
     !
-    use M_get_clock_time, only : get_wclock_time !(routine)
+    use time, only : get_wclock_time !(routine)
+    use processes, only : layout_procs
     implicit none
     include 'mpif.h'
 
@@ -28,30 +29,29 @@ contains
 
     integer :: ierr, info
     integer :: dim, n_local_row, n_local_col, work_size, iwork_size
+    integer :: diag_size, subdiag_size
     integer :: desc_A(9), desc_Eigenvectors(9)
+
+    character(len = 1) :: uplo, compz, side, trans
 
     real(kind(1.d0)), allocatable :: A(:,:)
     real(kind(1.d0)), allocatable :: Eigenvectors(:, :)
-    real(kind(1.d0)), allocatable :: work(:), work_print(:)
+    real(kind(1.d0)), allocatable :: diag_local(:), subdiag_local(:)
+    real(kind(1.d0)), allocatable :: diag_global(:), subdiag_global(:)
+    real(kind(1.d0)), allocatable :: tau(:), work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
-    ! For pdsyevx
-    character :: jobz, range
-    integer :: n_eigenvalues, n_eigenvectors
-    integer, allocatable :: ifail(:), iclustr(:)
-    real(kind(1.d0)), allocatable :: eigenvalues(:), gap(:)
-    real(kind(1.d0)) :: abstol, orfac
-
     ! Time
-    integer, parameter :: n_intervals = 1
+    integer, parameter :: n_intervals = 7
     integer :: i
     real(kind(1.d0)) :: t_intervals(n_intervals)
-    real(kind(1.d0)) :: t_init, t_all_end
-    character(*), parameter :: interval_names(n_intervals) = (/'total'/)
+    real(kind(1.d0)) :: t_init, t_pdsytrd, t_pdsytrd_end, t_pdstedc, &
+         t_pdstedc_end, t_pdormtr_end, t_all_end
+    character(*), parameter :: interval_names(n_intervals) = (/'init   ', &
+         'pdsytrd', 'gather1', 'pdstedc', 'pdormtr', 'gather2', 'total  '/)
 
     ! Functions
-    integer :: numroc
-    real(kind(1.d0)) :: pdlamch
+    integer :: numroc, iceil
 
     call get_wclock_time(t_init)
 
@@ -77,46 +77,88 @@ contains
 
     n_local_row = max(1, numroc(dim, block_size, my_proc_row, 0, n_procs_row))
     n_local_col = max(1, numroc(dim, block_size, my_proc_col, 0, n_procs_col))
-
     call descinit(desc_A, dim, dim, block_size, block_size, 0, 0, context, n_local_row, info)
-    call descinit(desc_Eigenvectors, dim, dim, block_size, block_size, 0, 0, context, n_local_row, info)
 
     allocate(A(1 : n_local_row, 1 : n_local_col))
-    allocate(Eigenvectors(1 : n_local_row, 1 : n_local_col))
 
     call copy_global_matrix_to_local(mat, desc_A, A)
-    Eigenvectors(:, :) = 0.0
 
-    work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))
-    iwork_size = 6 * max(dim, n_procs_row * n_procs_col + 1, 4)
-    allocate(eigenvalues(dim))
+    diag_size = numroc(dim, block_size, my_proc_col, 0, n_procs_col)
+    subdiag_size = numroc(dim - 1, block_size, my_proc_col, 0, n_procs_col)
+    work_size = max(block_size * (n_local_row + 1), 3 * block_size)
+
+    allocate(diag_local(diag_size))
+    allocate(subdiag_local(subdiag_size))
+    allocate(tau(diag_size))
     allocate(work(work_size))
-    allocate(iwork(iwork_size))
-    allocate(ifail(dim))
-    allocate(iclustr(2 * n_procs_row * n_procs_col))
-    allocate(gap(n_procs_row * n_procs_col))
+    allocate(work_print(block_size))
 
-    jobz = 'V'
-    range = 'A'
-    abstol = 2.0 * pdlamch(desc_A(2), 'S')
-    orfac = 1.e-3_8
-    call pdsyevx(jobz, range, 'L', dim, A, 1, 1, Desc_A, &
-         0, 0, 0, 0, abstol, n_eigenvalues, n_eigenvectors, eigenvalues, &
-         orfac, Eigenvectors, 1, 1, desc_Eigenvectors, &
-         work, work_size, iwork, iwork_size, &
-         ifail, iclustr, gap, info)
+    call get_wclock_time(t_pdsytrd)
+
+    uplo = 'l'
+    call pdsytrd(uplo, dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
+    deallocate(work)
     if (my_rank == 0) then
-      call pdsyevx_report(context, jobz, abstol, orfac, info, &
-           n_eigenvalues, n_eigenvectors, ifail, iclustr)
+       print *, 'info(pdsytrd): ', info
     end if
 
-    eigen_level(:) = eigenvalues(:)
+    call get_wclock_time(t_pdsytrd_end)
+
+    allocate(diag_global(dim))
+    allocate(subdiag_global(dim - 1))
+
+    call allgather_row_wise(diag_local, context, block_size, diag_global)
+    call allgather_row_wise(subdiag_local, context, block_size, subdiag_global)
+
+    call descinit(desc_Eigenvectors, dim, dim, block_size, block_size, 0, 0, context, n_local_row, info)
+
+    allocate(Eigenvectors(1 : n_local_row, 1 : n_local_col))
+    Eigenvectors(:, :) = 0.0
+
+    work_size = 6 * dim + 2 * n_local_row * n_local_col
+    iwork_size = 2 + 7 * dim + 8 * n_procs_col
+    allocate(work(work_size))
+    allocate(iwork(iwork_size))
+
+    call get_wclock_time(t_pdstedc)
+
+    call pdstedc('i', dim, diag_global, subdiag_global, Eigenvectors, 1, 1, &
+         desc_Eigenvectors, work, work_size, iwork, iwork_size, info)
+    if (my_rank == 0) then
+       print *, 'info(pdstedc): ', info
+    end if
+
+    call get_wclock_time(t_pdstedc_end)
+
+    eigen_level(:) = diag_global(:)
+
+    side = 'l'
+    work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, desc_Eigenvectors)
+    deallocate(work)
+    allocate(work(work_size))
+
+    call pdormtr(side, uplo, 'n', dim, dim, A, 1, 1, desc_A, tau, &
+         Eigenvectors, 1, 1, desc_Eigenvectors, work, work_size, info)
+    if (my_rank == 0) then
+       print *, 'info(pdormtr): ', info
+    end if
+
+    call get_wclock_time(t_pdormtr_end)
+
+    ! call pdlaprnt(dim, dim, Eigenvectors, 1, 1, desc_Eigenvectors, 0, 0, 'Eigenvectors', 6, work_print)
+
 
     call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, mat)
 
     call get_wclock_time(t_all_end)
 
-    t_intervals(1) = t_all_end - t_init
+    t_intervals(1) = t_pdsytrd - t_init
+    t_intervals(2) = t_pdsytrd_end - t_pdsytrd
+    t_intervals(3) = t_pdstedc - t_pdsytrd_end
+    t_intervals(4) = t_pdstedc_end - t_pdstedc
+    t_intervals(5) = t_pdormtr_end - t_pdstedc_end
+    t_intervals(6) = t_all_end - t_pdormtr_end
+    t_intervals(7) = t_all_end - t_init
 
     if (my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
@@ -129,31 +171,8 @@ contains
     end if
 
     call blacs_exit(0)
-  end subroutine eigen_solver_scalapack_select
 
-  subroutine layout_procs(n_procs, n_procs_row, n_procs_col)
-    integer, intent(in) :: n_procs
-    integer, intent(out) :: n_procs_row, n_procs_col
-
-    integer :: n_procs_tmp, switch = 0, denom
-    n_procs_tmp = n_procs
-
-    n_procs_row = 1
-    n_procs_col = 1
-    do while (n_procs_tmp > 1)
-       denom = 2
-       do while (mod(n_procs_tmp, denom) /= 0)
-          denom = denom + 1
-       end do
-       if (switch == 0) then
-          n_procs_row = n_procs_row * denom
-       else
-          n_procs_col = n_procs_col * denom
-       end if
-       n_procs_tmp = n_procs_tmp / denom
-       switch = 1 - switch
-    end do
-  end subroutine layout_procs
+  end subroutine eigen_solver_scalapack_all
 
   subroutine gather_matrix(mat, desc, dest_row, dest_col, global_mat)
     real(kind(1.d0)), intent(in) :: mat(:, :)
@@ -317,37 +336,6 @@ contains
     end do
   end subroutine print_mat
 
-  integer function work_size_for_pdsyevx(jobz, n, desc, neig) result (size)
-    character(len = 1), intent(in) :: jobz
-    integer, intent(in) :: n, desc(9), neig
-
-    integer :: context, n_procs_row, n_procs_col, my_proc_row, my_proc_col, block_size
-    integer :: nn, np0, mq0, anb, sqnpc, nps, nsytrd_lwopt
-    integer :: numroc, iceil, pjlaenv
-
-    context = desc(2)
-    call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
-
-    block_size = desc(5)
-    nn = MAX(n, block_size, 2)
-    np0 = numroc(nn, block_size, 0, 0, n_procs_row)
-    if (jobz == 'N') then
-      size = 5 * n + max( 5 * nn, block_size * (np0 + 1))
-    else if (jobz == 'V') then
-      mq0 = numroc(max(neig, block_size, 2), block_size, 0, 0, n_procs_col)
-      size = 5 * n + MAX( 5 * nn, np0 * mq0 + 2 * block_size * block_size ) + &
-           iceil(neig, n_procs_row * n_procs_col) * nn
-    else
-      stop 'unknown jobz value'
-    end if
-
-    anb = pjlaenv(desc(2), 3, 'pdsyttrd', 'l', 0, 0, 0, 0)
-    sqnpc = int(sqrt(dble(n_procs_row * n_procs_col)))
-    nps = max(numroc(n, 1, 0, 0, sqnpc), 2 * anb)
-    nsytrd_lwopt = n + 2 * (anb + 1) * (4 * nps + 2) + (nps + 3) * nps
-    size = max(size, 5 * n + nsytrd_lwopt)
-  end function work_size_for_pdsyevx
-
   integer function work_size_for_pdormtr(side, uplo, m, n, ia, ja, ic, jc, desc_A, desc_C) result(size)
     character(len = 1), intent(in) :: side, uplo
     integer, intent(in) :: m, n, ia, ja, ic, jc
@@ -421,40 +409,9 @@ contains
             nb_a * nb_a
     end if
   end function work_size_for_pdormtr
-
-  subroutine pdsyevx_report(context, jobz, abstol, orfac, info, &
-       n_eigenvalues, n_eigenvectors, ifail, iclustr)
-    integer, intent(in) :: context, info, n_eigenvalues, n_eigenvectors, ifail(:), iclustr(:)
-    character, intent(in) :: jobz
-    real(kind(1.d0)) :: abstol, orfac
-
-    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
-    integer :: i
-
-    print *, 'PDSYEVX report'
-    print *, ' found eigenvalues: ', n_eigenvalues
-    print *, ' computed eigenvectors: ', n_eigenvectors
-    print *, ' abstol: ', abstol
-    print *, ' orfac: ', orfac
-    print *, ' info: ', info
-    if (info /= 0 .and. jobz == 'V') then
-      if (mod(info, 2) /= 0) then
-        print *, ' ifail: ', ifail(n_eigenvalues + 1 :)
-      end if
-      write (*, '(A)', advance = 'no') '  iclustr: '
-      call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
-      do i = 1, n_procs_row * n_procs_col
-        write (*, '(I6, A, I6)', advance = 'no') iclustr(2 * i - 1), ' - ', iclustr(2 * i)
-        if (iclustr(2 * i) /= 0 .and. iclustr(2 * i + 1) == 0) then
-          print *
-          exit
-        else
-          write (*, '(A)', advance = 'no') ', '
-        end if
-      end do
-    end if
-  end subroutine pdsyevx_report
-
-end module M_lib_eigen_solver_scalapack_select
-
-
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+end module solver_scalapack_all

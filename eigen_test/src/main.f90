@@ -1,11 +1,11 @@
 program eigen_test
 !
-  use M_lib_eigen_routines,   only : lib_eigen_solver, lib_eigen_checker !(routine)
-  use M_command_argument,     only : read_command_argument !(routine)
-  use M_read_matrix_file,     only : read_matrix_file !(rouine)
-  use M_create_dense_matrix,  only : create_dense_matrix !(routine)
-  use M_wrap_data_and_time,   only : data_and_time_wrapper !(routine)
-  use M_check_master,         only : check_master !(routine)
+  use solver_main, only : lib_eigen_solver, lib_eigen_checker !(routine)
+  use command_argument, only : read_command_argument !(routine)
+  use read_matrix, only : read_matrix_file !(rouine)
+  use distribute_matrix, only : create_dense_matrix !(routine)
+  use time, only : data_and_time_wrapper !(routine)
+  use processes, only : check_master !(routine)
 !
   implicit none
   integer :: verbose_level

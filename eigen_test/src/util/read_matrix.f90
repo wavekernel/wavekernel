@@ -1,6 +1,6 @@
-module M_read_matrix_file
+module read_matrix
   implicit none
-  private 
+  private
   public :: read_matrix_file
 !
 contains
@@ -25,7 +25,7 @@ contains
       debug_mode = .true.
     else
       debug_mode = .false.
-    endif   
+    endif
 !
     if (debug_mode) write(*,'(a)')'@@ read_matrix_file'
 !
@@ -39,19 +39,19 @@ contains
 !
     allocate (mat_suffix(2, num_non_zeros),  stat=ierr)
     if (ierr /= 0) then
-      write(*,*)'ERROR in allocation : mat_suffix' 
+      write(*,*)'ERROR in allocation : mat_suffix'
       stop
-    endif   
+    endif
 !
     if (trim(matrix_type) == 'real_symmetric') then
       allocate (mat_value(num_non_zeros,1),  stat=ierr)
       if (ierr /= 0) then
-        write(*,*)'ERROR in allocation : mat_value' 
+        write(*,*)'ERROR in allocation : mat_value'
         stop
-      endif   
+      endif
     else
-      write(*,*) 'ERROR:unsuported matrix type = ',trim(matrix_type) 
-    endif  
+      write(*,*) 'ERROR:unsuported matrix type = ',trim(matrix_type)
+    endif
 !
     call read_matrix_file_value(verbose_level, unit_num, mat_size, num_non_zeros, mat_value, mat_suffix)
 !
@@ -76,7 +76,7 @@ contains
       debug_mode = .true.
     else
       debug_mode = .false.
-    endif   
+    endif
 !
     if (debug_mode) write(*,'(a)')'@@ read_matrix_file_header'
 !
@@ -90,20 +90,20 @@ contains
     if (.not. file_exist) then
       write(*,*)' ERROR:No matrix file: filename=',trim(mtx_filename)
       stop
-    else  
+    else
       if (debug_mode) write(*,*)' INFO: Matrix file founded : filename=',trim(mtx_filename)
     endif
-!   
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Check the extension
 !
     k=len_trim(mtx_filename)
     if ( mtx_filename(k-3:k) /= '.mtx' ) then
-      write(*,*)'ERROR:Wrong file : filename=', trim(mtx_filename) 
+      write(*,*)'ERROR:Wrong file : filename=', trim(mtx_filename)
       stop
     else
       if (debug_mode) write(*,*)'The extension of the is checked: filename=',trim(mtx_filename)
-    endif  
+    endif
 !
   end subroutine check_file_name
 !
@@ -134,7 +134,7 @@ contains
       debug_mode = .true.
     else
       debug_mode = .false.
-    endif   
+    endif
 !
     if (debug_mode) write(*,'(a)')'@@ read_matrix_file_header'
 !
@@ -155,7 +155,7 @@ contains
     else
       if (debug_mode) write(*,*)'INFO:header of file =', chara_wrk(1:14)
     endif
-!   
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Seach the keyword of 'real' on the first line
 !
@@ -166,7 +166,7 @@ contains
 !
     if (keyword_real_exist) then
       if (debug_mode) write(*,'(a)') '  INFO:keyword found : real'
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Search the keyword of 'symmetic' on the first line
@@ -178,7 +178,7 @@ contains
 !
     if (keyword_symmetric_exist) then
       if (debug_mode) write(*,'(a)') '  INFO:keyword found : symmetric'
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Check the file type
@@ -187,18 +187,18 @@ contains
       if (.not. keyword_real_exist) then
         write(*,*)'ERROR:keyword_real_exist =', keyword_real_exist
         stop
-      endif   
+      endif
       if (.not. keyword_symmetric_exist) then
         write(*,*)'ERROR:keyword_symmetric_exist =', keyword_symmetric_exist
         stop
-      endif   
+      endif
     else
       write(*,*)'ERROR:unsupported matrix type :', trim(matrix_type)
       stop
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! @@ Plot the comment lines 
+! @@ Plot the comment lines
 !
     do line_count=1, max_line_count
       read(unit_num,'(a)') chara_wrk
@@ -211,12 +211,12 @@ contains
       write(*,*)'ERROR : matrix size or number of non zero elements :', trim(chara_wrk)
       stop
     endif
-!   
+!
     if (mat_size /= mat_size2) then
       write(*,*)'ERROR : matrix size info :', mat_size, mat_size2
       stop
     endif
-!   
+!
     if (num_non_zeros <= 0) then
       write(*,*)'ERROR:num_non_zeros =',num_non_zeros
       stop
@@ -228,7 +228,7 @@ contains
     endif
 !
     if ( num_non_zeros > mat_size*mat_size ) then
-      write(*,*)'ERROR : imcompatible mat_size, number of non zero elements =', mat_size, num_non_zeros 
+      write(*,*)'ERROR : imcompatible mat_size, number of non zero elements =', mat_size, num_non_zeros
       stop
     endif
 !
@@ -260,26 +260,26 @@ contains
       debug_mode = .true.
     else
       debug_mode = .false.
-    endif   
+    endif
 !
     if (debug_mode) write(*,'(a)')'@@ read_matrix_file_value'
     if (debug_mode) write(*,'(a)')' ONLY REAL-SYMMETRIC MATRIX is supported'
 !
     if (debug_mode) write(*,*)'size(mat_value,1)=',size(mat_value,1)
     if (debug_mode) write(*,*)'size(mat_value,2)=',size(mat_value,2)
-!    
+!
     if (debug_mode) write(*,*)'size(mat_suffix,1)=',size(mat_suffix,1)
     if (debug_mode) write(*,*)'size(mat_suffix,2)=',size(mat_suffix,2)
-!    
+!
     if (size(mat_value,1) /= num_non_zeros) then
       write(*,*)'ERROR(read_matrix_file_value): size(mat_value,1)=',size(mat_value,1)
       stop
-    endif   
+    endif
 !
     if (size(mat_value,2) /= 1) then
       write(*,*)'ERROR(read_matrix_file_value): size(mat_value,2)=',size(mat_value,2)
       stop
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -288,21 +288,21 @@ contains
       if (ierr /= 0) then
         write(*,*)'ERROR: file reading for matrix value'
         stop
-      endif   
+      endif
 !
 !     if (debug_mode) write(*,*)'i,j, matrix_value=',i, j, value_wrk
 !
       if ( (i < 1) .or. ( i > mat_size ) ) then
-        write(*,*)'ERROR: file reading for matrix suffix'  
+        write(*,*)'ERROR: file reading for matrix suffix'
         stop
-      endif   
+      endif
 !
       if ( (j < 1) .or. ( j > mat_size ) ) then
-        write(*,*)'ERROR: file reading for matrix suffix'  
+        write(*,*)'ERROR: file reading for matrix suffix'
         stop
-      endif   
+      endif
 !
-      mat_value(line_count, 1) = value_wrk 
+      mat_value(line_count, 1) = value_wrk
       mat_suffix(1,line_count) = i
       mat_suffix(2,line_count) = j
     enddo
@@ -310,13 +310,10 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !   if (num_non_zeros /= size(mat_value,1)) then
-!   endif   
+!   endif
 !
   end subroutine read_matrix_file_value
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-end module M_read_matrix_file
-
-
-
+end module read_matrix

@@ -1,3 +1,5 @@
-eigen-test-main.o : lib_misc/lib-check-master.o lib_misc/lib-wrap-data-and-time.o lib_misc/lib-create-dense-matrix.o lib_misc/lib-read-matrix-file.o lib_misc/lib-read-command-argument.o lib_eigen/lib-eigen-main.o
-lib_eigen/lib-eigen-main.o : lib_eigen/lib-eigen-solver-lapack.o lib_eigen/lib-eigen-solver-scalapack-all.o lib_eigen/lib-eigen-solver-scalapack-select.o
-lib_eigen/lib-eigen-solver-lapack.o : lib_misc/lib-get-wclock-time.o
+main.o : util/processes.o util/time.o util/distribute_matrix.o util/read_matrix.o util/command_argument.o solver/solver_main.o 
+solver/solver_lapack.o : util/time.o 
+solver/solver_main.o : solver/solver_scalapack_select.o solver/solver_scalapack_all.o solver/solver_lapack.o 
+solver/solver_scalapack_all.o : util/time.o 
+solver/solver_scalapack_select.o : util/time.o 

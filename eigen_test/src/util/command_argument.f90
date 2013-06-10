@@ -1,4 +1,4 @@
-module M_command_argument
+module command_argument
   implicit none
   private
   public :: read_command_argument
@@ -97,6 +97,4 @@ contains
 !
   end subroutine read_command_argument
 !
-end module M_command_argument
-
-
+end module command_argument

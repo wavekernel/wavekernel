@@ -25,10 +25,10 @@ F90 ?= $(FC)
 .f90.o:
 	$(F90) -c $(FFLAGS) $< -o $@
 
-OBJS-TEST = eigen-test-main.o
+OBJS-TEST = main.o
 
-include lib_misc/Makefile_misc.in
-include lib_eigen/Makefile_eigen.in
+include util/Makefile_util.in
+include solver/Makefile_solver.in
 
 eigen : $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC)
 	$(F90) $(LDFLAGS) $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC) $(LIBS) -o $@
@@ -36,9 +36,9 @@ eigen : $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC)
 
 .PHONY: clean dep
 clean:
-	@rm -f *.exe *.o *.mod *~ ../bin/* lib_eigen/*.o lib_eigen/*.mod lib_eigen/*~ lib_misc/*.o lib_misc/*.mod $(TARGET)
+	@rm -f *.exe *.o *.mod *~ ../bin/* */*.o */*.mod */*~ $(TARGET)
 
 dep:
-	makedepf90 -nosrc *.f90 lib_eigen/*.f90 lib_misc/*.f90 > Makefile.dep
+	makedepf90 -nosrc *.f90 util/*.f90 solver/*.f90 > Makefile.dep
 
 include Makefile.dep
