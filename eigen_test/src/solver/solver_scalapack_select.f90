@@ -55,6 +55,8 @@ contains
 
     call get_wclock_time(t_init)
 
+    call descinit(desc_Eigenvectors, conf%dim, conf%dim, &
+    conf%block_size, conf%block_size, 0, 0, conf%context, conf%n_local_row, info)
     allocate(Eigenvectors(1 : conf%n_local_row, 1 : conf%n_local_col))
     Eigenvectors(:, :) = 0.0
 
