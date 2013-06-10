@@ -1,7 +1,7 @@
-module read_matrix
+module matrix_io
   implicit none
   private
-  public :: read_matrix_file
+  public :: read_matrix_file, print_matrix
 !
 contains
 !
@@ -316,4 +316,21 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-end module read_matrix
+  subroutine print_matrix(name, mat, m, n)
+    character(*), intent(in) :: name
+    real(kind(1.d0)), intent(in) :: mat(:, :)
+    integer :: i, j, m, n
+    if (m < 0) then
+       m = size(mat, 1)
+    end if
+    if (n < 0) then
+       n = size(mat, 2)
+    end if
+    do j = 1, n
+       do i = 1, m
+          print ' (A, "(", I6, ",", I6, ")=", D30.18) ', name, i, j, mat(i, j)
+       end do
+    end do
+  end subroutine print_matrix
+
+end module matrix_io

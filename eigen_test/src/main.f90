@@ -2,7 +2,7 @@ program eigen_test
 !
   use solver_main, only : lib_eigen_solver, lib_eigen_checker !(routine)
   use command_argument, only : read_command_argument !(routine)
-  use read_matrix, only : read_matrix_file !(rouine)
+  use matrix_io, only : read_matrix_file !(rouine)
   use distribute_matrix, only : create_dense_matrix !(routine)
   use time, only : data_and_time_wrapper !(routine)
   use processes, only : check_master !(routine)
