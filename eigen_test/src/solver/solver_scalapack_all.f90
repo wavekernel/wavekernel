@@ -4,38 +4,92 @@
 !================================================================
 module solver_scalapack_all
   !
+  use time, only : get_wclock_time !(routine)
+  use processes, only : layout_procs
+  use distribute_matrix, only : gather_matrix, copy_global_dense_matrix_to_local, allgather_row_wise
+  !
   implicit none
+
+  type conf_distribution
+    integer :: dim, my_rank, n_procs, context
+    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
+    integer :: block_size, n_local_row, n_local_col
+  end type conf_distribution
   !
   private
-  public :: eigen_solver_scalapack_all
+  public :: conf_distribution, setup_distribution, distribute_dense, eigen_solver_scalapack_all
   !
 contains
   !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine eigen_solver_scalapack_all(mat,eigen_level)
-    !
-    use time, only : get_wclock_time !(routine)
-    use processes, only : layout_procs
-    use distribute_matrix, only : gather_matrix, copy_global_dense_matrix_to_local, allgather_row_wise
+  subroutine setup_distribution(dim, conf)
+    integer, intent(in) :: dim
+    type(conf_distribution), intent(out) :: conf
+    integer :: info
+
+    ! Functions
+    integer :: numroc, iceil
+
+    conf%dim = dim
+
+    call blacs_pinfo(conf%my_rank, conf%n_procs)
+    call layout_procs(conf%n_procs, conf%n_procs_row, conf%n_procs_col)
+    call blacs_get(-1, 0, conf%context)
+    call blacs_gridinit(conf%context, 'R', conf%n_procs_row, conf%n_procs_col)
+    call blacs_gridinfo(conf%context, conf%n_procs_row, conf%n_procs_col, &
+         conf%my_proc_row, conf%my_proc_col)
+
+    conf%block_size = min(32, dim / max(conf%n_procs_row, conf%n_procs_col))
+
+    if (conf%my_rank == 0) then
+       print '( "block size:", I7 )', conf%block_size
+       print '( "procs: ", I5, " x ", I5, " (", I5, ")" )', &
+            conf%n_procs_row, conf%n_procs_col, conf%n_procs
+    end if
+
+    if (conf%my_proc_row >= conf%n_procs_row .or. conf%my_proc_col >= conf%n_procs_col) then
+       call blacs_exit(0)
+       stop 'out of process grid'
+    end if
+
+    conf%n_local_row = max(1, numroc(dim, conf%block_size, &
+         conf%my_proc_row, 0, conf%n_procs_row))
+    conf%n_local_col = max(1, numroc(dim, conf%block_size, &
+         conf%my_proc_col, 0, conf%n_procs_col))
+  end subroutine setup_distribution
+
+  subroutine distribute_dense(conf, mat_in, desc, mat)
+    type(conf_distribution), intent(in) :: conf
+    real(kind(1.d0)), intent(in) :: mat_in(:, :)
+    integer, intent(out) :: desc(9)
+    real(kind(1.d0)), intent(out), allocatable :: mat(:, :)
+
+    integer :: info
+
+    call descinit(desc, conf%dim, conf%dim, conf%block_size, conf%block_size, &
+         0, 0, conf%context, conf%n_local_row, info)
+    allocate(mat(1 : conf%n_local_row, 1 : conf%n_local_col))
+
+    call copy_global_dense_matrix_to_local(mat_in, desc, mat)
+  end subroutine distribute_dense
+
+  subroutine eigen_solver_scalapack_all(conf, desc_A, A, eigen_level, eigenvectors_global)
     implicit none
     include 'mpif.h'
 
-    real(kind(1.d0)), intent(inout) :: mat(:,:)   ! ( n x n ) matrix
-    real(kind(1.d0)), intent(out)   :: eigen_level(:)
-
-    integer :: my_rank, n_procs, block_size, n_procs_row, n_procs_col, context
-    integer :: my_proc_row, my_proc_col
+    type(conf_distribution) :: conf
+    integer, intent(in) :: desc_A(9)
+    real(kind(1.d0)), intent(in) :: A(:, :)
+    real(kind(1.d0)), intent(out) :: eigen_level(:), eigenvectors_global(:, :)
 
     integer :: ierr, info
-    integer :: dim, n_local_row, n_local_col, work_size, iwork_size
-    integer :: diag_size, subdiag_size
-    integer :: desc_A(9), desc_Eigenvectors(9)
+    integer :: work_size, iwork_size, diag_size, subdiag_size
+    integer :: desc_Eigenvectors(9)
 
     character(len = 1) :: uplo, compz, side, trans
 
-    real(kind(1.d0)), allocatable :: A(:,:)
     real(kind(1.d0)), allocatable :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: diag_local(:), subdiag_local(:)
     real(kind(1.d0)), allocatable :: diag_global(:), subdiag_global(:)
@@ -56,76 +110,49 @@ contains
 
     call get_wclock_time(t_init)
 
-    dim = size(mat, 1)
-
-    call blacs_pinfo(my_rank, n_procs)
-    call layout_procs(n_procs, n_procs_row, n_procs_col)
-    call blacs_get(-1, 0, context)
-    call blacs_gridinit(context, 'R', n_procs_row, n_procs_col)
-    call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
-
-    block_size = min(32, dim / max(n_procs_row, n_procs_col))
-
-    if (my_rank == 0) then
-       print '( "block size:", I7 )', block_size
-       print '( "procs: ", I5, " x ", I5, " (", I5, ")" )', n_procs_row, n_procs_col, n_procs
-    end if
-
-    if (my_proc_row >= n_procs_row .or. my_proc_col >= n_procs_col) then
-       call blacs_exit(0)
-       stop 'out of process grid'
-    end if
-
-    n_local_row = max(1, numroc(dim, block_size, my_proc_row, 0, n_procs_row))
-    n_local_col = max(1, numroc(dim, block_size, my_proc_col, 0, n_procs_col))
-    call descinit(desc_A, dim, dim, block_size, block_size, 0, 0, context, n_local_row, info)
-
-    allocate(A(1 : n_local_row, 1 : n_local_col))
-
-    call copy_global_dense_matrix_to_local(mat, desc_A, A)
-
-    diag_size = numroc(dim, block_size, my_proc_col, 0, n_procs_col)
-    subdiag_size = numroc(dim - 1, block_size, my_proc_col, 0, n_procs_col)
-    work_size = max(block_size * (n_local_row + 1), 3 * block_size)
+    diag_size = numroc(conf%dim, conf%block_size, conf%my_proc_col, 0, conf%n_procs_col)
+    subdiag_size = numroc(conf%dim - 1, conf%block_size, conf%my_proc_col, 0, conf%n_procs_col)
+    work_size = max(conf%block_size * (conf%n_local_row + 1), 3 * conf%block_size)
 
     allocate(diag_local(diag_size))
     allocate(subdiag_local(subdiag_size))
     allocate(tau(diag_size))
     allocate(work(work_size))
-    allocate(work_print(block_size))
+    allocate(work_print(conf%block_size))
 
     call get_wclock_time(t_pdsytrd)
 
     uplo = 'l'
-    call pdsytrd(uplo, dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
+    call pdsytrd(uplo, conf%dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
     deallocate(work)
-    if (my_rank == 0) then
+    if (conf%my_rank == 0) then
        print *, 'info(pdsytrd): ', info
     end if
 
     call get_wclock_time(t_pdsytrd_end)
 
-    allocate(diag_global(dim))
-    allocate(subdiag_global(dim - 1))
+    allocate(diag_global(conf%dim))
+    allocate(subdiag_global(conf%dim - 1))
 
-    call allgather_row_wise(diag_local, context, block_size, diag_global)
-    call allgather_row_wise(subdiag_local, context, block_size, subdiag_global)
+    call allgather_row_wise(diag_local, conf%context, conf%block_size, diag_global)
+    call allgather_row_wise(subdiag_local, conf%context, conf%block_size, subdiag_global)
 
-    call descinit(desc_Eigenvectors, dim, dim, block_size, block_size, 0, 0, context, n_local_row, info)
+    call descinit(desc_Eigenvectors, conf%dim, conf%dim, conf%block_size, conf%block_size, &
+         0, 0, conf%context, conf%n_local_row, info)
 
-    allocate(Eigenvectors(1 : n_local_row, 1 : n_local_col))
+    allocate(Eigenvectors(1 : conf%n_local_row, 1 : conf%n_local_col))
     Eigenvectors(:, :) = 0.0
 
-    work_size = 6 * dim + 2 * n_local_row * n_local_col
-    iwork_size = 2 + 7 * dim + 8 * n_procs_col
+    work_size = 6 * conf%dim + 2 * conf%n_local_row * conf%n_local_col
+    iwork_size = 2 + 7 * conf%dim + 8 * conf%n_procs_col
     allocate(work(work_size))
     allocate(iwork(iwork_size))
 
     call get_wclock_time(t_pdstedc)
 
-    call pdstedc('i', dim, diag_global, subdiag_global, Eigenvectors, 1, 1, &
+    call pdstedc('i', conf%dim, diag_global, subdiag_global, Eigenvectors, 1, 1, &
          desc_Eigenvectors, work, work_size, iwork, iwork_size, info)
-    if (my_rank == 0) then
+    if (conf%my_rank == 0) then
        print *, 'info(pdstedc): ', info
     end if
 
@@ -134,13 +161,13 @@ contains
     eigen_level(:) = diag_global(:)
 
     side = 'l'
-    work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, desc_Eigenvectors)
+    work_size = work_size_for_pdormtr(side, uplo, conf%dim, conf%dim, 1, 1, 1, 1, desc_A, desc_Eigenvectors)
     deallocate(work)
     allocate(work(work_size))
 
-    call pdormtr(side, uplo, 'n', dim, dim, A, 1, 1, desc_A, tau, &
+    call pdormtr(side, uplo, 'n', conf%dim, conf%dim, A, 1, 1, desc_A, tau, &
          Eigenvectors, 1, 1, desc_Eigenvectors, work, work_size, info)
-    if (my_rank == 0) then
+    if (conf%my_rank == 0) then
        print *, 'info(pdormtr): ', info
     end if
 
@@ -149,7 +176,7 @@ contains
     ! call pdlaprnt(dim, dim, Eigenvectors, 1, 1, desc_Eigenvectors, 0, 0, 'Eigenvectors', 6, work_print)
 
 
-    call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, mat)
+    call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
 
     call get_wclock_time(t_all_end)
 
@@ -161,7 +188,7 @@ contains
     t_intervals(6) = t_all_end - t_pdormtr_end
     t_intervals(7) = t_all_end - t_init
 
-    if (my_rank == 0) then
+    if (conf%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
        print *, 'Elapse time (sec)'
        do i = 1, n_intervals

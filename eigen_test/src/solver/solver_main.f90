@@ -56,7 +56,8 @@ module solver_main
   subroutine lib_eigen_solver(mat, solver_type, n_vec, eigenvalues, eigenvectors)
 
    use solver_lapack, only : eigen_solver_lapack
-   use solver_scalapack_all, only : eigen_solver_scalapack_all
+   use solver_scalapack_all, only : conf_distribution, setup_distribution, &
+        distribute_dense, eigen_solver_scalapack_all
    use solver_scalapack_select, only : eigen_solver_scalapack_select
    use matrix_io, only : sparse_mat
    implicit none
@@ -65,8 +66,9 @@ module solver_main
    integer, intent(in) :: n_vec
    real(kind(1.d0)), intent(out), allocatable :: eigenvalues(:), eigenvectors(:, :)
 
-   integer :: n
-   real(kind(1.d0)), allocatable :: a(:, :)
+   integer :: n, desc(9)
+   type(conf_distribution) :: conf
+   real(kind(1.d0)), allocatable :: a(:, :), mat_dist(:, :)
 
    n = mat%size
 
@@ -83,18 +85,20 @@ module solver_main
   eigenvectors(:, :) = 0.0d0
 
   select case (trim(solver_type))
-  case ('lapack')
-    call eigen_solver_lapack(a, eigenvalues)
+!  case ('lapack')
+!    call eigen_solver_lapack(a, eigenvalues)
   case ('scalapack_all')
-    call eigen_solver_scalapack_all(a, eigenvalues)
-  case ('scalapack_select')
-    call eigen_solver_scalapack_select(a, eigenvalues)
+    call setup_distribution(n, conf)
+    call distribute_dense(conf, a, desc, mat_dist)
+    call eigen_solver_scalapack_all(conf, desc, mat_dist, eigenvalues, eigenvectors)
+!  case ('scalapack_select')
+!    call eigen_solver_scalapack_select(a, eigenvalues)
   case default
     write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
     stop
   end select
 
-  eigenvectors = a
+!  eigenvectors = a
 
   end subroutine lib_eigen_solver
 
