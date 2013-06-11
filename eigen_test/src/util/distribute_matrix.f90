@@ -1,6 +1,7 @@
 module distribute_matrix
 
   use processes, only : layout_procs
+  use matrix_io, only : sparse_mat
 
   implicit none
 
@@ -241,17 +242,22 @@ contains
     end do
   end subroutine copy_global_dense_matrix_to_local
 
-  subroutine copy_global_sparse_matrix_to_local()
-!    do k=1, mat_in%num_non_zeros
-!      i=mat_in%suffix(1,k)
-!      j=mat_in%suffix(2,k)
-!      mat(i,j)=mat_in%value(k)
-!      mat_chk(i,j)=mat_chk(i,j)+1
-!      if (i /= j) then
-!        mat(j,i)=mat_in%value(k)
-!        mat_chk(j,i)=mat_chk(j,i)+1
-!      endif
-!    enddo
+  subroutine copy_global_sparse_matrix_to_local(mat_in, desc, mat)
+    type(sparse_mat), intent(in) :: mat_in
+    integer, intent(in) :: desc(9)
+    real(kind(1.d0)), intent(out) :: mat(:,:)
+
+    integer :: k, i, j
+    integer :: ierr
+
+    do k = 1, mat_in%num_non_zeros
+      i = mat_in%suffix(1, k)
+      j = mat_in%suffix(2, k)
+      call pdelset(mat, i, j, desc, mat_in%value(k))
+      if (i /= j) then
+      call pdelset(mat, j, i, desc, mat_in%value(k))
+      endif
+    enddo
   end subroutine copy_global_sparse_matrix_to_local
 
   subroutine allgather_row_wise(array_local, context, block_size, array_global)
