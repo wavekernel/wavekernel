@@ -8,6 +8,7 @@ out/
 
 # Executables
 eigen
+pi-quad-prec
 *.out
 job*.sh
 
