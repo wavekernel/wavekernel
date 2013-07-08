@@ -58,6 +58,7 @@ module solver_main
    use solver_lapack, only : eigen_solver_lapack
    use solver_scalapack_all, only : eigen_solver_scalapack_all
    use solver_scalapack_select, only : eigen_solver_scalapack_select
+   use solver_eigenexa, only : eigen_solver_eigenexa
    use matrix_io, only : sparse_mat
    use distribute_matrix, only : conf_distribution, setup_distribution, &
         setup_distributed_matrix, copy_global_dense_matrix_to_local, &
@@ -104,6 +105,8 @@ module solver_main
     call setup_distributed_matrix(conf, desc, mat_dist)
     call copy_global_sparse_matrix_to_local(mat, desc, mat_dist)
     call eigen_solver_scalapack_select(conf, desc, mat_dist, n_vec, eigenvalues, eigenvectors)
+  case ('eigenexa')
+    call eigen_solver_eigenexa(mat, n_vec, eigenvalues, eigenvectors)
   case default
     write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
     stop

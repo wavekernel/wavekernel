@@ -23,7 +23,7 @@ F90 ?= $(FC)
 .SUFFIXES: .f90
 
 .f90.o:
-	$(F90) -c $(FFLAGS) $< -o $@
+	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
 
 OBJS-TEST = main.o
 

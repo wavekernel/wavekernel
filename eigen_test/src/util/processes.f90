@@ -37,16 +37,10 @@ contains
 !
     select case (trim(solver_type))
     case ('lapack')
-       is_master = .true.
-    case ('scalapack_all')
-       call blacs_pinfo(my_rank, n_procs)
-       is_master = (my_rank == 0)
-    case ('scalapack_select')
-       call blacs_pinfo(my_rank, n_procs)
-       is_master = (my_rank == 0)
+      is_master = .true.
     case default
-       write(*,*) 'Error(lib_check_master): unknown solver type ', trim(solver_type)
-       stop
+      call blacs_pinfo(my_rank, n_procs)
+      is_master = (my_rank == 0)
     end select
 !
   end subroutine check_master
