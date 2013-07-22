@@ -27,7 +27,7 @@ program eigen_test
   character(len=256) :: matrix_type
   character(len=256) :: solver_type
 !
-  character(len=*), parameter :: filename='output_eigen_value.txt'
+  character(len=*), parameter :: filename='eigenvalues.dat'
 !
   real(kind(1.d0)),    allocatable :: mat_value(:,:)
   integer,             allocatable :: mat_suffix(:,:)

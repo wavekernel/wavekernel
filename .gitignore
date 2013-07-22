@@ -15,4 +15,7 @@ job*.sh
 # Misc
 Makefile.in
 *.mod
+*.log
+*.dat
+*\#*
 *~
