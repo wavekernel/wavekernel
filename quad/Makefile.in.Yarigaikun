@@ -1,3 +1,3 @@
 FC = mpif90
 FFLAGS = -Wall
-LIBS = -L$(HOME)/lib -L/usr/lib/openmpi/lib -lscalapack -llapack -lrefblas -lgomp -lmpi
+LIBS = -L$(HOME)/lib -L/usr/lib/openmpi/lib -lmpi
