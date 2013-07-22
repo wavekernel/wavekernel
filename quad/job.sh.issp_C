@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#------ pjsub option --------#
+
+#PJM -L "rscgrp=debug"
+#PJM -L "node=1"
+#PJM --mpi "proc=4"
+#PJM -L "elapse=1:00"
+#PJM -e out/e%J
+#PJM -o out/o%J
+#PJM -s
+#PJM --spath out/i%J
+
+#------ program execution ------#
+mpiexec ./pi-quad-prec gather
+mpiexec ./pi-quad-prec reduce
