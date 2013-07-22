@@ -10,7 +10,7 @@ module solver_eigenexa
 contains
   subroutine eigen_solver_eigenexa(mat, n_vec, eigenvalues, eigenvectors_global)
     use MPI
-    use eigen_libs
+    !!use eigen_libs
     implicit none
 
     type(sparse_mat), intent(in) :: mat
@@ -35,11 +35,11 @@ contains
     !call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
     !call MPI_Comm_size(MPI_COMM_WORLD, num_nodes, ierr)
 
-    call eigen_init(order='R')
+    !!call eigen_init(order='R')
 
     dim = mat%size
 
-    call eigen_get_matdims(dim, local_size_row, local_size_col)
+    !!call eigen_get_matdims(dim, local_size_row, local_size_col)
 
     print *, 'dim, local_size_row, local_size_col : ', dim, local_size_row, local_size_col
 
@@ -50,12 +50,12 @@ contains
       stop "Memory exhausted"
     end if
 
-    context = eigen_get_blacs_context()
+    !!context = eigen_get_blacs_context()
     call descinit(desc, dim, dim, 64, 64, 0, 0, context, local_size_row, info)
     !call copy_global_sparse_matrix_to_local(mat, desc, A)
 
-    call eigen_get_procs(num_nodes, num_nodes_col, num_nodes_row)
-    call eigen_get_id(my_rank, my_node_col, my_node_row)
+    !!call eigen_get_procs(num_nodes, num_nodes_col, num_nodes_row)
+    !!call eigen_get_id(my_rank, my_node_col, my_node_row)
 
     !j_2 = eigen_loop_start( 1, num_nodes_col, my_proc_col)
     !j_3 = eigen_loop_end  ( n, num_nodes_col, my_proc_col)
@@ -73,20 +73,20 @@ contains
     do k = 1, mat%num_non_zeros
       i = mat%suffix(1, k)
       j = mat%suffix(2, k)
-      owner_node_row = eigen_owner_node(i, num_nodes_row, my_node_row)
-      owner_node_col = eigen_owner_node(j, num_nodes_col, my_node_col)
+     !! owner_node_row = eigen_owner_node(i, num_nodes_row, my_node_row)
+     !! owner_node_col = eigen_owner_node(j, num_nodes_col, my_node_col)
       if (my_node_row == owner_node_row .and. my_node_col == owner_node_col) then
-        i_local = eigen_translate_g2l(i, num_nodes_row, my_node_row)
-        j_local = eigen_translate_g2l(j, num_nodes_col, my_node_col)
+        !!i_local = eigen_translate_g2l(i, num_nodes_row, my_node_row)
+        !!j_local = eigen_translate_g2l(j, num_nodes_col, my_node_col)
         A(i_local, j_local) = mat%value(k)
         print *, 'A(', i_local, ', ', j_local, ') on (', owner_node_row, ', ', owner_node_col, '): ', mat%value(k)
       end if
       if (i /= j) then
-        owner_node_row = eigen_owner_node(j, num_nodes_row, my_node_row)
-        owner_node_col = eigen_owner_node(i, num_nodes_col, my_node_col)
+        !!owner_node_row = eigen_owner_node(j, num_nodes_row, my_node_row)
+        !!owner_node_col = eigen_owner_node(i, num_nodes_col, my_node_col)
         if (my_node_row == owner_node_row .and. my_node_col == owner_node_col) then
-          i_local = eigen_translate_g2l(j, num_nodes_row, my_node_row)
-          j_local = eigen_translate_g2l(i, num_nodes_col, my_node_col)
+          !!i_local = eigen_translate_g2l(j, num_nodes_row, my_node_row)
+          !!j_local = eigen_translate_g2l(i, num_nodes_col, my_node_col)
           A(i_local, j_local) = mat%value(k)
         end if
       end if
@@ -98,16 +98,16 @@ contains
     d1 = MPI_WTIME()
     print *, d1
 
-    call eigen_sx(dim, n_vec, A, local_size_row, eigenvalues, &
-         Eigenvectors, local_size_row, m_forward=8, m_backward=128)
+    !!call eigen_sx(dim, n_vec, A, local_size_row, eigenvalues, &
+    !!     Eigenvectors, local_size_row, m_forward=8, m_backward=128)
 
     call MPI_Barrier(MPI_COMM_WORLD, ierr)
     d2 = MPI_WTIME()
     print *, d2
 
-    !call gather_matrix(Eigenvectors, desc, 0, 0, eigenvectors_global)
+    !!call gather_matrix(Eigenvectors, desc, 0, 0, eigenvectors_global)
 
-    call eigen_free()
+    !!call eigen_free()
 
     call MPI_Finalize(ierr)
 
