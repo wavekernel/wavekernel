@@ -3,29 +3,23 @@
 ! Copyright (C) ELSES. 2007-2011 all rights reserved
 !================================================================
 module solver_scalapack_select
-
   use time, only : get_wclock_time
   use distribute_matrix, only : conf_distribution, gather_matrix, allgather_row_wise
-  !
   implicit none
-  !
+
   private
   public :: eigen_solver_scalapack_select
-  !
+
 contains
-  !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine eigen_solver_scalapack_select(conf, desc_A, A, n_vec, eigen_level, eigenvectors_global)
-    !
     implicit none
+
     include 'mpif.h'
 
     type(conf_distribution) :: conf
     integer, intent(in) :: desc_A(9), n_vec
     real(kind(1.d0)), intent(in) :: A(:, :)
-    real(kind(1.d0)), intent(out)   :: eigen_level(:), eigenvectors_global(:, :)
+    real(kind(1.d0)), intent(out) :: eigen_level(:), eigenvectors_global(:, :)
 
     integer :: ierr, info
     integer :: work_size, iwork_size
@@ -104,6 +98,7 @@ contains
     call blacs_exit(0)
   end subroutine eigen_solver_scalapack_select
 
+
   integer function work_size_for_pdsyevx(jobz, n, desc, neig) result (size)
     character(len = 1), intent(in) :: jobz
     integer, intent(in) :: n, desc(9), neig
@@ -134,6 +129,7 @@ contains
     nsytrd_lwopt = n + 2 * (anb + 1) * (4 * nps + 2) + (nps + 3) * nps
     size = max(size, 5 * n + nsytrd_lwopt)
   end function work_size_for_pdsyevx
+
 
   subroutine pdsyevx_report(context, jobz, abstol, orfac, info, &
        n_eigenvalues, n_eigenvectors, ifail, iclustr)
@@ -167,5 +163,4 @@ contains
       end do
     end if
   end subroutine pdsyevx_report
-
 end module solver_scalapack_select

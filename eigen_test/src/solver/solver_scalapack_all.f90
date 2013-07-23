@@ -3,22 +3,17 @@
 ! Copyright (C) ELSES. 2007-2011 all rights reserved
 !================================================================
 module solver_scalapack_all
-  !
   use time, only : get_wclock_time
   use distribute_matrix, only : conf_distribution, gather_matrix, allgather_row_wise
-  !
   implicit none
-  !
+
   private
   public :: eigen_solver_scalapack_all
-  !
+
 contains
-  !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine eigen_solver_scalapack_all(conf, desc_A, A, eigen_level, eigenvectors_global)
     implicit none
+
     include 'mpif.h'
 
     type(conf_distribution) :: conf
@@ -116,7 +111,6 @@ contains
     call get_wclock_time(t_pdormtr_end)
 
     ! call pdlaprnt(dim, dim, Eigenvectors, 1, 1, desc_Eigenvectors, 0, 0, 'Eigenvectors', 6, work_print)
-
 
     call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
 
@@ -217,9 +211,4 @@ contains
             nb_a * nb_a
     end if
   end function work_size_for_pdormtr
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
 end module solver_scalapack_all

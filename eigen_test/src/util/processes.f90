@@ -1,10 +1,10 @@
 module processes
   implicit none
+
   private
   public :: check_master, layout_procs
-!
+
 contains
-!
   subroutine layout_procs(n_procs, n_procs_row, n_procs_col)
     integer, intent(in) :: n_procs
     integer, intent(out) :: n_procs_row, n_procs_col
@@ -29,12 +29,12 @@ contains
     end do
   end subroutine layout_procs
 
+
   subroutine check_master(solver_type, is_master)
-    implicit none
     character(len=256), intent(in) :: solver_type
     logical, intent(out) :: is_master
     integer :: my_rank, n_procs
-!
+
     select case (trim(solver_type))
     case ('lapack')
       is_master = .true.
@@ -42,7 +42,5 @@ contains
       call blacs_pinfo(my_rank, n_procs)
       is_master = (my_rank == 0)
     end select
-!
   end subroutine check_master
-!
 end module processes

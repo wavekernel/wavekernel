@@ -2,11 +2,11 @@ module solver_eigenexa
   !use time, only : get_wclock_time
   use distribute_matrix, only : conf_distribution, gather_matrix, allgather_row_wise, copy_global_sparse_matrix_to_local
   use matrix_io, only : sparse_mat
-
   implicit none
 
   private
   public :: eigen_solver_eigenexa
+
 contains
   subroutine eigen_solver_eigenexa(mat, n_vec, eigenvalues, eigenvectors_global)
     use MPI
