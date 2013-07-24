@@ -23,6 +23,9 @@ contains
     integer :: ierr
     integer dummy1, dummy2
 
+    matrix%size = info%rows
+    matrix%num_non_zeros = info%entries
+
     allocate(matrix%suffix(2, info%entries), matrix%value(info%entries), &
          stat = ierr)
 

@@ -48,13 +48,12 @@ program eigen_test
   end if
 
   if (arg%n_check_vec /= 0) then
-    !call create_dense_matrix(verbose_level, mat_in, mat) todo: integrate into below
     if (arg%is_generalized_problem) then
-      !call lib_eigen_checker(arg, matrix_A, eigenvalues, eigenvectors, &
-      !     rn_ave, rn_max, matrix_B)
+      call lib_eigen_checker(arg, matrix_A, eigenvalues, eigenvectors, &
+           rn_ave, rn_max, matrix_B)
     else
-      !call lib_eigen_checker(arg, matrix_A, eigenvalues, eigenvectors, &
-      !     rn_ave, rn_max)
+      call lib_eigen_checker(arg, matrix_A, eigenvalues, eigenvectors, &
+           rn_ave, rn_max)
     end if
     write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
   endif

@@ -1,4 +1,6 @@
 module solver_main
+  use command_argument, only : argument
+  use matrix_io, only : sparse_mat
   use distribute_matrix, only : create_dense_matrix !(routine)
   implicit none
 
@@ -7,41 +9,49 @@ module solver_main
   public :: lib_eigen_checker
 
 contains
-  subroutine lib_eigen_checker(a, n_vec, n_check_vec, eigen_level, v, rn_ave, rn_max)
+  subroutine lib_eigen_checker(arg, matrix_A, eigen_level, v, rn_ave, rn_max, matrix_B)
     implicit none
 
-    real(kind(1.d0)), intent(in) :: a(:,:)
-    real(kind(1.d0)), intent(in) :: v(:,:)
+    type(argument), intent(in) :: arg
+    type(sparse_mat), intent(in) :: matrix_A
+    type(sparse_mat), intent(in), optional :: matrix_B
     real(kind(1.d0)), intent(in) :: eigen_level(:)
-    integer, intent(in) :: n_vec, n_check_vec
+    real(kind(1.d0)), intent(in) :: v(:,:)
     real(kind(1.d0)), intent(out) :: rn_ave, rn_max      ! residual norm average, max
 
+    real(kind(1.d0)), allocatable :: a(:,:)
+    real(kind(1.d0)), allocatable :: b(:,:)
     real(kind(1.d0)), allocatable :: r(:)   ! residual vector (work array)
     real(kind(1.d0)), allocatable :: rn(:)  ! residual norm
 
     integer :: n, ierr, j
 
-    n = size(a, 1)
+    if (present(matrix_B)) then
+      print *, 'result checker for generalized eigenvalue problem is not implemeted yet'
+      return
+    end if
 
-    if (n_check_vec < 1 .or. n_check_vec > n_vec) then
-      print *, 'ERROR(lib_eigen_checker): n, n_vec, n_check_vec = ', n, n_vec, n_check_vec
+    n = matrix_A%size
+
+    if (arg%n_check_vec < 1 .or. arg%n_check_vec > arg%n_vec) then
+      print *, 'ERROR(lib_eigen_checker): n, n_vec, n_check_vec = ', &
+           n, arg%n_vec, arg%n_check_vec
       stop
     endif
 
-    allocate(r(n), stat=ierr)
-    if (ierr /= 0) stop 'Alloc error (la_eigen_solver_check) for w'
+    allocate(r(n), rn(arg%n_check_vec), a(n, n), stat = ierr)
+    if (ierr /= 0) stop 'Alloc error (eigen_solver_check)'
 
-    allocate(rn(n_check_vec), stat=ierr)
-    if (ierr /= 0) stop 'Alloc error (la_eigen_solver_check) for rn'
     rn(:) = 0.0d0
+    call create_dense_matrix(0, matrix_A, a)
 
-    do j=1,n_check_vec
+    do j = 1, arg%n_check_vec
       r(:) = matmul(a, v(:, j)) - eigen_level(j) * v(:, j)  ! redisual vector
       rn(j) = sqrt(abs(dot_product(r, r))) / sqrt(abs(dot_product(v(:, j), v(:, j))))
     enddo
 
     rn_max = maxval(rn)
-    rn_ave = sum(rn) / dble(n_vec)
+    rn_ave = sum(rn) / dble(arg%n_vec)
   end subroutine lib_eigen_checker
 
 
@@ -98,6 +108,7 @@ contains
       call eigen_solver_scalapack_select(conf, desc, mat_dist, arg%n_vec, &
            eigenvalues, eigenvectors)
     case ('eigenexa')
+      stop 'Eigen Exa is not supported yet'
       call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenvalues, eigenvectors)
     case default
       write(*,*) 'Error(lib_eigen_solver): solver type=', trim(arg%solver_type)
