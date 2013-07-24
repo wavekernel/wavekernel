@@ -18,5 +18,5 @@ matrix_dir=/work/k0099/k009914/matrix
 size=400
 matrix=$matrix_dir/ELSES_MATRIX_VCNT${size}std_A.mtx
 
-#mpiexec ./bin/eigen -solver=scalapack_select -n_vec=1000 -n_check_vec=5 $matrix
-mpiexec ./bin/eigen -solver=scalapack_all -n_check_vec=5 $matrix
+#mpiexec ./bin/eigen -s scalapack_select -n 200 -c 5 $matrix
+mpiexec ./bin/eigen -s scalapack_all $matrix
