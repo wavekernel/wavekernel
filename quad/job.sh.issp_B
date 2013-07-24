@@ -4,5 +4,5 @@
 #BSUB -n 1
 
 # Usage: bsub -W 1 < job.sh
-mpijob -np 4 “./pi-quad-prec reduce > out/o_quad_reduce”
-mpijob -np 4 “./pi-quad-prec gather > out/o_quad_gather”
+mpijob -np 4 "./pi-quad-prec reduce > out/o_quad_reduce"
+mpijob -np 4 "./pi-quad-prec gather > out/o_quad_gather"
