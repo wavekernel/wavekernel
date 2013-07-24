@@ -36,7 +36,7 @@ contains
     open(iunit, file = filename)
 
     ! read_matrix_file_header is added to skip comment lines
-    call read_matrix_file_header(0, iunit, 'real_symmetric', dummy1, dummy2)
+    call read_matrix_file_header(0, iunit, dummy1, dummy2)
     call read_matrix_file_value(0, iunit, info%rows, &
          info%entries, matrix%value, matrix%suffix)
 
@@ -44,11 +44,10 @@ contains
   end subroutine read_matrix_file
 
 
-  subroutine read_matrix_file_header(verbose_level, unit_num, matrix_type, mat_size, num_non_zeros)
+  subroutine read_matrix_file_header(verbose_level, unit_num, mat_size, num_non_zeros)
     implicit none
     integer, intent(in) :: verbose_level
     integer, intent(in) :: unit_num
-    character(len=256), intent(in) :: matrix_type
     integer, intent(out) :: mat_size
     integer, intent(out) :: num_non_zeros
 
