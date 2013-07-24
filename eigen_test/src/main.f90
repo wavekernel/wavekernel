@@ -59,7 +59,6 @@ program eigen_test
     write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
   endif
 
-  write(*,*)'Plot the eigen values into the file :', trim(arg%output_filename)
   iunit=70
   open (iunit, file=arg%output_filename, status='unknown')
   do j=1,arg%n_vec

@@ -15,12 +15,13 @@ contains
   subroutine read_matrix_file(filename, info, matrix)
     implicit none
 
-    character(len = 256), intent(in) :: filename
+    character(*), intent(in) :: filename
     type(matrix_info), intent(in) :: info
     type(sparse_mat), intent(out) :: matrix
 
     integer, parameter :: iunit = 8
     integer :: ierr
+    integer dummy1, dummy2
 
     allocate(matrix%suffix(2, info%entries), matrix%value(info%entries), &
          stat = ierr)
@@ -31,6 +32,8 @@ contains
 
     open(iunit, file = filename)
 
+    ! read_matrix_file_header is added to skip comment lines
+    call read_matrix_file_header(0, iunit, 'real_symmetric', dummy1, dummy2)
     call read_matrix_file_value(0, iunit, info%rows, &
          info%entries, matrix%value, matrix%suffix)
 
@@ -98,21 +101,6 @@ contains
 
     if (keyword_symmetric_exist) then
       if (debug_mode) write(*,'(a)') '  INFO:keyword found : symmetric'
-    endif
-
-    ! Check the file type
-    if (trim(matrix_type) == 'real_symmetric') then
-      if (.not. keyword_real_exist) then
-        write(*,*)'ERROR:keyword_real_exist =', keyword_real_exist
-        stop
-      endif
-      if (.not. keyword_symmetric_exist) then
-        write(*,*)'ERROR:keyword_symmetric_exist =', keyword_symmetric_exist
-        stop
-      endif
-    else
-      write(*,*)'ERROR:unsupported matrix type :', trim(matrix_type)
-      stop
     endif
 
     ! Plot the comment lines

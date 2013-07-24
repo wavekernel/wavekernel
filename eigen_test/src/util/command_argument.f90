@@ -10,8 +10,8 @@ module command_argument
   end type matrix_info
 
   type argument
-    character(len=256) :: matrix_A_filename
-    character(len=256) :: matrix_B_filename ! Empty means standard eigenvalue problem
+    character(len=256) :: matrix_A_filename = ''
+    character(len=256) :: matrix_B_filename = '' ! Empty means standard eigenvalue problem
     type(matrix_info) :: matrix_A_info, matrix_B_info
     character(len=256) :: solver_type
     character(len=256) :: output_filename = 'eigenvalues.dat'
@@ -95,6 +95,11 @@ contains
 
     arg%is_generalized_problem = (len_trim(arg%matrix_B_filename) /= 0)
 
+    call wrap_mminfo(arg%matrix_A_filename, arg%matrix_A_info)
+    if (arg%is_generalized_problem) then
+      call wrap_mminfo(arg%matrix_B_filename, arg%matrix_B_info)
+    end if
+
     if (arg%n_vec == -1) then ! unspecified in command line arguments
       arg%n_vec = arg%matrix_A_info%rows
     end if
@@ -108,8 +113,41 @@ contains
     end if
   end subroutine read_command_argument
 
+
+  subroutine print_matrix_info(name, info)
+    character(*), intent(in) :: name
+    type(matrix_info), intent(in) :: info
+
+    print "('matrix ', A, ' field: ', A)", name, trim(info%field)
+    print "('matrix ', A, ' symm: ', A)", name, trim(info%symm)
+    print "('matrix ', A, ' rows: ', I0)", name, info%rows
+    print "('matrix ', A, ' cols: ', I0)", name, info%cols
+    print "('matrix ', A, ' entries: ', I0)", name, info%entries
+  end subroutine print_matrix_info
+
+
   subroutine print_command_argument(arg)
     type(argument), intent(in) :: arg
-    ! not implemented
+
+    print *, '----- Settings -----'
+
+    if (arg%is_generalized_problem) then
+      print *, 'problem type: generalized'
+    else
+      print *, 'problem type: standard'
+    end if
+
+    print *, 'matrix A file: ', trim(arg%matrix_A_filename)
+    call print_matrix_info('A', arg%matrix_A_info)
+
+    if (arg%is_generalized_problem) then
+      print *, 'matrix B file: ', trim(arg%matrix_B_filename)
+      call print_matrix_info('B', arg%matrix_B_info)
+    end if
+
+    print *, 'solver: ', trim(arg%solver_type)
+    print *, 'output file: ', trim(arg%output_filename)
+    print *, 'computed eigenpairs: ', arg%n_vec
+    print *, 'verified eigenpairs: ', arg%n_check_vec
   end subroutine print_command_argument
 end module command_argument
