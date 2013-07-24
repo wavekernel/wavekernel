@@ -69,11 +69,11 @@ contains
           argi = argi + 1
         case ('n')
           call get_command_argument(argi + 1, arg_str)
-          write (arg_str, *) arg%n_vec
+          read (arg_str, *) arg%n_vec
           argi = argi + 1
         case ('c')
           call get_command_argument(argi + 1, arg_str)
-          write (arg_str, *) arg%n_check_vec
+          read (arg_str, *) arg%n_check_vec
           argi = argi + 1
         case ('o')
           call get_command_argument(argi + 1, arg_str)
