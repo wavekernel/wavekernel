@@ -1,4 +1,5 @@
 module matrix_io
+  use command_argument, only : matrix_info
   implicit none
 
   type sparse_mat
@@ -11,94 +12,30 @@ module matrix_io
   public :: read_matrix_file, print_matrix, sparse_mat
 
 contains
-  subroutine read_matrix_file(verbose_level, mtx_filename, matrix_type, mat)
+  subroutine read_matrix_file(filename, info, matrix)
     implicit none
 
-    integer, intent(in) :: verbose_level
-    character(len=256), intent(in) :: mtx_filename
-    character(len=256), intent(in) :: matrix_type
-    type(sparse_mat), intent(out) :: mat
-    integer, parameter :: unit_num=1
+    character(len = 256), intent(in) :: filename
+    type(matrix_info), intent(in) :: info
+    type(sparse_mat), intent(out) :: matrix
+
+    integer, parameter :: iunit = 8
     integer :: ierr
-    logical :: debug_mode
 
-    if (verbose_level >= 100) then
-      debug_mode = .true.
-    else
-      debug_mode = .false.
-    endif
+    allocate(matrix%suffix(2, info%entries), matrix%value(info%entries), &
+         stat = ierr)
 
-    if (debug_mode) write(*,'(a)')'@@ read_matrix_file'
-
-    if (debug_mode) write(*,'(a,a)')'  filename=', trim(mtx_filename)
-
-    call check_file_name(verbose_level, mtx_filename)
-
-    open(unit_num,file=mtx_filename)
-
-    call read_matrix_file_header(verbose_level, unit_num, matrix_type, mat%size, mat%num_non_zeros)
-
-    allocate (mat%suffix(2, mat%num_non_zeros), stat = ierr)
     if (ierr /= 0) then
-      write(*,*)'ERROR in allocation : mat_suffix'
-      stop
-    endif
+      stop 'ERROR read_matrix_filematrix_io : allcation failed'
+    end if
 
-    if (trim(matrix_type) == 'real_symmetric') then
-      allocate (mat%value(mat%num_non_zeros), stat = ierr)
-      if (ierr /= 0) then
-        write(*,*)'ERROR in allocation : mat_value'
-        stop
-      endif
-    else
-      write(*,*) 'ERROR:unsuported matrix type = ',trim(matrix_type)
-    endif
+    open(iunit, file = filename)
 
-    call read_matrix_file_value(verbose_level, unit_num, mat%size, mat%num_non_zeros, mat%value, mat%suffix)
+    call read_matrix_file_value(0, iunit, info%rows, &
+         info%entries, matrix%value, matrix%suffix)
 
-    close(unit_num)
+    close(iunit)
   end subroutine read_matrix_file
-
-
-  subroutine check_file_name(verbose_level, mtx_filename)
-    implicit none
-    integer, intent(in) :: verbose_level
-    character(len=256), intent(in) :: mtx_filename
-
-    logical :: debug_mode
-
-    logical :: file_exist
-    integer :: k
-
-    if (verbose_level >= 100) then
-      debug_mode = .true.
-    else
-      debug_mode = .false.
-    endif
-
-    if (debug_mode) write(*,'(a)')'@@ read_matrix_file_header'
-
-    if (debug_mode) write(*,'(a,a)')'  filename=', trim(mtx_filename)
-    if (debug_mode) write(*,*)'verbose level =', verbose_level
-
-    ! Check the filename
-    inquire (file = trim(mtx_filename), exist = file_exist)
-    if (.not. file_exist) then
-      write(*,*)' ERROR:No matrix file: filename=', trim(mtx_filename)
-      stop
-    else
-      if (debug_mode) write(*,*)' INFO: Matrix file founded : filename=',trim(mtx_filename)
-    endif
-
-    ! Check the extension
-    k = len_trim(mtx_filename)
-    if (mtx_filename(k-3:k) /= '.mtx') then
-      write(*,*)'ERROR:Wrong file : filename=', trim(mtx_filename)
-      stop
-    else
-      if (debug_mode) write(*,*)'The extension of the is checked: filename=',trim(mtx_filename)
-    endif
-  end subroutine check_file_name
 
 
   subroutine read_matrix_file_header(verbose_level, unit_num, matrix_type, mat_size, num_non_zeros)

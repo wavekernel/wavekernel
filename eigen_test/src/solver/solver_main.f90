@@ -45,7 +45,8 @@ contains
   end subroutine lib_eigen_checker
 
 
-  subroutine lib_eigen_solver(mat, solver_type, n_vec, eigenvalues, eigenvectors)
+  subroutine lib_eigen_solver(arg, matrix_A, eigenvalues, eigenvectors, matrix_B)
+    use command_argument, only : argument
     use solver_lapack, only : eigen_solver_lapack
     use solver_scalapack_all, only : eigen_solver_scalapack_all
     use solver_scalapack_select, only : eigen_solver_scalapack_select
@@ -56,19 +57,19 @@ contains
          copy_global_sparse_matrix_to_local
     implicit none
 
-    type(sparse_mat), intent(in) :: mat
-    character(len=*), intent(in) :: solver_type
-    integer, intent(in) :: n_vec
+    type(argument) :: arg
+    type(sparse_mat), intent(in) :: matrix_A
+    type(sparse_mat), intent(in), optional :: matrix_B
     real(kind(1.d0)), intent(out), allocatable :: eigenvalues(:), eigenvectors(:, :)
 
     integer :: n, desc(9)
     type(conf_distribution) :: conf
     real(kind(1.d0)), allocatable :: a(:, :), mat_dist(:, :)
 
-    n = mat%size
+    n = arg%matrix_A_info%rows
 
-    if ((n_vec < 0) .or. (n_vec > n)) then
-      write(*,*) 'Error(lib_eigen_solver):n, n_vec=',n,n_vec
+    if ((arg%n_vec < 0) .or. (arg%n_vec > n)) then
+      write(*,*) 'Error(lib_eigen_solver): n, n_vec=', n, arg%n_vec
       stop
     endif
 
@@ -77,28 +78,29 @@ contains
     allocate(eigenvectors(n, n))
     eigenvectors(:, :) = 0.0d0
 
-    select case (trim(solver_type))
+    select case (trim(arg%solver_type))
     case ('lapack')
-      call create_dense_matrix(0, mat, a)
+      call create_dense_matrix(0, matrix_A, a)
       call eigen_solver_lapack(a, eigenvalues)
       eigenvectors = a
     case ('scalapack_all')
-      if (n_vec < n) then
+      if (arg%n_vec < n) then
         stop 'Error(lib_eigen_solver): this solver does not support partial eigenvalue computation'
       end if
       call setup_distribution(n, conf)
       call setup_distributed_matrix(conf, desc, mat_dist)
-      call copy_global_sparse_matrix_to_local(mat, desc, mat_dist)
+      call copy_global_sparse_matrix_to_local(matrix_A, desc, mat_dist)
       call eigen_solver_scalapack_all(conf, desc, mat_dist, eigenvalues, eigenvectors)
     case ('scalapack_select')
       call setup_distribution(n, conf)
       call setup_distributed_matrix(conf, desc, mat_dist)
-      call copy_global_sparse_matrix_to_local(mat, desc, mat_dist)
-      call eigen_solver_scalapack_select(conf, desc, mat_dist, n_vec, eigenvalues, eigenvectors)
+      call copy_global_sparse_matrix_to_local(matrix_A, desc, mat_dist)
+      call eigen_solver_scalapack_select(conf, desc, mat_dist, arg%n_vec, &
+           eigenvalues, eigenvectors)
     case ('eigenexa')
-      call eigen_solver_eigenexa(mat, n_vec, eigenvalues, eigenvectors)
+      call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenvalues, eigenvectors)
     case default
-      write(*,*) 'Error(lib_eigen_solver):solver type=',trim(solver_type)
+      write(*,*) 'Error(lib_eigen_solver): solver type=', trim(arg%solver_type)
       stop
     end select
 

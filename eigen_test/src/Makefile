@@ -20,7 +20,10 @@ all: $(TARGET)
 
 F90 ?= $(FC)
 
-.SUFFIXES: .f90
+.SUFFIXES: .f .f90
+
+.f.o:
+	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
 
 .f90.o:
 	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
