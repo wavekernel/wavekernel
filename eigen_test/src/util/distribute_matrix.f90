@@ -62,6 +62,7 @@ contains
     call descinit(desc, conf%dim, conf%dim, conf%block_size, conf%block_size, &
          0, 0, conf%context, conf%n_local_row, info)
     allocate(mat(1 : conf%n_local_row, 1 : conf%n_local_col))
+    mat(:, :) = 0.0d0
   end subroutine setup_distributed_matrix
 
 
