@@ -45,6 +45,7 @@ contains
   integer function validate_argument(arg)
     type(argument), intent(in) :: arg
 
+    ! for all eigenpair computation, n_vec = n?
     ! file exists?
     ! square matrix?
     validate_argument = 0 ! Not implemented yet

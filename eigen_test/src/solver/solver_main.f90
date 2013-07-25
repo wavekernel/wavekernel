@@ -94,9 +94,6 @@ contains
       call eigen_solver_lapack(a, eigenvalues)
       eigenvectors = a
     case ('scalapack_all')
-      if (arg%n_vec < n) then
-        stop 'Error(lib_eigen_solver): this solver does not support partial eigenvalue computation'
-      end if
       call setup_distribution(n, conf)
       call setup_distributed_matrix(conf, desc, mat_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc, mat_dist)
