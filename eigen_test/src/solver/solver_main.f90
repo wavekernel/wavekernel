@@ -72,9 +72,10 @@ contains
     type(sparse_mat), intent(in), optional :: matrix_B
     real(kind(1.d0)), intent(out), allocatable :: eigenvalues(:), eigenvectors(:, :)
 
-    integer :: n, desc(9)
-    type(conf_distribution) :: conf
-    real(kind(1.d0)), allocatable :: a(:, :), mat_dist(:, :)
+    integer :: n, desc_A(9), desc_B(9)
+    type(conf_distribution) :: conf_A, conf_B
+    real(kind(1.d0)), allocatable :: a(:, :), &
+         matrix_A_dist(:, :), matrix_B_dist(:, :)
 
     n = arg%matrix_A_info%rows
 
@@ -94,16 +95,16 @@ contains
       call eigen_solver_lapack(a, eigenvalues)
       eigenvectors = a
     case ('scalapack_all')
-      call setup_distribution(n, conf)
-      call setup_distributed_matrix(conf, desc, mat_dist)
-      call copy_global_sparse_matrix_to_local(matrix_A, desc, mat_dist)
-      call eigen_solver_scalapack_all(conf, desc, mat_dist, eigenvalues, eigenvectors)
+      call setup_distribution(n, conf_A)
+      call setup_distributed_matrix(conf_A, desc_A, matrix_A_dist)
+      call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
+      call eigen_solver_scalapack_all(conf_A, desc_A, matrix_A_dist, eigenvalues, eigenvectors)
     case ('scalapack_select')
-      call setup_distribution(n, conf)
-      call setup_distributed_matrix(conf, desc, mat_dist)
-      call copy_global_sparse_matrix_to_local(matrix_A, desc, mat_dist)
-      call eigen_solver_scalapack_select(conf, desc, mat_dist, arg%n_vec, &
-           eigenvalues, eigenvectors)
+      call setup_distribution(n, conf_A)
+      call setup_distributed_matrix(conf_A, desc_A, matrix_A_dist)
+      call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
+      call eigen_solver_scalapack_select(conf_A, desc_A, matrix_A_dist, &
+           arg%n_vec, eigenvalues, eigenvectors)
     case ('eigenexa')
       stop 'Eigen Exa is not supported yet'
       call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenvalues, eigenvectors)
