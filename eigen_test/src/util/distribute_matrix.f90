@@ -3,14 +3,19 @@ module distribute_matrix
   use matrix_io, only : sparse_mat
   implicit none
 
-  type conf_distribution
-    integer :: dim, my_rank, n_procs, context
+  type processor
+    integer :: my_rank, n_procs, context
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
-    integer :: block_size, n_local_row, n_local_col
-  end type conf_distribution
+  end type processor
+
+  type distribution
+    integer :: dim, block_size, n_local_row, n_local_col
+    integer :: desc(9) ! duplicated information for convenience
+  end type distribution
 
   private
-  public :: conf_distribution, setup_distribution, setup_distributed_matrix, &
+  public :: processor, distribution, &
+       setup_distribution, setup_distributed_matrix, &
        copy_global_dense_matrix_to_local, copy_global_sparse_matrix_to_local, &
        create_dense_matrix, gather_matrix, allgather_row_wise
 
