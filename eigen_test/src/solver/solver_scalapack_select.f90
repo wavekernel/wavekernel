@@ -4,25 +4,28 @@
 !================================================================
 module solver_scalapack_select
   use time, only : get_wclock_time
-  use distribute_matrix, only : conf_distribution, gather_matrix, allgather_row_wise
+  use distribute_matrix, only : &
+       process, get_local_cols, gather_matrix, allgather_row_wise, &
+       desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
+       rsrc_, csrc_, local_rows_
   implicit none
 
   private
   public :: eigen_solver_scalapack_select
 
 contains
-  subroutine eigen_solver_scalapack_select(conf, desc_A, A, n_vec, eigen_level, eigenvectors_global)
+  subroutine eigen_solver_scalapack_select(proc, desc_A, A, n_vec, eigen_level, eigenvectors_global)
     implicit none
 
     include 'mpif.h'
 
-    type(conf_distribution) :: conf
+    type(process) :: proc
     integer, intent(in) :: desc_A(9), n_vec
     real(kind(1.d0)), intent(in) :: A(:, :)
     real(kind(1.d0)), intent(out) :: eigen_level(:), eigenvectors_global(:, :)
 
     integer :: ierr, info
-    integer :: work_size, iwork_size
+    integer :: dim, work_size, iwork_size
     integer :: desc_Eigenvectors(9)
 
     real(kind(1.d0)), allocatable :: Eigenvectors(:, :)
@@ -49,31 +52,34 @@ contains
 
     call get_wclock_time(t_init)
 
-    call descinit(desc_Eigenvectors, conf%dim, conf%dim, &
-    conf%block_size, conf%block_size, 0, 0, conf%context, conf%n_local_row, info)
-    allocate(Eigenvectors(1 : conf%n_local_row, 1 : conf%n_local_col))
+    dim = desc_A(rows_)
+
+    call descinit(desc_Eigenvectors, dim, dim, desc_A(block_row_), &
+         desc_A(block_col_), 0, 0, proc%context, desc_A(local_rows_), info)
+    allocate(Eigenvectors(1 : desc_Eigenvectors(local_rows_), &
+         1 : get_local_cols(proc, desc_Eigenvectors)))
     Eigenvectors(:, :) = 0.0
 
-    work_size = max(3, work_size_for_pdsyevx('V', conf%dim, desc_A, conf%dim))
-    iwork_size = 6 * max(conf%dim, conf%n_procs_row * conf%n_procs_col + 1, 4)
-    allocate(eigenvalues(conf%dim))
+    work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))
+    iwork_size = 6 * max(dim, proc%n_procs_row * proc%n_procs_col + 1, 4)
+    allocate(eigenvalues(dim))
     allocate(work(work_size))
     allocate(iwork(iwork_size))
-    allocate(ifail(conf%dim))
-    allocate(iclustr(2 * conf%n_procs_row * conf%n_procs_col))
-    allocate(gap(conf%n_procs_row * conf%n_procs_col))
+    allocate(ifail(dim))
+    allocate(iclustr(2 * proc%n_procs_row * proc%n_procs_col))
+    allocate(gap(proc%n_procs_row * proc%n_procs_col))
 
     jobz = 'V'
     range = 'I'
     abstol = 2.0 * pdlamch(desc_A(2), 'S')
     orfac = 1.e-3_8
-    call pdsyevx(jobz, range, 'L', conf%dim, A, 1, 1, Desc_A, &
+    call pdsyevx(jobz, range, 'L', dim, A, 1, 1, Desc_A, &
          0, 0, 1, n_vec, abstol, n_eigenvalues, n_eigenvectors, eigenvalues, &
          orfac, Eigenvectors, 1, 1, desc_Eigenvectors, &
          work, work_size, iwork, iwork_size, &
          ifail, iclustr, gap, info)
-    if (conf%my_rank == 0) then
-      call pdsyevx_report(conf%context, jobz, abstol, orfac, info, &
+    if (proc%my_rank == 0) then
+      call pdsyevx_report(proc%context, jobz, abstol, orfac, info, &
            n_eigenvalues, n_eigenvectors, ifail, iclustr)
     end if
 
@@ -85,7 +91,7 @@ contains
 
     t_intervals(1) = t_all_end - t_init
 
-    if (conf%my_rank == 0) then
+    if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
        print *, 'Elapse time (sec)'
        do i = 1, n_intervals

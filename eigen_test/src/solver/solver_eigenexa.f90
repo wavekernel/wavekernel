@@ -1,6 +1,6 @@
 module solver_eigenexa
   !use time, only : get_wclock_time
-  use distribute_matrix, only : conf_distribution, gather_matrix, allgather_row_wise, copy_global_sparse_matrix_to_local
+  use distribute_matrix, only : process, gather_matrix, allgather_row_wise, copy_global_sparse_matrix_to_local
   use matrix_io, only : sparse_mat
   implicit none
 

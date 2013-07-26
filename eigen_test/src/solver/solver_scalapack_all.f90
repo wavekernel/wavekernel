@@ -4,26 +4,29 @@
 !================================================================
 module solver_scalapack_all
   use time, only : get_wclock_time
-  use distribute_matrix, only : conf_distribution, gather_matrix, allgather_row_wise
+  use distribute_matrix, only : &
+       process, get_local_cols, gather_matrix, allgather_row_wise, &
+       desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
+       rsrc_, csrc_, local_rows_
   implicit none
 
   private
   public :: eigen_solver_scalapack_all
 
 contains
-  subroutine eigen_solver_scalapack_all(conf, desc_A, A, eigen_level, eigenvectors_global)
+  subroutine eigen_solver_scalapack_all(proc, desc_A, A, eigen_level, eigenvectors_global)
     implicit none
 
     include 'mpif.h'
 
-    type(conf_distribution) :: conf
+    type(process) :: proc
     integer, intent(in) :: desc_A(9)
     real(kind(1.d0)), intent(in) :: A(:, :)
     real(kind(1.d0)), intent(out) :: eigen_level(:), eigenvectors_global(:, :)
 
     integer :: ierr, info
-    integer :: work_size, iwork_size, diag_size, subdiag_size
-    integer :: desc_Eigenvectors(9)
+    integer :: dim, work_size, iwork_size, diag_size, subdiag_size
+    integer :: desc_Eigenvectors(9), eigenvectors_local_cols
 
     character(len = 1) :: uplo, compz, side, trans
 
@@ -47,49 +50,52 @@ contains
 
     call get_wclock_time(t_init)
 
-    diag_size = numroc(conf%dim, conf%block_size, conf%my_proc_col, 0, conf%n_procs_col)
-    subdiag_size = numroc(conf%dim - 1, conf%block_size, conf%my_proc_col, 0, conf%n_procs_col)
-    work_size = max(conf%block_size * (conf%n_local_row + 1), 3 * conf%block_size)
+    dim = desc_A(rows_)
+    diag_size = numroc(dim, desc_A(block_col_), proc%my_proc_col, 0, proc%n_procs_col)
+    subdiag_size = numroc(dim - 1, desc_A(block_col_), proc%my_proc_col, 0, proc%n_procs_col)
+    work_size = max(desc_A(block_row_) * (desc_A(local_rows_) + 1), 3 * desc_A(block_row_))
 
     allocate(diag_local(diag_size))
     allocate(subdiag_local(subdiag_size))
     allocate(tau(diag_size))
     allocate(work(work_size))
-    allocate(work_print(conf%block_size))
+    allocate(work_print(desc_A(block_row_)))
 
     call get_wclock_time(t_pdsytrd)
 
     uplo = 'l'
-    call pdsytrd(uplo, conf%dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
+    call pdsytrd(uplo, dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
     deallocate(work)
-    if (conf%my_rank == 0) then
+    if (proc%my_rank == 0) then
        print *, 'info(pdsytrd): ', info
     end if
 
     call get_wclock_time(t_pdsytrd_end)
 
-    allocate(diag_global(conf%dim))
-    allocate(subdiag_global(conf%dim - 1))
+    allocate(diag_global(dim))
+    allocate(subdiag_global(dim - 1))
 
-    call allgather_row_wise(diag_local, conf%context, conf%block_size, diag_global)
-    call allgather_row_wise(subdiag_local, conf%context, conf%block_size, subdiag_global)
+    call allgather_row_wise(diag_local, proc%context, desc_A(block_col_), diag_global)
+    call allgather_row_wise(subdiag_local, proc%context, desc_A(block_col_), subdiag_global)
 
-    call descinit(desc_Eigenvectors, conf%dim, conf%dim, conf%block_size, conf%block_size, &
-         0, 0, conf%context, conf%n_local_row, info)
-
-    allocate(Eigenvectors(1 : conf%n_local_row, 1 : conf%n_local_col))
+    call descinit(desc_Eigenvectors, dim, dim, desc_A(block_row_), desc_A(block_col_), &
+         0, 0, proc%context, desc_A(local_rows_), info)
+    eigenvectors_local_cols = get_local_cols(proc, desc_Eigenvectors)
+    allocate(Eigenvectors(1 : desc_Eigenvectors(local_rows_), &
+         1 : eigenvectors_local_cols))
     Eigenvectors(:, :) = 0.0
 
-    work_size = 6 * conf%dim + 2 * conf%n_local_row * conf%n_local_col
-    iwork_size = 2 + 7 * conf%dim + 8 * conf%n_procs_col
+    work_size = 6 * dim + 2 * desc_Eigenvectors(local_rows_) * &
+         eigenvectors_local_cols
+    iwork_size = 2 + 7 * dim + 8 * proc%n_procs_col
     allocate(work(work_size))
     allocate(iwork(iwork_size))
 
     call get_wclock_time(t_pdstedc)
 
-    call pdstedc('i', conf%dim, diag_global, subdiag_global, Eigenvectors, 1, 1, &
+    call pdstedc('i', dim, diag_global, subdiag_global, Eigenvectors, 1, 1, &
          desc_Eigenvectors, work, work_size, iwork, iwork_size, info)
-    if (conf%my_rank == 0) then
+    if (proc%my_rank == 0) then
        print *, 'info(pdstedc): ', info
     end if
 
@@ -98,13 +104,13 @@ contains
     eigen_level(:) = diag_global(:)
 
     side = 'l'
-    work_size = work_size_for_pdormtr(side, uplo, conf%dim, conf%dim, 1, 1, 1, 1, desc_A, desc_Eigenvectors)
+    work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, desc_Eigenvectors)
     deallocate(work)
     allocate(work(work_size))
 
-    call pdormtr(side, uplo, 'n', conf%dim, conf%dim, A, 1, 1, desc_A, tau, &
+    call pdormtr(side, uplo, 'n', dim, dim, A, 1, 1, desc_A, tau, &
          Eigenvectors, 1, 1, desc_Eigenvectors, work, work_size, info)
-    if (conf%my_rank == 0) then
+    if (proc%my_rank == 0) then
        print *, 'info(pdormtr): ', info
     end if
 
@@ -124,7 +130,7 @@ contains
     t_intervals(6) = t_all_end - t_pdormtr_end
     t_intervals(7) = t_all_end - t_init
 
-    if (conf%my_rank == 0) then
+    if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
        print *, 'Elapse time (sec)'
        do i = 1, n_intervals
