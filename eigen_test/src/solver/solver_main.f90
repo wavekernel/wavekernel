@@ -100,17 +100,9 @@ contains
       stop
     endif
 
-    !allocate(eigenvalues(n))
-    !eigenvalues(:) = 0.0d0
-    !allocate(eigenvectors(n, n))
-    !eigenvectors(:, :) = 0.0d0
-
     select case (trim(arg%solver_type))
     case ('lapack')
-!      call initialize_eigenpairs_local(n, arg%n_vec, eigenpairs)
       call eigen_solver_lapack(matrix_A, eigenpairs)
-      ! print *, associated(eigenpairs%local%vectors)
-      ! print *, eigenpairs%local%values(1)
     case ('scalapack_all')
       call setup_distribution(proc)
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
