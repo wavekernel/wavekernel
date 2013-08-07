@@ -10,23 +10,27 @@ module solver_lapack
 
 contains
   subroutine eigen_solver_lapack(mat, eigenpairs)
-   use time, only : get_wclock_time !(routine)
+   use time, only : get_wclock_time
+   use matrix_io, only : sparse_mat
+   use distribute_matrix, only : create_dense_matrix
    use eigenpairs_types, only : eigenpairs_types_union
    implicit none
 
-   real(kind(1.d0)), target, intent(inout) :: mat(:, :)
+   type(sparse_mat), target, intent(in) :: mat
    type(eigenpairs_types_union), intent(out) :: eigenpairs
 
    integer :: ierr, info
    integer :: n, lda, lwork
 
-   double precision, allocatable, target :: eigenvalues(:)
+   double precision, allocatable, target, save :: mat_work(:, :), eigenvalues(:)
 
    real(kind(1.d0)), allocatable :: work(:)
 
    real(kind(1.d0)) :: time_origin, elapse_time
 
-   n = size(mat, 1)
+   call create_dense_matrix(0, mat, mat_work)
+
+   n = mat%size
    lda = n
    lwork = n * n  ! Note: (lwork > 3*n-1 ) should be satisfied.
 
@@ -38,7 +42,7 @@ contains
 
    call get_wclock_time(time_origin)
 
-   call dsyev("V", "U", n, mat, lda, eigenvalues, &
+   call dsyev("V", "U", n, mat_work, lda, eigenvalues, &
         work, lwork, info)
 
    call get_wclock_time(elapse_time, time_origin)
@@ -47,12 +51,6 @@ contains
 
    eigenpairs%type_number = 1
    eigenpairs%local%values => eigenvalues
-   eigenpairs%local%vectors => mat
-
-   deallocate(work, stat=ierr)
-   if (ierr /= 0) then
-     write(*,*)'ERROR(eigen_solver_lapack): Dealloc. error work'
-     stop
-   endif
+   eigenpairs%local%vectors => mat_work
   end subroutine eigen_solver_lapack
 end module solver_lapack

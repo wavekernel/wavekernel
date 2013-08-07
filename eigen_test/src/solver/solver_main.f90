@@ -1,7 +1,7 @@
 module solver_main
   use command_argument, only : argument
   use matrix_io, only : sparse_mat
-  use distribute_matrix, only : create_dense_matrix !(routine)
+  use distribute_matrix, only : create_dense_matrix
   use eigenpairs_types, only: eigenpairs_types_union
   implicit none
 
@@ -91,8 +91,7 @@ contains
     integer :: n, desc_A(9), desc_B(9), info
     double precision :: scale
     type(process) :: proc
-    real(kind(1.d0)), allocatable :: a(:, :), &
-         matrix_A_dist(:, :), matrix_B_dist(:, :)
+    real(kind(1.d0)), allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :)
 
     n = arg%matrix_A_info%rows
 
@@ -108,9 +107,10 @@ contains
 
     select case (trim(arg%solver_type))
     case ('lapack')
-      call create_dense_matrix(0, matrix_A, a)
 !      call initialize_eigenpairs_local(n, arg%n_vec, eigenpairs)
-      call eigen_solver_lapack(a, eigenpairs)
+      call eigen_solver_lapack(matrix_A, eigenpairs)
+      ! print *, associated(eigenpairs%local%vectors)
+      ! print *, eigenpairs%local%values(1)
     case ('scalapack_all')
       call setup_distribution(proc)
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
