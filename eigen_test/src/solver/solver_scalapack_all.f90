@@ -31,9 +31,10 @@ contains
 
     character(len = 1) :: uplo, compz, side, trans
 
-    real(kind(1.d0)), allocatable, target :: Eigenvectors(:, :)
+    real(kind(1.d0)), allocatable, target, save :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: diag_local(:), subdiag_local(:)
-    real(kind(1.d0)), allocatable, target :: diag_global(:), subdiag_global(:)
+    real(kind(1.d0)), allocatable, target, save :: diag_global(:)
+    double precision, allocatable :: subdiag_global(:)
     real(kind(1.d0)), allocatable :: tau(:), work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
@@ -44,7 +45,7 @@ contains
     real(kind(1.d0)) :: t_init, t_pdsytrd, t_pdsytrd_end, t_pdstedc, &
          t_pdstedc_end, t_pdormtr_end, t_all_end
     character(*), parameter :: interval_names(n_intervals) = (/'init   ', &
-         'pdsytrd', 'gather1', 'pdstedc', 'pdormtr', 'gather2', 'total  '/)
+         'pdsytrd', 'gather1', 'pdstedc', 'pdormtr', 'finish ', 'total  '/)
 
     ! Functions
     integer :: numroc, iceil
@@ -117,8 +118,6 @@ contains
 
     ! call pdlaprnt(dim, dim, Eigenvectors, 1, 1, desc_Eigenvectors, 0, 0, 'Eigenvectors', 6, work_print)
 
-    ! call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
-
     eigenpairs%type_number = 2
     eigenpairs%blacs%values => diag_global
     eigenpairs%blacs%desc(:) = desc_Eigenvectors(:)
@@ -145,9 +144,6 @@ contains
     else
        call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
     end if
-
-    call blacs_exit(0)
-
   end subroutine eigen_solver_scalapack_all
 
   integer function work_size_for_pdormtr(side, uplo, m, n, ia, ja, ic, jc, desc_A, desc_C) result(size)

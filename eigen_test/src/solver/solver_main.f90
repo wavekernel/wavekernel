@@ -1,8 +1,9 @@
 module solver_main
   use command_argument, only : argument
   use matrix_io, only : sparse_mat
-  use distribute_matrix, only : create_dense_matrix
+  use distribute_matrix, only : create_dense_matrix, gather_matrix
   use eigenpairs_types, only: eigenpairs_types_union
+  use processes, only : check_master
   implicit none
 
   private
@@ -57,9 +58,36 @@ contains
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
-    type(eigenpairs_types_union), intent(in) :: eigenpairs
+    type(eigenpairs_types_union), intent(inout) :: eigenpairs
     ! residual norm average, max
     double precision, intent(out) :: res_norm_ave, res_norm_max
+
+    double precision, allocatable, target, save :: eigenvectors_local(:, :)
+
+    logical :: is_master
+
+    call check_master(arg%solver_type, is_master)
+
+    if (eigenpairs%type_number == 2) then
+      eigenpairs%type_number = 1
+
+      if (is_master) then
+        allocate(eigenvectors_local(matrix_A%size, matrix_A%size))
+        eigenvectors_local(:, :) = 0.0d0
+      end if
+
+      eigenpairs%local%values => eigenpairs%blacs%values
+      call gather_matrix(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
+      0, 0, eigenvectors_local)
+
+      deallocate(eigenpairs%blacs%Vectors)
+
+      if (is_master) then
+        eigenpairs%local%vectors => eigenvectors_local
+      else
+        return
+      end if
+    end if
 
     if (eigenpairs%type_number == 1) then
       call eigen_checker_local(arg, matrix_A, eigenpairs, &

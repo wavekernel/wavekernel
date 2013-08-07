@@ -29,7 +29,7 @@ contains
     integer :: dim, work_size, iwork_size
     integer :: desc_Eigenvectors(9)
 
-    real(kind(1.d0)), allocatable, target :: Eigenvectors(:, :)
+    real(kind(1.d0)), allocatable, target, save :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
@@ -37,7 +37,8 @@ contains
     character :: jobz, range
     integer :: n_eigenvalues, n_eigenvectors
     integer, allocatable :: ifail(:), iclustr(:)
-    real(kind(1.d0)), allocatable, target :: eigenvalues(:), gap(:)
+    real(kind(1.d0)), allocatable, target, save :: eigenvalues(:)
+    double precision, allocatable :: gap(:)
     real(kind(1.d0)) :: abstol, orfac
 
     ! Time
@@ -84,11 +85,11 @@ contains
            n_eigenvalues, n_eigenvectors, ifail, iclustr)
     end if
 
-    !call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
     eigenpairs%type_number = 2
     eigenpairs%blacs%values => eigenvalues
     eigenpairs%blacs%desc(:) = desc_Eigenvectors(:)
     eigenpairs%blacs%Vectors => Eigenvectors
+    ! Todo: set vector_to_value_index_*
 
     call get_wclock_time(t_all_end)
 
@@ -103,8 +104,6 @@ contains
     else
        call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
     end if
-
-    call blacs_exit(0)
   end subroutine eigen_solver_scalapack_select
 
 

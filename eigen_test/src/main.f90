@@ -16,7 +16,7 @@ program eigen_test
   type(eigenpairs_types_union) :: eigenpairs
   real(kind(1.d0)) :: rn_ave, rn_max
 
-  integer :: j, iunit
+  integer :: j, iunit, ierr
 
   real(kind(1.d0)), allocatable :: mat_value(:,:)
   integer, allocatable :: mat_suffix(:,:)
@@ -57,6 +57,11 @@ program eigen_test
       write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
     end if
   endif
+
+  call mpi_finalize(ierr)
+  if (.not. is_master) then
+    stop
+  end if
 
   iunit=70
   open (iunit, file=arg%output_filename, status='unknown')

@@ -137,11 +137,13 @@ contains
 
 
   subroutine gather_matrix(mat, desc, dest_row, dest_col, global_mat)
-    real(kind(1.d0)), intent(in) :: mat(:, :)
-    integer, intent(in) :: desc(9), dest_row, dest_col
-    real(kind(1.d0)), intent(out) :: global_mat(:, :)
+    use time, only : get_wclock_time
 
-    real(kind(1.d0)), allocatable :: recv_buf(:, :)
+    double precision, intent(in) :: mat(:, :)
+    integer, intent(in) :: desc(9), dest_row, dest_col
+    double precision, intent(out) :: global_mat(:, :)
+
+    double precision, allocatable :: recv_buf(:, :)
     integer :: buf_size_row, buf_size_col
     integer :: m, n, mb, nb, m_local, n_local, context, m_recv, n_recv
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
@@ -151,10 +153,16 @@ contains
 
     integer :: numroc, iceil
 
+    double precision :: t_start, t_end
+
+    call get_wclock_time(t_start)
+
     m = desc(3)
     n = desc(4)
-    if (m /= size(global_mat, 1) .or. n /= size(global_mat, 2)) then
-       stop 'gather_matrix: illegal matrix size'
+    if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
+      if (m /= size(global_mat, 1) .or. n /= size(global_mat, 2)) then
+        stop 'gather_matrix: illegal matrix size'
+      end if
     end if
     mb = desc(5)
     nb = desc(6)
@@ -199,6 +207,9 @@ contains
     if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
        deallocate(recv_buf)
     end if
+
+    call get_wclock_time(t_end)
+    ! print *, 'gather time', my_proc_row, my_proc_col, (t_end - t_start)
   end subroutine gather_matrix
 
 
