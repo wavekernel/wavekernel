@@ -8,13 +8,14 @@ module solver_scalapack_select
        process, get_local_cols, gather_matrix, allgather_row_wise, &
        desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
        rsrc_, csrc_, local_rows_
+  use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
   private
   public :: eigen_solver_scalapack_select
 
 contains
-  subroutine eigen_solver_scalapack_select(proc, desc_A, A, n_vec, eigen_level, eigenvectors_global)
+  subroutine eigen_solver_scalapack_select(proc, desc_A, A, n_vec, eigenpairs)
     implicit none
 
     include 'mpif.h'
@@ -22,13 +23,13 @@ contains
     type(process) :: proc
     integer, intent(in) :: desc_A(9), n_vec
     real(kind(1.d0)), intent(in) :: A(:, :)
-    real(kind(1.d0)), intent(out) :: eigen_level(:), eigenvectors_global(:, :)
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: ierr, info
     integer :: dim, work_size, iwork_size
     integer :: desc_Eigenvectors(9)
 
-    real(kind(1.d0)), allocatable :: Eigenvectors(:, :)
+    real(kind(1.d0)), allocatable, target :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
@@ -36,7 +37,7 @@ contains
     character :: jobz, range
     integer :: n_eigenvalues, n_eigenvectors
     integer, allocatable :: ifail(:), iclustr(:)
-    real(kind(1.d0)), allocatable :: eigenvalues(:), gap(:)
+    real(kind(1.d0)), allocatable, target :: eigenvalues(:), gap(:)
     real(kind(1.d0)) :: abstol, orfac
 
     ! Time
@@ -83,9 +84,11 @@ contains
            n_eigenvalues, n_eigenvectors, ifail, iclustr)
     end if
 
-    eigen_level(:) = eigenvalues(:)
-
-    call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
+    !call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
+    eigenpairs%type_number = 2
+    eigenpairs%blacs%values => eigenvalues
+    eigenpairs%blacs%desc(:) = desc_Eigenvectors(:)
+    eigenpairs%blacs%Vectors => Eigenvectors
 
     call get_wclock_time(t_all_end)
 

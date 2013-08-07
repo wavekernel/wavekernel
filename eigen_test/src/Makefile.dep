@@ -1,8 +1,8 @@
-main.o : util/processes.o util/time.o util/distribute_matrix.o util/matrix_io.o util/command_argument.o solver/solver_main.o 
+main.o : util/eigenpairs_types.o util/processes.o util/time.o util/distribute_matrix.o util/matrix_io.o util/command_argument.o solver/solver_main.o 
 util/distribute_matrix.o : util/matrix_io.o util/processes.o 
 util/matrix_io.o : util/command_argument.o 
 solver/solver_eigenexa.o : util/matrix_io.o util/distribute_matrix.o 
-solver/solver_lapack.o : util/time.o 
-solver/solver_main.o : util/matrix_io.o solver/solver_eigenexa.o solver/solver_scalapack_select.o solver/solver_scalapack_all.o solver/solver_lapack.o util/command_argument.o util/distribute_matrix.o 
-solver/solver_scalapack_all.o : util/distribute_matrix.o util/time.o 
+solver/solver_lapack.o : util/eigenpairs_types.o util/time.o 
+solver/solver_main.o : solver/solver_eigenexa.o solver/solver_scalapack_select.o solver/solver_scalapack_all.o solver/solver_lapack.o util/eigenpairs_types.o util/distribute_matrix.o util/matrix_io.o util/command_argument.o 
+solver/solver_scalapack_all.o : util/eigenpairs_types.o util/distribute_matrix.o util/time.o 
 solver/solver_scalapack_select.o : util/distribute_matrix.o util/time.o 

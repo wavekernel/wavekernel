@@ -6,13 +6,14 @@ program eigen_test
   use distribute_matrix, only : create_dense_matrix !(routine)
   use time, only : data_and_time_wrapper !(routine)
   use processes, only : check_master !(routine)
+  use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
   type(argument) :: arg
 
   type(sparse_mat) :: matrix_A, matrix_B
   real(kind(1.d0)), allocatable :: mat(:,:)
-  real(kind(1.d0)), allocatable :: eigenvalues(:), eigenvectors(:, :)
+  type(eigenpairs_types_union) :: eigenpairs
   real(kind(1.d0)) :: rn_ave, rn_max
 
   integer :: j, iunit
@@ -38,30 +39,29 @@ program eigen_test
   end if
 
   if (arg%is_generalized_problem) then
-    call lib_eigen_solver(arg, matrix_A, eigenvalues, eigenvectors, matrix_B)
+    call lib_eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
   else
-    call lib_eigen_solver(arg, matrix_A, eigenvalues, eigenvectors)
-  end if
-
-  if (.not. is_master) then
-     stop
+    call lib_eigen_solver(arg, matrix_A, eigenpairs)
   end if
 
   if (arg%n_check_vec /= 0) then
     if (arg%is_generalized_problem) then
-      call lib_eigen_checker(arg, matrix_A, eigenvalues, eigenvectors, &
+      call lib_eigen_checker(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max, matrix_B)
     else
-      call lib_eigen_checker(arg, matrix_A, eigenvalues, eigenvectors, &
+      call lib_eigen_checker(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max)
     end if
-    write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
+
+    if (is_master) then
+      write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
+    end if
   endif
 
   iunit=70
   open (iunit, file=arg%output_filename, status='unknown')
   do j=1,arg%n_vec
-    write(iunit,'(i10,f20.12)') j, eigenvalues(j)
+    !write(iunit,'(i10,f20.12)') j, eigenvalues(j)
   enddo
 
   write(*,'(a)') '...the program ends'

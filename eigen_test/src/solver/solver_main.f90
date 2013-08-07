@@ -2,6 +2,7 @@ module solver_main
   use command_argument, only : argument
   use matrix_io, only : sparse_mat
   use distribute_matrix, only : create_dense_matrix !(routine)
+  use eigenpairs_types, only: eigenpairs_types_union
   implicit none
 
   private
@@ -9,53 +10,67 @@ module solver_main
   public :: lib_eigen_checker
 
 contains
-  subroutine lib_eigen_checker(arg, matrix_A, eigen_level, v, rn_ave, rn_max, matrix_B)
-    implicit none
-
+  subroutine eigen_checker_local(arg, matrix_A, eigenpairs, &
+       res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
-    real(kind(1.d0)), intent(in) :: eigen_level(:)
-    real(kind(1.d0)), intent(in) :: v(:,:)
-    real(kind(1.d0)), intent(out) :: rn_ave, rn_max      ! residual norm average, max
+    type(eigenpairs_types_union), intent(in) :: eigenpairs
 
-    real(kind(1.d0)), allocatable :: a(:,:)
-    real(kind(1.d0)), allocatable :: b(:,:)
-    real(kind(1.d0)), allocatable :: r(:)   ! residual vector (work array)
-    real(kind(1.d0)), allocatable :: rn(:)  ! residual norm
+    double precision, intent(out) :: res_norm_ave, res_norm_max
 
-    integer :: n, ierr, j
+    double precision, allocatable :: a(:,:)
+    double precision, pointer :: v(:,:)
+    double precision, allocatable :: res(:) ! residual vector
+    double precision, allocatable :: res_norm(:) ! residual norm
+
+    integer :: j, dim, ierr
 
     if (present(matrix_B)) then
       print *, 'result checker for generalized eigenvalue problem is not implemeted yet'
       return
     end if
 
-    n = matrix_A%size
+    dim = matrix_A%size
 
-    if (arg%n_check_vec < 1 .or. arg%n_check_vec > arg%n_vec) then
-      print *, 'ERROR(lib_eigen_checker): n, n_vec, n_check_vec = ', &
-           n, arg%n_vec, arg%n_check_vec
-      stop
-    endif
+    allocate(res(dim), res_norm(arg%n_check_vec), a(dim, dim), stat = ierr)
 
-    allocate(r(n), rn(arg%n_check_vec), a(n, n), stat = ierr)
-    if (ierr /= 0) stop 'Alloc error (eigen_solver_check)'
-
-    rn(:) = 0.0d0
+    res_norm(:) = 0.0d0
     call create_dense_matrix(0, matrix_A, a)
 
+    v => eigenpairs%local%vectors
+
     do j = 1, arg%n_check_vec
-      r(:) = matmul(a, v(:, j)) - eigen_level(j) * v(:, j)  ! redisual vector
-      rn(j) = sqrt(abs(dot_product(r, r))) / sqrt(abs(dot_product(v(:, j), v(:, j))))
+      res(:) = matmul(a, v(:, j)) - eigenpairs%local%values(j) * v(:, j)
+      res_norm(j) = sqrt(abs(dot_product(res, res) / dot_product(v(:, j), v(:, j))))
     enddo
 
-    rn_max = maxval(rn)
-    rn_ave = sum(rn) / dble(arg%n_vec)
+    res_norm_max = maxval(res_norm)
+    res_norm_ave = sum(res_norm) / dble(arg%n_vec)
+  end subroutine eigen_checker_local
+
+
+  subroutine lib_eigen_checker(arg, matrix_A, eigenpairs, &
+       res_norm_ave, res_norm_max, matrix_B)
+    implicit none
+
+    type(argument), intent(in) :: arg
+    type(sparse_mat), intent(in) :: matrix_A
+    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenpairs_types_union), intent(in) :: eigenpairs
+    ! residual norm average, max
+    double precision, intent(out) :: res_norm_ave, res_norm_max
+
+    if (eigenpairs%type_number == 1) then
+      call eigen_checker_local(arg, matrix_A, eigenpairs, &
+       res_norm_ave, res_norm_max, matrix_B)
+    else
+      print *, 'result checker for distributed output is not implemeted yet'
+    end if
   end subroutine lib_eigen_checker
 
 
-  subroutine lib_eigen_solver(arg, matrix_A, eigenvalues, eigenvectors, matrix_B)
+  subroutine lib_eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
     use command_argument, only : argument
     use solver_lapack, only : eigen_solver_lapack
     use solver_scalapack_all, only : eigen_solver_scalapack_all
@@ -65,14 +80,16 @@ contains
     use distribute_matrix, only : process, setup_distribution, &
          setup_distributed_matrix, copy_global_dense_matrix_to_local, &
          copy_global_sparse_matrix_to_local
+    use eigenpairs_types, only : eigenpairs_types_union
     implicit none
 
     type(argument) :: arg
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
-    real(kind(1.d0)), intent(out), allocatable :: eigenvalues(:), eigenvectors(:, :)
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    integer :: n, desc_A(9), desc_B(9)
+    integer :: n, desc_A(9), desc_B(9), info
+    double precision :: scale
     type(process) :: proc
     real(kind(1.d0)), allocatable :: a(:, :), &
          matrix_A_dist(:, :), matrix_B_dist(:, :)
@@ -84,30 +101,42 @@ contains
       stop
     endif
 
-    allocate(eigenvalues(n))
-    eigenvalues(:) = 0.0d0
-    allocate(eigenvectors(n, n))
-    eigenvectors(:, :) = 0.0d0
+    !allocate(eigenvalues(n))
+    !eigenvalues(:) = 0.0d0
+    !allocate(eigenvectors(n, n))
+    !eigenvectors(:, :) = 0.0d0
 
     select case (trim(arg%solver_type))
     case ('lapack')
       call create_dense_matrix(0, matrix_A, a)
-      call eigen_solver_lapack(a, eigenvalues)
-      eigenvectors = a
+!      call initialize_eigenpairs_local(n, arg%n_vec, eigenpairs)
+      call eigen_solver_lapack(a, eigenpairs)
     case ('scalapack_all')
       call setup_distribution(proc)
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
-      call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenvalues, eigenvectors)
+      call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
     case ('scalapack_select')
       call setup_distribution(proc)
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
-           arg%n_vec, eigenvalues, eigenvectors)
+           arg%n_vec, eigenpairs)
+    case ('general_scalapack_all')
+      call setup_distribution(proc)
+      call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
+      call setup_distributed_matrix(proc, n, n, desc_B, matrix_B_dist)
+      call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
+      call copy_global_sparse_matrix_to_local(matrix_B, desc_B, matrix_B_dist)
+      call pdpotrf('L', n, matrix_B_dist, 1, 1, desc_B, info)
+      call pdsygst(1, 'L', n, matrix_A_dist, 1, 1, desc_A, matrix_B_dist, &
+           1, 1, desc_B, scale, info)
+      !call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
+!      call pdtrtrs('L', 'T', 'N', n, n, matrix_A_dist, 1, 1, desc_A, &
+
     case ('eigenexa')
       stop 'Eigen Exa is not supported yet'
-      call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenvalues, eigenvectors)
+      !call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenpairs)
     case default
       write(*,*) 'Error(lib_eigen_solver): solver type=', trim(arg%solver_type)
       stop

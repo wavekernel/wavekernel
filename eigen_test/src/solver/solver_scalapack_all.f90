@@ -8,13 +8,14 @@ module solver_scalapack_all
        process, get_local_cols, gather_matrix, allgather_row_wise, &
        desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
        rsrc_, csrc_, local_rows_
+  use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
   private
   public :: eigen_solver_scalapack_all
 
 contains
-  subroutine eigen_solver_scalapack_all(proc, desc_A, A, eigen_level, eigenvectors_global)
+  subroutine eigen_solver_scalapack_all(proc, desc_A, A, eigenpairs)
     implicit none
 
     include 'mpif.h'
@@ -22,7 +23,7 @@ contains
     type(process) :: proc
     integer, intent(in) :: desc_A(9)
     real(kind(1.d0)), intent(in) :: A(:, :)
-    real(kind(1.d0)), intent(out) :: eigen_level(:), eigenvectors_global(:, :)
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: ierr, info
     integer :: dim, work_size, iwork_size, diag_size, subdiag_size
@@ -30,9 +31,9 @@ contains
 
     character(len = 1) :: uplo, compz, side, trans
 
-    real(kind(1.d0)), allocatable :: Eigenvectors(:, :)
+    real(kind(1.d0)), allocatable, target :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: diag_local(:), subdiag_local(:)
-    real(kind(1.d0)), allocatable :: diag_global(:), subdiag_global(:)
+    real(kind(1.d0)), allocatable, target :: diag_global(:), subdiag_global(:)
     real(kind(1.d0)), allocatable :: tau(:), work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
@@ -101,8 +102,6 @@ contains
 
     call get_wclock_time(t_pdstedc_end)
 
-    eigen_level(:) = diag_global(:)
-
     side = 'l'
     work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, desc_Eigenvectors)
     deallocate(work)
@@ -118,7 +117,14 @@ contains
 
     ! call pdlaprnt(dim, dim, Eigenvectors, 1, 1, desc_Eigenvectors, 0, 0, 'Eigenvectors', 6, work_print)
 
-    call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
+    ! call gather_matrix(Eigenvectors, desc_Eigenvectors, 0, 0, eigenvectors_global)
+
+    eigenpairs%type_number = 2
+    eigenpairs%blacs%values => diag_global
+    eigenpairs%blacs%desc(:) = desc_Eigenvectors(:)
+    eigenpairs%blacs%Vectors => Eigenvectors
+    eigenpairs%blacs%vector_to_value_index_start = 1
+    eigenpairs%blacs%vector_to_value_index_end = dim
 
     call get_wclock_time(t_all_end)
 
