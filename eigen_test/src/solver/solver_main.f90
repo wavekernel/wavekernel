@@ -37,8 +37,6 @@ contains
       call create_dense_matrix(0, matrix_B, b)
     end if
 
-    print *, 'bb'
-
     do j = 1, arg%n_check_vec
       left(:) = matmul(a, eigenpairs%local%vectors(:, j))
       if (arg%is_generalized_problem) then
