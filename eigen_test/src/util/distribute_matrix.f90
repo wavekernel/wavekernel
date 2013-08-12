@@ -85,54 +85,22 @@ contains
     type(sparse_mat), intent(in) :: mat_in
     real(kind(1.d0)), intent(out), allocatable :: mat(:,:)
 
-    integer, allocatable :: mat_chk(:,:)
     integer :: k, i, j, n
     integer :: ierr
 
-    logical :: debug_mode
-
-    if (verbose_level >= 100) then
-      debug_mode = .true.
-    else
-      debug_mode = .false.
-    endif
-
     n = mat_in%size
 
-    if (debug_mode) write(*,*)'@@ create_dense_matrix'
-
-    allocate (mat(n, n), stat = ierr)
-    if (ierr /= 0) stop 'Stop:error in alloc. for mat'
+    allocate (mat(n, n))
     mat(:, :) = 0.0d0
-
-    allocate (mat_chk(n, n), stat = ierr)
-    if (ierr /= 0) stop 'Stop:error in alloc. for mat'
-    mat_chk(:, :) = 0
 
     do k = 1, mat_in%num_non_zeros
       i = mat_in%suffix(1, k)
       j = mat_in%suffix(2, k)
       mat(i, j) = mat_in%value(k)
-      mat_chk(i, j) = mat_chk(i, j) + 1
       if (i /= j) then
         mat(j, i) = mat_in%value(k)
-        mat_chk(j, i) = mat_chk(j, i) + 1
       endif
     enddo
-
-    ! Check the multiple record
-    do j = 1, n
-      do i = 1, n
-        if (mat_chk(i, j) > 1) then
-          write(*,*)'ERROR(create_dense_matrix): multiple record : i,j =', i, j
-          stop
-        endif
-      enddo
-    enddo
-
-    if (verbose_level >= 1)  then
-      write(*,*)' No multiple record in mat_value ... OK!'
-    endif
   end subroutine create_dense_matrix
 
 
