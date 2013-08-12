@@ -66,7 +66,11 @@ program eigen_test
   iunit=70
   open (iunit, file=arg%output_filename, status='unknown')
   do j=1,arg%n_vec
-    !write(iunit,'(i10,f20.12)') j, eigenvalues(j)
+    if (eigenpairs%type_number == 1) then
+      write (iunit, '(i10, f20.12)') j, eigenpairs%local%values(j)
+    else if (eigenpairs%type_number == 2) then
+      write (iunit, '(i10, f20.12)') j, eigenpairs%blacs%values(j)
+    end if
   enddo
 
   write(*,'(a)') '...the program ends'

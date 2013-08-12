@@ -22,28 +22,32 @@ contains
 
     double precision, allocatable :: a(:,:)
     double precision, allocatable :: b(:,:)
-    double precision, allocatable :: res(:) ! residual vector
+    double precision, allocatable :: left(:), right(:) ! residual = left - right
     double precision, allocatable :: res_norm(:) ! residual norm
 
     integer :: j, dim, ierr
 
-    if (present(matrix_B)) then
-      !allocate(b(dim, dim))
-      call create_dense_matrix(0, matrix_B, b)
-      eigenpairs%local%vectors = matmul(b, eigenpairs%local%vectors)
-    end if
-
     dim = matrix_A%size
 
-    allocate(res(dim), res_norm(arg%n_check_vec), stat = ierr)
-
+    allocate(left(dim), right(dim), res_norm(arg%n_check_vec))
     res_norm(:) = 0.0d0
+
     call create_dense_matrix(0, matrix_A, a)
+    if (arg%is_generalized_problem) then
+      call create_dense_matrix(0, matrix_B, b)
+    end if
+
+    print *, 'bb'
 
     do j = 1, arg%n_check_vec
-      res(:) = matmul(a, eigenpairs%local%vectors(:, j)) - &
-           eigenpairs%local%values(j) * eigenpairs%local%vectors(:, j)
-      res_norm(j) = sqrt(abs(dot_product(res, res) / &
+      left(:) = matmul(a, eigenpairs%local%vectors(:, j))
+      if (arg%is_generalized_problem) then
+        right(:) = eigenpairs%local%values(j) * &
+             matmul(b, eigenpairs%local%vectors(:, j))
+      else
+        right(:) = eigenpairs%local%values(j) * eigenpairs%local%vectors(:, j)
+      end if
+      res_norm(j) = sqrt(abs(dot_product(left - right, left - right) / &
            dot_product(eigenpairs%local%vectors(:, j), &
            eigenpairs%local%vectors(:, j))))
     enddo
@@ -150,13 +154,22 @@ contains
       call copy_global_sparse_matrix_to_local(matrix_B, desc_B, matrix_B_dist)
       ! B = LL', overwritten to B
       call pdpotrf('L', n, matrix_B_dist, 1, 1, desc_B, info)
+      if (info /= 0) then
+        stop 'pdpotrf failed'
+      end if
       ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
       call pdsygst(1, 'L', n, matrix_A_dist, 1, 1, desc_A, matrix_B_dist, &
            1, 1, desc_B, scale, info)
+      if (info /= 0) then
+        stop 'pdsygst failed'
+      end if
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
       ! Recovery eigenvectors by V <- L'^(-1) * V
-      call pdtrtrs('L', 'T', 'N', n, n, matrix_A_dist, 1, 1, desc_A, &
+      call pdtrtrs('L', 'T', 'N', n, n, matrix_B_dist, 1, 1, desc_B, &
            eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, info)
+      if (info /= 0) then
+        stop 'pdtrtrs failed'
+      end if
     case ('eigenexa')
       stop 'Eigen Exa is not supported yet'
       !call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenpairs)
