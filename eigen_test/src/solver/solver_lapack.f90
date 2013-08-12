@@ -22,19 +22,19 @@ contains
    integer :: ierr, info
    integer :: n, lda, lwork
 
-   double precision, allocatable, target, save :: mat_work(:, :), eigenvalues(:)
-
    real(kind(1.d0)), allocatable :: work(:)
 
    real(kind(1.d0)) :: time_origin, elapse_time
 
-   call create_dense_matrix(0, mat, mat_work)
+   eigenpairs%type_number = 1
+
+   call create_dense_matrix(0, mat, eigenpairs%local%vectors)
 
    n = mat%size
    lda = n
    lwork = n * n  ! Note: (lwork > 3*n-1 ) should be satisfied.
 
-   allocate(eigenvalues(n), work(lwork), stat=ierr)
+   allocate(eigenpairs%local%values(n), work(lwork), stat=ierr)
    if (ierr /= 0) then
      write(*,*)'ERROR(eigen_solver_lapack): Alloc. error work'
      stop
@@ -42,15 +42,11 @@ contains
 
    call get_wclock_time(time_origin)
 
-   call dsyev("V", "U", n, mat_work, lda, eigenvalues, &
-        work, lwork, info)
+   call dsyev("V", "U", n, eigenpairs%local%vectors, lda, &
+        eigenpairs%local%values, work, lwork, info)
 
    call get_wclock_time(elapse_time, time_origin)
 
    write(*,'(a,i10, f20.10)')  ' solver result (LAPACK, DSYEV) : matrix size, time (sec) =', n, elapse_time
-
-   eigenpairs%type_number = 1
-   eigenpairs%local%values => eigenvalues
-   eigenpairs%local%vectors => mat_work
   end subroutine eigen_solver_lapack
 end module solver_lapack

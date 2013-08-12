@@ -27,13 +27,11 @@ contains
 
     integer :: ierr, info
     integer :: dim, work_size, iwork_size, diag_size, subdiag_size
-    integer :: desc_Eigenvectors(9), eigenvectors_local_cols
+    integer :: eigenvectors_local_cols
 
     character(len = 1) :: uplo, compz, side, trans
 
-    real(kind(1.d0)), allocatable, target, save :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: diag_local(:), subdiag_local(:)
-    real(kind(1.d0)), allocatable, target, save :: diag_global(:)
     double precision, allocatable :: subdiag_global(:)
     real(kind(1.d0)), allocatable :: tau(:), work(:), work_print(:)
     integer, allocatable :: iwork(:)
@@ -51,6 +49,8 @@ contains
     integer :: numroc, iceil
 
     call get_wclock_time(t_init)
+
+    eigenpairs%type_number = 2
 
     dim = desc_A(rows_)
     diag_size = numroc(dim, desc_A(block_col_), proc%my_proc_col, 0, proc%n_procs_col)
@@ -74,20 +74,25 @@ contains
 
     call get_wclock_time(t_pdsytrd_end)
 
-    allocate(diag_global(dim))
+    ! Diagonal elements of the tridiagonal matrix Initially
+    allocate(eigenpairs%blacs%values(dim))
+
     allocate(subdiag_global(dim - 1))
 
-    call allgather_row_wise(diag_local, proc%context, desc_A(block_col_), diag_global)
-    call allgather_row_wise(subdiag_local, proc%context, desc_A(block_col_), subdiag_global)
+    call allgather_row_wise(diag_local, proc%context, desc_A(block_col_), &
+         eigenpairs%blacs%values)
+    call allgather_row_wise(subdiag_local, proc%context, desc_A(block_col_), &
+         subdiag_global)
 
-    call descinit(desc_Eigenvectors, dim, dim, desc_A(block_row_), desc_A(block_col_), &
-         0, 0, proc%context, desc_A(local_rows_), info)
-    eigenvectors_local_cols = get_local_cols(proc, desc_Eigenvectors)
-    allocate(Eigenvectors(1 : desc_Eigenvectors(local_rows_), &
+    call descinit(eigenpairs%blacs%desc, dim, dim, desc_A(block_row_), &
+         desc_A(block_col_), 0, 0, proc%context, desc_A(local_rows_), info)
+    eigenvectors_local_cols = get_local_cols(proc, eigenpairs%blacs%desc)
+    allocate(eigenpairs%blacs%Vectors( &
+         1 : eigenpairs%blacs%desc(local_rows_), &
          1 : eigenvectors_local_cols))
-    Eigenvectors(:, :) = 0.0
+    eigenpairs%blacs%Vectors(:, :) = 0.0
 
-    work_size = 6 * dim + 2 * desc_Eigenvectors(local_rows_) * &
+    work_size = 6 * dim + 2 * eigenpairs%blacs%desc(local_rows_) * &
          eigenvectors_local_cols
     iwork_size = 2 + 7 * dim + 8 * proc%n_procs_col
     allocate(work(work_size))
@@ -95,8 +100,9 @@ contains
 
     call get_wclock_time(t_pdstedc)
 
-    call pdstedc('i', dim, diag_global, subdiag_global, Eigenvectors, 1, 1, &
-         desc_Eigenvectors, work, work_size, iwork, iwork_size, info)
+    call pdstedc('i', dim, eigenpairs%blacs%values, subdiag_global, &
+         eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
+         work, work_size, iwork, iwork_size, info)
     if (proc%my_rank == 0) then
        print *, 'info(pdstedc): ', info
     end if
@@ -104,24 +110,20 @@ contains
     call get_wclock_time(t_pdstedc_end)
 
     side = 'l'
-    work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, desc_Eigenvectors)
+    work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, eigenpairs%blacs%desc)
     deallocate(work)
     allocate(work(work_size))
 
     call pdormtr(side, uplo, 'n', dim, dim, A, 1, 1, desc_A, tau, &
-         Eigenvectors, 1, 1, desc_Eigenvectors, work, work_size, info)
+         eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, work, work_size, info)
     if (proc%my_rank == 0) then
        print *, 'info(pdormtr): ', info
     end if
 
     call get_wclock_time(t_pdormtr_end)
 
-    ! call pdlaprnt(dim, dim, Eigenvectors, 1, 1, desc_Eigenvectors, 0, 0, 'Eigenvectors', 6, work_print)
+    ! call pdlaprnt(dim, dim, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, 0, 0, 'Eigenvectors', 6, work_print)
 
-    eigenpairs%type_number = 2
-    eigenpairs%blacs%values => diag_global
-    eigenpairs%blacs%desc(:) = desc_Eigenvectors(:)
-    eigenpairs%blacs%Vectors => Eigenvectors
     eigenpairs%blacs%vector_to_value_index_start = 1
     eigenpairs%blacs%vector_to_value_index_end = dim
 

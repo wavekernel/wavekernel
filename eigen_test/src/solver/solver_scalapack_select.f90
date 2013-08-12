@@ -27,9 +27,9 @@ contains
 
     integer :: ierr, info
     integer :: dim, work_size, iwork_size
-    integer :: desc_Eigenvectors(9)
+    !integer :: desc_Eigenvectors(9)
 
-    real(kind(1.d0)), allocatable, target, save :: Eigenvectors(:, :)
+    !real(kind(1.d0)), allocatable, target, save :: Eigenvectors(:, :)
     real(kind(1.d0)), allocatable :: work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
@@ -37,7 +37,7 @@ contains
     character :: jobz, range
     integer :: n_eigenvalues, n_eigenvectors
     integer, allocatable :: ifail(:), iclustr(:)
-    real(kind(1.d0)), allocatable, target, save :: eigenvalues(:)
+    !real(kind(1.d0)), allocatable, target, save :: eigenvalues(:)
     double precision, allocatable :: gap(:)
     real(kind(1.d0)) :: abstol, orfac
 
@@ -54,17 +54,19 @@ contains
 
     call get_wclock_time(t_init)
 
+    eigenpairs%type_number = 2
+
     dim = desc_A(rows_)
 
-    call descinit(desc_Eigenvectors, dim, dim, desc_A(block_row_), &
+    call descinit(eigenpairs%blacs%desc, dim, dim, desc_A(block_row_), &
          desc_A(block_col_), 0, 0, proc%context, desc_A(local_rows_), info)
-    allocate(Eigenvectors(1 : desc_Eigenvectors(local_rows_), &
-         1 : get_local_cols(proc, desc_Eigenvectors)))
-    Eigenvectors(:, :) = 0.0
+    allocate(eigenpairs%blacs%Vectors(1 : eigenpairs%blacs%desc(local_rows_), &
+         1 : get_local_cols(proc, eigenpairs%blacs%desc)))
+    eigenpairs%blacs%Vectors(:, :) = 0.0
 
     work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))
     iwork_size = 6 * max(dim, proc%n_procs_row * proc%n_procs_col + 1, 4)
-    allocate(eigenvalues(dim))
+    allocate(eigenpairs%blacs%values(dim))
     allocate(work(work_size))
     allocate(iwork(iwork_size))
     allocate(ifail(dim))
@@ -76,8 +78,8 @@ contains
     abstol = 2.0 * pdlamch(desc_A(2), 'S')
     orfac = 1.e-3_8
     call pdsyevx(jobz, range, 'L', dim, A, 1, 1, Desc_A, &
-         0, 0, 1, n_vec, abstol, n_eigenvalues, n_eigenvectors, eigenvalues, &
-         orfac, Eigenvectors, 1, 1, desc_Eigenvectors, &
+         0, 0, 1, n_vec, abstol, n_eigenvalues, n_eigenvectors, eigenpairs%blacs%values, &
+         orfac, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
          work, work_size, iwork, iwork_size, &
          ifail, iclustr, gap, info)
     if (proc%my_rank == 0) then
@@ -85,10 +87,6 @@ contains
            n_eigenvalues, n_eigenvectors, ifail, iclustr)
     end if
 
-    eigenpairs%type_number = 2
-    eigenpairs%blacs%values => eigenvalues
-    eigenpairs%blacs%desc(:) = desc_Eigenvectors(:)
-    eigenpairs%blacs%Vectors => Eigenvectors
     ! Todo: set vector_to_value_index_*
 
     call get_wclock_time(t_all_end)
