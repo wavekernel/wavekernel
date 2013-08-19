@@ -121,7 +121,7 @@ contains
     integer :: n, desc_A(9), desc_B(9), info
     double precision :: scale
     type(process) :: proc
-    real(kind(1.d0)), allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :)
+    double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :)
 
     n = arg%matrix_A_info%rows
 

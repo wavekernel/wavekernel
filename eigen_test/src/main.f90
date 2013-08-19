@@ -12,13 +12,13 @@ program eigen_test
   type(argument) :: arg
 
   type(sparse_mat) :: matrix_A, matrix_B
-  real(kind(1.d0)), allocatable :: mat(:,:)
+  double precision, allocatable :: mat(:,:)
   type(eigenpairs_types_union) :: eigenpairs
-  real(kind(1.d0)) :: rn_ave, rn_max
+  double precision :: rn_ave, rn_max
 
   integer :: j, iunit, ierr
 
-  real(kind(1.d0)), allocatable :: mat_value(:,:)
+  double precision, allocatable :: mat_value(:,:)
   integer, allocatable :: mat_suffix(:,:)
 
   character(len=256) :: chara_data_time

@@ -22,7 +22,7 @@ contains
 
     type(process) :: proc
     integer, intent(in) :: desc_A(9)
-    real(kind(1.d0)), intent(in) :: A(:, :)
+    double precision, intent(in) :: A(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: ierr, info
@@ -31,16 +31,16 @@ contains
 
     character(len = 1) :: uplo, compz, side, trans
 
-    real(kind(1.d0)), allocatable :: diag_local(:), subdiag_local(:)
+    double precision, allocatable :: diag_local(:), subdiag_local(:)
     double precision, allocatable :: subdiag_global(:)
-    real(kind(1.d0)), allocatable :: tau(:), work(:), work_print(:)
+    double precision, allocatable :: tau(:), work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
     ! Time
     integer, parameter :: n_intervals = 7
     integer :: i
-    real(kind(1.d0)) :: t_intervals(n_intervals)
-    real(kind(1.d0)) :: t_init, t_pdsytrd, t_pdsytrd_end, t_pdstedc, &
+    double precision :: t_intervals(n_intervals)
+    double precision :: t_init, t_pdsytrd, t_pdsytrd_end, t_pdstedc, &
          t_pdstedc_end, t_pdormtr_end, t_all_end
     character(*), parameter :: interval_names(n_intervals) = (/'init   ', &
          'pdsytrd', 'gather1', 'pdstedc', 'pdormtr', 'finish ', 'total  '/)

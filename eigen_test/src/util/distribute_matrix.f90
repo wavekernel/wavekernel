@@ -58,7 +58,7 @@ contains
     type(process), intent(in) :: proc
     integer, intent(in) :: rows, cols
     integer, intent(out) :: desc(desc_size)
-    real(kind(1.d0)), intent(out), allocatable :: mat(:, :)
+    double precision, intent(out), allocatable :: mat(:, :)
 
     integer :: numroc
     integer :: block_size, local_rows, info
@@ -83,7 +83,7 @@ contains
     implicit none
     integer, intent(in) :: verbose_level
     type(sparse_mat), intent(in) :: mat_in
-    real(kind(1.d0)), intent(out), allocatable :: mat(:,:)
+    double precision, intent(out), allocatable :: mat(:,:)
 
     integer :: k, i, j, n
     integer :: ierr
@@ -182,9 +182,9 @@ contains
 
 
   subroutine copy_global_dense_matrix_to_local(global_mat, desc, local_mat)
-    real(kind(1.d0)), intent(in) :: global_mat(:, :) ! assumed to be same in all the procs
+    double precision, intent(in) :: global_mat(:, :) ! assumed to be same in all the procs
     integer, intent(in) :: desc(9)
-    real(kind(1.d0)), intent(out) :: local_mat(:, :)
+    double precision, intent(out) :: local_mat(:, :)
 
     integer :: m, n, mb, nb, m_local, n_local, context
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
@@ -227,7 +227,7 @@ contains
   subroutine copy_global_sparse_matrix_to_local(mat_in, desc, mat)
     type(sparse_mat), intent(in) :: mat_in
     integer, intent(in) :: desc(9)
-    real(kind(1.d0)), intent(out) :: mat(:,:)
+    double precision, intent(out) :: mat(:,:)
 
     integer :: k, i, j
     integer :: ierr
@@ -244,11 +244,11 @@ contains
 
 
   subroutine allgather_row_wise(array_local, context, block_size, array_global)
-    real(kind(1.d0)), intent(in) :: array_local(:)
+    double precision, intent(in) :: array_local(:)
     integer, intent(in) :: context, block_size
-    real(kind(1.d0)), intent(out) :: array_global(:)
+    double precision, intent(out) :: array_global(:)
 
-    real(kind(1.d0)), allocatable :: send_buf(:)
+    double precision, allocatable :: send_buf(:)
     integer :: n_global, n_local, max_buf_size
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, sender_proc_col
     integer :: b, s, s2, e

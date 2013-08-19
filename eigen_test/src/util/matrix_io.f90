@@ -4,7 +4,7 @@ module matrix_io
 
   type sparse_mat
     integer :: size, num_non_zeros
-    real(kind(1.d0)), allocatable :: value(:)
+    double precision, allocatable :: value(:)
     integer, allocatable :: suffix(:, :)
   end type sparse_mat
 
@@ -150,13 +150,13 @@ contains
     integer, intent(in) :: unit_num
     integer, intent(in) :: mat_size
     integer, intent(in) :: num_non_zeros
-    real(kind(1.d0)), allocatable, intent(inout) :: mat_value(:)
+    double precision, allocatable, intent(inout) :: mat_value(:)
     integer, allocatable, intent(inout) :: mat_suffix(:,:)
 
     integer :: line_count
     logical :: debug_mode
     integer :: i, j, ierr
-    real(kind(1.d0)) :: value_wrk
+    double precision :: value_wrk
 
     if (verbose_level >= 100) then
       debug_mode = .true.
@@ -208,7 +208,7 @@ contains
 
   subroutine print_matrix(name, mat, m, n)
     character(*), intent(in) :: name
-    real(kind(1.d0)), intent(in) :: mat(:, :)
+    double precision, intent(in) :: mat(:, :)
     integer :: i, j, m, n
     if (m < 0) then
        m = size(mat, 1)

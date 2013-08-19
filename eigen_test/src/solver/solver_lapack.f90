@@ -22,9 +22,9 @@ contains
    integer :: ierr, info
    integer :: n, lda, lwork
 
-   real(kind(1.d0)), allocatable :: work(:)
+   double precision, allocatable :: work(:)
 
-   real(kind(1.d0)) :: time_origin, elapse_time
+   double precision :: time_origin, elapse_time
 
    eigenpairs%type_number = 1
 

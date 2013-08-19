@@ -8,10 +8,10 @@ contains
   subroutine get_wclock_time(time_present, time_origin)
     implicit none
 
-    real(kind(1.0d0)), intent(out) :: time_present
-    real(kind(1.0d0)), optional :: time_origin
+    double precision, intent(out) :: time_present
+    double precision, optional :: time_origin
 
-    real(kind(1.0d0)) :: time_origin_wrk
+    double precision :: time_origin_wrk
     integer :: count, rate, max
 
     if (present(time_origin)) then

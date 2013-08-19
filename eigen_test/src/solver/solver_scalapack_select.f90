@@ -22,35 +22,35 @@ contains
 
     type(process) :: proc
     integer, intent(in) :: desc_A(9), n_vec
-    real(kind(1.d0)), intent(in) :: A(:, :)
+    double precision, intent(in) :: A(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: ierr, info
     integer :: dim, work_size, iwork_size
     !integer :: desc_Eigenvectors(9)
 
-    !real(kind(1.d0)), allocatable, target, save :: Eigenvectors(:, :)
-    real(kind(1.d0)), allocatable :: work(:), work_print(:)
+    !double precision, allocatable, target, save :: Eigenvectors(:, :)
+    double precision, allocatable :: work(:), work_print(:)
     integer, allocatable :: iwork(:)
 
     ! For pdsyevx
     character :: jobz, range
     integer :: n_eigenvalues, n_eigenvectors
     integer, allocatable :: ifail(:), iclustr(:)
-    !real(kind(1.d0)), allocatable, target, save :: eigenvalues(:)
+    !double precision, allocatable, target, save :: eigenvalues(:)
     double precision, allocatable :: gap(:)
-    real(kind(1.d0)) :: abstol, orfac
+    double precision :: abstol, orfac
 
     ! Time
     integer, parameter :: n_intervals = 1
     integer :: i
-    real(kind(1.d0)) :: t_intervals(n_intervals)
-    real(kind(1.d0)) :: t_init, t_all_end
+    double precision :: t_intervals(n_intervals)
+    double precision :: t_init, t_all_end
     character(*), parameter :: interval_names(n_intervals) = (/'total'/)
 
     ! Functions
     integer :: numroc
-    real(kind(1.d0)) :: pdlamch
+    double precision :: pdlamch
 
     call get_wclock_time(t_init)
 
@@ -141,7 +141,7 @@ contains
        n_eigenvalues, n_eigenvectors, ifail, iclustr)
     integer, intent(in) :: context, info, n_eigenvalues, n_eigenvectors, ifail(:), iclustr(:)
     character, intent(in) :: jobz
-    real(kind(1.d0)) :: abstol, orfac
+    double precision :: abstol, orfac
 
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
     integer :: i
