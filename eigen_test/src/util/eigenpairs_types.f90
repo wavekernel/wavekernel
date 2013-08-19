@@ -17,7 +17,6 @@ module eigenpairs_types
     type(eigenpairs_local) :: local
     type(eigenpairs_blacs) :: blacs
   end type eigenpairs_types_union
-contains
 
 !  subroutine initialize_eigenpairs_local(dim, n_vec, eigenpairs)
 !    integer, intent(in) :: dim, n_vec
