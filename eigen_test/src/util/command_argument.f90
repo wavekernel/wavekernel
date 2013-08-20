@@ -112,6 +112,8 @@ contains
       required_memory = required_memory_parallel_standard(arg)
     case ('general_scalapack_all')
       required_memory = required_memory_parallel_generalized(arg)
+    case ('general_scalapack_select')
+      required_memory = required_memory_parallel_generalized(arg)
     case ('eigenexa')
       stop 'Eigen Exa is not supported yet'
     case default
