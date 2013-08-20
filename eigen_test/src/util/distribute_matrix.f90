@@ -38,7 +38,7 @@ contains
 
     if (proc%my_proc_row >= proc%n_procs_row .or. proc%my_proc_col >= proc%n_procs_col) then
        call blacs_exit(0)
-       stop 'out of process grid'
+       stop '[Warning] setup_distribution: Out of process grid, process exit'
     end if
   end subroutine setup_distribution
 
@@ -129,7 +129,7 @@ contains
     n = desc(4)
     if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
       if (m /= size(global_mat, 1) .or. n /= size(global_mat, 2)) then
-        stop 'gather_matrix: illegal matrix size'
+        stop '[Error] gather_matrix: Illegal matrix size'
       end if
     end if
     mb = desc(5)
@@ -263,7 +263,9 @@ contains
     do sender_proc_col = 0, n_procs_col - 1
        n_local = numroc(n_global, block_size, sender_proc_col, 0, n_procs_col)
        if (my_proc_col == sender_proc_col) then
-          if (n_local /= size(array_local)) stop 'wrong local array size'
+          if (n_local /= size(array_local)) then
+            stop '[Error] distribute_matrix: Wrong local array size'
+          end if
           send_buf(1 : n_local) = array_local(1 : n_local)
           call dgebs2d(context, 'Row', 'I', max_buf_size, 1, send_buf, max_buf_size)
        else

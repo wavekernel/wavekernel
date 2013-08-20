@@ -181,11 +181,8 @@ contains
       required_memory = required_memory_parallel_generalized(arg)
     case ('general_scalapack_select')
       required_memory = required_memory_parallel_generalized(arg)
-    case ('eigenexa')
-      stop 'Eigen Exa is not supported yet'
     case default
-      print *, 'Error(command_argument), solver type: ', trim(arg%solver_type)
-      stop
+      required_memory = -1 ! Required memory unknown for this solver
     end select
   end function required_memory
 
@@ -222,7 +219,7 @@ contains
           arg%verbose_level = 1
         case default
           call print_help()
-          stop 'unknown option'
+          stop
         end select
       else if (len_trim(arg%matrix_A_filename) == 0) then
         ! The first non-option argument specifies the (left) input matrix

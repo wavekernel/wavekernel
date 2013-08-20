@@ -136,7 +136,7 @@ contains
 
     if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-       print *, 'Elapse time (sec)'
+       print *, 'Elapsed time (sec)'
        do i = 1, n_intervals
           print *, ' ', interval_names(i), ':', t_intervals(i)
        end do

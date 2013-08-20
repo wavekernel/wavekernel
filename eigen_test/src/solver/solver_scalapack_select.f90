@@ -97,7 +97,7 @@ contains
 
     if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-       print *, 'Elapse time (sec)'
+       print *, 'Elapsed time (sec)'
        do i = 1, n_intervals
           print *, ' ', interval_names(i), ':', t_intervals(i)
        end do
@@ -128,7 +128,7 @@ contains
       size = 5 * n + MAX( 5 * nn, np0 * mq0 + 2 * block_size * block_size ) + &
            iceil(neig, n_procs_row * n_procs_col) * nn
     else
-      stop 'unknown jobz value'
+      stop '[Error] work_size_for_pdsyevx: Unknown jobz value'
     end if
 
     anb = pjlaenv(desc(2), 3, 'pdsyttrd', 'l', 0, 0, 0, 0)

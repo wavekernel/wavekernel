@@ -44,11 +44,7 @@ contains
     print *, 'dim, local_size_row, local_size_col : ', dim, local_size_row, local_size_col
 
     allocate(A(local_size_row, local_size_col), &
-         Eigenvectors(local_size_row, local_size_col), &
-         stat = info)
-    if (info /= 0) then
-      stop "Memory exhausted"
-    end if
+         Eigenvectors(local_size_row, local_size_col))
 
     !!context = eigen_get_blacs_context()
     call descinit(desc, dim, dim, 64, 64, 0, 0, context, local_size_row, info)

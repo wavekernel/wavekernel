@@ -125,11 +125,6 @@ contains
 
     n = arg%matrix_A_info%rows
 
-    if ((arg%n_vec < 0) .or. (arg%n_vec > n)) then
-      write(*,*) 'Error(lib_eigen_solver): n, n_vec=', n, arg%n_vec
-      stop
-    endif
-
     select case (trim(arg%solver_type))
     case ('lapack')
       call eigen_solver_lapack(matrix_A, eigenpairs)
@@ -166,11 +161,10 @@ contains
       call recovery_generalized(n, arg%n_vec, matrix_B_dist, desc_B, &
            eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
     case ('eigenexa')
-      stop 'Eigen Exa is not supported yet'
+      stop '[Error] lib_eigen_solver: Eigen Exa is not supported yet'
       !call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenpairs)
     case default
-      write(*,*) 'Error(lib_eigen_solver): solver type=', trim(arg%solver_type)
-      stop
+      stop '[Error] lib_eigen_solver: Unknown solver'
     end select
   end subroutine lib_eigen_solver
 
@@ -185,12 +179,12 @@ contains
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
     if (info /= 0) then
-      stop 'pdpotrf failed'
+      stop '[Error] reduce_generalized: pdpotrf failed'
     end if
     ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
     if (info /= 0) then
-      stop 'pdsygst failed'
+      stop '[Error] reduce_generalized: pdsygst failed'
     end if
   end subroutine reduce_generalized
 
@@ -206,7 +200,7 @@ contains
     call pdtrtrs('L', 'T', 'N', dim, n_vec, B, 1, 1, desc_B, &
          Vectors, 1, 1, desc_Vectors, info)
     if (info /= 0) then
-      stop 'pdtrtrs failed'
+      stop '[Error] reduce_generalized: pdtrtrs failed'
     end if
   end subroutine recovery_generalized
 end module solver_main

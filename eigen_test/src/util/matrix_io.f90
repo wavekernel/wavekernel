@@ -87,28 +87,20 @@ contains
     if (debug_mode) write(*,*)'size(mat_suffix,1)=',size(mat_suffix,1)
     if (debug_mode) write(*,*)'size(mat_suffix,2)=',size(mat_suffix,2)
 
-    if (size(mat_value, 1) /= num_non_zeros) then
-      write(*,*)'ERROR(read_matrix_file_value): size(mat_value,1)=', size(mat_value,1)
-      stop
-    endif
-
     do line_count = 1, num_non_zeros
       read(unit_num, *, iostat=ierr) i, j, value_wrk
       if (ierr /= 0) then
-        write(*,*)'ERROR: file reading for matrix value'
-        stop
+        stop '[Error] read_matrix_file_value: Invalid format of matrix value'
       endif
 
       ! if (debug_mode) write(*,*)'i,j, matrix_value=',i, j, value_wrk
 
       if (i < 1 .or. i > mat_size) then
-        write(*,*)'ERROR: file reading for matrix suffix'
-        stop
+        stop '[Error] read_matrix_file_value: Index of matrix out of range'
       endif
 
       if (j < 1 .or. j > mat_size) then
-        write(*,*)'ERROR: file reading for matrix suffix'
-        stop
+        stop '[Error] read_matrix_file_value: Index of matrix out of range'
       endif
 
       mat_value(line_count) = value_wrk

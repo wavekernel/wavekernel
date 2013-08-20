@@ -34,11 +34,7 @@ contains
    lda = n
    lwork = n * n  ! Note: (lwork > 3*n-1 ) should be satisfied.
 
-   allocate(eigenpairs%local%values(n), work(lwork), stat=ierr)
-   if (ierr /= 0) then
-     write(*,*)'ERROR(eigen_solver_lapack): Alloc. error work'
-     stop
-   endif
+   allocate(eigenpairs%local%values(n), work(lwork))
 
    call get_wclock_time(time_origin)
 
