@@ -29,7 +29,7 @@ contains
     integer :: dim, work_size, iwork_size, diag_size, subdiag_size
     integer :: eigenvectors_local_cols
 
-    character(len = 1) :: uplo, compz, side, trans
+    character(len = 1) :: uplo, side
 
     double precision, allocatable :: diag_local(:), subdiag_local(:)
     double precision, allocatable :: subdiag_global(:)
@@ -46,7 +46,7 @@ contains
          'pdsytrd', 'gather1', 'pdstedc', 'pdormtr', 'finish ', 'total  '/)
 
     ! Functions
-    integer :: numroc, iceil
+    integer :: numroc
 
     call get_wclock_time(t_init)
 

@@ -10,19 +10,10 @@ program eigen_test
   implicit none
 
   type(argument) :: arg
-
   type(sparse_mat) :: matrix_A, matrix_B
-  double precision, allocatable :: mat(:,:)
   type(eigenpairs_types_union) :: eigenpairs
   double precision :: rn_ave, rn_max
-
   integer :: j, iunit, ierr
-
-  double precision, allocatable :: mat_value(:,:)
-  integer, allocatable :: mat_suffix(:,:)
-
-  character(len=256) :: chara_data_time
-
   logical :: is_master
 
   call read_command_argument(arg)

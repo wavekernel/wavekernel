@@ -22,7 +22,6 @@ module distribute_matrix
 contains
   subroutine setup_distribution(proc)
     type(process), intent(out) :: proc
-    integer :: info
 
     call blacs_pinfo(proc%my_rank, proc%n_procs)
     call layout_procs(proc%n_procs, proc%n_procs_row, proc%n_procs_col)
@@ -78,15 +77,13 @@ contains
   end subroutine setup_distributed_matrix
 
 
-  subroutine create_dense_matrix(verbose_level, mat_in, mat)
+  subroutine create_dense_matrix(mat_in, mat)
     use matrix_io, only : sparse_mat
     implicit none
-    integer, intent(in) :: verbose_level
     type(sparse_mat), intent(in) :: mat_in
     double precision, intent(out), allocatable :: mat(:,:)
 
     integer :: k, i, j, n
-    integer :: ierr
 
     n = mat_in%size
 
@@ -230,7 +227,6 @@ contains
     double precision, intent(out) :: mat(:,:)
 
     integer :: k, i, j
-    integer :: ierr
 
     do k = 1, mat_in%num_non_zeros
       i = mat_in%suffix(1, k)

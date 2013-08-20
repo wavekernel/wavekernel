@@ -27,17 +27,15 @@ contains
 
     integer :: ierr, info
     integer :: dim, work_size, iwork_size
-    !integer :: desc_Eigenvectors(9)
 
-    !double precision, allocatable, target, save :: Eigenvectors(:, :)
-    double precision, allocatable :: work(:), work_print(:)
+    double precision, allocatable :: work(:)
+    ! double precision, allocatable :: work_print(:)
     integer, allocatable :: iwork(:)
 
     ! For pdsyevx
     character :: jobz, range
     integer :: n_eigenvalues, n_eigenvectors
     integer, allocatable :: ifail(:), iclustr(:)
-    !double precision, allocatable, target, save :: eigenvalues(:)
     double precision, allocatable :: gap(:)
     double precision :: abstol, orfac
 
@@ -49,7 +47,6 @@ contains
     character(*), parameter :: interval_names(n_intervals) = (/'total'/)
 
     ! Functions
-    integer :: numroc
     double precision :: pdlamch
 
     call get_wclock_time(t_init)

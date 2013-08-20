@@ -25,16 +25,16 @@ contains
     double precision, allocatable :: left(:), right(:) ! residual = left - right
     double precision, allocatable :: res_norm(:) ! residual norm
 
-    integer :: j, dim, ierr
+    integer :: j, dim
 
     dim = matrix_A%size
 
     allocate(left(dim), right(dim), res_norm(arg%n_check_vec))
     res_norm(:) = 0.0d0
 
-    call create_dense_matrix(0, matrix_A, a)
+    call create_dense_matrix(matrix_A, a)
     if (arg%is_generalized_problem) then
-      call create_dense_matrix(0, matrix_B, b)
+      call create_dense_matrix(matrix_B, b)
     end if
 
     do j = 1, arg%n_check_vec
@@ -118,8 +118,7 @@ contains
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    integer :: n, desc_A(9), desc_B(9), info
-    double precision :: scale
+    integer :: n, desc_A(9), desc_B(9)
     type(process) :: proc
     double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :)
 

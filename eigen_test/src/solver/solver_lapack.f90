@@ -19,8 +19,7 @@ contains
    type(sparse_mat), target, intent(in) :: mat
    type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-   integer :: ierr, info
-   integer :: n, lda, lwork
+   integer :: n, lda, lwork, info
 
    double precision, allocatable :: work(:)
 
@@ -28,7 +27,7 @@ contains
 
    eigenpairs%type_number = 1
 
-   call create_dense_matrix(0, mat, eigenpairs%local%vectors)
+   call create_dense_matrix(mat, eigenpairs%local%vectors)
 
    n = mat%size
    lda = n

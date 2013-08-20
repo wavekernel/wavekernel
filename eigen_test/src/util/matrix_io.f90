@@ -20,8 +20,6 @@ contains
     type(sparse_mat), intent(out) :: matrix
 
     integer, parameter :: iunit = 8
-    integer :: ierr
-    integer dummy1, dummy2
 
     matrix%size = info%rows
     matrix%num_non_zeros = info%entries
