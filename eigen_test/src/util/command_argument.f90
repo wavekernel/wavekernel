@@ -43,14 +43,81 @@ contains
   end subroutine wrap_mminfo
 
 
-  integer function validate_argument(arg)
+  subroutine terminate(arg, err_msg)
+    use processes, only : check_master
+
+    type(argument), intent(in) :: arg
+    character(*), intent(in) :: err_msg
+
+    logical :: is_master
+
+    call check_master(arg%solver_type, is_master)
+    if (is_master) then
+      write (0, *) err_msg
+    end if
+    call mpi_finalize()
+    stop
+  end subroutine terminate
+
+
+  subroutine validate_argument(arg)
     type(argument), intent(in) :: arg
 
-    ! for all eigenpair computation, n_vec = n?
-    ! file exists?
-    ! square matrix?
-    validate_argument = 0 ! Not implemented yet
-  end function validate_argument
+    integer :: dim
+    logical :: is_size_valid, is_solver_valid, is_n_vec_valid
+
+    ! Is matrix size appropriate?
+    dim = arg%matrix_A_info%rows
+    is_size_valid = dim == arg%matrix_A_info%cols
+    if (arg%is_generalized_problem) then
+      is_size_valid = is_size_valid &
+           .and. (dim == arg%matrix_B_info%rows) &
+           .and. (dim == arg%matrix_B_info%cols)
+    end if
+    if (.not. is_size_valid) then
+      call terminate(arg, '[Error] validate_argument: Matrix dimension mismatch')
+    end if
+
+    ! Solver type and problem type matched?
+    select case (trim(arg%solver_type))
+    case ('lapack')
+      is_solver_valid = .not. arg%is_generalized_problem
+    case ('scalapack_all')
+      is_solver_valid = .not. arg%is_generalized_problem
+    case ('scalapack_select')
+      is_solver_valid = .not. arg%is_generalized_problem
+    case ('general_scalapack_all')
+      is_solver_valid = arg%is_generalized_problem
+    case ('general_scalapack_select')
+      is_solver_valid = arg%is_generalized_problem
+    case ('eigenexa')
+      is_solver_valid = .not. arg%is_generalized_problem
+    case default
+      call terminate(arg, '[Error] validate_argument: Unknown solver')
+    end select
+    if (.not. is_solver_valid) then
+      if (arg%is_generalized_problem) then
+        call terminate(arg, '[Error] validate_argument: This solver is not for generalized eigenvalue problem')
+      else
+        call terminate(arg, '[Error] validate_argument: This solver is not for standard eigenvalue problem')
+      end if
+    end if
+
+    ! For all eigenpair computation, n_vec = n?
+    select case (trim(arg%solver_type))
+    case ('lapack')
+      is_n_vec_valid = arg%n_vec == dim
+    case ('scalapack_all')
+      is_n_vec_valid = arg%n_vec == dim
+    case ('general_scalapack_all')
+      is_n_vec_valid = arg%n_vec == dim
+    case default
+      is_n_vec_valid = .true.
+    end select
+    if (.not. is_n_vec_valid) then
+      call terminate(arg, '[Error] validate_argument: This solver does not support partial eigenvalue computation')
+    end if
+  end subroutine validate_argument
 
 
   integer function required_memory_lapack(arg)
@@ -124,11 +191,11 @@ contains
 
 
   subroutine read_command_argument(arg)
-    implicit none
-
     type(argument), intent(out) :: arg
+
     integer :: argi = 1
     character(len=256) :: arg_str
+    logical :: exists
 
     do while (argi <= command_argument_count())
       call get_command_argument(argi, arg_str)
@@ -158,9 +225,19 @@ contains
           stop 'unknown option'
         end select
       else if (len_trim(arg%matrix_A_filename) == 0) then
+        ! The first non-option argument specifies the (left) input matrix
         arg%matrix_A_filename = trim(arg_str)
+        ! Check whether the file exists
+        inquire(file = trim(arg%matrix_A_filename), exist = exists)
+        if (.not. exists) then
+          call terminate(arg, '[Error] read_command_argument: Matrix A file not found')
+        end if
       else
         arg%matrix_B_filename = trim(arg_str)
+        inquire(file = arg%matrix_B_filename, exist = exists)
+        if (.not. exists) then
+          call terminate(arg, '[Error] read_command_argument: Matrix B file not found')
+        end if
       end if
       argi = argi + 1
     enddo
@@ -180,9 +257,7 @@ contains
       arg%n_check_vec = arg%n_vec
     end if
 
-    if (validate_argument(arg) /= 0) then
-      stop 'Illegal argument'
-    end if
+    call validate_argument(arg)
   end subroutine read_command_argument
 
 
