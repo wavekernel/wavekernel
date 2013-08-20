@@ -26,17 +26,12 @@ contains
     matrix%size = info%rows
     matrix%num_non_zeros = info%entries
 
-    allocate(matrix%suffix(2, info%entries), matrix%value(info%entries), &
-         stat = ierr)
-
-    if (ierr /= 0) then
-      stop 'ERROR read_matrix_filematrix_io : allcation failed'
-    end if
+    allocate(matrix%suffix(2, info%entries), matrix%value(info%entries))
 
     open(iunit, file = filename)
 
     ! read_matrix_file_header is added to skip comment lines
-    call read_matrix_file_header(0, iunit, dummy1, dummy2)
+    call read_matrix_file_header(iunit)
     call read_matrix_file_value(0, iunit, info%rows, &
          info%entries, matrix%value, matrix%suffix)
 
@@ -44,102 +39,22 @@ contains
   end subroutine read_matrix_file
 
 
-  subroutine read_matrix_file_header(verbose_level, unit_num, mat_size, num_non_zeros)
-    implicit none
-    integer, intent(in) :: verbose_level
+  subroutine read_matrix_file_header(unit_num)
     integer, intent(in) :: unit_num
-    integer, intent(out) :: mat_size
-    integer, intent(out) :: num_non_zeros
 
-    integer, parameter :: max_line_count = 100
-
-    logical :: keyword_real_exist
-    logical :: keyword_symmetric_exist
-    integer :: line_count
-    integer :: ierr
-    integer :: mat_size2
-
-    logical :: debug_mode
-
+    integer :: ierr, mat_size, mat_size2, num_non_zeros
     character(len=1024) :: chara_wrk
-
-    if (verbose_level >= 100) then
-      debug_mode = .true.
-    else
-      debug_mode = .false.
-    endif
-
-    if (debug_mode) write(*,'(a)')'@@ read_matrix_file_header'
-
-    if (debug_mode) write(*,*)'verbose level =', verbose_level
 
     ! Read the first line
     read(unit_num,'(a)') chara_wrk
-    if (debug_mode) write(*,*)'first line=',trim(chara_wrk)
-
-    ! Check the header of the first line
-    if (chara_wrk(1:14) /= '%%MatrixMarket') then
-      write(*,*)'ERROR:Fist line :', trim(chara_wrk)
-      stop
-    else
-      if (debug_mode) write(*,*)'INFO:header of file =', chara_wrk(1:14)
-    endif
-
-    ! Seach the keyword of 'real' on the first line
-    keyword_real_exist = .false.
-    if (index(chara_wrk, 'real') /= 0) keyword_real_exist = .true.
-    if (index(chara_wrk, 'Real') /= 0) keyword_real_exist = .true.
-    if (index(chara_wrk, 'REAL') /= 0) keyword_real_exist = .true.
-
-    if (keyword_real_exist) then
-      if (debug_mode) write(*,'(a)') '  INFO:keyword found : real'
-    endif
-
-    ! Search the keyword of 'symmetic' on the first line
-    keyword_symmetric_exist = .false.
-    if (index(chara_wrk, 'symmetric') /= 0) keyword_symmetric_exist = .true.
-    if (index(chara_wrk, 'Symmetric') /= 0) keyword_symmetric_exist = .true.
-    if (index(chara_wrk, 'SYMMETRIC') /= 0) keyword_symmetric_exist = .true.
-
-    if (keyword_symmetric_exist) then
-      if (debug_mode) write(*,'(a)') '  INFO:keyword found : symmetric'
-    endif
 
     ! Plot the comment lines
-    do line_count = 1, max_line_count
+    do while (.true.)
       read(unit_num,'(a)') chara_wrk
       if (index(chara_wrk, '%') /= 1) exit
-      if (verbose_level >= 1) write(*,'(a,a)')'comment line:',trim(chara_wrk)
     enddo
 
-    read (chara_wrk, *, iostat=ierr) mat_size, mat_size2, num_non_zeros
-    if (ierr /= 0) then
-      write(*,*)'ERROR : matrix size or number of non zero elements :', trim(chara_wrk)
-      stop
-    endif
-
-    if (mat_size /= mat_size2) then
-      write(*,*)'ERROR : matrix size info :', mat_size, mat_size2
-      stop
-    endif
-
-    if (num_non_zeros <= 0) then
-      write(*,*)'ERROR:num_non_zeros =',num_non_zeros
-      stop
-    endif
-
-    if (mat_size <= 0) then
-      write(*,*)'ERROR:mat_size =',mat_size
-      stop
-    endif
-
-    if (num_non_zeros > mat_size * mat_size) then
-      write(*,*)'ERROR : imcompatible mat_size, number of non zero elements =', mat_size, num_non_zeros
-      stop
-    endif
-
-    if (debug_mode) write(*,*)'mat_size      =', mat_size
-    if (debug_mode) write(*,*)'num_non_zeros =', num_non_zeros
+    read (chara_wrk, *, iostat = ierr) mat_size, mat_size2, num_non_zeros
   end subroutine read_matrix_file_header
 
 
