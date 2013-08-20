@@ -1,6 +1,6 @@
 program eigen_test
   use solver_main, only : lib_eigen_solver, lib_eigen_checker !(routine)
-  use command_argument, only : argument, &
+  use command_argument, only : argument, required_memory, &
        read_command_argument, print_command_argument
   use matrix_io, only : sparse_mat, read_matrix_file !(type, rouine)
   use distribute_matrix, only : create_dense_matrix !(routine)
@@ -27,15 +27,17 @@ program eigen_test
 
   call read_command_argument(arg)
 
-  call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
-  if (arg%is_generalized_problem) then
-    call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
-  end if
-
   call check_master(arg%solver_type, is_master)
 
   if (is_master) then
     call print_command_argument(arg)
+    print *, 'approximate required memory (Mbytes): ', &
+         required_memory(arg) / 2 ** 20
+  end if
+
+  call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
+  if (arg%is_generalized_problem) then
+    call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
   end if
 
   if (arg%is_generalized_problem) then

@@ -21,7 +21,8 @@ module command_argument
   end type argument
 
   private
-  public :: matrix_info, argument, read_command_argument, print_command_argument
+  public :: matrix_info, argument, required_memory, &
+       read_command_argument, print_command_argument
 
 contains
   subroutine print_help()
@@ -50,6 +51,74 @@ contains
     ! square matrix?
     validate_argument = 0 ! Not implemented yet
   end function validate_argument
+
+
+  integer function required_memory_lapack(arg)
+    type(argument), intent(in) :: arg
+
+    integer :: dim, num_double = 0
+
+    num_double = arg%matrix_A_info%entries
+    dim = arg%matrix_A_info%rows
+    num_double = num_double + dim * dim
+    required_memory_lapack = 8 * num_double
+  end function required_memory_lapack
+
+
+  integer function required_memory_parallel_standard(arg)
+    ! This is just an approximation and partial eigenvector computation
+    ! (means reduced columns of eigenvector storage) is not supported yet
+    ! Generalized version below has the same problem
+    type(argument), intent(in) :: arg
+
+    integer :: my_rank, n_procs, dim, num_double = 0
+
+    num_double = arg%matrix_A_info%entries
+
+    call blacs_pinfo(my_rank, n_procs)
+    dim = arg%matrix_A_info%rows
+    ! 2 is for the input matrix and eigenvectors
+    num_double = num_double + dim * dim * 2 / n_procs
+
+    required_memory_parallel_standard = 8 * num_double
+  end function required_memory_parallel_standard
+
+
+  integer function required_memory_parallel_generalized(arg)
+    type(argument), intent(in) :: arg
+
+    integer :: my_rank, n_procs, dim, num_double = 0
+
+    num_double = arg%matrix_A_info%entries + arg%matrix_B_info%entries
+
+    call blacs_pinfo(my_rank, n_procs)
+    dim = arg%matrix_A_info%rows
+    ! 3 is for the input matrices (A and B) and eigenvectors
+    num_double = num_double + dim * dim * 3 / n_procs
+
+    required_memory_parallel_generalized = 8 * num_double
+  end function required_memory_parallel_generalized
+
+
+  integer function required_memory(arg)
+    type(argument), intent(in) :: arg
+
+    select case (trim(arg%solver_type))
+    case ('lapack')
+      required_memory = required_memory_lapack(arg)
+    case ('scalapack_all')
+      required_memory = required_memory_parallel_standard(arg)
+    case ('scalapack_select')
+      required_memory = required_memory_parallel_standard(arg)
+    case ('general_scalapack_all')
+      required_memory = required_memory_parallel_generalized(arg)
+    case ('eigenexa')
+      stop 'Eigen Exa is not supported yet'
+    case default
+      print *, 'Error(command_argument), solver type: ', trim(arg%solver_type)
+      stop
+    end select
+  end function required_memory
 
 
   subroutine read_command_argument(arg)
