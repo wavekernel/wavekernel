@@ -85,9 +85,11 @@ contains
     if (proc%my_rank == 0) then
       call pdsyevx_report(proc%context, jobz, abstol, orfac, info, &
            n_eigenvalues, n_eigenvectors, ifail, iclustr)
+      if (n_eigenvalues < n_vec) then
+        print '(" PDSYEVX computed only ", I0, " of ", I0, " requested eigenvalues")', &
+             n_eigenvalues, n_vec
+      end if
     end if
-
-    ! Todo: set vector_to_value_index_*
 
     call get_wclock_time(t_all_end)
 

@@ -124,9 +124,6 @@ contains
 
     ! call pdlaprnt(dim, dim, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, 0, 0, 'Eigenvectors', 6, work_print)
 
-    eigenpairs%blacs%vector_to_value_index_start = 1
-    eigenpairs%blacs%vector_to_value_index_end = dim
-
     call get_wclock_time(t_all_end)
 
     t_intervals(1) = t_pdsytrd - t_init

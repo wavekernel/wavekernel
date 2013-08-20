@@ -2,14 +2,12 @@ module eigenpairs_types
   type eigenpairs_local ! type number = 1
     double precision, allocatable :: values(:)
     double precision, allocatable :: vectors(:, :)
-    integer :: vector_to_value_index_start, vector_to_value_index_end
   end type eigenpairs_local
 
   type eigenpairs_blacs ! type number = 2
     double precision, allocatable :: values(:)
     integer :: desc(9)
     double precision, allocatable :: Vectors(:, :)
-    integer :: vector_to_value_index_start, vector_to_value_index_end
   end type eigenpairs_blacs
 
   type eigenpairs_types_union
