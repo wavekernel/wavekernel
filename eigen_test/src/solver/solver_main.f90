@@ -150,24 +150,21 @@ contains
       call setup_distributed_matrix(proc, n, n, desc_B, matrix_B_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
       call copy_global_sparse_matrix_to_local(matrix_B, desc_B, matrix_B_dist)
-      ! B = LL', overwritten to B
-      call pdpotrf('L', n, matrix_B_dist, 1, 1, desc_B, info)
-      if (info /= 0) then
-        stop 'pdpotrf failed'
-      end if
-      ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
-      call pdsygst(1, 'L', n, matrix_A_dist, 1, 1, desc_A, matrix_B_dist, &
-           1, 1, desc_B, scale, info)
-      if (info /= 0) then
-        stop 'pdsygst failed'
-      end if
+      call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
-      ! Recovery eigenvectors by V <- L'^(-1) * V
-      call pdtrtrs('L', 'T', 'N', n, n, matrix_B_dist, 1, 1, desc_B, &
-           eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, info)
-      if (info /= 0) then
-        stop 'pdtrtrs failed'
-      end if
+      call recovery_generalized(n, n, matrix_B_dist, desc_B, &
+           eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
+    case ('general_scalapack_select')
+      call setup_distribution(proc)
+      call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
+      call setup_distributed_matrix(proc, n, n, desc_B, matrix_B_dist)
+      call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
+      call copy_global_sparse_matrix_to_local(matrix_B, desc_B, matrix_B_dist)
+      call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
+      call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
+           arg%n_vec, eigenpairs)
+      call recovery_generalized(n, arg%n_vec, matrix_B_dist, desc_B, &
+           eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
     case ('eigenexa')
       stop 'Eigen Exa is not supported yet'
       !call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenpairs)
@@ -175,6 +172,41 @@ contains
       write(*,*) 'Error(lib_eigen_solver): solver type=', trim(arg%solver_type)
       stop
     end select
-
   end subroutine lib_eigen_solver
+
+
+  subroutine reduce_generalized(dim, A, desc_A, B, desc_B)
+    integer, intent(in) :: dim, desc_A(9), desc_B(9)
+    double precision, intent(inout) :: A(:, :), B(:, :)
+
+    integer :: info
+    double precision :: scale
+
+    ! B = LL', overwritten to B
+    call pdpotrf('L', dim, B, 1, 1, desc_B, info)
+    if (info /= 0) then
+      stop 'pdpotrf failed'
+    end if
+    ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
+    call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
+    if (info /= 0) then
+      stop 'pdsygst failed'
+    end if
+  end subroutine reduce_generalized
+
+
+  subroutine recovery_generalized(dim, n_vec, B, desc_B, Vectors, desc_Vectors)
+    integer, intent(in) :: dim, n_vec, desc_B(9), desc_Vectors(9)
+    double precision, intent(in) :: B(:, :)
+    double precision, intent(inout) :: Vectors(:, :)
+
+    integer :: info
+
+    ! Recovery eigenvectors by V <- L'^(-1) * V
+    call pdtrtrs('L', 'T', 'N', dim, n_vec, B, 1, 1, desc_B, &
+         Vectors, 1, 1, desc_Vectors, info)
+    if (info /= 0) then
+      stop 'pdtrtrs failed'
+    end if
+  end subroutine recovery_generalized
 end module solver_main
