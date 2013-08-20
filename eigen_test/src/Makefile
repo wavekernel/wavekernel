@@ -1,4 +1,4 @@
-include ./Makefile.in
+include ../Makefile.in
 
 #FFLAGS = -O3 -mcmodel=medium -i-dynamic -openmp
 #FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv
@@ -35,7 +35,8 @@ include solver/Makefile_solver.in
 
 eigen : $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC)
 	$(F90) $(LDFLAGS) $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC) $(LIBS) -o $@
-	cp $@ ../bin/
+	mkdir -p ../bin
+	mv $@ ../bin/
 
 .PHONY: clean dep
 clean:
