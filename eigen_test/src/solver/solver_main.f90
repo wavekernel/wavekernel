@@ -105,7 +105,6 @@ contains
     use solver_lapack, only : eigen_solver_lapack
     use solver_scalapack_all, only : eigen_solver_scalapack_all
     use solver_scalapack_select, only : eigen_solver_scalapack_select
-    use solver_eigenexa, only : eigen_solver_eigenexa
     use matrix_io, only : sparse_mat
     use distribute_matrix, only : process, setup_distribution, &
          setup_distributed_matrix, copy_global_dense_matrix_to_local, &

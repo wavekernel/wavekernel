@@ -1,1 +1,1 @@
-OBJS-LIB-EIGEN = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o solver/solver_eigenexa.o
+OBJS-LIB-EIGEN = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o
