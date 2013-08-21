@@ -291,7 +291,7 @@ contains
 
     print *, 'solver: ', trim(arg%solver_type)
     print *, 'output file: ', trim(arg%output_filename)
-    print *, 'computed eigenpairs: ', arg%n_vec
+    print *, 'required eigenpairs: ', arg%n_vec
     print *, 'verified eigenpairs: ', arg%n_check_vec
   end subroutine print_command_argument
 end module command_argument
