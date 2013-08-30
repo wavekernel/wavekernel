@@ -73,7 +73,7 @@ contains
     jobz = 'V'
     range = 'I'
     abstol = 2.0 * pdlamch(desc_A(2), 'S')
-    orfac = 1.e-3_8
+    orfac = 0.0d0
     call pdsyevx(jobz, range, 'L', dim, A, 1, 1, Desc_A, &
          0, 0, 1, n_vec, abstol, n_eigenvalues, n_eigenvectors, eigenpairs%blacs%values, &
          orfac, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
