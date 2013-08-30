@@ -120,54 +120,56 @@ contains
   end subroutine validate_argument
 
 
-  integer function required_memory_lapack(arg)
+  double precision function required_memory_lapack(arg)
     type(argument), intent(in) :: arg
 
-    integer :: dim, num_double = 0
+    double precision :: num_double, dim
 
-    num_double = arg%matrix_A_info%entries
-    dim = arg%matrix_A_info%rows
+    num_double = real(arg%matrix_A_info%entries)
+    dim = real(arg%matrix_A_info%rows)
     num_double = num_double + dim * dim
-    required_memory_lapack = 8 * num_double
+    required_memory_lapack = 8.0d0 * num_double
   end function required_memory_lapack
 
 
-  integer function required_memory_parallel_standard(arg)
+  double precision function required_memory_parallel_standard(arg)
     ! This is just an approximation and partial eigenvector computation
     ! (means reduced columns of eigenvector storage) is not supported yet
     ! Generalized version below has the same problem
     type(argument), intent(in) :: arg
 
-    integer :: my_rank, n_procs, dim, num_double = 0
+    integer :: my_rank, n_procs
+    double precision :: num_double, dim
 
-    num_double = arg%matrix_A_info%entries
+    num_double = real(arg%matrix_A_info%entries)
 
     call blacs_pinfo(my_rank, n_procs)
-    dim = arg%matrix_A_info%rows
+    dim = real(arg%matrix_A_info%rows)
     ! 2 is for the input matrix and eigenvectors
-    num_double = num_double + dim * dim * 2 / n_procs
+    num_double = num_double + dim * dim * 2.0d0 / real(n_procs)
 
-    required_memory_parallel_standard = 8 * num_double
+    required_memory_parallel_standard = 8.0d0 * num_double
   end function required_memory_parallel_standard
 
 
-  integer function required_memory_parallel_generalized(arg)
+  double precision function required_memory_parallel_generalized(arg)
     type(argument), intent(in) :: arg
 
-    integer :: my_rank, n_procs, dim, num_double = 0
+    integer :: my_rank, n_procs
+    double precision :: num_double, dim
 
-    num_double = arg%matrix_A_info%entries + arg%matrix_B_info%entries
+    num_double = real(arg%matrix_A_info%entries + arg%matrix_B_info%entries)
 
     call blacs_pinfo(my_rank, n_procs)
-    dim = arg%matrix_A_info%rows
+    dim = real(arg%matrix_A_info%rows)
     ! 3 is for the input matrices (A and B) and eigenvectors
-    num_double = num_double + dim * dim * 3 / n_procs
+    num_double = num_double + dim * dim * 3.0d0 / real(n_procs)
 
-    required_memory_parallel_generalized = 8 * num_double
+    required_memory_parallel_generalized = 8.0d0 * num_double
   end function required_memory_parallel_generalized
 
 
-  integer function required_memory(arg)
+  double precision function required_memory(arg)
     type(argument), intent(in) :: arg
 
     select case (trim(arg%solver_type))
@@ -182,7 +184,7 @@ contains
     case ('general_scalapack_select')
       required_memory = required_memory_parallel_generalized(arg)
     case default
-      required_memory = -1 ! Required memory unknown for this solver
+      required_memory = -1.0d0 ! Required memory unknown for this solver
     end select
   end function required_memory
 

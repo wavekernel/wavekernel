@@ -22,8 +22,8 @@ program eigen_test
 
   if (is_master) then
     call print_command_argument(arg)
-    print *, 'approximate required memory (Mbytes): ', &
-         required_memory(arg) / 2 ** 20
+    print *, 'approximate required memory per process (Mbytes): ', &
+         required_memory(arg) / real(2 ** 20)
   end if
 
   call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
