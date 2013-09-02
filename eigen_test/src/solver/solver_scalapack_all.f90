@@ -15,9 +15,8 @@ module solver_scalapack_all
   public :: eigen_solver_scalapack_all
 
 contains
-  subroutine eigen_solver_scalapack_all(proc, desc_A, A, eigenpairs)
-    implicit none
 
+  subroutine eigen_solver_scalapack_all(proc, desc_A, A, eigenpairs)
     include 'mpif.h'
 
     type(process) :: proc
@@ -144,6 +143,7 @@ contains
        call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
     end if
   end subroutine eigen_solver_scalapack_all
+
 
   integer function work_size_for_pdormtr(side, uplo, m, n, ia, ja, ic, jc, desc_A, desc_C) result(size)
     character(len = 1), intent(in) :: side, uplo

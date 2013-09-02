@@ -9,12 +9,12 @@ module solver_lapack
   public :: eigen_solver_lapack
 
 contains
+
   subroutine eigen_solver_lapack(mat, eigenpairs)
    use time, only : get_wclock_time
    use matrix_io, only : sparse_mat
    use distribute_matrix, only : create_dense_matrix
    use eigenpairs_types, only : eigenpairs_types_union
-   implicit none
 
    type(sparse_mat), target, intent(in) :: mat
    type(eigenpairs_types_union), intent(out) :: eigenpairs

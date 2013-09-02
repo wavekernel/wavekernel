@@ -12,9 +12,8 @@ module matrix_io
   public :: read_matrix_file, print_matrix, sparse_mat
 
 contains
-  subroutine read_matrix_file(filename, info, matrix)
-    implicit none
 
+  subroutine read_matrix_file(filename, info, matrix)
     character(*), intent(in) :: filename
     type(matrix_info), intent(in) :: info
     type(sparse_mat), intent(out) :: matrix
@@ -57,8 +56,6 @@ contains
 
 
   subroutine read_matrix_file_value(verbose_level, unit_num, mat_size, num_non_zeros, mat_value, mat_suffix)
-    implicit none
-
     integer, intent(in) :: verbose_level
     integer, intent(in) :: unit_num
     integer, intent(in) :: mat_size
@@ -115,6 +112,7 @@ contains
     character(*), intent(in) :: name
     double precision, intent(in) :: mat(:, :)
     integer :: i, j, m, n
+
     if (m < 0) then
        m = size(mat, 1)
     end if

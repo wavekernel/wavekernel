@@ -25,6 +25,7 @@ module command_argument
        read_command_argument, print_command_argument
 
 contains
+
   subroutine print_help()
     print *, 'help not written'
   end subroutine print_help

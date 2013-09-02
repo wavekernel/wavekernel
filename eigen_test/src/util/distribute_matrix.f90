@@ -20,6 +20,7 @@ module distribute_matrix
        rsrc_, csrc_, local_rows_
 
 contains
+
   subroutine setup_distribution(proc)
     type(process), intent(out) :: proc
 
@@ -79,7 +80,7 @@ contains
 
   subroutine create_dense_matrix(mat_in, mat)
     use matrix_io, only : sparse_mat
-    implicit none
+
     type(sparse_mat), intent(in) :: mat_in
     double precision, intent(out), allocatable :: mat(:,:)
 
@@ -279,6 +280,3 @@ contains
     deallocate(send_buf)
   end subroutine allgather_row_wise
 end module distribute_matrix
-
-
-

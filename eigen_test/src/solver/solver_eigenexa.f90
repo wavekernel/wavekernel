@@ -8,10 +8,10 @@ module solver_eigenexa
   public :: eigen_solver_eigenexa
 
 contains
+
   subroutine eigen_solver_eigenexa(mat, n_vec, eigenvalues, eigenvectors_global)
     use MPI
     !!use eigen_libs
-    implicit none
 
     type(sparse_mat), intent(in) :: mat
     integer, intent(in) :: n_vec

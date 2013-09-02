@@ -6,8 +6,6 @@ module time
 
 contains
   subroutine get_wclock_time(time_present, time_origin)
-    implicit none
-
     double precision, intent(out) :: time_present
     double precision, optional :: time_origin
 
@@ -32,7 +30,6 @@ contains
 
 
   subroutine data_and_time_wrapper(chara_wrk)
-    implicit none
     character(len=256), intent(out) :: chara_wrk
     character(len=8) :: chara_date
     character(len=10) :: chara_time

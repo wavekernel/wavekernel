@@ -16,8 +16,6 @@ module solver_scalapack_select
 
 contains
   subroutine eigen_solver_scalapack_select(proc, desc_A, A, n_vec, eigenpairs)
-    implicit none
-
     include 'mpif.h'
 
     type(process) :: proc

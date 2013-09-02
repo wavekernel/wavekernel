@@ -11,6 +11,7 @@ module solver_main
   public :: lib_eigen_checker
 
 contains
+
   subroutine eigen_checker_local(arg, matrix_A, eigenpairs, &
        res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
@@ -57,8 +58,6 @@ contains
 
   subroutine lib_eigen_checker(arg, matrix_A, eigenpairs, &
        res_norm_ave, res_norm_max, matrix_B)
-    implicit none
-
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
@@ -110,7 +109,6 @@ contains
          setup_distributed_matrix, copy_global_dense_matrix_to_local, &
          copy_global_sparse_matrix_to_local
     use eigenpairs_types, only : eigenpairs_types_union
-    implicit none
 
     type(argument) :: arg
     type(sparse_mat), intent(in) :: matrix_A
