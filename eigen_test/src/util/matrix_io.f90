@@ -1,5 +1,6 @@
 module matrix_io
-  use command_argument, only : matrix_info
+  use command_argument, only : argument, matrix_info
+  use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
   type sparse_mat
@@ -9,7 +10,7 @@ module matrix_io
   end type sparse_mat
 
   private
-  public :: read_matrix_file, print_matrix, sparse_mat
+  public :: read_matrix_file, print_matrix, sparse_mat, print_eigenvectors
 
 contains
 
@@ -125,4 +126,31 @@ contains
        end do
     end do
   end subroutine print_matrix
+
+  subroutine print_eigenvectors(arg, eigenpairs)
+    type(argument) :: arg
+    type(eigenpairs_types_union) :: eigenpairs
+
+    double precision :: work(arg%matrix_A_info%rows)
+    integer :: max_num_digits, len, i, j
+    character(16) :: num_str
+
+    if (eigenpairs%type_number == 1) then
+      stop '[Error] print_eigenvectors: printer for' // &
+           'a local matrix not implemented yet'
+    else if (eigenpairs%type_number == 2) then
+      max_num_digits = int(log10(real( &
+           arg%printed_vecs_end - arg%printed_vecs_start + 1))) + 1
+      do i = arg%printed_vecs_start, arg%printed_vecs_end
+        write (num_str, '(i0)') i
+        len = len_trim(num_str)
+        num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
+        num_str(1 : max_num_digits - len) = '0'
+        call pdlawrite(trim(arg%eigenvector_dir) // '/' // &
+             trim(num_str) // '.dat', &
+             arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
+             1, i, eigenpairs%blacs%desc, 0, 0, work)
+      end do
+    end if
+  end subroutine print_eigenvectors
 end module matrix_io

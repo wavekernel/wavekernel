@@ -17,6 +17,9 @@ module command_argument
     character(len=256) :: output_filename = 'eigenvalues.dat'
     logical :: is_generalized_problem
     integer :: n_vec = -1, n_check_vec = -1 ! These default -1 mean 'all the vectors'
+    character(len=256) :: eigenvector_dir = '.'
+    integer :: printed_vecs_start = 0 ! Zero means do not print eigenvectors
+    integer :: printed_vecs_end
     integer :: verbose_level = 0
   end type argument
 
@@ -196,6 +199,7 @@ contains
     integer :: argi = 1
     character(len=256) :: arg_str
     logical :: exists
+    integer :: i
 
     do while (argi <= command_argument_count())
       call get_command_argument(argi, arg_str)
@@ -217,6 +221,21 @@ contains
         case ('o')
           call get_command_argument(argi + 1, arg_str)
           arg%output_filename = trim(arg_str)
+          argi = argi + 1
+        case ('d')
+          call get_command_argument(argi + 1, arg_str)
+          arg%eigenvector_dir = trim(arg_str)
+          argi = argi + 1
+        case ('p')
+          call get_command_argument(argi + 1, arg_str)
+          i = index(arg_str, ',')
+          if (i == 0) then
+            read (arg_str, *) arg%printed_vecs_start
+            arg%printed_vecs_end = arg%printed_vecs_start
+          else
+            read (arg_str(1 : i - 1), *) arg%printed_vecs_start
+            read (arg_str(i + 1 :), *) arg%printed_vecs_end
+          end if
           argi = argi + 1
         case ('v')
           arg%verbose_level = 1

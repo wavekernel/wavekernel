@@ -2,7 +2,7 @@ program eigen_test
   use solver_main, only : lib_eigen_solver, lib_eigen_checker !(routine)
   use command_argument, only : argument, required_memory, &
        read_command_argument, print_command_argument
-  use matrix_io, only : sparse_mat, read_matrix_file !(type, rouine)
+  use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
   use distribute_matrix, only : create_dense_matrix !(routine)
   use time, only : data_and_time_wrapper !(routine)
   use processes, only : check_master !(routine)
@@ -35,6 +35,10 @@ program eigen_test
     call lib_eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
   else
     call lib_eigen_solver(arg, matrix_A, eigenpairs)
+  end if
+
+  if (arg%printed_vecs_start /= 0) then
+    call print_eigenvectors(arg, eigenpairs)
   end if
 
   if (arg%n_check_vec /= 0) then
