@@ -19,7 +19,7 @@ module command_argument
     integer :: n_vec = -1, n_check_vec = -1 ! These default -1 mean 'all the vectors'
     character(len=256) :: eigenvector_dir = '.'
     integer :: printed_vecs_start = 0 ! Zero means do not print eigenvectors
-    integer :: printed_vecs_end
+    integer :: printed_vecs_end = 0
     integer :: verbose_level = 0
   end type argument
 
@@ -68,7 +68,7 @@ contains
     type(argument), intent(in) :: arg
 
     integer :: dim
-    logical :: is_size_valid, is_solver_valid, is_n_vec_valid
+    logical :: is_size_valid, is_solver_valid, is_n_vec_valid, exists
 
     ! Is matrix size appropriate?
     dim = arg%matrix_A_info%rows
@@ -120,6 +120,17 @@ contains
     end select
     if (.not. is_n_vec_valid) then
       call terminate(arg, '[Error] validate_argument: This solver does not support partial eigenvalue computation')
+    end if
+
+    ! Check for eigenvector printing
+    inquire (file = trim(arg%eigenvector_dir), exist = exists)
+    if (.not. exists) then
+      call terminate(arg, '[Error] validate_argument: Specified directory with -d option does not exist')
+    end if
+
+    if (arg%printed_vecs_start < 0 .or. arg%printed_vecs_end < 0 .or. &
+         arg%printed_vecs_start > arg%printed_vecs_end) then
+      call terminate(arg, '[Error] validate_argument: Specified numbers with -p option are not valid')
     end if
   end subroutine validate_argument
 
