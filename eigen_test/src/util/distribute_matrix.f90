@@ -141,6 +141,8 @@ contains
        buf_size_row = numroc(m, mb, 0, 0, n_procs_row)
        buf_size_col = numroc(n, nb, 0, 0, n_procs_col)
        allocate(recv_buf(buf_size_row, buf_size_col))
+     else
+       allocate(recv_buf(0, 0)) ! Only destination process uses receive buffer
     end if
 
     do pr = 0, n_procs_row - 1
