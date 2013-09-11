@@ -132,7 +132,7 @@ contains
     type(eigenpairs_types_union) :: eigenpairs
 
     double precision :: work(arg%matrix_A_info%rows)
-    integer :: max_num_digits, len, i, j
+    integer :: max_num_digits, len, i
     character(16) :: num_str
 
     if (eigenpairs%type_number == 1) then
