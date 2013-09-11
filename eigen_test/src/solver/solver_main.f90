@@ -175,11 +175,13 @@ contains
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
     if (info /= 0) then
+      print *, 'info(pdpotrf): ', info
       stop '[Error] reduce_generalized: pdpotrf failed'
     end if
     ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
     if (info /= 0) then
+      print *, 'info(pdsygst): ', info
       stop '[Error] reduce_generalized: pdsygst failed'
     end if
   end subroutine reduce_generalized
@@ -196,6 +198,7 @@ contains
     call pdtrtrs('L', 'T', 'N', dim, n_vec, B, 1, 1, desc_B, &
          Vectors, 1, 1, desc_Vectors, info)
     if (info /= 0) then
+      print *, 'info(pdtrtrs): ', info
       stop '[Error] reduce_generalized: pdtrtrs failed'
     end if
   end subroutine recovery_generalized
