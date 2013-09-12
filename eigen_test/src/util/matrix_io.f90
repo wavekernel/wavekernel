@@ -134,6 +134,7 @@ contains
     double precision :: work(arg%matrix_A_info%rows)
     integer :: max_num_digits, len, i
     character(16) :: num_str
+    integer, parameter :: iunit = 10
 
     if (eigenpairs%type_number == 1) then
       stop '[Error] print_eigenvectors: printer for a local matrix not implemented yet'
@@ -145,10 +146,11 @@ contains
         len = len_trim(num_str)
         num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
         num_str(1 : max_num_digits - len) = '0'
-        call pdlawrite(trim(arg%eigenvector_dir) // '/' // &
-             trim(num_str) // '.dat', &
-             arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
-             1, i, eigenpairs%blacs%desc, 0, 0, work)
+        open (iunit, file=trim(arg%eigenvector_dir) // '/' // &
+             trim(num_str) // '.dat', status='replace')
+        call pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
+             1, i, eigenpairs%blacs%desc, 0, 0, '', iunit, work)
+        close (iunit)
       end do
     end if
   end subroutine print_eigenvectors
