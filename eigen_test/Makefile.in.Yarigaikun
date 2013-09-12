@@ -1,4 +1,4 @@
 FC = mpif90
-FFLAGS = -O3 -Wall -fopenmp
+FFLAGS = -cpp -O3 -Wall -fopenmp
 LIBS = -L$(HOME)/lib -I$(HOME)/lib -lEigenExa
 LIBS += -L/usr/lib/openmpi/lib -lscalapack -llapack -lrefblas -lgomp -lmpi

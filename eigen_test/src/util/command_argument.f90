@@ -123,7 +123,11 @@ contains
     end if
 
     ! Check for eigenvector printing
+#ifdef __INTEL_COMPILER
+    inquire (directory = trim(arg%eigenvector_dir), exist = exists)
+#else
     inquire (file = trim(arg%eigenvector_dir), exist = exists)
+#endif
     if (.not. exists) then
       call terminate(arg, '[Error] validate_argument: Specified directory with -d option does not exist')
     end if
