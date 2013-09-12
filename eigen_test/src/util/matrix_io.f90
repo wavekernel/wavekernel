@@ -136,8 +136,7 @@ contains
     character(16) :: num_str
 
     if (eigenpairs%type_number == 1) then
-      stop '[Error] print_eigenvectors: printer for' // &
-           'a local matrix not implemented yet'
+      stop '[Error] print_eigenvectors: printer for a local matrix not implemented yet'
     else if (eigenpairs%type_number == 2) then
       max_num_digits = int(log10(real( &
            arg%printed_vecs_end - arg%printed_vecs_start + 1))) + 1
