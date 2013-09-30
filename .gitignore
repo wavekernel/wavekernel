@@ -2,20 +2,34 @@
 matrix/
 old/
 out/
+eigen_test/test/
+slides/
 
 # Objects
 *.o
 
 # Executables
-eigen
-pi-quad-prec
+eigen_test/bin/eigen
+quad/pi-quad-prec
+scocg/sequential/scocg
 *.out
 job*.sh
+
+# Data
+*.dat
+*.mat
+*.3
+*.54
+
+# Archives
+*.tar
+*.gz
+*.zip
 
 # Misc
 Makefile.in
 *.mod
 *.log
-*.dat
+*.pdf
 *\#*
 *~
