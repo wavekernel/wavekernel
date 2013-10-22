@@ -53,7 +53,7 @@ contains
     enddo
 
     res_norm_max = maxval(res_norm)
-    res_norm_ave = sum(res_norm) / dble(arg%n_vec)
+    res_norm_ave = sum(res_norm) / dble(arg%n_check_vec)
   end subroutine eigen_checker_local
 
 
