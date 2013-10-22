@@ -1,4 +1,5 @@
 module solver_main
+  use descriptor_parameters
   use command_argument, only : argument
   use matrix_io, only : sparse_mat
   use distribute_matrix, only : create_dense_matrix, gather_matrix

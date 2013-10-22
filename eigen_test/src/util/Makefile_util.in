@@ -1,1 +1,1 @@
-OBJ-LIB-MISC = util/time.o util/mmio.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o
+OBJ-LIB-MISC = util/time.o util/mmio.o util/descriptor_parameters.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o

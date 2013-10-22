@@ -1,4 +1,5 @@
 module distribute_matrix
+  use descriptor_parameters
   use processes, only : layout_procs
   use matrix_io, only : sparse_mat
   implicit none
@@ -7,10 +8,6 @@ module distribute_matrix
     integer :: my_rank, n_procs, context
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
   end type process
-
-  integer, parameter :: desc_size = 9, desc_type_ = 1, context_ = 2, &
-       rows_ = 3, cols_ = 4, block_row_ = 5, block_col_ = 6, &
-       rsrc_ = 7, csrc_ = 8, local_rows_ = 9
 
   public :: process, setup_distribution, &
        get_local_cols, setup_distributed_matrix, &
