@@ -2,8 +2,9 @@ module solver_main
   use descriptor_parameters
   use command_argument, only : argument
   use matrix_io, only : sparse_mat
-  use distribute_matrix, only : create_dense_matrix, gather_matrix
-  use eigenpairs_types, only: eigenpairs_types_union
+  use distribute_matrix, only : process, create_dense_matrix, &
+       setup_distributed_matrix, gather_matrix, copy_global_sparse_matrix_to_local
+  use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
   use processes, only : check_master
   implicit none
 
@@ -57,6 +58,69 @@ contains
   end subroutine eigen_checker_local
 
 
+  subroutine eigen_checker_blacs_standard(arg, matrix_A, eigenpairs, &
+       res_norm_ave, res_norm_max)
+    include 'mpif.h'
+
+    type(argument), intent(in) :: arg
+    type(sparse_mat), intent(in) :: matrix_A
+    type(eigenpairs_blacs), intent(inout) :: eigenpairs
+    ! residual norm average, max
+    double precision, intent(out) :: res_norm_ave, res_norm_max
+
+    type(process) :: proc
+    integer :: dim, desc_Residual(desc_size), desc_A(desc_size)
+    double precision, allocatable :: Residual(:, :), matrix_A_dist(:, :)
+    ! ave_and_max is declared as array due to usage of bcast
+    ! 3rd element is for the index of the max value (discarded currently)
+    double precision :: norm, ave_and_max(3)
+    integer :: j, owner_proc_col, ierr
+    integer :: indxg2p ! ScaLAPACK function
+
+    call blacs_pinfo(proc%my_rank, proc%n_procs)
+    call blacs_gridinfo(proc%context, proc%n_procs_row, proc%n_procs_col, &
+         proc%my_proc_row, proc%my_proc_col)
+
+    dim = arg%matrix_A_info%rows
+    call setup_distributed_matrix(proc, dim, dim, desc_A, matrix_A_dist)
+    call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
+    call setup_distributed_matrix(proc, dim, arg%n_check_vec, desc_Residual, Residual)
+
+    ! Residual <- A * Eigenvectors
+    call pdsymm('L', 'L', dim, arg%n_check_vec, 1.0d0, &
+         matrix_A_dist, 1, 1, desc_A, &
+         eigenpairs%Vectors, 1, 1, eigenpairs%desc, &
+         0.0d0, Residual, 1, 1, desc_Residual)
+
+    ! For each column j, Residual(*, j) <- Residual(*, j) - eigenvalues(j) * Eigenvectors(*, j)
+    ! Then store the 2-norm of the residual column in the first row of the column
+    do j = 1, arg%n_check_vec
+      call pdaxpy(dim, -1.0d0 * eigenpairs%values(j), &
+           eigenpairs%Vectors, 1, j, eigenpairs%desc, 1, &
+           Residual, 1, j, desc_Residual, 1)
+      call pdnrm2(dim, norm, Residual, 1, j, desc_Residual, 1)
+
+      owner_proc_col = indxg2p(j, desc_Residual(block_col_), 0, &
+           desc_Residual(csrc_), proc%n_procs_col)
+      if (proc%my_proc_row == 0 .and. proc%my_proc_col == owner_proc_col) then
+        call pdelset(Residual, 1, j, desc_Residual, norm)
+      end if
+    end do
+
+    ! Although these pd* routines return result values only in the scope of focused subvector,
+    ! processor rank 0 must be in the scope because the subvector is the first row of Residual here
+    call pdasum(arg%n_check_vec, ave_and_max(1), &
+         Residual, 1, 1, desc_Residual, desc_Residual(rows_))
+    call pdamax(arg%n_check_vec, ave_and_max(2), ave_and_max(3), &
+         Residual, 1, 1, desc_Residual, desc_Residual(rows_))
+    print *, proc%my_rank, ave_and_max(2)
+    call mpi_bcast(ave_and_max(1), 3, mpi_double_precision, 0, mpi_comm_world, ierr)
+
+    res_norm_ave = ave_and_max(1) / dble(arg%n_check_vec)
+    res_norm_max = ave_and_max(2)
+  end subroutine eigen_checker_blacs_standard
+
+
   subroutine lib_eigen_checker(arg, matrix_A, eigenpairs, &
        res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
@@ -69,6 +133,12 @@ contains
     logical :: is_master
 
     call check_master(arg%solver_type, is_master)
+
+    if (eigenpairs%type_number == 2 .and. .not. arg%is_generalized_problem) then
+      call eigen_checker_blacs_standard(arg, matrix_A, eigenpairs%blacs, &
+           res_norm_ave, res_norm_max)
+      return
+    end if
 
     if (eigenpairs%type_number == 2) then ! Temporal implementation
       eigenpairs%type_number = 1
