@@ -18,7 +18,7 @@ contains
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
-    type(eigenpairs_types_union), intent(inout) :: eigenpairs
+    type(eigenpairs_types_union), intent(in) :: eigenpairs
 
     double precision, intent(out) :: res_norm_ave, res_norm_max
 
