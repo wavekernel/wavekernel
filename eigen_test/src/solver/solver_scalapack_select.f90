@@ -81,7 +81,7 @@ contains
       call pdsyevx_report(proc%context, jobz, abstol, orfac, info, &
            n_eigenvalues, n_eigenvectors, ifail, iclustr)
       if (n_eigenvalues < n_vec) then
-        print '(" PDSYEVX computed only ", I0, " of ", I0, " requested eigenvalues")', &
+        print '("[Warning] eigen_solver_scalapack_select: PDSYEVX computed only ", I0, " of ", I0, " requested eigenvalues")', &
              n_eigenvalues, n_vec
       end if
     end if
