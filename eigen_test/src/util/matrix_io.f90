@@ -148,7 +148,7 @@ contains
         num_str(1 : max_num_digits - len) = '0'
         open (iunit, file=trim(arg%eigenvector_dir) // '/' // &
              trim(num_str) // '.dat', status='replace')
-        call pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
+        call eigentest_pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
              1, i, eigenpairs%blacs%desc, 0, 0, '', iunit, work)
         close (iunit)
       end do

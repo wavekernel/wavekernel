@@ -121,7 +121,7 @@ contains
 
     call get_wclock_time(t_pdormtr_end)
 
-    ! call pdlaprnt(dim, dim, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, 0, 0, 'Eigenvectors', 6, work_print)
+    ! call eigentest_pdlaprnt(dim, dim, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, 0, 0, 'Eigenvectors', 6, work_print)
 
     call get_wclock_time(t_all_end)
 
