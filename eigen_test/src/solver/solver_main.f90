@@ -82,7 +82,10 @@ contains
       stop '[Error] eigen_checker_blacs: matrix_B is not provided'
     end if
 
-    call blacs_get(-1, 0, proc%context)
+    ! call blacs_get(-1, 0, proc%context)
+    ! Because context acquiring by blacs_get can fail in some environments,
+    ! use context in the descriptor of eigenpairs instead.
+    proc%context = eigenpairs%desc(context_)
     call blacs_pinfo(proc%my_rank, proc%n_procs)
     call blacs_gridinfo(proc%context, proc%n_procs_row, proc%n_procs_col, &
          proc%my_proc_row, proc%my_proc_col)
