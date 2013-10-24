@@ -14,9 +14,9 @@
 #------ program execution ------#
 export OMP_NUM_THREADS=16
 
-matrix_dir=/work/k0099/k009914/matrix
+mkdir -p out
+matrix_dir= # Set properly
 size=400
 matrix=$matrix_dir/ELSES_MATRIX_VCNT${size}std_A.mtx
 
-#mpiexec ./bin/eigen -s scalapack_select -n 200 -c 5 $matrix
-mpiexec ./bin/eigen -s scalapack_all $matrix
+mpiexec ./bin/eigen -s scalapack_all -c 10 -p 1,10 $matrix
