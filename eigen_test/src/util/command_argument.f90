@@ -1,4 +1,5 @@
 module command_argument
+  use processes, only : check_master
   implicit none
 
   ! Matrix Market format
@@ -29,8 +30,29 @@ module command_argument
 
 contains
 
-  subroutine print_help()
-    print *, 'help not written'
+  subroutine print_help(arg)
+    type(argument), intent(in) :: arg
+
+    logical :: is_master
+
+    call check_master(arg%solver_type, is_master)
+    if (is_master) then
+      print *, 'Usage: eigen_test -s <solver_type> <options> <matrix_A> [<matrix_B>]'
+      print *, 'Solver types are:'
+      print *, '  scalapack_all (standard)'
+      print *, '  scalapac_select (standard, selecting)'
+      print *, '  general_scalapack_all (generalized)'
+      print *, '  general_scalapack_select (generalized, selecting)'
+      print *, 'Options are:'
+      print *, '  -n <num>  (available with selecting solvers) Compute only &
+           &<num> eigenpairs in ascending order of their eigenvalues'
+      print *, '  -c <num>  Consider only <num> eigenvectors in residual norm checking'
+      print *, '  -o <file>  Set output file name for eigenvalues to <file>'
+      print *, '  -d <dir>  Set output files directory for eigenvectors to <dir>'
+      print *, '  -p <num>  Specify the number of eigenvector to be output'
+      print *, '  -p <num1>,<num2>  Specify range of the number of eigenvectors to be output'
+      print *, '  -h  Print this help and exit'
+    end if
   end subroutine print_help
 
 
@@ -48,8 +70,6 @@ contains
 
 
   subroutine terminate(arg, err_msg)
-    use processes, only : check_master
-
     type(argument), intent(in) :: arg
     character(*), intent(in) :: err_msg
 
@@ -254,9 +274,12 @@ contains
           argi = argi + 1
         case ('v')
           arg%verbose_level = 1
+        case ('h')
+          call print_help(arg)
+          call terminate(arg, '')
         case default
-          call print_help()
-          stop
+          call print_help(arg)
+          call terminate(arg, '[Error] read_command_argument: unknown option')
         end select
       else if (len_trim(arg%matrix_A_filename) == 0) then
         ! The first non-option argument specifies the (left) input matrix
