@@ -68,7 +68,7 @@ contains
     type(argument), intent(in) :: arg
 
     integer :: dim
-    logical :: is_size_valid, is_solver_valid, is_n_vec_valid, exists
+    logical :: is_size_valid, is_solver_valid, is_n_vec_valid
 
     ! Is matrix size appropriate?
     dim = arg%matrix_A_info%rows
@@ -121,16 +121,6 @@ contains
     end select
     if (.not. is_n_vec_valid) then
       stop '[Error] validate_argument: This solver does not support partial eigenvalue computation'
-    end if
-
-    ! Check for eigenvector printing
-#ifdef __INTEL_COMPILER
-    inquire (directory = trim(arg%eigenvector_dir), exist = exists)
-#else
-    inquire (file = trim(arg%eigenvector_dir), exist = exists)
-#endif
-    if (.not. exists) then
-      stop '[Error] validate_argument: Specified directory with -d option does not exist'
     end if
 
     if (arg%printed_vecs_start < 0 .or. arg%printed_vecs_end < 0 .or. &

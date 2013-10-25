@@ -1,6 +1,7 @@
 module matrix_io
   use command_argument, only : argument, matrix_info
   use eigenpairs_types, only : eigenpairs_types_union
+  use processes, only : check_master, terminate
   implicit none
 
   type sparse_mat
@@ -132,8 +133,8 @@ contains
     type(eigenpairs_types_union) :: eigenpairs
 
     double precision :: work(arg%matrix_A_info%rows)
-    integer :: max_num_digits, len, i
-    character(16) :: num_str
+    integer :: max_num_digits, len, i, stat
+    character(512) :: num_str, filename
     integer, parameter :: iunit = 10
 
     if (eigenpairs%type_number == 1) then
@@ -146,8 +147,14 @@ contains
         len = len_trim(num_str)
         num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
         num_str(1 : max_num_digits - len) = '0'
-        open (iunit, file=trim(arg%eigenvector_dir) // '/' // &
-             trim(num_str) // '.dat', status='replace')
+
+        filename = trim(arg%eigenvector_dir) // '/' // trim(num_str) // '.dat'
+        open (iunit, file=trim(filename), status='replace', iostat=stat)
+        if (stat /= 0) then
+          if (check_master ()) print *, 'iostat: ', stat
+          call terminate('[Error] print_eigenvectors: cannot open ' // trim(filename))
+        end if
+
         call eigentest_pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
              1, i, eigenpairs%blacs%desc, 0, 0, '', iunit, work)
         close (iunit)
