@@ -2,7 +2,7 @@ module processes
   implicit none
 
   private
-  public :: check_master, layout_procs
+  public :: layout_procs, check_master, terminate
 
 contains
   subroutine layout_procs(n_procs, n_procs_row, n_procs_col)
@@ -36,4 +36,15 @@ contains
     call blacs_pinfo(my_rank, n_procs)
     check_master = (my_rank == 0)
   end function check_master
+
+
+  subroutine terminate(err_msg)
+    character(*), intent(in) :: err_msg
+
+    if (check_master()) then
+      write (0, *) err_msg
+    end if
+    call mpi_finalize()
+    stop
+  end subroutine terminate
 end module processes

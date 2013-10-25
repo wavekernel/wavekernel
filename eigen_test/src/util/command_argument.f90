@@ -1,5 +1,5 @@
 module command_argument
-  use processes, only : check_master
+  use processes, only : check_master, terminate
   implicit none
 
   ! Matrix Market format
@@ -64,17 +64,6 @@ contains
   end subroutine wrap_mminfo
 
 
-  subroutine terminate(err_msg)
-    character(*), intent(in) :: err_msg
-
-    if (check_master()) then
-      write (0, *) err_msg
-    end if
-    call mpi_finalize()
-    stop
-  end subroutine terminate
-
-
   subroutine validate_argument(arg)
     type(argument), intent(in) :: arg
 
@@ -108,6 +97,7 @@ contains
     case ('eigenexa')
       is_solver_valid = .not. arg%is_generalized_problem
     case default
+      is_solver_valid = .false.
       call terminate('[Error] validate_argument: Unknown solver')
     end select
     if (.not. is_solver_valid) then
