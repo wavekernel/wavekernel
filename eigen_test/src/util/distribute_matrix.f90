@@ -1,6 +1,6 @@
 module distribute_matrix
   use descriptor_parameters
-  use processes, only : layout_procs
+  use processes, only : layout_procs, terminate
   use matrix_io, only : sparse_mat
   implicit none
 
@@ -62,7 +62,8 @@ contains
 
     block_size = min(32, rows / max(proc%n_procs_row, proc%n_procs_col))
     if (proc%my_rank == 0) then
-      print '( "block size: ", I0 )', block_size
+      print '( "Creating distributed matrix  M, N, MB, NB: ", &
+           &I0, ", ", I0, ", ", I0, ", ", I0 )', rows, cols, block_size, block_size
     end if
 
     local_rows = max(1, numroc(rows, block_size, &
@@ -70,7 +71,17 @@ contains
 
     call descinit(desc, rows, cols, block_size, block_size, &
          0, 0, proc%context, local_rows, info)
-    allocate(mat(1 : local_rows, 1 : get_local_cols(proc, desc)))
+    if (info /= 0) then
+      print *, 'info(descinit): ', info
+      call terminate('[Error] setup_distributed_matrix: descinit failed')
+    end if
+
+    allocate(mat(1 : local_rows, 1 : get_local_cols(proc, desc)), stat = info)
+    if (info /= 0) then
+      print *, 'stat(allocate): ', info
+      call terminate('[Error] setup_distributed_matrix: allocation failed')
+    end if
+
     mat(:, :) = 0.0d0
   end subroutine setup_distributed_matrix
 
