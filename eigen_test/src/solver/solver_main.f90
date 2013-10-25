@@ -5,6 +5,7 @@ module solver_main
   use distribute_matrix, only : process, create_dense_matrix, &
        setup_distributed_matrix, gather_matrix, copy_global_sparse_matrix_to_local
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
+  use processes, only : check_master
   implicit none
 
   private
@@ -246,18 +247,25 @@ contains
     double precision, intent(inout) :: A(:, :), B(:, :)
 
     integer :: info
-    double precision :: scale
+    double precision :: scale, work_pdlaprnt(desc_B(block_row_))
 
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
     if (info /= 0) then
-      print *, 'info(pdpotrf): ', info
+      if (check_master()) print *, 'info(pdpotrf): ', info
+      if (info > 0) then
+        info = min(info, 10)
+        if (check_master()) print *, &
+             'The leading minor that is not positive definite (up to order 10) is:'
+        call eigentest_pdlaprnt(info, info, B, 1, 1, desc_B, 0, 0, '  B', 6, work_pdlaprnt)
+      end if
       stop '[Error] reduce_generalized: pdpotrf failed'
     end if
+
     ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
     if (info /= 0) then
-      print *, 'info(pdsygst): ', info
+      if (check_master()) print *, 'info(pdsygst): ', info
       stop '[Error] reduce_generalized: pdsygst failed'
     end if
   end subroutine reduce_generalized
@@ -274,7 +282,7 @@ contains
     call pdtrtrs('L', 'T', 'N', dim, n_vec, B, 1, 1, desc_B, &
          Vectors, 1, 1, desc_Vectors, info)
     if (info /= 0) then
-      print *, 'info(pdtrtrs): ', info
+      if (check_master()) print *, 'info(pdtrtrs): ', info
       stop '[Error] reduce_generalized: pdtrtrs failed'
     end if
   end subroutine recovery_generalized
