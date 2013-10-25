@@ -5,7 +5,7 @@ module solver_main
   use distribute_matrix, only : process, create_dense_matrix, &
        setup_distributed_matrix, gather_matrix, copy_global_sparse_matrix_to_local
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
-  use processes, only : check_master
+  use processes, only : check_master, terminate
   implicit none
 
   private
@@ -79,7 +79,7 @@ contains
     integer :: indxg2p ! ScaLAPACK function
 
     if (arg%is_generalized_problem .and. .not. present(matrix_B)) then
-      stop '[Error] eigen_checker_blacs: matrix_B is not provided'
+      call terminate('[Error] eigen_checker_blacs: matrix_B is not provided')
     end if
 
     ! call blacs_get(-1, 0, proc%context)
@@ -259,14 +259,14 @@ contains
              'The leading minor that is not positive definite (up to order 10) is:'
         call eigentest_pdlaprnt(info, info, B, 1, 1, desc_B, 0, 0, '  B', 6, work_pdlaprnt)
       end if
-      stop '[Error] reduce_generalized: pdpotrf failed'
+      call terminate('[Error] reduce_generalized: pdpotrf failed')
     end if
 
     ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
     if (info /= 0) then
       if (check_master()) print *, 'info(pdsygst): ', info
-      stop '[Error] reduce_generalized: pdsygst failed'
+      call terminate('[Error] reduce_generalized: pdsygst failed')
     end if
   end subroutine reduce_generalized
 
@@ -283,7 +283,7 @@ contains
          Vectors, 1, 1, desc_Vectors, info)
     if (info /= 0) then
       if (check_master()) print *, 'info(pdtrtrs): ', info
-      stop '[Error] reduce_generalized: pdtrtrs failed'
+      call terminate('[Error] reduce_generalized: pdtrtrs failed')
     end if
   end subroutine recovery_generalized
 end module solver_main

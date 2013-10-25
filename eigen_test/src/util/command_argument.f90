@@ -79,7 +79,7 @@ contains
            .and. (dim == arg%matrix_B_info%cols)
     end if
     if (.not. is_size_valid) then
-      call terminate('[Error] validate_argument: Matrix dimension mismatch')
+      stop '[Error] validate_argument: Matrix dimension mismatch'
     end if
 
     ! Solver type and problem type matched?
@@ -98,13 +98,13 @@ contains
       is_solver_valid = .not. arg%is_generalized_problem
     case default
       is_solver_valid = .false.
-      call terminate('[Error] validate_argument: Unknown solver')
+      stop '[Error] validate_argument: Unknown solver'
     end select
     if (.not. is_solver_valid) then
       if (arg%is_generalized_problem) then
-        call terminate('[Error] validate_argument: This solver is not for generalized eigenvalue problem')
+        stop '[Error] validate_argument: This solver is not for generalized eigenvalue problem'
       else
-        call terminate('[Error] validate_argument: This solver is not for standard eigenvalue problem')
+        stop '[Error] validate_argument: This solver is not for standard eigenvalue problem'
       end if
     end if
 
@@ -120,7 +120,7 @@ contains
       is_n_vec_valid = .true.
     end select
     if (.not. is_n_vec_valid) then
-      call terminate('[Error] validate_argument: This solver does not support partial eigenvalue computation')
+      stop '[Error] validate_argument: This solver does not support partial eigenvalue computation'
     end if
 
     ! Check for eigenvector printing
@@ -130,12 +130,12 @@ contains
     inquire (file = trim(arg%eigenvector_dir), exist = exists)
 #endif
     if (.not. exists) then
-      call terminate('[Error] validate_argument: Specified directory with -d option does not exist')
+      stop '[Error] validate_argument: Specified directory with -d option does not exist'
     end if
 
     if (arg%printed_vecs_start < 0 .or. arg%printed_vecs_end < 0 .or. &
          arg%printed_vecs_start > arg%printed_vecs_end) then
-      call terminate('[Error] validate_argument: Specified numbers with -p option are not valid')
+      stop '[Error] validate_argument: Specified numbers with -p option are not valid'
     end if
   end subroutine validate_argument
 
@@ -257,10 +257,10 @@ contains
           arg%verbose_level = 1
         case ('h')
           call print_help()
-          call terminate('')
+          stop ''
         case default
           call print_help()
-          call terminate('[Error] read_command_argument: unknown option')
+          stop '[Error] read_command_argument: unknown option'
         end select
       else if (len_trim(arg%matrix_A_filename) == 0) then
         ! The first non-option argument specifies the (left) input matrix
@@ -268,13 +268,13 @@ contains
         ! Check whether the file exists
         inquire(file = trim(arg%matrix_A_filename), exist = exists)
         if (.not. exists) then
-          call terminate('[Error] read_command_argument: Matrix A file not found')
+          stop '[Error] read_command_argument: Matrix A file not found'
         end if
       else
         arg%matrix_B_filename = trim(arg_str)
         inquire(file = arg%matrix_B_filename, exist = exists)
         if (.not. exists) then
-          call terminate('[Error] read_command_argument: Matrix B file not found')
+          stop '[Error] read_command_argument: Matrix B file not found'
         end if
       end if
       argi = argi + 1
