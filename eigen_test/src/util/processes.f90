@@ -35,12 +35,7 @@ contains
     logical, intent(out) :: is_master
     integer :: my_rank, n_procs
 
-    select case (trim(solver_type))
-    case ('lapack')
-      is_master = .true.
-    case default
-      call blacs_pinfo(my_rank, n_procs)
-      is_master = (my_rank == 0)
-    end select
+    call blacs_pinfo(my_rank, n_procs)
+    is_master = (my_rank == 0)
   end subroutine check_master
 end module processes
