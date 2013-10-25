@@ -5,7 +5,6 @@ module solver_main
   use distribute_matrix, only : process, create_dense_matrix, &
        setup_distributed_matrix, gather_matrix, copy_global_sparse_matrix_to_local
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
-  use processes, only : check_master
   implicit none
 
   private
@@ -158,10 +157,6 @@ contains
     type(eigenpairs_types_union), intent(inout) :: eigenpairs
     ! residual norm average, max
     double precision, intent(out) :: res_norm_ave, res_norm_max
-
-    logical :: is_master
-
-    call check_master(arg%solver_type, is_master)
 
     if (eigenpairs%type_number == 1) then
       call eigen_checker_local(arg, matrix_A, eigenpairs, &

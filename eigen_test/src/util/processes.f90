@@ -30,12 +30,10 @@ contains
   end subroutine layout_procs
 
 
-  subroutine check_master(solver_type, is_master)
-    character(len=256), intent(in) :: solver_type
-    logical, intent(out) :: is_master
+  logical function check_master()
     integer :: my_rank, n_procs
 
     call blacs_pinfo(my_rank, n_procs)
-    is_master = (my_rank == 0)
-  end subroutine check_master
+    check_master = (my_rank == 0)
+  end function check_master
 end module processes

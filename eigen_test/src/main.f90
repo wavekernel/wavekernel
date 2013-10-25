@@ -5,7 +5,7 @@ program eigen_test
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
   use distribute_matrix, only : create_dense_matrix !(routine)
   use time, only : data_and_time_wrapper !(routine)
-  use processes, only : check_master !(routine)
+  use processes, only : check_master
   use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
@@ -18,7 +18,7 @@ program eigen_test
 
   call read_command_argument(arg)
 
-  call check_master(arg%solver_type, is_master)
+  is_master = check_master()
 
   if (is_master) then
     call print_command_argument(arg)

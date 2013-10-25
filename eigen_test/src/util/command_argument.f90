@@ -30,13 +30,8 @@ module command_argument
 
 contains
 
-  subroutine print_help(arg)
-    type(argument), intent(in) :: arg
-
-    logical :: is_master
-
-    call check_master(arg%solver_type, is_master)
-    if (is_master) then
+  subroutine print_help()
+    if (check_master()) then
       print *, 'Usage: eigen_test -s <solver_type> <options> <matrix_A> [<matrix_B>]'
       print *, 'Solver types are:'
       print *, '  scalapack_all (standard)'
@@ -69,14 +64,10 @@ contains
   end subroutine wrap_mminfo
 
 
-  subroutine terminate(arg, err_msg)
-    type(argument), intent(in) :: arg
+  subroutine terminate(err_msg)
     character(*), intent(in) :: err_msg
 
-    logical :: is_master
-
-    call check_master(arg%solver_type, is_master)
-    if (is_master) then
+    if (check_master()) then
       write (0, *) err_msg
     end if
     call mpi_finalize()
@@ -99,7 +90,7 @@ contains
            .and. (dim == arg%matrix_B_info%cols)
     end if
     if (.not. is_size_valid) then
-      call terminate(arg, '[Error] validate_argument: Matrix dimension mismatch')
+      call terminate('[Error] validate_argument: Matrix dimension mismatch')
     end if
 
     ! Solver type and problem type matched?
@@ -117,13 +108,13 @@ contains
     case ('eigenexa')
       is_solver_valid = .not. arg%is_generalized_problem
     case default
-      call terminate(arg, '[Error] validate_argument: Unknown solver')
+      call terminate('[Error] validate_argument: Unknown solver')
     end select
     if (.not. is_solver_valid) then
       if (arg%is_generalized_problem) then
-        call terminate(arg, '[Error] validate_argument: This solver is not for generalized eigenvalue problem')
+        call terminate('[Error] validate_argument: This solver is not for generalized eigenvalue problem')
       else
-        call terminate(arg, '[Error] validate_argument: This solver is not for standard eigenvalue problem')
+        call terminate('[Error] validate_argument: This solver is not for standard eigenvalue problem')
       end if
     end if
 
@@ -139,7 +130,7 @@ contains
       is_n_vec_valid = .true.
     end select
     if (.not. is_n_vec_valid) then
-      call terminate(arg, '[Error] validate_argument: This solver does not support partial eigenvalue computation')
+      call terminate('[Error] validate_argument: This solver does not support partial eigenvalue computation')
     end if
 
     ! Check for eigenvector printing
@@ -149,12 +140,12 @@ contains
     inquire (file = trim(arg%eigenvector_dir), exist = exists)
 #endif
     if (.not. exists) then
-      call terminate(arg, '[Error] validate_argument: Specified directory with -d option does not exist')
+      call terminate('[Error] validate_argument: Specified directory with -d option does not exist')
     end if
 
     if (arg%printed_vecs_start < 0 .or. arg%printed_vecs_end < 0 .or. &
          arg%printed_vecs_start > arg%printed_vecs_end) then
-      call terminate(arg, '[Error] validate_argument: Specified numbers with -p option are not valid')
+      call terminate('[Error] validate_argument: Specified numbers with -p option are not valid')
     end if
   end subroutine validate_argument
 
@@ -275,11 +266,11 @@ contains
         case ('v')
           arg%verbose_level = 1
         case ('h')
-          call print_help(arg)
-          call terminate(arg, '')
+          call print_help()
+          call terminate('')
         case default
-          call print_help(arg)
-          call terminate(arg, '[Error] read_command_argument: unknown option')
+          call print_help()
+          call terminate('[Error] read_command_argument: unknown option')
         end select
       else if (len_trim(arg%matrix_A_filename) == 0) then
         ! The first non-option argument specifies the (left) input matrix
@@ -287,13 +278,13 @@ contains
         ! Check whether the file exists
         inquire(file = trim(arg%matrix_A_filename), exist = exists)
         if (.not. exists) then
-          call terminate(arg, '[Error] read_command_argument: Matrix A file not found')
+          call terminate('[Error] read_command_argument: Matrix A file not found')
         end if
       else
         arg%matrix_B_filename = trim(arg_str)
         inquire(file = arg%matrix_B_filename, exist = exists)
         if (.not. exists) then
-          call terminate(arg, '[Error] read_command_argument: Matrix B file not found')
+          call terminate('[Error] read_command_argument: Matrix B file not found')
         end if
       end if
       argi = argi + 1
