@@ -128,12 +128,15 @@ contains
     end do
   end subroutine print_matrix
 
+
   subroutine print_eigenvectors(arg, eigenpairs)
+    include 'mpif.h'
+
     type(argument) :: arg
     type(eigenpairs_types_union) :: eigenpairs
 
     double precision :: work(arg%matrix_A_info%rows)
-    integer :: max_num_digits, len, i, stat
+    integer :: max_num_digits, len, i, stat, err
     character(512) :: num_str, filename
     integer, parameter :: iunit = 10
 
@@ -143,21 +146,29 @@ contains
       max_num_digits = int(log10(real( &
            arg%printed_vecs_end - arg%printed_vecs_start + 1))) + 1
       do i = arg%printed_vecs_start, arg%printed_vecs_end
-        write (num_str, '(i0)') i
-        len = len_trim(num_str)
-        num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
-        num_str(1 : max_num_digits - len) = '0'
+        if (check_master()) then
+          write (num_str, '(i0)') i
+          len = len_trim(num_str)
+          num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
+          num_str(1 : max_num_digits - len) = '0'
 
-        filename = trim(arg%eigenvector_dir) // '/' // trim(num_str) // '.dat'
-        open (iunit, file=trim(filename), status='replace', iostat=stat)
+          filename = trim(arg%eigenvector_dir) // '/' // trim(num_str) // '.dat'
+          open (iunit, file=trim(filename), status='replace', iostat=stat)
+        end if
+
+        call mpi_bcast(stat, 1, mpi_integer, 0, mpi_comm_world, err) ! Share stat for file opening
         if (stat /= 0) then
           if (check_master ()) print *, 'iostat: ', stat
           call terminate('[Error] print_eigenvectors: cannot open ' // trim(filename))
         end if
 
+        call mpi_barrier(mpi_comm_world, stat)
         call eigentest_pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
              1, i, eigenpairs%blacs%desc, 0, 0, '', iunit, work)
-        close (iunit)
+
+        if (check_master()) then
+          close (iunit)
+        end if
       end do
     end if
   end subroutine print_eigenvectors
