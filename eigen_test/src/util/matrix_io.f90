@@ -136,7 +136,7 @@ contains
     type(eigenpairs_types_union) :: eigenpairs
 
     double precision :: work(arg%matrix_A_info%rows)
-    integer :: max_num_digits, len, i, stat, err
+    integer :: max_num_digits, len, i, digit, stat, err
     character(512) :: num_str, filename
     integer, parameter :: iunit = 10
 
@@ -150,7 +150,9 @@ contains
           write (num_str, '(i0)') i
           len = len_trim(num_str)
           num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
-          num_str(1 : max_num_digits - len) = '0'
+          do digit = 1, max_num_digits - len
+            num_str(digit:digit) = '0'
+          end do
 
           filename = trim(arg%eigenvector_dir) // '/' // trim(num_str) // '.dat'
           open (iunit, file=trim(filename), status='replace', iostat=stat)
