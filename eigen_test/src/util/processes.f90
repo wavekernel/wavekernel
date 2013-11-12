@@ -31,14 +31,23 @@ contains
 
 
   logical function check_master()
-    integer :: my_rank, n_procs
+    include 'mpif.h'
 
-    call blacs_pinfo(my_rank, n_procs)
+    integer :: my_rank, ierr
+
+    call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
+    if (ierr /= 0) then
+      write (0, *) '[Error] check_master: mpi_comm_rank failed, error code is ', ierr
+      stop
+    end if
+
     check_master = (my_rank == 0)
   end function check_master
 
 
   subroutine terminate(err_msg)
+    include 'mpif.h'
+
     character(*), intent(in) :: err_msg
 
     if (check_master()) then
