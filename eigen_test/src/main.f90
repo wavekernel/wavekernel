@@ -9,6 +9,8 @@ program eigen_test
   use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
+  include 'mpif.h'
+
   type(argument) :: arg
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
@@ -17,6 +19,12 @@ program eigen_test
   logical :: is_master
 
   call read_command_argument(arg)
+
+  call mpi_init(ierr)
+  if (ierr /= 0) then
+    write (0, *) '[Error] eigen_test: mpi_init failed, error code is ', ierr
+    stop
+  end if
 
   is_master = check_master()
 
