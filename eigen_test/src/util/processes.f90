@@ -21,7 +21,9 @@ contains
     end if
 
     num_omp_procs = 1
-    !$ num_omp_procs = omp_get_num_threads()
+    !$omp parallel
+    !$  num_omp_procs = omp_get_num_threads()
+    !$omp end parallel
   end subroutine get_num_procs
 
 
