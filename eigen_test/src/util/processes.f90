@@ -2,9 +2,29 @@ module processes
   implicit none
 
   private
-  public :: layout_procs, check_master, terminate
+  public :: get_num_procs, layout_procs, check_master, terminate
 
 contains
+
+  subroutine get_num_procs(num_mpi_procs, num_omp_procs)
+    !$ use omp_lib
+    include 'mpif.h'
+
+    integer, intent(out) :: num_mpi_procs, num_omp_procs
+
+    integer :: ierr
+
+    call mpi_comm_size(mpi_comm_world, num_mpi_procs, ierr)
+    if (ierr /= 0) then
+      write (0, *) '[Error] get_num_procs: mpi_comm_size failed, error code is: ', ierr
+      stop
+    end if
+
+    num_omp_procs = 1
+    !$ num_omp_procs = omp_get_num_threads()
+  end subroutine get_num_procs
+
+
   subroutine layout_procs(n_procs, n_procs_row, n_procs_col)
     integer, intent(in) :: n_procs
     integer, intent(out) :: n_procs_row, n_procs_col

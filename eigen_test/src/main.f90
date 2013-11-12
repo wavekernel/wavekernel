@@ -5,7 +5,7 @@ program eigen_test
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
   use distribute_matrix, only : create_dense_matrix !(routine)
   use time, only : data_and_time_wrapper !(routine)
-  use processes, only : check_master
+  use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
@@ -15,7 +15,7 @@ program eigen_test
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
   double precision :: rn_ave, rn_max
-  integer :: j, iunit, ierr
+  integer :: num_mpi_procs, num_omp_procs, j, iunit, ierr
   logical :: is_master
 
   call read_command_argument(arg)
@@ -32,6 +32,9 @@ program eigen_test
     call print_command_argument(arg)
     print *, 'approximate required memory per process (Mbytes): ', &
          required_memory(arg) / real(2 ** 20)
+    call get_num_procs(num_mpi_procs, num_omp_procs)
+    print *, 'number of MPI processes: ', num_mpi_procs
+    print *, 'number of OpenMP processes: ', num_omp_procs
   end if
 
   call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
