@@ -29,8 +29,8 @@ contains
          proc%my_proc_row, proc%my_proc_col)
 
     if (proc%my_rank == 0) then
-       print '( "procs: ", I5, " x ", I5, " (", I5, ")" )', &
-            proc%n_procs_row, proc%n_procs_col, proc%n_procs
+      print '("BLACS process grid: ", I0, " x ", I0, " (", I0, ")")', &
+           proc%n_procs_row, proc%n_procs_col, proc%n_procs
     end if
 
     if (proc%my_proc_row >= proc%n_procs_row .or. proc%my_proc_col >= proc%n_procs_col) then

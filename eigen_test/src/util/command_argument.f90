@@ -304,25 +304,23 @@ contains
   subroutine print_command_argument(arg)
     type(argument), intent(in) :: arg
 
-    print *, '----- Settings -----'
-
     if (arg%is_generalized_problem) then
-      print *, 'problem type: generalized'
+      print '("problem type: generalized")'
     else
-      print *, 'problem type: standard'
+      print '("problem type: standard")'
     end if
 
-    print *, 'matrix A file: ', trim(arg%matrix_A_filename)
+    print '("matrix A file: ", a)', trim(arg%matrix_A_filename)
     call print_matrix_info('A', arg%matrix_A_info)
 
     if (arg%is_generalized_problem) then
-      print *, 'matrix B file: ', trim(arg%matrix_B_filename)
+      print '("matrix B file: ", a)', trim(arg%matrix_B_filename)
       call print_matrix_info('B', arg%matrix_B_info)
     end if
 
-    print *, 'solver: ', trim(arg%solver_type)
-    print *, 'output file: ', trim(arg%output_filename)
-    print *, 'required eigenpairs: ', arg%n_vec
-    print *, 'verified eigenpairs: ', arg%n_check_vec
+    print '("solver: ", a)', trim(arg%solver_type)
+    print '("eigenvalues output file: ", a)', trim(arg%output_filename)
+    print '("required eigenpairs: ", i0)', arg%n_vec
+    print '("verified eigenpairs: ", i0)', arg%n_check_vec
   end subroutine print_command_argument
 end module command_argument

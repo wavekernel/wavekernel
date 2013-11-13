@@ -30,17 +30,22 @@ program eigen_test
   is_master = check_master()
 
   if (is_master) then
+    print '("----- Configurations -----")'
     call print_command_argument(arg)
-    print *, 'approximate required memory per process (Mbytes): ', &
+    print '("approximate required memory per process (Mbytes): ", f10.1)', &
          required_memory(arg) / real(2 ** 20)
     call get_num_procs(num_mpi_procs, num_omp_procs)
-    print *, 'number of MPI processes: ', num_mpi_procs
-    print *, 'number of OpenMP processes: ', num_omp_procs
+    print '("MPI processes: ", i0)', num_mpi_procs
+    print '("OpenMP threads per process: ", i0)', num_omp_procs
   end if
 
   call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
   if (arg%is_generalized_problem) then
     call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
+  end if
+
+  if (is_master) then
+    print '(/, "----- Solver Call -----")'
   end if
 
   if (arg%is_generalized_problem) then
@@ -54,6 +59,9 @@ program eigen_test
   end if
 
   if (arg%n_check_vec /= 0) then
+    if (is_master) then
+      print '(/, "----- Checker Call -----")'
+    end if
     if (arg%is_generalized_problem) then
       call eigen_checker(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max, matrix_B)
@@ -63,7 +71,8 @@ program eigen_test
     end if
 
     if (is_master) then
-      write(*,'(a,2e20.8)')' check residual norm: ave, max = ', rn_ave, rn_max
+      print '("residual norm (average): ", e15.8)', rn_ave
+      print '("residual norm (max):     ", e15.8)', rn_max
     end if
   endif
 
@@ -81,7 +90,4 @@ program eigen_test
     end if
   enddo
   close(iunit)
-
-  write(*,'(a)') '...the program ends'
-  write(*,'(a)') '--------------------------------------'
 end program eigen_test

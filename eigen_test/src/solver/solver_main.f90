@@ -170,7 +170,7 @@ contains
              res_norm_ave, res_norm_max)
       end if
     else
-      print *, 'result checker for distributed output is not implemeted yet'
+      print '("[Warning] eigen_checker: result checker for output of this type is not implemeted yet")'
     end if
   end subroutine eigen_checker
 
@@ -251,11 +251,11 @@ contains
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
     if (info /= 0) then
-      if (check_master()) print *, 'info(pdpotrf): ', info
+      if (check_master()) print '("info(pdpotrf): ", i0)', info
       if (info > 0) then
         info = min(info, 10)
-        if (check_master()) print *, &
-             'The leading minor that is not positive definite (up to order 10) is:'
+        if (check_master()) print &
+             '("The leading minor that is not positive definite (up to order 10) is:")'
         call eigentest_pdlaprnt(info, info, B, 1, 1, desc_B, 0, 0, '  B', 6, work_pdlaprnt)
       end if
       call terminate('[Error] reduce_generalized: pdpotrf failed')
@@ -264,7 +264,7 @@ contains
     ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
     if (info /= 0) then
-      if (check_master()) print *, 'info(pdsygst): ', info
+      if (check_master()) print '("info(pdsygst): ", i0)', info
       call terminate('[Error] reduce_generalized: pdsygst failed')
     end if
   end subroutine reduce_generalized
@@ -281,7 +281,7 @@ contains
     call pdtrtrs('L', 'T', 'N', dim, n_vec, B, 1, 1, desc_B, &
          Vectors, 1, 1, desc_Vectors, info)
     if (info /= 0) then
-      if (check_master()) print *, 'info(pdtrtrs): ', info
+      if (check_master()) print '("info(pdtrtrs): ", i0)', info
       call terminate('[Error] reduce_generalized: pdtrtrs failed')
     end if
   end subroutine recovery_generalized

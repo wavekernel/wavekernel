@@ -68,7 +68,7 @@ contains
     call pdsytrd(uplo, dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
     deallocate(work)
     if (proc%my_rank == 0) then
-       print *, 'info(pdsytrd): ', info
+       print '("info(pdsytrd): ", i0)', info
     end if
 
     call get_wclock_time(t_pdsytrd_end)
@@ -103,7 +103,7 @@ contains
          eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
          work, work_size, iwork, iwork_size, info)
     if (proc%my_rank == 0) then
-       print *, 'info(pdstedc): ', info
+       print '("info(pdstedc): ", i0)', info
     end if
 
     call get_wclock_time(t_pdstedc_end)
@@ -116,7 +116,7 @@ contains
     call pdormtr(side, uplo, 'n', dim, dim, A, 1, 1, desc_A, tau, &
          eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, work, work_size, info)
     if (proc%my_rank == 0) then
-       print *, 'info(pdormtr): ', info
+       print '("info(pdormtr): ", i0)', info
     end if
 
     call get_wclock_time(t_pdormtr_end)
@@ -135,9 +135,9 @@ contains
 
     if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-       print *, 'Elapsed time (sec)'
+       print '("elapsed time (sec)")'
        do i = 1, n_intervals
-          print *, ' ', interval_names(i), ':', t_intervals(i)
+         print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
        end do
     else
        call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)

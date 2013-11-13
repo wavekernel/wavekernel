@@ -92,9 +92,9 @@ contains
 
     if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-       print *, 'Elapsed time (sec)'
+       print '("elapsed time (sec)")'
        do i = 1, n_intervals
-          print *, ' ', interval_names(i), ':', t_intervals(i)
+         print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
        end do
     else
        call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
@@ -143,25 +143,25 @@ contains
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
     integer :: i
 
-    print *, 'PDSYEVX report'
-    print *, ' found eigenvalues: ', n_eigenvalues
-    print *, ' computed eigenvectors: ', n_eigenvectors
-    print *, ' abstol: ', abstol
-    print *, ' orfac: ', orfac
-    print *, ' info: ', info
+    print '("pdsyevx report")'
+    print '("  found eigenvalues: ", i0)', n_eigenvalues
+    print '("  computed eigenvectors: ", i0)', n_eigenvectors
+    print '("  abstol: ", e23.16)', abstol
+    print '("  orfac: ", e23.16)', orfac
+    print '("  info: ", i0)', info
     if (info /= 0 .and. jobz == 'V') then
       if (mod(info, 2) /= 0) then
         print *, ' ifail: ', ifail(n_eigenvalues + 1 :)
       end if
-      write (*, '(A)', advance = 'no') '  iclustr: '
+      write (*, '("  iclustr: ")', advance = 'no')
       call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
       do i = 1, n_procs_row * n_procs_col
-        write (*, '(I6, A, I6)', advance = 'no') iclustr(2 * i - 1), ' - ', iclustr(2 * i)
+        write (*, '(i0, " - ", i0)', advance = 'no') iclustr(2 * i - 1), iclustr(2 * i)
         if (iclustr(2 * i) /= 0 .and. iclustr(2 * i + 1) == 0) then
           print *
           exit
         else
-          write (*, '(A)', advance = 'no') ', '
+          write (*, '(", ")', advance = 'no')
         end if
       end do
     end if
