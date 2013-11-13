@@ -9,7 +9,7 @@ slides/
 *.o
 
 # Executables
-eigen_test/bin/eigen
+eigen
 quad/pi-quad-prec
 scocg/sequential/scocg
 *.out
