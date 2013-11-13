@@ -124,6 +124,7 @@ contains
     end if
 
     if (arg%printed_vecs_start < 0 .or. arg%printed_vecs_end < 0 .or. &
+         arg%printed_vecs_end > arg%n_vec .or. &
          arg%printed_vecs_start > arg%printed_vecs_end) then
       stop '[Error] validate_argument: Specified numbers with -p option are not valid'
     end if
