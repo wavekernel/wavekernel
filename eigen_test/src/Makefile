@@ -1,18 +1,7 @@
 include ../Makefile.in
 
-#FFLAGS = -O3 -mcmodel=medium -i-dynamic -openmp
-#FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv
 LDFLAGS = $(FFLAGS)
-#LIBS = -L /opt/intel/Compiler/11.1/069/mkl/lib/em64t -lmkl_lapack -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
-#LIBS  = /opt/acml4.4.0/ifort64_mp/lib/libacml_mp.a /opt/acml4.4.0/ifort64_mp/lib/libacml_mv.a  -lguide -lpthread
-######################################################
-# Setting for MacOSX with gfortran
-#FC = gfortran
-#FFLAGS = -Wall -pedantic -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow
-#LDFLAGS = -fopenmp
-#LIBS = -framework vecLib
-######################################################
-#
+
 TARGET = eigen
 
 .PHONY: all
@@ -33,10 +22,10 @@ OBJS-TEST = main.o
 include util/Makefile_util.in
 include solver/Makefile_solver.in
 
-eigen : $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC)
-	$(F90) $(LDFLAGS) $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC) $(LIBS) -o $@
-	mkdir -p ../bin
-	mv $@ ../bin/
+$(TARGET): $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC)
+	$(F90) $(LDFLAGS) $^ $(LIBS) -o $@
+	@mkdir -p ../bin
+	cp $(TARGET) ../bin/$(TARGET)
 
 .PHONY: clean dep
 clean:
