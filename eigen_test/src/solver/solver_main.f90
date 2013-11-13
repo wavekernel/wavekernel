@@ -9,8 +9,7 @@ module solver_main
   implicit none
 
   private
-  public :: lib_eigen_solver
-  public :: lib_eigen_checker
+  public :: eigen_solver, eigen_checker
 
 contains
 
@@ -150,7 +149,7 @@ contains
   end subroutine eigen_checker_blacs
 
 
-  subroutine lib_eigen_checker(arg, matrix_A, eigenpairs, &
+  subroutine eigen_checker(arg, matrix_A, eigenpairs, &
        res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
@@ -173,10 +172,10 @@ contains
     else
       print *, 'result checker for distributed output is not implemeted yet'
     end if
-  end subroutine lib_eigen_checker
+  end subroutine eigen_checker
 
 
-  subroutine lib_eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
+  subroutine eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
     use command_argument, only : argument
     use solver_lapack, only : eigen_solver_lapack
     use solver_scalapack_all, only : eigen_solver_scalapack_all
@@ -239,7 +238,7 @@ contains
     case default
       stop '[Error] lib_eigen_solver: Unknown solver'
     end select
-  end subroutine lib_eigen_solver
+  end subroutine eigen_solver
 
 
   subroutine reduce_generalized(dim, A, desc_A, B, desc_B)

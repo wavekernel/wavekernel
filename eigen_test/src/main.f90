@@ -1,5 +1,5 @@
 program eigen_test
-  use solver_main, only : lib_eigen_solver, lib_eigen_checker !(routine)
+  use solver_main, only : eigen_solver, eigen_checker
   use command_argument, only : argument, required_memory, &
        read_command_argument, print_command_argument
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
@@ -43,9 +43,9 @@ program eigen_test
   end if
 
   if (arg%is_generalized_problem) then
-    call lib_eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
+    call eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
   else
-    call lib_eigen_solver(arg, matrix_A, eigenpairs)
+    call eigen_solver(arg, matrix_A, eigenpairs)
   end if
 
   if (arg%printed_vecs_start /= 0) then
@@ -54,10 +54,10 @@ program eigen_test
 
   if (arg%n_check_vec /= 0) then
     if (arg%is_generalized_problem) then
-      call lib_eigen_checker(arg, matrix_A, eigenpairs, &
+      call eigen_checker(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max, matrix_B)
     else
-      call lib_eigen_checker(arg, matrix_A, eigenpairs, &
+      call eigen_checker(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max)
     end if
 
