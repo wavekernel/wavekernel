@@ -16,7 +16,7 @@ module command_argument
     type(matrix_info) :: matrix_A_info, matrix_B_info
     character(len=256) :: solver_type
     character(len=256) :: output_filename = 'eigenvalues.dat'
-    logical :: is_generalized_problem
+    logical :: is_generalized_problem, is_printing_grid_mapping = .false.
     integer :: n_vec = -1, n_check_vec = -1 ! These default -1 mean 'all the vectors'
     character(len=256) :: eigenvector_dir = '.'
     integer :: printed_vecs_start = 0 ! Zero means do not print eigenvectors
@@ -47,6 +47,7 @@ contains
       print *, '  -p <num>  Specify the number of eigenvector to be output'
       print *, '  -p <num1>,<num2>  Specify range of the number of eigenvectors to be output'
       print *, '  -h  Print this help and exit'
+      print *, '  --print-grid-mapping  Print which process is assigned to each coordinate in BLACS grid'
     end if
   end subroutine print_help
 
@@ -249,6 +250,8 @@ contains
         case ('h')
           call print_help()
           stop ''
+        case ('-print-grid-mapping')
+          arg%is_printing_grid_mapping = .true.
         case default
           call print_help()
           stop '[Error] read_command_argument: unknown option'

@@ -5,7 +5,7 @@ module solver_main
   use distribute_matrix, only : process, create_dense_matrix, &
        setup_distributed_matrix, gather_matrix, copy_global_sparse_matrix_to_local
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
-  use processes, only : check_master, terminate
+  use processes, only : print_map_of_grid_to_processes, check_master, terminate
   implicit none
 
   private
@@ -202,17 +202,20 @@ contains
       call eigen_solver_lapack(matrix_A, eigenpairs)
     case ('scalapack_all')
       call setup_distribution(proc)
+      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
     case ('scalapack_select')
       call setup_distribution(proc)
+      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
            arg%n_vec, eigenpairs)
     case ('general_scalapack_all')
       call setup_distribution(proc)
+      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix(proc, n, n, desc_B, matrix_B_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
@@ -223,6 +226,7 @@ contains
            eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
     case ('general_scalapack_select')
       call setup_distribution(proc)
+      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       call setup_distributed_matrix(proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix(proc, n, n, desc_B, matrix_B_dist)
       call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
