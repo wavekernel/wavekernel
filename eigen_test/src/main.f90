@@ -19,13 +19,13 @@ program eigen_test
   integer, parameter :: iunit = 10
   logical :: is_master
 
-  call read_command_argument(arg)
-
   call mpi_init(ierr)
   if (ierr /= 0) then
     write (0, *) '[Error] eigen_test: mpi_init failed, error code is ', ierr
     stop
   end if
+
+  call read_command_argument(arg)
 
   is_master = check_master()
 
