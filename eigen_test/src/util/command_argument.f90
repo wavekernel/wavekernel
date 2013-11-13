@@ -48,6 +48,7 @@ contains
       print *, '  -p <num1>,<num2>  Specify range of the number of eigenvectors to be output'
       print *, '  -h  Print this help and exit'
       print *, '  --print-grid-mapping  Print which process is assigned to each coordinate in BLACS grid'
+      call flush(6)
     end if
   end subroutine print_help
 
