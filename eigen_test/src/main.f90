@@ -15,7 +15,8 @@ program eigen_test
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
   double precision :: rn_ave, rn_max
-  integer :: num_mpi_procs, num_omp_procs, j, iunit, ierr
+  integer :: num_mpi_procs, num_omp_procs, j, ierr
+  integer, parameter :: iunit = 10
   logical :: is_master
 
   call read_command_argument(arg)
@@ -71,8 +72,7 @@ program eigen_test
     stop
   end if
 
-  iunit=70
-  open (iunit, file=arg%output_filename, status='unknown')
+  open(iunit, file=arg%output_filename, status='unknown')
   do j=1,arg%n_vec
     if (eigenpairs%type_number == 1) then
       write (iunit, '(i10, f20.12)') j, eigenpairs%local%values(j)
@@ -80,6 +80,7 @@ program eigen_test
       write (iunit, '(i10, f20.12)') j, eigenpairs%blacs%values(j)
     end if
   enddo
+  close(iunit)
 
   write(*,'(a)') '...the program ends'
   write(*,'(a)') '--------------------------------------'
