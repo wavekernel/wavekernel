@@ -4,7 +4,7 @@ program eigen_test
        read_command_argument, print_command_argument
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
   use distribute_matrix, only : create_dense_matrix !(routine)
-  use time, only : data_and_time_wrapper !(routine)
+  use time, only : get_wclock_time, data_and_time_wrapper
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
   implicit none
@@ -18,6 +18,9 @@ program eigen_test
   integer :: num_mpi_procs, num_omp_procs, j, ierr
   integer, parameter :: iunit = 10
   logical :: is_master
+  double precision :: t_start, t_end
+
+  call get_wclock_time(t_start)
 
   call mpi_init(ierr)
   if (ierr /= 0) then
@@ -84,4 +87,7 @@ program eigen_test
     end if
   enddo
   close(iunit)
+
+  call get_wclock_time(t_end, t_start)
+  print '("whole execution time (sec): ", f12.2)', t_end
 end program eigen_test
