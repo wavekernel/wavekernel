@@ -44,9 +44,7 @@ program eigen_test
     call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
   end if
 
-  if (is_master) then
-    print '(/, "----- Solver Call -----")'
-  end if
+  if (is_master) print '(/, "----- Solver Call -----")'
 
   if (arg%is_generalized_problem) then
     call eigen_solver(arg, matrix_A, eigenpairs, matrix_B)
@@ -59,9 +57,7 @@ program eigen_test
   end if
 
   if (arg%n_check_vec /= 0) then
-    if (is_master) then
-      print '(/, "----- Checker Call -----")'
-    end if
+    if (is_master) print '(/, "----- Checker Call -----")'
     if (arg%is_generalized_problem) then
       call eigen_checker(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max, matrix_B)
@@ -77,9 +73,7 @@ program eigen_test
   endif
 
   call mpi_finalize(ierr)
-  if (.not. is_master) then
-    stop
-  end if
+  if (.not. is_master) stop ! Only rank 0 process runs after here
 
   open(iunit, file=arg%output_filename, status='unknown')
   do j=1,arg%n_vec
