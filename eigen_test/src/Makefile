@@ -4,7 +4,8 @@ LDFLAGS = $(FFLAGS)
 
 TARGET = eigen
 
-.PHONY: all
+.PHONY: all clean dep
+
 all: $(TARGET)
 
 .SUFFIXES: .f .f90
