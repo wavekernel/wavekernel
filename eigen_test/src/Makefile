@@ -43,6 +43,6 @@ clean:
 	@rm -f *.exe *.o *.mod *~ ../bin/* */*.o */*.mod */*~ $(TARGET)
 
 dep:
-	makedepf90 -nosrc *.f90 util/*.f90 solver/*.f90 > Makefile.dep
+	find . -name \*.f90 -and ! -name \*_dummy.f90 | xargs makedepf90 -nosrc > Makefile.dep
 
 include Makefile.dep
