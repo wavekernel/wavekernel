@@ -11,18 +11,33 @@ F90 ?= $(FC)
 
 .SUFFIXES: .f .f90
 
-.f.o:
+OBJS_MAIN = main.o
+
+OBJS_SOLVER = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o
+
+OBJS_EIGENEXA = solver/solver_eigenexa.o
+ifdef Use_EigenExa
+	SRCS_EIGENEXA = solver/solver_eigenexa.f90
+else
+	SRCS_EIGENEXA = solver/solver_eigenexa_dummy.f90
+endif
+
+OBJS_UTIL_F77 = util/eigentest_pdlaprnt.o util/mmio.o
+
+OBJS_UTIL = util/time.o util/descriptor_parameters.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o
+
+OBJS = $(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_UTIL) $(OBJS_UTIL_F77)
+
+$(OBJS_UTIL_F77): %.o: %.f
 	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
 
-.f90.o:
+$(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_UTIL): %.o: %.f90
 	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
 
-OBJS-TEST = main.o
+$(OBJS_EIGENEXA): $(SRCS_EIGENEXA)
+	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
 
-include util/Makefile_util.in
-include solver/Makefile_solver.in
-
-$(TARGET): $(OBJS-TEST) $(OBJS-LIB-EIGEN) $(OBJ-LIB-MISC)
+$(TARGET): $(OBJS)
 	$(F90) $(LDFLAGS) $^ $(LIBS) -o $@
 	@mkdir -p ../bin
 	cp $(TARGET) ../bin/$(TARGET)

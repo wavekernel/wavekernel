@@ -11,7 +11,7 @@ contains
 
   subroutine eigen_solver_eigenexa(mat, n_vec, eigenvalues, eigenvectors_global)
     use MPI
-    !!use eigen_libs
+    use eigen_libs
 
     type(sparse_mat), intent(in) :: mat
     integer, intent(in) :: n_vec
@@ -94,8 +94,8 @@ contains
     d1 = MPI_WTIME()
     print *, d1
 
-    !!call eigen_sx(dim, n_vec, A, local_size_row, eigenvalues, &
-    !!     Eigenvectors, local_size_row, m_forward=8, m_backward=128)
+    call eigen_sx(dim, n_vec, A, local_size_row, eigenvalues, &
+         Eigenvectors, local_size_row, m_forward=8, m_backward=128)
 
     call MPI_Barrier(MPI_COMM_WORLD, ierr)
     d2 = MPI_WTIME()
