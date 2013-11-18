@@ -7,8 +7,6 @@ TARGET = eigen
 .PHONY: all
 all: $(TARGET)
 
-F90 ?= $(FC)
-
 .SUFFIXES: .f .f90
 
 OBJS_MAIN = main.o
@@ -29,16 +27,16 @@ OBJS_UTIL = util/time.o util/descriptor_parameters.o util/command_argument.o uti
 OBJS = $(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_UTIL) $(OBJS_UTIL_F77)
 
 $(OBJS_UTIL_F77): %.o: %.f
-	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
+	$(FC) -c $(FFLAGS) $(LIBS) $< -o $@
 
 $(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_UTIL): %.o: %.f90
-	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
+	$(FC) -c $(FFLAGS) $(LIBS) $< -o $@
 
 $(OBJS_EIGENEXA): $(SRCS_EIGENEXA)
-	$(F90) -c $(FFLAGS) $(LIBS) $< -o $@
+	$(FC) -c $(FFLAGS) $(LIBS) $< -o $@
 
 $(TARGET): $(OBJS)
-	$(F90) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(FC) $(LDFLAGS) $^ $(LIBS) -o $@
 	@mkdir -p ../bin
 	cp $(TARGET) ../bin/$(TARGET)
 
