@@ -8,8 +8,6 @@ TARGET = eigen
 
 all: $(TARGET)
 
-.SUFFIXES: .f .f90
-
 OBJS_MAIN = main.o
 
 OBJS_SOLVER = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o
@@ -41,7 +39,6 @@ $(TARGET): $(OBJS)
 	@mkdir -p ../bin
 	cp $(TARGET) ../bin/$(TARGET)
 
-.PHONY: clean dep
 clean:
 	@rm -f *.exe *.o *.mod *~ ../bin/* */*.o */*.mod */*~ $(TARGET)
 
