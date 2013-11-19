@@ -13,7 +13,7 @@ OBJS_MAIN = main.o
 OBJS_SOLVER = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o
 
 OBJS_EIGENEXA = solver/solver_eigenexa.o
-ifdef Use_EigenExa
+ifeq ($(Use_EigenExa), 1)
 	SRCS_EIGENEXA = solver/solver_eigenexa.f90
 	FFLAGS_EIGENEXA = $(FFLAGS)
 else
