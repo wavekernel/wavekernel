@@ -7,7 +7,7 @@ module solver_scalapack_all
   use distribute_matrix, only : &
        process, get_local_cols, gather_matrix, allgather_row_wise, &
        desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
-       rsrc_, csrc_, local_rows_
+       rsrc_, csrc_, local_rows_, setup_distributed_matrix
   use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
@@ -83,13 +83,8 @@ contains
     call allgather_row_wise(subdiag_local, proc%context, desc_A(block_col_), &
          subdiag_global)
 
-    call descinit(eigenpairs%blacs%desc, dim, dim, desc_A(block_row_), &
-         desc_A(block_col_), 0, 0, proc%context, desc_A(local_rows_), info)
+    call setup_distributed_matrix(proc, dim, dim, eigenpairs%blacs%desc, eigenpairs%blacs%Vectors)
     eigenvectors_local_cols = get_local_cols(proc, eigenpairs%blacs%desc)
-    allocate(eigenpairs%blacs%Vectors( &
-         1 : eigenpairs%blacs%desc(local_rows_), &
-         1 : eigenvectors_local_cols))
-    eigenpairs%blacs%Vectors(:, :) = 0.0
 
     work_size = 6 * dim + 2 * eigenpairs%blacs%desc(local_rows_) * &
          eigenvectors_local_cols

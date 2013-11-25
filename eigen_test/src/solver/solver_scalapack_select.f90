@@ -7,7 +7,7 @@ module solver_scalapack_select
   use distribute_matrix, only : &
        process, get_local_cols, gather_matrix, allgather_row_wise, &
        desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
-       rsrc_, csrc_, local_rows_
+       rsrc_, csrc_, local_rows_, setup_distributed_matrix
   use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
@@ -53,11 +53,7 @@ contains
 
     dim = desc_A(rows_)
 
-    call descinit(eigenpairs%blacs%desc, dim, dim, desc_A(block_row_), &
-         desc_A(block_col_), 0, 0, proc%context, desc_A(local_rows_), info)
-    allocate(eigenpairs%blacs%Vectors(1 : eigenpairs%blacs%desc(local_rows_), &
-         1 : get_local_cols(proc, eigenpairs%blacs%desc)))
-    eigenpairs%blacs%Vectors(:, :) = 0.0
+    call setup_distributed_matrix(proc, dim, dim, eigenpairs%blacs%desc, eigenpairs%blacs%Vectors)
 
     work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))
     iwork_size = 6 * max(dim, proc%n_procs_row * proc%n_procs_col + 1, 4)
