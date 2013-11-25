@@ -1,7 +1,8 @@
 module solver_eigenexa
   use eigen_libs
 
-  use distribute_matrix, only : process, desc_size
+  use distribute_matrix, only : process
+  use descriptor_parameters
   use eigenpairs_types, only : eigenpairs_types_union
   use matrix_io, only : sparse_mat
   use processes, only : terminate

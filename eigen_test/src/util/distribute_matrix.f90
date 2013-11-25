@@ -12,9 +12,7 @@ module distribute_matrix
   public :: process, setup_distribution, &
        get_local_cols, setup_distributed_matrix, &
        copy_global_dense_matrix_to_local, copy_global_sparse_matrix_to_local, &
-       create_dense_matrix, gather_matrix, allgather_row_wise, &
-       desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
-       rsrc_, csrc_, local_rows_
+       create_dense_matrix, gather_matrix, allgather_row_wise
 
 contains
 

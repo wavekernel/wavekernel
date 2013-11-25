@@ -5,9 +5,8 @@
 module solver_scalapack_all
   use time, only : get_wclock_time
   use distribute_matrix, only : &
-       process, get_local_cols, gather_matrix, allgather_row_wise, &
-       desc_size, desc_type_, context_, rows_, cols_, block_row_, block_col_, &
-       rsrc_, csrc_, local_rows_, setup_distributed_matrix
+       process, get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
+  use descriptor_parameters
   use eigenpairs_types, only : eigenpairs_types_union
   implicit none
 
