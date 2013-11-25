@@ -74,11 +74,17 @@ contains
     ! ave_and_max is declared as array due to usage of bcast
     ! 3rd element is for the index of the max value (discarded currently)
     double precision :: norm, ave_and_max(3)
-    integer :: j, owner_proc_col, ierr
+    integer :: j, block_size, owner_proc_col, ierr
     integer :: indxg2p ! ScaLAPACK function
 
     if (arg%is_generalized_problem .and. .not. present(matrix_B)) then
       call terminate('[Error] eigen_checker_blacs: matrix_B is not provided')
+    end if
+
+    if (trim(arg%solver_type) == 'eigenexa') then
+      block_size = 1
+    else
+      block_size = 32
     end if
 
     ! call blacs_get(-1, 0, proc%context)
@@ -91,15 +97,15 @@ contains
 
     dim = arg%matrix_A_info%rows
 
-    call setup_distributed_matrix(proc, dim, dim, desc_A, matrix_A_dist)
+    call setup_distributed_matrix(proc, dim, dim, desc_A, matrix_A_dist, block_size = block_size)
     call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
 
     if (arg%is_generalized_problem) then
-      call setup_distributed_matrix(proc, dim, dim, desc_B, matrix_B_dist)
+      call setup_distributed_matrix(proc, dim, dim, desc_B, matrix_B_dist, block_size = block_size)
       call copy_global_sparse_matrix_to_local(matrix_B, desc_B, matrix_B_dist)
     end if
 
-    call setup_distributed_matrix(proc, dim, arg%n_check_vec, desc_Residual, Residual)
+    call setup_distributed_matrix(proc, dim, arg%n_check_vec, desc_Residual, Residual, block_size = block_size)
 
     if (arg%is_generalized_problem) then
       ! Residual <- B * Eigenvectors
@@ -180,6 +186,7 @@ contains
     use solver_lapack, only : eigen_solver_lapack
     use solver_scalapack_all, only : eigen_solver_scalapack_all
     use solver_scalapack_select, only : eigen_solver_scalapack_select
+    use solver_eigenexa, only : setup_distributed_matrix_for_eigenexa, eigen_solver_eigenexa
     use matrix_io, only : sparse_mat
     use distribute_matrix, only : process, setup_distribution, &
          setup_distributed_matrix, copy_global_dense_matrix_to_local, &
@@ -237,8 +244,11 @@ contains
       call recovery_generalized(n, arg%n_vec, matrix_B_dist, desc_B, &
            eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
     case ('eigenexa')
-      stop '[Error] lib_eigen_solver: Eigen Exa is not supported yet'
-      !call eigen_solver_eigenexa(matrix_A, arg%n_vec, eigenpairs)
+      call setup_distribution(proc)
+      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
+      call setup_distributed_matrix_for_eigenexa(n, desc_A, matrix_A_dist, eigenpairs)
+      call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
+      call eigen_solver_eigenexa(matrix_A_dist, n, arg%n_vec, eigenpairs)
     case default
       stop '[Error] lib_eigen_solver: Unknown solver'
     end select

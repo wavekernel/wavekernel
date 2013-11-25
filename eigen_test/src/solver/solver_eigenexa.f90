@@ -1,112 +1,81 @@
 module solver_eigenexa
-  !use time, only : get_wclock_time
-  use distribute_matrix, only : process, gather_matrix, allgather_row_wise, copy_global_sparse_matrix_to_local
+  use eigen_libs
+
+  use distribute_matrix, only : process, desc_size
+  use eigenpairs_types, only : eigenpairs_types_union
   use matrix_io, only : sparse_mat
+  use processes, only : terminate
+  use time, only : get_wclock_time
+
   implicit none
 
   private
-  public :: eigen_solver_eigenexa
+  public :: setup_distributed_matrix_for_eigenexa, eigen_solver_eigenexa
 
 contains
 
-  subroutine eigen_solver_eigenexa(mat, n_vec, eigenvalues, eigenvectors_global)
-    use MPI
-    use eigen_libs
+  subroutine setup_distributed_matrix_for_eigenexa(dim, desc_A, matrix_A, eigenpairs)
+    integer, intent(in) :: dim
+    integer, intent(out) ::desc_A(desc_size)
+    double precision, allocatable, intent(out) :: matrix_A(:, :)
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    type(sparse_mat), intent(in) :: mat
-    integer, intent(in) :: n_vec
-    double precision, intent(out) :: eigenvalues(:), eigenvectors_global(:, :)
+    integer :: nx, ny, context, info
 
-    integer :: num_nodes, num_nodes_row, num_nodes_col
-    integer :: my_rank, my_node_row, my_node_col
-    integer :: dim, local_size_row, local_size_col, ierr, info, context
-    integer :: i, j, i_local, j_local, k, owner_node_row, owner_node_col
+    call eigen_init()
+    call eigen_get_matdims(dim, nx, ny)
+    context = eigen_get_blacs_context()
+
+    call descinit(desc_A, dim, dim, 1, 1, 0, 0, context, nx, info)
+
+    eigenpairs%type_number = 2
+    call descinit(eigenpairs%blacs%desc, dim, dim, 1, 1, 0, 0, context, nx, info)
+    if (info /= 0) then
+      print '(a, i0)', 'info(descinit): ', info
+      call terminate('[Error] setup_distributed_matrix_for_eigenexa: descinit failed')
+    end if
+
+    allocate(matrix_A(nx, ny), eigenpairs%blacs%Vectors(nx, ny), &
+         eigenpairs%blacs%values(dim), stat = info)
+    if (info /= 0) then
+      print '(a, i0)', 'stat(allocate): ', info
+      call terminate('[Error] setup_distributed_matrix_for_eigenexa: allocation failed')
+    end if
+
+    matrix_A(:, :) = 0.0d0
+    eigenpairs%blacs%Vectors(:, :) = 0.0d0
+  end subroutine setup_distributed_matrix_for_eigenexa
+
+
+  subroutine eigen_solver_eigenexa(mat, dim, n_vec, eigenpairs)
+    include 'mpif.h'
+
+    double precision, intent(inout) :: mat(:, :)
+    integer, intent(in) :: dim, n_vec
+    type(eigenpairs_types_union), intent(inout) :: eigenpairs
+
+    integer :: nx, ny, my_rank, ierr
+    integer, parameter :: m_forward = 48, m_backward = 128
     double precision :: d1, d2
-    double precision, allocatable :: A(:, :), Eigenvectors(:, :)
-    integer :: desc(9)
 
-    ! For descriptor
-    !integer, parameter :: dlen_ = 9, dtype_ = 1, context_  = 2, m_ = 3, n_ = 4
-    !integer, parameter :: mb_ = 5, nb_ = 6, rsrc_ = 7, csrc_ = 8, lld_ = 9
+    if (dim /= n_vec) then
+      call terminate('[Error] eigen_solver_eigenexa: current version of EigenExa does not support partial eigenvector computation')
+    end if
 
-    !integer :: thread_level
+    call eigen_get_matdims(dim, nx, ny)
 
-    !call MPI_Init_thread(MPI_THREAD_MULTIPLE, thread_level, ierr)
-    !call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
-    !call MPI_Comm_size(MPI_COMM_WORLD, num_nodes, ierr)
+    call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
 
-    !!call eigen_init(order='R')
+    call mpi_barrier(mpi_comm_world, ierr)
+    d1 = mpi_wtime()
+    call eigen_sx(dim, dim, mat, nx, &
+         eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
+         m_forward = m_forward, m_backward = m_backward)
+    call mpi_barrier(mpi_comm_world, ierr)
+    d2 = mpi_wtime()
 
-    dim = mat%size
-
-    !!call eigen_get_matdims(dim, local_size_row, local_size_col)
-
-    print *, 'dim, local_size_row, local_size_col : ', dim, local_size_row, local_size_col
-
-    allocate(A(local_size_row, local_size_col), &
-         Eigenvectors(local_size_row, local_size_col))
-
-    !!context = eigen_get_blacs_context()
-    call descinit(desc, dim, dim, 64, 64, 0, 0, context, local_size_row, info)
-    !call copy_global_sparse_matrix_to_local(mat, desc, A)
-
-    !!call eigen_get_procs(num_nodes, num_nodes_col, num_nodes_row)
-    !!call eigen_get_id(my_rank, my_node_col, my_node_row)
-
-    !j_2 = eigen_loop_start( 1, num_nodes_col, my_proc_col)
-    !j_3 = eigen_loop_end  ( n, num_nodes_col, my_proc_col)
-    !i_2 = eigen_loop_start( 1, num_nodes_row, my_proc_row)
-    !i_3 = eigen_loop_end  ( n, num_nodes_row, my_proc_row)
-
-    !do i_1 = i_2, i_3
-    !  i = eigen_translate_l2g(i_1, num_nodes_row, my_proc_row)
-    !  do j_1 = j_2, j_3
-    !    j = eigen_translate_l2g(j_1, num_nodes_col, my_proc_col)
-    !     a(j_1, i_1) = (n+1-Max(n+1-i,n+1-j))*1.0D+00
-    !  end do
-    !end do
-
-    do k = 1, mat%num_non_zeros
-      i = mat%suffix(1, k)
-      j = mat%suffix(2, k)
-     !! owner_node_row = eigen_owner_node(i, num_nodes_row, my_node_row)
-     !! owner_node_col = eigen_owner_node(j, num_nodes_col, my_node_col)
-      if (my_node_row == owner_node_row .and. my_node_col == owner_node_col) then
-        !!i_local = eigen_translate_g2l(i, num_nodes_row, my_node_row)
-        !!j_local = eigen_translate_g2l(j, num_nodes_col, my_node_col)
-        A(i_local, j_local) = mat%value(k)
-        print *, 'A(', i_local, ', ', j_local, ') on (', owner_node_row, ', ', owner_node_col, '): ', mat%value(k)
-      end if
-      if (i /= j) then
-        !!owner_node_row = eigen_owner_node(j, num_nodes_row, my_node_row)
-        !!owner_node_col = eigen_owner_node(i, num_nodes_col, my_node_col)
-        if (my_node_row == owner_node_row .and. my_node_col == owner_node_col) then
-          !!i_local = eigen_translate_g2l(j, num_nodes_row, my_node_row)
-          !!j_local = eigen_translate_g2l(i, num_nodes_col, my_node_col)
-          A(i_local, j_local) = mat%value(k)
-        end if
-      end if
-    enddo
-
-    Eigenvectors(:, :) = 0.0
-
-    call MPI_Barrier(MPI_COMM_WORLD, ierr)
-    d1 = MPI_WTIME()
-    print *, d1
-
-    call eigen_sx(dim, n_vec, A, local_size_row, eigenvalues, &
-         Eigenvectors, local_size_row, m_forward=8, m_backward=128)
-
-    call MPI_Barrier(MPI_COMM_WORLD, ierr)
-    d2 = MPI_WTIME()
-    print *, d2
-
-    !!call gather_matrix(Eigenvectors, desc, 0, 0, eigenvectors_global)
-
-    !!call eigen_free()
-
-    call MPI_Finalize(ierr)
-
-    stop 'ouch'
+    if (my_rank == 0) then
+      print '(a, i0)', "elapsed time (sec): ", int(d2 - d1)
+    end if
   end subroutine eigen_solver_eigenexa
 end module solver_eigenexa

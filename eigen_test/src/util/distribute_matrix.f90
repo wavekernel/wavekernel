@@ -51,25 +51,32 @@ contains
   end function get_local_cols
 
 
-  subroutine setup_distributed_matrix(proc, rows, cols, desc, mat)
+  subroutine setup_distributed_matrix(proc, rows, cols, desc, mat, block_size)
     type(process), intent(in) :: proc
     integer, intent(in) :: rows, cols
     integer, intent(out) :: desc(desc_size)
     double precision, intent(out), allocatable :: mat(:, :)
+    integer, intent(in), optional :: block_size
 
     integer :: numroc
-    integer :: block_size, local_rows, info
+    integer :: actual_block_size, local_rows, info
 
-    block_size = min(32, rows / max(proc%n_procs_row, proc%n_procs_col))
-    if (proc%my_rank == 0) then
-      print '( "Creating distributed matrix  M, N, MB, NB: ", &
-           &I0, ", ", I0, ", ", I0, ", ", I0 )', rows, cols, block_size, block_size
+    if (present(block_size)) then
+      actual_block_size = block_size
+    else
+      actual_block_size = 32
     end if
 
-    local_rows = max(1, numroc(rows, block_size, &
+    actual_block_size = min(actual_block_size, rows / max(proc%n_procs_row, proc%n_procs_col))
+    if (proc%my_rank == 0) then
+      print '( "Creating distributed matrix  M, N, MB, NB: ", &
+           &I0, ", ", I0, ", ", I0, ", ", I0 )', rows, cols, actual_block_size, actual_block_size
+    end if
+
+    local_rows = max(1, numroc(rows, actual_block_size, &
          proc%my_proc_row, 0, proc%n_procs_row))
 
-    call descinit(desc, rows, cols, block_size, block_size, &
+    call descinit(desc, rows, cols, actual_block_size, actual_block_size, &
          0, 0, proc%context, local_rows, info)
     if (info /= 0) then
       print *, 'info(descinit): ', info
