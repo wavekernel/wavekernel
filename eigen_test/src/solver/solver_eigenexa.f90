@@ -57,7 +57,15 @@ contains
 
     integer :: nx, ny, my_rank, ierr
     integer, parameter :: m_forward = 48, m_backward = 128
-    double precision :: d1, d2
+
+    ! Time
+    integer, parameter :: n_intervals = 1
+    integer :: i
+    double precision :: t_intervals(n_intervals)
+    double precision :: t_init, t_all_end
+    character(*), parameter :: interval_names(n_intervals) = (/'total'/)
+
+    call get_wclock_time(t_init)
 
     if (dim /= n_vec) then
       call terminate('[Error] eigen_solver_eigenexa: current version of EigenExa does not support partial eigenvector computation')
@@ -67,16 +75,22 @@ contains
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    d1 = mpi_wtime()
     call eigen_sx(dim, dim, mat, nx, &
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
          m_forward = m_forward, m_backward = m_backward)
-    call mpi_barrier(mpi_comm_world, ierr)
-    d2 = mpi_wtime()
+
+    call get_wclock_time(t_all_end)
+
+    t_intervals(1) = t_all_end - t_init
 
     if (my_rank == 0) then
-      print '(a, i0)', "elapsed time (sec): ", int(d2 - d1)
+      call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+      print '("elapsed time (sec)")'
+      do i = 1, n_intervals
+        print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
+      end do
+    else
+      call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
     end if
   end subroutine eigen_solver_eigenexa
 end module solver_eigenexa
