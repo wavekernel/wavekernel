@@ -39,7 +39,7 @@ program eigen_test
          required_memory(arg) / real(2 ** 20)
     call get_num_procs(num_mpi_procs, num_omp_procs)
     print '("MPI processes: ", i0)', num_mpi_procs
-    print '("OpenMP threads per process: ", i0)', num_omp_procs
+    print '("OpenMP threads per process (may be inaccurate): ", i0)', num_omp_procs
   end if
 
   call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
