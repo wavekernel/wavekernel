@@ -14,7 +14,7 @@ lib: $(TARGET_LIB)
 
 OBJS_MAIN = main.o
 
-OBJS_SOLVER = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o
+OBJS_SOLVER = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o solver/verifier.o solver/generalized_to_standard.o
 
 OBJS_EIGENEXA = solver/solver_eigenexa.o
 ifeq ($(Use_EigenExa), 1)

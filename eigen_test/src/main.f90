@@ -1,5 +1,5 @@
 program eigen_test
-  use solver_main, only : eigen_solver, eigen_checker
+  use solver_main, only : eigen_solver
   use command_argument, only : argument, required_memory, &
        read_command_argument, print_command_argument
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
@@ -7,6 +7,7 @@ program eigen_test
   use time, only : get_wclock_time, data_and_time_wrapper
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
+  use verifier, only : eigen_checker
   implicit none
 
   include 'mpif.h'
