@@ -25,6 +25,7 @@ job*.sh
 *.tar
 *.gz
 *.zip
+*.a
 
 # Misc
 Makefile.in

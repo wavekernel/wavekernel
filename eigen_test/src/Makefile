@@ -2,11 +2,15 @@ include ../Makefile.in
 
 LDFLAGS = $(FFLAGS)
 
-TARGET = eigen
+TARGET_MAIN = eigen
 
-.PHONY: all clean dep
+TARGET_LIB = libEigenTest.a
 
-all: $(TARGET)
+.PHONY: all lib clean dep
+
+all: $(TARGET_MAIN)
+
+lib: $(TARGET_LIB)
 
 OBJS_MAIN = main.o
 
@@ -25,7 +29,9 @@ OBJS_UTIL_F77 = util/eigentest_pdlaprnt.o util/mmio.o
 
 OBJS_UTIL = util/time.o util/descriptor_parameters.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o
 
-OBJS = $(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_UTIL) $(OBJS_UTIL_F77)
+OBJS_LIB = $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_UTIL) $(OBJS_UTIL_F77)
+
+OBJS = $(OBJS_MAIN) $(OBJS_LIB)
 
 $(OBJS_UTIL_F77): %.o: %.f
 	$(FC) -c $(FFLAGS) $(LIBS) $< -o $@
@@ -36,13 +42,16 @@ $(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_UTIL): %.o: %.f90
 $(OBJS_EIGENEXA): $(SRCS_EIGENEXA)
 	$(FC) -c $(FFLAGS_EIGENEXA) $(LIBS) $< -o $@
 
-$(TARGET): $(OBJS)
+$(TARGET_MAIN): $(OBJS)
 	$(FC) $(LDFLAGS) $^ $(LIBS) -o $@
 	@mkdir -p ../bin
-	cp $(TARGET) ../bin/$(TARGET)
+	cp $(TARGET_MAIN) ../bin/$(TARGET_MAIN)
+
+$(TARGET_LIB): $(OBJS_LIB)
+	$(AR) r $(TARGET_LIB) $^
 
 clean:
-	@rm -f *.exe *.o *.mod *~ ../bin/* */*.o */*.mod */*~ $(TARGET)
+	@rm -f *.exe *.o *.mod *~ ../bin/* */*.o */*.mod */*~ $(TARGET_MAIN) $(TARGET_LIB)
 
 dep:
 	find . -name \*.f90 -and ! -name \*_dummy.f90 | xargs makedepf90 -nosrc > Makefile.dep
