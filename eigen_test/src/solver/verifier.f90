@@ -1,11 +1,11 @@
 module verifier
   use command_argument, only : argument
   use descriptor_parameters
-  use distribute_matrix, only : process, convert_sparse_matrix_to_dense, &
+  use distribute_matrix, only : convert_sparse_matrix_to_dense, &
        setup_distributed_matrix, distribute_global_sparse_matrix
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
   use matrix_io, only : sparse_mat
-  use processes, only : terminate
+  use processes, only : process, terminate
   implicit none
 
   private

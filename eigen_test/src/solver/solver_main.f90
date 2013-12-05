@@ -2,11 +2,12 @@ module solver_main
   use descriptor_parameters
   use command_argument, only : argument
   use matrix_io, only : sparse_mat
-  use distribute_matrix, only : process, setup_distributed_matrix, &
+  use distribute_matrix, only : setup_distributed_matrix, &
        gather_matrix, distribute_global_sparse_matrix
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
   use generalized_to_standard, only : reduce_generalized, recovery_generalized
-  use processes, only : print_map_of_grid_to_processes, check_master, terminate
+  use processes, only : process, setup_distribution, print_map_of_grid_to_processes, &
+       check_master, terminate
   implicit none
 
   private
@@ -21,7 +22,7 @@ contains
     use solver_scalapack_select, only : eigen_solver_scalapack_select
     use solver_eigenexa, only : setup_distributed_matrix_for_eigenexa, eigen_solver_eigenexa
     use matrix_io, only : sparse_mat
-    use distribute_matrix, only : process, setup_distribution, &
+    use distribute_matrix, only : &
          setup_distributed_matrix, distribute_global_dense_matrix, &
          distribute_global_sparse_matrix
     use eigenpairs_types, only : eigenpairs_types_union

@@ -3,11 +3,12 @@
 ! Copyright (C) ELSES. 2007-2011 all rights reserved
 !================================================================
 module solver_scalapack_select
-  use time, only : get_wclock_time
-  use distribute_matrix, only : &
-       process, get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
   use descriptor_parameters
+  use distribute_matrix, only : &
+       get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
   use eigenpairs_types, only : eigenpairs_types_union
+  use processes, only : process
+  use time, only : get_wclock_time
   implicit none
 
   private

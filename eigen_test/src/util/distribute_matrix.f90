@@ -1,42 +1,14 @@
 module distribute_matrix
   use descriptor_parameters
-  use processes, only : layout_procs, terminate
   use matrix_io, only : sparse_mat
+  use processes, only : process, layout_procs, terminate
   implicit none
 
-  type process
-    integer :: my_rank, n_procs, context
-    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
-  end type process
-
-  public :: process, setup_distribution, &
-       get_local_cols, setup_distributed_matrix, &
+  public :: get_local_cols, setup_distributed_matrix, &
        distribute_global_dense_matrix, distribute_global_sparse_matrix, &
        convert_sparse_matrix_to_dense, gather_matrix, allgather_row_wise
 
 contains
-
-  subroutine setup_distribution(proc)
-    type(process), intent(out) :: proc
-
-    call blacs_pinfo(proc%my_rank, proc%n_procs)
-    call layout_procs(proc%n_procs, proc%n_procs_row, proc%n_procs_col)
-    call blacs_get(-1, 0, proc%context)
-    call blacs_gridinit(proc%context, 'R', proc%n_procs_row, proc%n_procs_col)
-    call blacs_gridinfo(proc%context, proc%n_procs_row, proc%n_procs_col, &
-         proc%my_proc_row, proc%my_proc_col)
-
-    if (proc%my_rank == 0) then
-      print '("BLACS process grid: ", I0, " x ", I0, " (", I0, ")")', &
-           proc%n_procs_row, proc%n_procs_col, proc%n_procs
-    end if
-
-    if (proc%my_proc_row >= proc%n_procs_row .or. proc%my_proc_col >= proc%n_procs_col) then
-       call blacs_exit(0)
-       stop '[Warning] setup_distribution: Out of process grid, process exit'
-    end if
-  end subroutine setup_distribution
-
 
   integer function get_local_cols(proc, desc)
     type(process), intent(in) :: proc

@@ -1,10 +1,38 @@
 module processes
   implicit none
 
+  type process
+    integer :: my_rank, n_procs, context
+    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
+  end type process
+
   private
-  public :: get_num_procs, layout_procs, print_map_of_grid_to_processes, check_master, terminate
+  public :: process, setup_distribution, get_num_procs, layout_procs, &
+       print_map_of_grid_to_processes, check_master, terminate
 
 contains
+
+  subroutine setup_distribution(proc)
+    type(process), intent(out) :: proc
+
+    call blacs_pinfo(proc%my_rank, proc%n_procs)
+    call layout_procs(proc%n_procs, proc%n_procs_row, proc%n_procs_col)
+    call blacs_get(-1, 0, proc%context)
+    call blacs_gridinit(proc%context, 'R', proc%n_procs_row, proc%n_procs_col)
+    call blacs_gridinfo(proc%context, proc%n_procs_row, proc%n_procs_col, &
+         proc%my_proc_row, proc%my_proc_col)
+
+    if (proc%my_rank == 0) then
+      print '("BLACS process grid: ", I0, " x ", I0, " (", I0, ")")', &
+           proc%n_procs_row, proc%n_procs_col, proc%n_procs
+    end if
+
+    if (proc%my_proc_row >= proc%n_procs_row .or. proc%my_proc_col >= proc%n_procs_col) then
+       call blacs_exit(0)
+       stop '[Warning] setup_distribution: Out of process grid, process exit'
+    end if
+  end subroutine setup_distribution
+
 
   subroutine get_num_procs(num_mpi_procs, num_omp_procs)
     !$ use omp_lib
