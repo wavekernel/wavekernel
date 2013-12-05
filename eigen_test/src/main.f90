@@ -55,6 +55,19 @@ program eigen_test
     call eigen_solver(arg, matrix_A, eigenpairs)
   end if
 
+  ! Print eigenvalues and eigenvectors if required
+  if (is_master) then
+    open(iunit, file=arg%output_filename, status='unknown')
+    do j=1,arg%n_vec
+      if (eigenpairs%type_number == 1) then
+        write (iunit, '(i10, f20.12)') j, eigenpairs%local%values(j)
+      else if (eigenpairs%type_number == 2) then
+        write (iunit, '(i10, f20.12)') j, eigenpairs%blacs%values(j)
+      end if
+    enddo
+    close(iunit)
+  end if
+
   if (arg%printed_vecs_start /= 0) then
     call print_eigenvectors(arg, eigenpairs)
   end if
@@ -75,19 +88,10 @@ program eigen_test
     end if
   endif
 
+  if (is_master) then
+    call get_wclock_time(t_end, t_start)
+    print '("whole execution time (sec): ", f12.2)', t_end
+  end if
+
   call mpi_finalize(ierr)
-  if (.not. is_master) stop ! Only rank 0 process runs after here
-
-  open(iunit, file=arg%output_filename, status='unknown')
-  do j=1,arg%n_vec
-    if (eigenpairs%type_number == 1) then
-      write (iunit, '(i10, f20.12)') j, eigenpairs%local%values(j)
-    else if (eigenpairs%type_number == 2) then
-      write (iunit, '(i10, f20.12)') j, eigenpairs%blacs%values(j)
-    end if
-  enddo
-  close(iunit)
-
-  call get_wclock_time(t_end, t_start)
-  print '("whole execution time (sec): ", f12.2)', t_end
 end program eigen_test
