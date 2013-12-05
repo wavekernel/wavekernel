@@ -13,7 +13,7 @@ contains
   subroutine eigen_solver_lapack(mat, eigenpairs)
    use time, only : get_wclock_time
    use matrix_io, only : sparse_mat
-   use distribute_matrix, only : create_dense_matrix
+   use distribute_matrix, only : convert_sparse_matrix_to_dense
    use eigenpairs_types, only : eigenpairs_types_union
 
    type(sparse_mat), target, intent(in) :: mat
@@ -27,7 +27,7 @@ contains
 
    eigenpairs%type_number = 1
 
-   call create_dense_matrix(mat, eigenpairs%local%vectors)
+   call convert_sparse_matrix_to_dense(mat, eigenpairs%local%vectors)
 
    n = mat%size
    lda = n

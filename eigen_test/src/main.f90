@@ -3,7 +3,6 @@ program eigen_test
   use command_argument, only : argument, required_memory, &
        read_command_argument, print_command_argument
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
-  use distribute_matrix, only : create_dense_matrix !(routine)
   use time, only : get_wclock_time, data_and_time_wrapper
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union

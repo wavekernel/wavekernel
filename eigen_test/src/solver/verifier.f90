@@ -1,8 +1,8 @@
 module verifier
   use command_argument, only : argument
   use descriptor_parameters
-  use distribute_matrix, only : process, create_dense_matrix, &
-       setup_distributed_matrix, copy_global_sparse_matrix_to_local
+  use distribute_matrix, only : process, convert_sparse_matrix_to_dense, &
+       setup_distributed_matrix, distribute_global_sparse_matrix
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
   use matrix_io, only : sparse_mat
   use processes, only : terminate
@@ -34,9 +34,9 @@ contains
     allocate(left(dim), right(dim), res_norm(arg%n_check_vec))
     res_norm(:) = 0.0d0
 
-    call create_dense_matrix(matrix_A, a)
+    call convert_sparse_matrix_to_dense(matrix_A, a)
     if (arg%is_generalized_problem) then
-      call create_dense_matrix(matrix_B, b)
+      call convert_sparse_matrix_to_dense(matrix_B, b)
     end if
 
     do j = 1, arg%n_check_vec
@@ -98,11 +98,11 @@ contains
     dim = arg%matrix_A_info%rows
 
     call setup_distributed_matrix(proc, dim, dim, desc_A, matrix_A_dist, block_size = block_size)
-    call copy_global_sparse_matrix_to_local(matrix_A, desc_A, matrix_A_dist)
+    call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
 
     if (arg%is_generalized_problem) then
       call setup_distributed_matrix(proc, dim, dim, desc_B, matrix_B_dist, block_size = block_size)
-      call copy_global_sparse_matrix_to_local(matrix_B, desc_B, matrix_B_dist)
+      call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
     end if
 
     call setup_distributed_matrix(proc, dim, arg%n_check_vec, desc_Residual, Residual, block_size = block_size)

@@ -11,8 +11,8 @@ module distribute_matrix
 
   public :: process, setup_distribution, &
        get_local_cols, setup_distributed_matrix, &
-       copy_global_dense_matrix_to_local, copy_global_sparse_matrix_to_local, &
-       create_dense_matrix, gather_matrix, allgather_row_wise
+       distribute_global_dense_matrix, distribute_global_sparse_matrix, &
+       convert_sparse_matrix_to_dense, gather_matrix, allgather_row_wise
 
 contains
 
@@ -91,7 +91,7 @@ contains
   end subroutine setup_distributed_matrix
 
 
-  subroutine create_dense_matrix(mat_in, mat)
+  subroutine convert_sparse_matrix_to_dense(mat_in, mat)
     use matrix_io, only : sparse_mat
 
     type(sparse_mat), intent(in) :: mat_in
@@ -112,14 +112,12 @@ contains
         mat(j, i) = mat_in%value(k)
       endif
     enddo
-  end subroutine create_dense_matrix
+  end subroutine convert_sparse_matrix_to_dense
 
 
   subroutine gather_matrix(mat, desc, dest_row, dest_col, global_mat)
-    use time, only : get_wclock_time
-
     double precision, intent(in) :: mat(:, :)
-    integer, intent(in) :: desc(9), dest_row, dest_col
+    integer, intent(in) :: desc(desc_size), dest_row, dest_col
     double precision, intent(out) :: global_mat(:, :)
 
     double precision, allocatable :: recv_buf(:, :)
@@ -132,22 +130,18 @@ contains
 
     integer :: numroc, iceil
 
-    double precision :: t_start, t_end
-
-    call get_wclock_time(t_start)
-
-    m = desc(3)
-    n = desc(4)
+    m = desc(rows_)
+    n = desc(cols_)
     if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
       if (m /= size(global_mat, 1) .or. n /= size(global_mat, 2)) then
         stop '[Error] gather_matrix: Illegal matrix size'
       end if
     end if
-    mb = desc(5)
-    nb = desc(6)
+    mb = desc(block_row_)
+    nb = desc(block_col_)
     m_local = size(mat, 1)
     n_local = size(mat, 2)
-    context = desc(2)
+    context = desc(context_)
     call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
 
     if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
@@ -184,19 +178,12 @@ contains
           end if
        end do
     end do
-
-    if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
-       deallocate(recv_buf)
-    end if
-
-    call get_wclock_time(t_end)
-    ! print *, 'gather time', my_proc_row, my_proc_col, (t_end - t_start)
   end subroutine gather_matrix
 
 
-  subroutine copy_global_dense_matrix_to_local(global_mat, desc, local_mat)
+  subroutine distribute_global_dense_matrix(global_mat, desc, local_mat)
     double precision, intent(in) :: global_mat(:, :) ! assumed to be same in all the procs
-    integer, intent(in) :: desc(9)
+    integer, intent(in) :: desc(desc_size)
     double precision, intent(out) :: local_mat(:, :)
 
     integer :: m, n, mb, nb, m_local, n_local, context
@@ -206,13 +193,13 @@ contains
 
     integer :: iceil
 
-    m = desc(3)
-    n = desc(4)
-    mb = desc(5)
-    nb = desc(6)
+    m = desc(rows_)
+    n = desc(cols_)
+    mb = desc(block_row_)
+    nb = desc(block_col_)
     m_local = size(local_mat, 1)
     n_local = size(local_mat, 2)
-    context = desc(2)
+    context = desc(context_)
     call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
 
     do j = 1, iceil(iceil(n, nb), n_procs_col)
@@ -234,12 +221,12 @@ contains
                n_start_global : n_start_global + n_end - n_start)
        end do
     end do
-  end subroutine copy_global_dense_matrix_to_local
+  end subroutine distribute_global_dense_matrix
 
 
-  subroutine copy_global_sparse_matrix_to_local(mat_in, desc, mat)
+  subroutine distribute_global_sparse_matrix(mat_in, desc, mat)
     type(sparse_mat), intent(in) :: mat_in
-    integer, intent(in) :: desc(9)
+    integer, intent(in) :: desc(desc_size)
     double precision, intent(out) :: mat(:,:)
 
     integer :: k, i, j
@@ -252,7 +239,7 @@ contains
       call pdelset(mat, j, i, desc, mat_in%value(k))
       endif
     enddo
-  end subroutine copy_global_sparse_matrix_to_local
+  end subroutine distribute_global_sparse_matrix
 
 
   subroutine allgather_row_wise(array_local, context, block_size, array_global)
