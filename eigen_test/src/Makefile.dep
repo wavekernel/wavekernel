@@ -1,4 +1,5 @@
 ./util/distribute_matrix.o : ./util/processes.o ./util/matrix_io.o ./util/descriptor_parameters.o 
+./util/modules.o : ./solver/verifier.o ./solver/solver_scalapack_select.o ./solver/solver_scalapack_all.o ./solver/solver_lapack.o ./solver/solver_eigenexa.o ./util/processes.o ./solver/generalized_to_standard.o ./util/eigenpairs_types.o ./util/distribute_matrix.o 
 ./util/matrix_io.o : ./util/processes.o ./util/eigenpairs_types.o ./util/command_argument.o 
 ./util/command_argument.o : ./util/processes.o 
 ./main.o : ./solver/verifier.o ./util/eigenpairs_types.o ./util/processes.o ./util/time.o ./util/matrix_io.o ./util/command_argument.o ./solver/solver_main.o 
