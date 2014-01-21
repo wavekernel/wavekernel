@@ -215,12 +215,14 @@ contains
 
 
   subroutine allgather_row_wise(array_local, context, block_size, array_global)
+    include 'mpif.h'
+
     double precision, intent(in) :: array_local(:)
     integer, intent(in) :: context, block_size
     double precision, intent(out) :: array_global(:)
 
     double precision, allocatable :: send_buf(:)
-    integer :: n_global, n_local, max_buf_size
+    integer :: n_global, n_local, max_buf_size, ierr
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, sender_proc_col
     integer :: b, s, s2, e
 
@@ -233,6 +235,7 @@ contains
 
     do sender_proc_col = 0, n_procs_col - 1
        n_local = numroc(n_global, block_size, sender_proc_col, 0, n_procs_col)
+       call mpi_barrier(mpi_comm_world, ierr)
        if (my_proc_col == sender_proc_col) then
           if (n_local /= size(array_local)) then
             stop '[Error] distribute_matrix: Wrong local array size'
