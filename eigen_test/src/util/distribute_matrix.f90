@@ -214,6 +214,12 @@ contains
   end subroutine distribute_global_sparse_matrix
 
 
+  ! Supposing arrays of the same size are distributed by the block cyclic manner
+  ! in each processor row, broadcast whole pieces of the array then share the
+  ! array globally in the processor row.
+  !
+  ! array_local: local input, dimension LOCc(N) where N is the dimension of the
+  ! global array.
   subroutine allgather_row_wise(array_local, context, block_size, array_global)
     double precision, intent(in) :: array_local(:)
     integer, intent(in) :: context, block_size
@@ -222,35 +228,35 @@ contains
     double precision, allocatable :: send_buf(:)
     integer :: n_global, n_local, max_buf_size
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, sender_proc_col
-    integer :: b, s, s2, e
+    integer :: block_, head_global, tail_global, head_local
 
     integer :: numroc, iceil
 
     call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
     n_global = size(array_global)
-    max_buf_size = numroc(n_global, block_size, 0, 0, n_procs_col) !iceil(n_global, n_procs_col)
+    max_buf_size = numroc(n_global, block_size, 0, 0, n_procs_col)
     allocate(send_buf(max_buf_size))
 
     do sender_proc_col = 0, n_procs_col - 1
-       n_local = numroc(n_global, block_size, sender_proc_col, 0, n_procs_col)
-       if (my_proc_col == sender_proc_col) then
-          if (n_local /= size(array_local)) then
-            stop '[Error] distribute_matrix: Wrong local array size'
-          end if
-          send_buf(1 : n_local) = array_local(1 : n_local)
-          call dgebs2d(context, 'Row', 'I', max_buf_size, 1, send_buf, max_buf_size)
-       else
-          call dgebr2d(context, 'Row', 'I', max_buf_size, 1, send_buf, max_buf_size, &
-               my_proc_row, sender_proc_col)
-       end if
-       do b = 1, iceil(n_local, n_procs_col)
-          s = 1 + block_size * (n_procs_col * (b - 1) + sender_proc_col)
-          e = min(s + block_size - 1, n_global)
-          s2 = 1 + block_size * (b - 1)
-          array_global(s : e) = send_buf(s2 : s2 + e - s)
-       end do
+      n_local = numroc(n_global, block_size, sender_proc_col, 0, n_procs_col)
+      if (my_proc_col == sender_proc_col) then
+        if (n_local /= size(array_local)) then
+          stop '[Error] distribute_matrix: Wrong local array size'
+        end if
+        send_buf(1 : n_local) = array_local(1 : n_local)
+        call dgebs2d(context, 'Row', ' ', max_buf_size, 1, send_buf, max_buf_size)
+      else
+        call dgebr2d(context, 'Row', ' ', max_buf_size, 1, send_buf, max_buf_size, &
+             my_proc_row, sender_proc_col)
+      end if
+      ! Slice entries in a process into blocks
+      do block_ = 1, iceil(n_local, block_size)
+        head_global = 1 + block_size * (n_procs_col * (block_ - 1) + sender_proc_col)
+        tail_global = min(head_global + block_size - 1, n_global)
+        head_local = 1 + block_size * (block_ - 1)
+        array_global(head_global : tail_global) = &
+             send_buf(head_local : head_local + tail_global - head_global)
+      end do
     end do
-
-    deallocate(send_buf)
   end subroutine allgather_row_wise
 end module distribute_matrix
