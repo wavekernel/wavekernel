@@ -226,7 +226,7 @@ contains
     double precision, intent(out) :: array_global(:)
 
     double precision, allocatable :: send_buf(:)
-    integer :: n_global, n_local, max_buf_size
+    integer :: n_global, n_local, max_buf_size, ierr
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, sender_proc_col
     integer :: block_, head_global, tail_global, head_local
 
