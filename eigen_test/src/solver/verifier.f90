@@ -81,7 +81,8 @@ contains
       call terminate('[Error] eigen_checker_blacs: matrix_B is not provided')
     end if
 
-    if (trim(arg%solver_type) == 'eigenexa') then
+    if (trim(arg%solver_type) == 'eigenexa' .or. &
+         trim(arg%solver_type) == 'general_eigenexa') then
       block_size = 1
     else
       block_size = 32

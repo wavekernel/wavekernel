@@ -19,7 +19,8 @@ contains
     use solver_lapack, only : eigen_solver_lapack
     use solver_scalapack_all, only : eigen_solver_scalapack_all
     use solver_scalapack_select, only : eigen_solver_scalapack_select
-    use solver_eigenexa, only : setup_distributed_matrix_for_eigenexa, eigen_solver_eigenexa
+    use solver_eigenexa, only : setup_distributed_matrix_for_eigenexa, &
+         setup_distributed_matrix_for_general_eigenexa, eigen_solver_eigenexa
 
     type(argument) :: arg
     type(sparse_mat), intent(in) :: matrix_A
@@ -76,7 +77,18 @@ contains
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       call setup_distributed_matrix_for_eigenexa(n, desc_A, matrix_A_dist, eigenpairs)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
-      call eigen_solver_eigenexa(matrix_A_dist, n, arg%n_vec, eigenpairs)
+      call eigen_solver_eigenexa(matrix_A_dist, desc_A, arg%n_vec, eigenpairs)
+    case ('general_eigenexa')
+      call setup_distribution(proc)
+      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
+      call setup_distributed_matrix_for_general_eigenexa( &
+           n, desc_A, matrix_A_dist, desc_B, matrix_B_dist, eigenpairs)
+      call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
+      call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
+      call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
+      call eigen_solver_eigenexa(matrix_A_dist, desc_A, arg%n_vec, eigenpairs, 'L')
+      call recovery_generalized(n, n, matrix_B_dist, desc_B, &
+           eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
     case default
       stop '[Error] lib_eigen_solver: Unknown solver'
     end select
