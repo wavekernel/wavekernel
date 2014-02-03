@@ -3,13 +3,14 @@ module verifier
   use descriptor_parameters
   use distribute_matrix, only : convert_sparse_matrix_to_dense, &
        setup_distributed_matrix, distribute_global_sparse_matrix
-  use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
+  use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_local, &
+       eigenpairs_blacs
   use matrix_io, only : sparse_mat
   use processes, only : process, terminate
   implicit none
 
   private
-  public :: eigen_checker
+  public :: eigen_checker, eval_orthogonality
 
 contains
 
@@ -180,4 +181,84 @@ contains
       print '("[Warning] eigen_checker: result checker for output of this type is not implemeted yet")'
     end if
   end subroutine eigen_checker
+
+
+  ! For each pair of vectors within the index range [index1, index2],
+  ! computes cosine of the angle between them, and report the average and
+  ! the maximum (with the index pair) in the cosine values.
+  subroutine eval_orthogonality_local(index1, index2, eigenpairs, &
+       cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    integer, intent(in) :: index1, index2
+    type(eigenpairs_local), intent(in) :: eigenpairs
+    double precision, intent(out) :: cos_ave, cos_max
+    integer, intent(out) :: cos_max_index1, cos_max_index2
+
+    integer :: dim, n, i, j, k
+    double precision :: dot
+    double precision, allocatable :: norms(:), coss(:)
+
+    double precision :: ddot, dnrm2  ! Functions.
+
+    dim = size(eigenpairs%vectors, 1)
+    n = index2 - index1 + 1
+    allocate(norms(n), coss(n * (n - 1) / 2))
+
+    do i = 1, n
+      norms(i) = dnrm2(dim, eigenpairs%vectors(index1 + i - 1, :), 1)
+    end do
+
+    ! Computes inner products for all index pairs.
+    ! Conversion between an index pair and an entire pair is:
+    ! (i, j) -> k = (j - 1) * (j - 2) / 2 + i
+    ! k -> j = floor((3 + sqrt(8 * k - 6)) / 2)
+    do j = 2, n
+      do i = 1, j - 1
+        k = (j - 1) * (j - 2) / 2 + i
+        dot = ddot(dim, eigenpairs%vectors(i + index1 - 1, :), 1, &
+        eigenpairs%vectors(j + index1 - 1, :), 1)
+        coss(k) = abs(dot) / (norms(i) * norms(j))
+      end do
+    end do
+
+    ! Finds max value and its index.
+    k = maxloc(coss, dim = 1)
+    cos_max = coss(k)
+    cos_max_index2 = int((3.0d0 + sqrt(8.0d0 * dble(k) - 6.0d0)) / 2.0d0)
+    cos_max_index1 = k - (cos_max_index2 - 1) * (cos_max_index2 - 2) / 2
+    cos_max_index2 = cos_max_index2 + index1 - 1
+    cos_max_index1 = cos_max_index1 + index1 - 1
+
+    cos_ave = sum(coss) / dble(n * (n - 1) / 2)
+  end subroutine eval_orthogonality_local
+
+
+  ! Distributed parallel version of subroutine eval_orthogonality_local.
+  ! Not Implemented Yet.
+  subroutine eval_orthogonality_blacs(arg, eigenpairs, &
+       cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    type(argument), intent(in) :: arg
+    type(eigenpairs_blacs), intent(in) :: eigenpairs
+    double precision, intent(out) :: cos_ave, cos_max
+    integer, intent(out) :: cos_max_index1, cos_max_index2
+  end subroutine eval_orthogonality_blacs
+
+
+  subroutine eval_orthogonality(arg, eigenpairs, &
+       cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    type(argument), intent(in) :: arg
+    type(eigenpairs_types_union), intent(in) :: eigenpairs
+    double precision, intent(out) :: cos_ave, cos_max
+    integer, intent(out) :: cos_max_index1, cos_max_index2
+
+    if (eigenpairs%type_number == 1) then
+      call eval_orthogonality_local(arg%ortho_check_index_start, &
+           arg%ortho_check_index_end, eigenpairs%local, &
+           cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    else if (eigenpairs%type_number == 2) then
+      call eval_orthogonality_blacs(arg, eigenpairs%blacs, &
+           cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    else
+      print '("[Warning] eval_orthogonality: orthogonality evaluator for output of this type is not implemeted yet")'
+    end if
+  end subroutine eval_orthogonality
 end module verifier

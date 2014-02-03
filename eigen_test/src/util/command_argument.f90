@@ -18,6 +18,9 @@ module command_argument
     character(len=256) :: output_filename = 'eigenvalues.dat'
     logical :: is_generalized_problem, is_printing_grid_mapping = .false.
     integer :: n_vec = -1, n_check_vec = -1 ! These default -1 mean 'all the vectors'
+    ! When zero, orthogonality is not evaluated.
+    integer :: ortho_check_index_start = 0
+    integer :: ortho_check_index_end = 0
     character(len=256) :: eigenvector_dir = '.'
     integer :: printed_vecs_start = 0 ! Zero means do not print eigenvectors
     integer :: printed_vecs_end = 0
@@ -46,6 +49,7 @@ contains
       print *, '  -d <dir>  Set output files directory for eigenvectors to <dir>'
       print *, '  -p <num>  Specify the number of eigenvector to be output'
       print *, '  -p <num1>,<num2>  Specify range of the number of eigenvectors to be output'
+      print *, '  -t <num1>,<num2>  Consider eigenvectors indexed <num1> to <num2>(included) in orthogonality checking'
       print *, '  -h  Print this help and exit'
       print *, '  --print-grid-mapping  Print which process is assigned to each coordinate in BLACS grid'
       call flush(6)
@@ -131,6 +135,12 @@ contains
          arg%printed_vecs_end > arg%n_vec .or. &
          arg%printed_vecs_start > arg%printed_vecs_end) then
       stop '[Error] validate_argument: Specified numbers with -p option are not valid'
+    end if
+
+    if (arg%ortho_check_index_start < 0 .or. arg%ortho_check_index_end < 0 .or. &
+         arg%ortho_check_index_end > arg%n_vec .or. &
+         arg%ortho_check_index_start > arg%ortho_check_index_end) then
+      stop '[Error] validate_argument: Specified numbers with -t option are not valid'
     end if
   end subroutine validate_argument
 
@@ -246,6 +256,16 @@ contains
           else
             read (arg_str(1 : i - 1), *) arg%printed_vecs_start
             read (arg_str(i + 1 :), *) arg%printed_vecs_end
+          end if
+          argi = argi + 1
+        case ('t')
+          call get_command_argument(argi + 1, arg_str)
+          i = index(arg_str, ',')
+          if (i == 0) then
+            stop '[Error] read_command_argument: wrong format for -t option'
+          else
+            read (arg_str(1 : i - 1), *) arg%ortho_check_index_start
+            read (arg_str(i + 1 :), *) arg%ortho_check_index_end
           end if
           argi = argi + 1
         case ('v')

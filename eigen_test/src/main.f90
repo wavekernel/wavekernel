@@ -6,7 +6,7 @@ program eigen_test
   use time, only : get_wclock_time, data_and_time_wrapper
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
-  use verifier, only : eigen_checker
+  use verifier, only : eigen_checker, eval_orthogonality
   implicit none
 
   include 'mpif.h'
@@ -15,6 +15,8 @@ program eigen_test
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
   double precision :: rn_ave, rn_max
+  double precision :: cos_ave, cos_max
+  integer :: cos_max_index1, cos_max_index2
   integer :: num_mpi_procs, num_omp_procs, j, ierr
   integer, parameter :: iunit = 10
   logical :: is_master
@@ -86,7 +88,17 @@ program eigen_test
       print '("residual norm (average): ", e15.8)', rn_ave
       print '("residual norm (max):     ", e15.8)', rn_max
     end if
-  endif
+  end if
+
+  if (arg%ortho_check_index_start /= 0) then
+    call eval_orthogonality(arg, eigenpairs, &
+         cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    if (is_master) then
+      print '("eigenvector pair cosine (average): ", e15.8)', cos_ave
+      print '("eigenvector pair cosine (max):     ", e15.8, " at ", i0, ", " i0)', &
+           cos_max, cos_max_index1, cos_max_index2
+    end if
+  end if
 
   if (is_master) then
     call get_wclock_time(t_end, t_start)
