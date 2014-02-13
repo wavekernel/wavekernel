@@ -16,7 +16,9 @@ module command_argument
     type(matrix_info) :: matrix_A_info, matrix_B_info
     character(len=256) :: solver_type
     character(len=256) :: output_filename = 'eigenvalues.dat'
-    logical :: is_generalized_problem, is_printing_grid_mapping = .false.
+    logical :: is_generalized_problem
+    logical :: is_printing_grid_mapping = .false.
+    logical :: is_dry_run = .false.
     integer :: n_vec = -1, n_check_vec = -1 ! These default -1 mean 'all the vectors'
     ! When zero, orthogonality is not evaluated.
     integer :: ortho_check_index_start = 0
@@ -51,6 +53,7 @@ contains
       print *, '  -p <num1>,<num2>  Specify range of the number of eigenvectors to be output'
       print *, '  -t <num1>,<num2>  Consider eigenvectors indexed <num1> to <num2>(included) in orthogonality checking'
       print *, '  -h  Print this help and exit'
+      print *, '  --dry-run  Read command arguments and matrix files and instantly exit'
       print *, '  --print-grid-mapping  Print which process is assigned to each coordinate in BLACS grid'
       call flush(6)
     end if
@@ -273,6 +276,8 @@ contains
         case ('h')
           call print_help()
           stop ''
+        case ('-dry-run')
+          arg%is_dry_run = .true.
         case ('-print-grid-mapping')
           arg%is_printing_grid_mapping = .true.
         case default

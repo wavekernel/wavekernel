@@ -49,6 +49,12 @@ program eigen_test
     call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
   end if
 
+  if (arg%is_dry_run) then
+    if (is_master) print '(/, "dry run mode, exit")'
+    call mpi_finalize(ierr)
+    stop
+  end if
+
   if (is_master) print '(/, "----- Solver Call -----")'
 
   if (arg%is_generalized_problem) then
