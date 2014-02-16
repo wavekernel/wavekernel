@@ -22,6 +22,10 @@ contains
 
     integer, parameter :: iunit = 8
 
+    if (check_master()) then
+      print '("start reading matrix file ", a)', trim(filename)
+    end if
+
     matrix%size = info%rows
     matrix%num_non_zeros = info%entries
 
