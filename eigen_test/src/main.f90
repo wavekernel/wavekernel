@@ -6,7 +6,7 @@ program eigen_test
   use time, only : get_wall_clock_base_count, get_wall_clock_time
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
-  use verifier, only : eigen_checker, eval_orthogonality
+  use verifier, only : eval_residual_norm, eval_orthogonality
   implicit none
 
   include 'mpif.h'
@@ -84,10 +84,10 @@ program eigen_test
   if (arg%n_check_vec /= 0) then
     if (is_master) print '(/, "----- Checker Call -----")'
     if (arg%is_generalized_problem) then
-      call eigen_checker(arg, matrix_A, eigenpairs, &
+      call eval_residual_norm(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max, matrix_B)
     else
-      call eigen_checker(arg, matrix_A, eigenpairs, &
+      call eval_residual_norm(arg, matrix_A, eigenpairs, &
            rn_ave, rn_max)
     end if
 

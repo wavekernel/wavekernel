@@ -10,11 +10,11 @@ module verifier
   implicit none
 
   private
-  public :: eigen_checker, eval_orthogonality
+  public :: eval_residual_norm, eval_orthogonality
 
 contains
 
-  subroutine eigen_checker_local(arg, matrix_A, eigenpairs, &
+  subroutine eval_residual_norm_local(arg, matrix_A, eigenpairs, &
        res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
@@ -55,10 +55,10 @@ contains
 
     res_norm_max = maxval(res_norm)
     res_norm_ave = sum(res_norm) / dble(arg%n_check_vec)
-  end subroutine eigen_checker_local
+  end subroutine eval_residual_norm_local
 
 
-  subroutine eigen_checker_blacs(arg, matrix_A, eigenpairs, &
+  subroutine eval_residual_norm_blacs(arg, matrix_A, eigenpairs, &
        res_norm_ave, res_norm_max, matrix_B)
     include 'mpif.h'
 
@@ -79,7 +79,7 @@ contains
     integer :: indxg2p ! ScaLAPACK function
 
     if (arg%is_generalized_problem .and. .not. present(matrix_B)) then
-      call terminate('[Error] eigen_checker_blacs: matrix_B is not provided')
+      call terminate('[Error] eval_residual_norm_blacs: matrix_B is not provided')
     end if
 
     if (trim(arg%solver_type) == 'eigenexa' .or. &
@@ -157,10 +157,10 @@ contains
 
     res_norm_ave = ave_and_max(1) / dble(arg%n_check_vec)
     res_norm_max = ave_and_max(2)
-  end subroutine eigen_checker_blacs
+  end subroutine eval_residual_norm_blacs
 
 
-  subroutine eigen_checker(arg, matrix_A, eigenpairs, &
+  subroutine eval_residual_norm(arg, matrix_A, eigenpairs, &
        res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
@@ -170,20 +170,20 @@ contains
     double precision, intent(out) :: res_norm_ave, res_norm_max
 
     if (eigenpairs%type_number == 1) then
-      call eigen_checker_local(arg, matrix_A, eigenpairs, &
+      call eval_residual_norm_local(arg, matrix_A, eigenpairs, &
            res_norm_ave, res_norm_max, matrix_B)
     else if (eigenpairs%type_number == 2) then
       if (arg%is_generalized_problem) then
-        call eigen_checker_blacs(arg, matrix_A, eigenpairs%blacs, &
+        call eval_residual_norm_blacs(arg, matrix_A, eigenpairs%blacs, &
              res_norm_ave, res_norm_max, matrix_B)
       else
-        call eigen_checker_blacs(arg, matrix_A, eigenpairs%blacs, &
+        call eval_residual_norm_blacs(arg, matrix_A, eigenpairs%blacs, &
              res_norm_ave, res_norm_max)
       end if
     else
-      print '("[Warning] eigen_checker: result checker for output of this type is not implemeted yet")'
+      print '("[Warning] eval_residual_norm: output of this type is not supported yet")'
     end if
-  end subroutine eigen_checker
+  end subroutine eval_residual_norm
 
 
   ! For each pair of vectors within the index range [index1, index2],
