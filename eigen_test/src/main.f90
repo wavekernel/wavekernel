@@ -3,7 +3,7 @@ program eigen_test
   use command_argument, only : argument, required_memory, &
        read_command_argument, print_command_argument
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
-  use time, only : get_wclock_time, data_and_time_wrapper
+  use time, only : get_wall_clock_base_count, get_wall_clock_time
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
   use verifier, only : eigen_checker, eval_orthogonality
@@ -20,9 +20,10 @@ program eigen_test
   integer :: num_mpi_procs, num_omp_procs, j, ierr
   integer, parameter :: iunit = 10
   logical :: is_master
-  double precision :: t_start, t_end
+  integer :: base_count
+  double precision :: t_end
 
-  call get_wclock_time(t_start)
+  call get_wall_clock_base_count(base_count)
 
   call mpi_init(ierr)
   if (ierr /= 0) then
@@ -107,7 +108,7 @@ program eigen_test
   end if
 
   if (is_master) then
-    call get_wclock_time(t_end, t_start)
+    call get_wall_clock_time(base_count, t_end)
     print '("whole execution time (sec): ", f12.2)', t_end
   end if
 

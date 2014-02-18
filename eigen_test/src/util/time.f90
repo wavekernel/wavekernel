@@ -2,40 +2,32 @@ module time
   implicit none
 
   private
-  public :: get_wclock_time, data_and_time_wrapper
+  public :: get_wall_clock_base_count, get_wall_clock_time
 
 contains
-  subroutine get_wclock_time(time_present, time_origin)
-    double precision, intent(out) :: time_present
-    double precision, optional :: time_origin
 
-    double precision :: time_origin_wrk
-    integer :: count, rate, max
+  subroutine get_wall_clock_base_count(base_count)
+    integer, intent(out) :: base_count
 
-    if (present(time_origin)) then
-      time_origin_wrk=time_origin
-    else
-      time_origin_wrk=0.0d0
-    endif
+    integer :: rate, max  ! Dummy variables
+
+    call system_clock(base_count, rate, max)
+  end subroutine get_wall_clock_base_count
+
+
+  subroutine get_wall_clock_time(base_count, time)
+    integer, intent(in) :: base_count
+    double precision, intent(out) :: time
+
+    integer :: count, rate, max, diff
 
     call system_clock(count, rate, max)
 
-    time_present=dble(count)/dble(rate)-time_origin_wrk
+    diff = count - base_count
+    if (diff < 0) then
+      diff = max + diff
+    end if
 
-! @ Correct the present time, when the time count was initialized
-    if (time_present < 0) then
-      time_present = time_present + dble(max)/dble(rate)
-    endif
-  end subroutine get_wclock_time
-
-
-  subroutine data_and_time_wrapper(chara_wrk)
-    character(len=256), intent(out) :: chara_wrk
-    character(len=8) :: chara_date
-    character(len=10) :: chara_time
-
-    call date_and_time(chara_date, chara_time)
-    chara_wrk='Date: '//chara_date(1:4)//' '//chara_date(5:6)//' '//chara_date(7:8)//'; '// &
-&                             'Time: '//chara_time(1:2)//' '//chara_time(3:4)//' '//chara_time(5:6)
-  end subroutine data_and_time_wrapper
+    time = dble(diff) / dble(rate)
+  end subroutine get_wall_clock_time
 end module time

@@ -8,7 +8,7 @@ module solver_scalapack_select
        get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
   use eigenpairs_types, only : eigenpairs_types_union
   use processes, only : process
-  use time, only : get_wclock_time
+  use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
 
   private
@@ -39,15 +39,15 @@ contains
 
     ! Time
     integer, parameter :: n_intervals = 1
-    integer :: i
+    integer :: i, base_count
     double precision :: t_intervals(n_intervals)
-    double precision :: t_init, t_all_end
+    double precision :: t_all_end
     character(*), parameter :: interval_names(n_intervals) = (/'total'/)
 
     ! Functions
     double precision :: pdlamch
 
-    call get_wclock_time(t_init)
+    call get_wall_clock_base_count(base_count)
 
     eigenpairs%type_number = 2
 
@@ -82,9 +82,9 @@ contains
       end if
     end if
 
-    call get_wclock_time(t_all_end)
+    call get_wall_clock_time(base_count, t_all_end)
 
-    t_intervals(1) = t_all_end - t_init
+    t_intervals(1) = t_all_end
 
     if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)

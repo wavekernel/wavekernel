@@ -8,7 +8,7 @@ module solver_scalapack_all
        get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
   use eigenpairs_types, only : eigenpairs_types_union
   use processes, only : process
-  use time, only : get_wclock_time
+  use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
 
   private
@@ -37,9 +37,9 @@ contains
 
     ! Time
     integer, parameter :: n_intervals = 7
-    integer :: i
+    integer :: i, base_count
     double precision :: t_intervals(n_intervals)
-    double precision :: t_init, t_pdsytrd, t_pdsytrd_end, t_pdstedc, &
+    double precision :: t_pdsytrd, t_pdsytrd_end, t_pdstedc, &
          t_pdstedc_end, t_pdormtr_end, t_all_end
     character(*), parameter :: interval_names(n_intervals) = (/'init   ', &
          'pdsytrd', 'gather1', 'pdstedc', 'pdormtr', 'finish ', 'total  '/)
@@ -47,7 +47,7 @@ contains
     ! Functions
     integer :: numroc
 
-    call get_wclock_time(t_init)
+    call get_wall_clock_base_count(base_count)
 
     eigenpairs%type_number = 2
 
@@ -62,7 +62,7 @@ contains
     allocate(work(work_size))
     allocate(work_print(desc_A(block_row_)))
 
-    call get_wclock_time(t_pdsytrd)
+    call get_wall_clock_time(base_count, t_pdsytrd)
 
     uplo = 'l'
     call pdsytrd(uplo, dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
@@ -71,7 +71,7 @@ contains
        print '("info(pdsytrd): ", i0)', info
     end if
 
-    call get_wclock_time(t_pdsytrd_end)
+    call get_wall_clock_time(base_count, t_pdsytrd_end)
 
     ! Diagonal elements of the tridiagonal matrix Initially
     allocate(eigenpairs%blacs%values(dim))
@@ -92,7 +92,7 @@ contains
     allocate(work(work_size))
     allocate(iwork(iwork_size))
 
-    call get_wclock_time(t_pdstedc)
+    call get_wall_clock_time(base_count, t_pdstedc)
 
     call pdstedc('i', dim, eigenpairs%blacs%values, subdiag_global, &
          eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
@@ -101,7 +101,7 @@ contains
        print '("info(pdstedc): ", i0)', info
     end if
 
-    call get_wclock_time(t_pdstedc_end)
+    call get_wall_clock_time(base_count, t_pdstedc_end)
 
     side = 'l'
     work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, eigenpairs%blacs%desc)
@@ -114,19 +114,19 @@ contains
        print '("info(pdormtr): ", i0)', info
     end if
 
-    call get_wclock_time(t_pdormtr_end)
+    call get_wall_clock_time(base_count, t_pdormtr_end)
 
     ! call eigentest_pdlaprnt(dim, dim, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, 0, 0, 'Eigenvectors', 6, work_print)
 
-    call get_wclock_time(t_all_end)
+    call get_wall_clock_time(base_count, t_all_end)
 
-    t_intervals(1) = t_pdsytrd - t_init
+    t_intervals(1) = t_pdsytrd
     t_intervals(2) = t_pdsytrd_end - t_pdsytrd
     t_intervals(3) = t_pdstedc - t_pdsytrd_end
     t_intervals(4) = t_pdstedc_end - t_pdstedc
     t_intervals(5) = t_pdormtr_end - t_pdstedc_end
     t_intervals(6) = t_all_end - t_pdormtr_end
-    t_intervals(7) = t_all_end - t_init
+    t_intervals(7) = t_all_end
 
     if (proc%my_rank == 0) then
        call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)

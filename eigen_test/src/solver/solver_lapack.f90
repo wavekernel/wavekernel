@@ -11,7 +11,7 @@ module solver_lapack
 contains
 
   subroutine eigen_solver_lapack(mat, eigenpairs)
-   use time, only : get_wclock_time
+   use time, only : get_wall_clock_base_count, get_wall_clock_time
    use matrix_io, only : sparse_mat
    use distribute_matrix, only : convert_sparse_matrix_to_dense
    use eigenpairs_types, only : eigenpairs_types_union
@@ -23,7 +23,8 @@ contains
 
    double precision, allocatable :: work(:)
 
-   double precision :: time_origin, elapse_time
+   integer :: base_count
+   double precision :: elapse_time
 
    eigenpairs%type_number = 1
 
@@ -35,12 +36,12 @@ contains
 
    allocate(eigenpairs%local%values(n), work(lwork))
 
-   call get_wclock_time(time_origin)
+   call get_wall_clock_base_count(base_count)
 
    call dsyev("V", "U", n, eigenpairs%local%vectors, lda, &
         eigenpairs%local%values, work, lwork, info)
 
-   call get_wclock_time(elapse_time, time_origin)
+   call get_wall_clock_time(base_count, elapse_time)
 
    write(*,'(a,i10, f20.10)')  ' solver result (LAPACK, DSYEV) : matrix size, time (sec) =', n, elapse_time
   end subroutine eigen_solver_lapack
