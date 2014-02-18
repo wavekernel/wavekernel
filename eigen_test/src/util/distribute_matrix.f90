@@ -31,7 +31,7 @@ contains
     integer, intent(in), optional :: block_size
 
     integer :: numroc
-    integer :: actual_block_size, local_rows, info
+    integer :: max_block_size, actual_block_size, local_rows, info
 
     if (present(block_size)) then
       actual_block_size = block_size
@@ -39,7 +39,16 @@ contains
       actual_block_size = 32
     end if
 
-    actual_block_size = min(actual_block_size, rows / max(proc%n_procs_row, proc%n_procs_col))
+    ! If there is a process which owns no entries in given block size
+    ! configuration, diminish the block size and warn about in.
+    max_block_size = max(rows / proc%n_procs_row, cols / proc%n_procs_col)
+    if (actual_block_size > max_block_size) then
+      if (proc%my_rank == 0) then
+        print '("[Warning] setup_distributed_matrix: size of matrix is very small relative to the number of processes")'
+      end if
+      actual_block_size = max_block_size
+    end if
+
     if (proc%my_rank == 0) then
       print '( "Creating distributed matrix ", A, " with M, N, MB, NB: ", &
            &I0, ", ", I0, ", ", I0, ", ", I0 )', name, rows, cols, &
