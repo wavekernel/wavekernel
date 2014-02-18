@@ -139,9 +139,7 @@ contains
 
     character(*), intent(in) :: err_msg
 
-    if (check_master()) then
-      write (0, *) err_msg
-    end if
+    write (0, *) err_msg
     call mpi_finalize()
     stop
   end subroutine terminate
