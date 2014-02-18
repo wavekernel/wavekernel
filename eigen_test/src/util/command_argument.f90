@@ -19,7 +19,10 @@ module command_argument
     logical :: is_generalized_problem
     logical :: is_printing_grid_mapping = .false.
     logical :: is_dry_run = .false.
-    integer :: n_vec = -1, n_check_vec = -1 ! These default -1 mean 'all the vectors'
+    integer :: n_vec = -1  ! The default -1 means 'all the vectors'.
+    ! The default 0 means 'do not check any vector'.
+    ! If -1 is specified, n_check_vec is set identical with n_vec.
+    integer :: n_check_vec = 0
     ! When zero, orthogonality is not evaluated.
     integer :: ortho_check_index_start = 0
     integer :: ortho_check_index_end = 0
@@ -46,7 +49,8 @@ contains
       print *, 'Options are:'
       print *, '  -n <num>  (available with selecting solvers) Compute only &
            &<num> eigenpairs in ascending order of their eigenvalues'
-      print *, '  -c <num>  Consider only <num> eigenvectors in residual norm checking'
+      print *, '  -c <num>  Consider only <num> eigenvectors in residual norm &
+           &checking. Default is 0. Set -1 to consider all the vectors'
       print *, '  -o <file>  Set output file name for eigenvalues to <file>'
       print *, '  -d <dir>  Set output files directory for eigenvectors to <dir>'
       print *, '  -p <num>  Specify the number of eigenvector to be output'
