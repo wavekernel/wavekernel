@@ -21,7 +21,9 @@ contains
   end function get_local_cols
 
 
-  subroutine setup_distributed_matrix(proc, rows, cols, desc, mat, block_size)
+  subroutine setup_distributed_matrix(name, proc, rows, cols, desc, mat, &
+       block_size)
+    character(*), intent(in) :: name
     type(process), intent(in) :: proc
     integer, intent(in) :: rows, cols
     integer, intent(out) :: desc(desc_size)
@@ -39,8 +41,9 @@ contains
 
     actual_block_size = min(actual_block_size, rows / max(proc%n_procs_row, proc%n_procs_col))
     if (proc%my_rank == 0) then
-      print '( "Creating distributed matrix  M, N, MB, NB: ", &
-           &I0, ", ", I0, ", ", I0, ", ", I0 )', rows, cols, actual_block_size, actual_block_size
+      print '( "Creating distributed matrix ", A, " with M, N, MB, NB: ", &
+           &I0, ", ", I0, ", ", I0, ", ", I0 )', name, rows, cols, &
+           actual_block_size, actual_block_size
     end if
 
     local_rows = max(1, numroc(rows, actual_block_size, &

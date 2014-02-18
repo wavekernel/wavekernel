@@ -83,7 +83,8 @@ contains
     call allgather_row_wise(subdiag_local, proc%context, desc_A(block_col_), &
          subdiag_global)
 
-    call setup_distributed_matrix(proc, dim, dim, eigenpairs%blacs%desc, eigenpairs%blacs%Vectors)
+    call setup_distributed_matrix('Eigenvectors', proc, dim, dim, &
+         eigenpairs%blacs%desc, eigenpairs%blacs%Vectors)
     eigenvectors_local_cols = get_local_cols(proc, eigenpairs%blacs%desc)
 
     work_size = 6 * dim + 2 * eigenpairs%blacs%desc(local_rows_) * &

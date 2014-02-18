@@ -5,7 +5,7 @@ module solver_eigenexa
   use descriptor_parameters
   use eigenpairs_types, only : eigenpairs_types_union
   use matrix_io, only : sparse_mat
-  use processes, only : terminate
+  use processes, only : check_master, terminate
   use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
@@ -23,6 +23,12 @@ contains
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: nx, ny, context, info
+
+    if (check_master()) then
+      print '( "Creating 2 distributed matrices for EigenExa with &
+           &M, N, MB, NB: ", I0, ", ", I0, ", ", I0, ", ", I0 )', &
+           dim, dim, 1, 1
+    end if
 
     call eigen_init()
     call eigen_get_matdims(dim, nx, ny)
@@ -57,6 +63,12 @@ contains
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: nx, ny, context, info
+
+    if (check_master()) then
+      print '( "Creating 3 distributed matrices for EigenExa with &
+           &M, N, MB, NB: ", I0, ", ", I0, ", ", I0, ", ", I0 )', &
+           dim, dim, 1, 1
+    end if
 
     call eigen_init()
     call eigen_get_matdims(dim, nx, ny)

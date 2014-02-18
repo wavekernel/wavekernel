@@ -99,15 +99,18 @@ contains
 
     dim = arg%matrix_A_info%rows
 
-    call setup_distributed_matrix(proc, dim, dim, desc_A, matrix_A_dist, block_size = block_size)
+    call setup_distributed_matrix('A', proc, dim, dim, desc_A, matrix_A_dist, &
+         block_size = block_size)
     call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
 
     if (arg%is_generalized_problem) then
-      call setup_distributed_matrix(proc, dim, dim, desc_B, matrix_B_dist, block_size = block_size)
+      call setup_distributed_matrix('B', proc, dim, dim, &
+           desc_B, matrix_B_dist, block_size = block_size)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
     end if
 
-    call setup_distributed_matrix(proc, dim, arg%n_check_vec, desc_Residual, Residual, block_size = block_size)
+    call setup_distributed_matrix('Residual', proc, dim, arg%n_check_vec, &
+         desc_Residual, Residual, block_size = block_size)
 
     if (arg%is_generalized_problem) then
       ! Residual <- B * Eigenvectors
