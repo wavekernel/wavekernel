@@ -92,7 +92,7 @@ contains
            .and. (dim == arg%matrix_B_info%cols)
     end if
     if (.not. is_size_valid) then
-      stop '[Error] validate_argument: Matrix dimension mismatch'
+      call terminate('[Error] validate_argument: Matrix dimension mismatch')
     end if
 
     ! Solver type and problem type matched?
@@ -113,13 +113,18 @@ contains
       is_solver_valid = arg%is_generalized_problem
     case default
       is_solver_valid = .false.
-      stop '[Error] validate_argument: Unknown solver'
+      call terminate("[Error] validate_argument: Unknown solver '" // &
+           trim(arg%solver_type) // "'")
     end select
     if (.not. is_solver_valid) then
       if (arg%is_generalized_problem) then
-        stop '[Error] validate_argument: This solver is not for generalized eigenvalue problem'
+        call terminate("[Error] validate_argument: solver '" // &
+             trim(arg%solver_type) // &
+             "' is not for generalized eigenvalue problem")
       else
-        stop '[Error] validate_argument: This solver is not for standard eigenvalue problem'
+        call terminate("[Error] validate_argument: solver '" // &
+             trim(arg%solver_type) // &
+             "' is not for standard eigenvalue problem")
       end if
     end if
 
@@ -135,19 +140,21 @@ contains
       is_n_vec_valid = .true.
     end select
     if (.not. is_n_vec_valid) then
-      stop '[Error] validate_argument: This solver does not support partial eigenvalue computation'
+      call terminate("[Error] validate_argument: Solver '" // &
+           trim(arg%solver_type) // &
+           "' does not support partial eigenvalue computation")
     end if
 
     if (arg%printed_vecs_start < 0 .or. arg%printed_vecs_end < 0 .or. &
          arg%printed_vecs_end > arg%n_vec .or. &
          arg%printed_vecs_start > arg%printed_vecs_end) then
-      stop '[Error] validate_argument: Specified numbers with -p option are not valid'
+      call terminate('[Error] validate_argument: Specified numbers with -p option are not valid')
     end if
 
     if (arg%ortho_check_index_start < 0 .or. arg%ortho_check_index_end < 0 .or. &
          arg%ortho_check_index_end > arg%n_vec .or. &
          arg%ortho_check_index_start > arg%ortho_check_index_end) then
-      stop '[Error] validate_argument: Specified numbers with -t option are not valid'
+      call terminate('[Error] validate_argument: Specified numbers with -t option are not valid')
     end if
   end subroutine validate_argument
 
@@ -269,7 +276,7 @@ contains
           call get_command_argument(argi + 1, arg_str)
           i = index(arg_str, ',')
           if (i == 0) then
-            stop '[Error] read_command_argument: wrong format for -t option'
+            call terminate('[Error] read_command_argument: wrong format for -t option')
           else
             read (arg_str(1 : i - 1), *) arg%ortho_check_index_start
             read (arg_str(i + 1 :), *) arg%ortho_check_index_end
@@ -279,14 +286,15 @@ contains
           arg%verbose_level = 1
         case ('h')
           call print_help()
-          stop ''
+          call terminate('')
         case ('-dry-run')
           arg%is_dry_run = .true.
         case ('-print-grid-mapping')
           arg%is_printing_grid_mapping = .true.
         case default
           call print_help()
-          stop '[Error] read_command_argument: unknown option'
+          call terminate('[Error] read_command_argument: unknown option ' // &
+               trim(arg_str))
         end select
       else if (len_trim(arg%matrix_A_filename) == 0) then
         ! The first non-option argument specifies the (left) input matrix
@@ -294,18 +302,23 @@ contains
         ! Check whether the file exists
         inquire(file = trim(arg%matrix_A_filename), exist = exists)
         if (.not. exists) then
-          stop '[Error] read_command_argument: Matrix A file not found'
+          call terminate("[Error] read_command_argument: Matrix A file '" // &
+               trim(arg%matrix_A_filename) // "' not found")
         end if
       else
         arg%matrix_B_filename = trim(arg_str)
         inquire(file = arg%matrix_B_filename, exist = exists)
         if (.not. exists) then
-          stop '[Error] read_command_argument: Matrix B file not found'
+          call terminate("[Error] read_command_argument: Matrix B file '" // &
+               trim(arg%matrix_B_filename) // "' not found")
         end if
       end if
       argi = argi + 1
     enddo
 
+    if (len_trim(arg%matrix_A_filename) == 0) then
+      call terminate('[Error] read_command_argument: Matrix A file not specified')
+    end if
     arg%is_generalized_problem = (len_trim(arg%matrix_B_filename) /= 0)
 
     call wrap_mminfo(arg%matrix_A_filename, arg%matrix_A_info)
