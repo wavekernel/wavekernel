@@ -314,7 +314,7 @@ contains
     ! Aggregates in the direction of row
     call pdamax(n - 1, cos_max, cos_max_index1, Cos_maxes, 1, 1, desc_Cos_maxes, 1)
     cos_max = abs(cos_max)
-    call pielget('C', ' ', cos_max_index2, Cos_maxes_index, 1, cos_max_index1, desc_Cos_maxes_index)
+    call pielget('R', ' ', cos_max_index2, Cos_maxes_index, 1, cos_max_index1, desc_Cos_maxes_index)
     cos_max_index1 = cos_max_index1 + index1 - 1
     cos_max_index2 = cos_max_index2 + index1 - 1
     call pdasum(n - 1, cos_ave, Cos_sums, 1, 1, desc_Cos_sums, 1)
