@@ -84,7 +84,7 @@ contains
          subdiag_global)
 
     call setup_distributed_matrix('Eigenvectors', proc, dim, dim, &
-         eigenpairs%blacs%desc, eigenpairs%blacs%Vectors)
+         eigenpairs%blacs%desc, eigenpairs%blacs%Vectors, desc_A(block_row_))
     eigenvectors_local_cols = get_local_cols(proc, eigenpairs%blacs%desc)
 
     work_size = 6 * dim + 2 * eigenpairs%blacs%desc(local_rows_) * &

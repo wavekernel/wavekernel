@@ -19,6 +19,7 @@ module command_argument
     logical :: is_generalized_problem
     logical :: is_printing_grid_mapping = .false.
     logical :: is_dry_run = .false.
+    integer :: block_size = 0  ! Zero means default block size
     integer :: n_vec = -1  ! The default -1 means 'all the vectors'.
     ! The default 0 means 'do not check any vector'.
     ! If -1 is specified, n_check_vec is set identical with n_vec.
@@ -287,6 +288,10 @@ contains
         case ('h')
           call print_help()
           call terminate('')
+        case ('-block-size')
+          call get_command_argument(argi + 1, arg_str)
+          read (arg_str, *) arg%block_size
+          argi = argi + 1
         case ('-dry-run')
           arg%is_dry_run = .true.
         case ('-print-grid-mapping')

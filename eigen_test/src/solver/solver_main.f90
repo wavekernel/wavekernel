@@ -39,21 +39,34 @@ contains
     case ('scalapack_all')
       call setup_distribution(proc)
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+      if (arg%block_size <= 0) then  ! Default block size
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+      else
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
+      end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
     case ('scalapack_select')
       call setup_distribution(proc)
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+      if (arg%block_size <= 0) then  ! Default block size
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+      else
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
+      end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
            arg%n_vec, eigenpairs)
     case ('general_scalapack_all')
       call setup_distribution(proc)
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
-      call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
+      if (arg%block_size <= 0) then  ! Default block size
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
+      else
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
+        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist, arg%block_size)
+      end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
       call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
@@ -63,8 +76,13 @@ contains
     case ('general_scalapack_select')
       call setup_distribution(proc)
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
-      call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
+      if (arg%block_size <= 0) then  ! Default block size
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
+      else
+        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
+        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist, arg%block_size)
+      end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
       call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)

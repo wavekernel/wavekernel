@@ -54,7 +54,7 @@ contains
     dim = desc_A(rows_)
 
     call setup_distributed_matrix('Eigenvectors', proc, dim, dim, &
-         eigenpairs%blacs%desc, eigenpairs%blacs%Vectors)
+         eigenpairs%blacs%desc, eigenpairs%blacs%Vectors, desc_A(block_row_))
 
     work_size = max(3, work_size_for_pdsyevx('V', dim, desc_A, dim))
     iwork_size = 6 * max(dim, proc%n_procs_row * proc%n_procs_col + 1, 4)

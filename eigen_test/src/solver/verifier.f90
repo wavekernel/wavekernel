@@ -85,8 +85,10 @@ contains
     if (trim(arg%solver_type) == 'eigenexa' .or. &
          trim(arg%solver_type) == 'general_eigenexa') then
       block_size = 1
-    else
+    else if (arg%block_size <= 0) then
       block_size = 32
+    else
+      block_size = arg%block_size
     end if
 
     ! call blacs_get(-1, 0, proc%context)
