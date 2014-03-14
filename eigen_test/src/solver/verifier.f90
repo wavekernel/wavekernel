@@ -86,7 +86,7 @@ contains
          trim(arg%solver_type) == 'general_eigenexa') then
       block_size = 1
     else if (arg%block_size <= 0) then
-      block_size = 32
+      block_size = 128
     else
       block_size = arg%block_size
     end if

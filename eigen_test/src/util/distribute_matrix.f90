@@ -36,7 +36,7 @@ contains
     if (present(block_size)) then
       actual_block_size = block_size
     else
-      actual_block_size = 32
+      actual_block_size = 128
     end if
 
     ! If there is a process which owns no entries in given block size
