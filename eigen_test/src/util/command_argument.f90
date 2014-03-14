@@ -152,6 +152,10 @@ contains
       call terminate('[Error] validate_argument: Specified numbers with -p option are not valid')
     end if
 
+    if (arg%n_check_vec < 0 .or. arg%n_check_vec > arg%n_vec) then
+      call terminate('[Error] validate_argument: Specified numbers with -c option are not valid')
+    end if
+
     if (arg%ortho_check_index_start < 0 .or. arg%ortho_check_index_end < 0 .or. &
          arg%ortho_check_index_end > arg%n_vec .or. &
          arg%ortho_check_index_start > arg%ortho_check_index_end) then
