@@ -20,8 +20,7 @@ contains
     use solver_lapack, only : eigen_solver_lapack
     use solver_scalapack_all, only : eigen_solver_scalapack_all
     use solver_scalapack_select, only : eigen_solver_scalapack_select
-    use solver_eigenexa, only : setup_distributed_matrix_for_eigenexa, &
-         setup_distributed_matrix_for_general_eigenexa, eigen_solver_eigenexa
+    use solver_eigenexa, only : setup_distributed_matrix_for_eigenexa, eigen_solver_eigenexa
 
     type(argument) :: arg
     type(sparse_mat), intent(in) :: matrix_A

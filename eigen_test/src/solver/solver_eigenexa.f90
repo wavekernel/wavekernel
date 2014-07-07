@@ -11,8 +11,7 @@ module solver_eigenexa
   implicit none
 
   private
-  public :: setup_distributed_matrix_for_eigenexa, &
-       setup_distributed_matrix_for_general_eigenexa, eigen_solver_eigenexa
+  public :: setup_distributed_matrix_for_eigenexa, eigen_solver_eigenexa
 
 contains
 
@@ -53,46 +52,6 @@ contains
     matrix_A(:, :) = 0.0d0
     eigenpairs%blacs%Vectors(:, :) = 0.0d0
   end subroutine setup_distributed_matrix_for_eigenexa
-
-
-  !  subroutine setup_distributed_matrix_for_general_eigenexa(dim, desc_A, matrix_A, eigenpairs)
-  !    integer, intent(in) :: dim
-  !    integer, intent(out) :: desc_A(desc_size), desc_B(desc_size)
-  !    double precision, allocatable, intent(out) :: matrix_A(:, :), matrix_B(:, :)
-  !    type(eigenpairs_types_union), intent(out) :: eigenpairs
-  !
-  !    integer :: nx, ny, context, info
-  !
-  !    if (check_master()) then
-  !      print '( "Creating 2 distributed matrices for EigenExa with &
-  !           &M, N, MB, NB: ", I0, ", ", I0, ", ", I0, ", ", I0 )', &
-  !           dim, dim, 1, 1
-  !    end if
-  !
-  !    call eigen_init()
-  !    call eigen_get_matdims(dim, nx, ny)
-  !    context = eigen_get_blacs_context()
-  !
-  !    call descinit(desc_A, dim, dim, 1, 1, 0, 0, context, nx, info)
-  !
-  !    eigenpairs%type_number = 2
-  !    call descinit(eigenpairs%blacs%desc, dim, dim, 1, 1, 0, 0, context, nx, info)
-  !    if (info /= 0) then
-  !      print '(a, i0)', 'info(descinit): ', info
-  !      call terminate('[Error] setup_distributed_matrix_for_eigenexa: descinit failed')
-  !    end if
-  !
-  !    allocate(matrix_A(nx, ny), &
-  !         eigenpairs%blacs%Vectors(nx, ny), &
-  !         eigenpairs%blacs%values(dim), stat = info)
-  !    if (info /= 0) then
-  !      print '(a, i0)', 'stat(allocate): ', info
-  !      call terminate('[Error] setup_distributed_matrix_for_general_eigenexa: allocation failed')
-  !    end if
-  !
-  !    matrix_A(:, :) = 0.0d0
-  !    eigenpairs%blacs%Vectors(:, :) = 0.0d0
-  !  end subroutine setup_distributed_matrix_for_general_eigenexa
 
 
   ! uplo: takes the value of 'L' or 'U' or (not present).
