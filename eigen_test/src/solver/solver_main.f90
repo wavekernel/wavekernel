@@ -30,6 +30,7 @@ contains
     integer :: n, desc_A(desc_size), desc_B(desc_size), desc_A_re(desc_size)
     type(process) :: proc
     double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
+    type(eigenpairs_types_union) :: eigenpairs_tmp
 
     integer :: base_count
     double precision :: times(10)
@@ -103,29 +104,39 @@ contains
       call get_wall_clock_base_count(base_count)
       call setup_distribution(proc)
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      call get_wall_clock_time(base_count, times(1))
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
-      call get_wall_clock_time(base_count, times(2))
-      call setup_distributed_matrix_for_eigenexa(n, desc_A_re, matrix_A_redist, eigenpairs)
-      call get_wall_clock_time(base_count, times(3))
+      call setup_distributed_matrix_for_eigenexa(n, desc_A_re, matrix_A_redist, eigenpairs_tmp)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
-      call get_wall_clock_time(base_count, times(4))
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
-      call get_wall_clock_time(base_count, times(5))
+      call get_wall_clock_time(base_count, times(1))
       call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
-      call get_wall_clock_time(base_count, times(6))
+      call get_wall_clock_time(base_count, times(2))
       call pdgemr2d(n, n, matrix_A_dist, 1, 1, desc_A, matrix_A_redist, 1, 1, desc_A_re, desc_A(context_))
-      call get_wall_clock_time(base_count, times(7))
-      call eigen_solver_eigenexa(matrix_A_redist, desc_A_re, arg%n_vec, eigenpairs, 'L')
-      call get_wall_clock_time(base_count, times(8))
-      call pdgemr2d(n, n, matrix_B_dist, 1, 1, desc_B, matrix_A_redist, 1, 1, desc_A_re, desc_A(context_))
-      call get_wall_clock_time(base_count, times(9))
-      call recovery_generalized(n, n, matrix_A_redist, desc_A_re, &
+      call get_wall_clock_time(base_count, times(3))
+      call eigen_solver_eigenexa(matrix_A_redist, desc_A_re, arg%n_vec, eigenpairs_tmp, 'L')
+      call get_wall_clock_time(base_count, times(4))
+      eigenpairs%type_number = 2
+      allocate(eigenpairs%blacs%values(n))
+      eigenpairs%blacs%values(:) = eigenpairs_tmp%blacs%values(:)
+      eigenpairs%blacs%desc(:) = eigenpairs_tmp%blacs%desc(:)
+      call setup_distributed_matrix('Eigenvectors', proc, n, n, &
+           eigenpairs%blacs%desc, eigenpairs%blacs%Vectors, desc_A(block_row_))
+      call pdgemr2d(n, n, eigenpairs_tmp%blacs%Vectors, 1, 1, eigenpairs_tmp%blacs%desc, &
+           eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
+           eigenpairs_tmp%blacs%desc(context_))
+      call get_wall_clock_time(base_count, times(5))
+      call recovery_generalized(n, n, matrix_B_dist, desc_B, &
            eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
-      call get_wall_clock_time(base_count, times(10))
+      call get_wall_clock_time(base_count, times(6))
       if (check_master()) then
-        print *, 'in solver_main: ', times
+        print *, 'general_eigenexa elapsed time (printed in solver_main): '
+        print *, 'general_eigenxa setup_matrix: ', times(1)
+        print *, 'general_eigenxa reduce_generalized: ', times(2)
+        print *, 'general_eigenxa pdgemr2d_A: ', times(3)
+        print *, 'general_eigenxa eigen_solver_eigenexa: ', times(4)
+        print *, 'general_eigenxa pdgemr2d_B: ', times(5)
+        print *, 'general_eigenxa recovery_generalized: ', times(6)
       end if
     case default
       stop '[Error] lib_eigen_solver: Unknown solver'

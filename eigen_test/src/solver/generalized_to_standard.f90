@@ -41,8 +41,12 @@ contains
       if (check_master()) print '("info(pdsygst): ", i0)', info
       call terminate('[Error] reduce_generalized: pdsygst failed')
     end if
+
     call get_wall_clock_time(base_count, times(2))
-    if (check_master()) print *, 'reduce_generalized: ', times
+    if (check_master()) then
+      print *, '  reduce_generalized pdpotrf: ', times(1)
+      print *, '  reduce_generalized pdsygst: ', times(2)
+    end if
   end subroutine reduce_generalized
 
 
