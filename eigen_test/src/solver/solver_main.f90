@@ -62,6 +62,7 @@ contains
       call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
            arg%n_vec, eigenpairs)
     case ('general_scalapack_all')
+      call get_wall_clock_base_count(base_count)
       call setup_distribution(proc)
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       if (arg%block_size <= 0) then  ! Default block size
@@ -73,10 +74,21 @@ contains
       end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
+      call get_wall_clock_time(base_count, times(1))
       call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
+      call get_wall_clock_time(base_count, times(2))
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
+      call get_wall_clock_time(base_count, times(3))
       call recovery_generalized(n, n, matrix_B_dist, desc_B, &
            eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
+      call get_wall_clock_time(base_count, times(4))
+      if (check_master()) then
+        print *, 'general_scalapack_all elapsed time (printed in solver_main): '
+        print *, 'general_scalapack_all setup_matrix: ', times(1)
+        print *, 'general_scalapack_all reduce_generalized: ', times(2)
+        print *, 'general_scalapack_all eigen_solver_scalapack: ', times(3)
+        print *, 'general_scalapack_all recovery_generalized: ', times(4)
+      end if
     case ('general_scalapack_select')
       call setup_distribution(proc)
       if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
@@ -131,12 +143,12 @@ contains
       call get_wall_clock_time(base_count, times(6))
       if (check_master()) then
         print *, 'general_eigenexa elapsed time (printed in solver_main): '
-        print *, 'general_eigenxa setup_matrix: ', times(1)
-        print *, 'general_eigenxa reduce_generalized: ', times(2)
-        print *, 'general_eigenxa pdgemr2d_A: ', times(3)
-        print *, 'general_eigenxa eigen_solver_eigenexa: ', times(4)
-        print *, 'general_eigenxa pdgemr2d_B: ', times(5)
-        print *, 'general_eigenxa recovery_generalized: ', times(6)
+        print *, 'general_eigenexa setup_matrix: ', times(1)
+        print *, 'general_eigenexa reduce_generalized: ', times(2)
+        print *, 'general_eigenexa pdgemr2d_A: ', times(3)
+        print *, 'general_eigenexa eigen_solver_eigenexa: ', times(4)
+        print *, 'general_eigenexa pdgemr2d_B: ', times(5)
+        print *, 'general_eigenexa recovery_generalized: ', times(6)
       end if
     case default
       stop '[Error] lib_eigen_solver: Unknown solver'
