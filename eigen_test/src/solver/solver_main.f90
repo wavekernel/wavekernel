@@ -125,9 +125,11 @@ contains
       call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
       call get_wall_clock_time(base_count, times(2))
       call pdgemr2d(n, n, matrix_A_dist, 1, 1, desc_A, matrix_A_redist, 1, 1, desc_A_re, desc_A(context_))
+      deallocate(matrix_A_dist)
       call get_wall_clock_time(base_count, times(3))
       call eigen_solver_eigenexa(matrix_A_redist, desc_A_re, arg%n_vec, eigenpairs_tmp, 'L')
       call get_wall_clock_time(base_count, times(4))
+      deallocate(matrix_A_redist)
       eigenpairs%type_number = 2
       allocate(eigenpairs%blacs%values(n))
       eigenpairs%blacs%values(:) = eigenpairs_tmp%blacs%values(:)
