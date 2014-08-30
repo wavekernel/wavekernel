@@ -56,6 +56,8 @@ program test_real2
     read(arg3, *) nblk
   endif
 
+  elpa_print_times = .true.
+
   !-------------------------------------------------------------------------------
   !  MPI Initialization
 

@@ -2,10 +2,10 @@ include ./Makefile.in
 
 .PHONY: all clean
 
-all: test_real2
+all: elpa_generalized
 
-test_real2: test_real2.f90
-	$(FC) $(FFLAGS) $< -o $@ -I. -L. -lelpa $(LIBS)
+elpa_generalized: elpa_generalized.f90
+	$(FC) $(FFLAGS) $< -o $@ $(LIBS)
 
 clean:
-	rm -rf *.o test_real2
+	rm -rf *.o elpa_generalized
