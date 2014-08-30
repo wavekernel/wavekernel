@@ -166,7 +166,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
 
-      nblk = 64
+      nblk = 128
       call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
       !context = mpi_comm_world
