@@ -13,7 +13,7 @@ eigen
 quad/pi-quad-prec
 scocg/sequential/scocg
 *.out
-job*.sh
+job*.sh*
 
 # Data
 *.dat
