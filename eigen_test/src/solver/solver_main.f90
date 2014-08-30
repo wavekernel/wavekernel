@@ -183,12 +183,6 @@ contains
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
-      !allocate(a(na_rows, na_cols), b(na_rows, na_cols), z(na_rows, na_cols), &
-      !     as(na_rows, na_cols), bs(na_rows, na_cols), ev(na), stat = ierr)
-      if (ierr /= 0) then
-        write(6, *) 'memory allocation failed'
-        call mpi_abort(mpi_comm_world, mpierr)
-      end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(2) = mpi_wtime()
