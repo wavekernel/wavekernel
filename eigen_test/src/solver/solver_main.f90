@@ -163,6 +163,9 @@ contains
         print *, 'general_eigenexa recovery_generalized: ', times(6)
       end if
     case ('general_elpa')
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(1) = mpi_wtime()
+
       nblk = 64
       call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
@@ -197,7 +200,7 @@ contains
       end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-      times(5) = mpi_wtime()
+      times(3) = mpi_wtime()
 
       call invert_trm_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
@@ -209,7 +212,7 @@ contains
       !end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-      times(6) = mpi_wtime()
+      times(4) = mpi_wtime()
 
       ! Reduce A as U^-T A U^-1
       ! A <- U^-T A
@@ -222,14 +225,14 @@ contains
            nblk, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-      times(7) = mpi_wtime()
+      times(5) = mpi_wtime()
 
       ! A <- A U^-1
       call pdtrmm('Right', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
            matrix_B_dist, 1, 1, sc_desc, matrix_A_dist, 1, 1, sc_desc)
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-      times(8) = mpi_wtime()
+      times(6) = mpi_wtime()
 
       success = solve_evp_real(n, n, matrix_A_dist, na_rows, &
            eigenpairs%blacs%values, eigenpairs%blacs%Vectors, na_rows, &
@@ -241,7 +244,7 @@ contains
       endif
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-      times(9) = mpi_wtime()
+      times(7) = mpi_wtime()
 
       ! Z <- U^-1 Z
       call pdtrmm('Left', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
@@ -250,20 +253,18 @@ contains
       eigenpairs%type_number = 2
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-      times(10) = mpi_wtime()
+      times(8) = mpi_wtime()
 
       if (myid == 0) then
-        print '(a)','| Two-step ELPA solver complete.'
+        print '(a)','| ELPA solver complete.'
         print *, 'init            : ', times(2) - times(1)
-        print *, 'set_A           : ', times(3) - times(2)
-        print *, 'set_B           : ', times(4) - times(3)
-        print *, 'cholesky_real   : ', times(5) - times(4)
-        print *, 'invert_trm_real : ', times(6) - times(5)
-        print *, 'pdtrmm_A_left   : ', times(7) - times(6)
-        print *, 'pdtrmm_A_right  : ', times(8) - times(7)
-        print *, 'solve_evp       : ', times(9) - times(8)
-        print *, 'pdtrmm_EVs      : ', times(10) - times(9)
-        print *, 'total           : ', times(10) - times(1)
+        print *, 'cholesky_real   : ', times(3) - times(2)
+        print *, 'invert_trm_real : ', times(4) - times(3)
+        print *, 'pdtrmm_A_left   : ', times(5) - times(4)
+        print *, 'pdtrmm_A_right  : ', times(6) - times(5)
+        print *, 'solve_evp       : ', times(7) - times(6)
+        print *, 'pdtrmm_EVs      : ', times(8) - times(7)
+        print *, 'total           : ', times(8) - times(1)
         print *
         print *, 'solve_evp_real_2stage transform_to_tridi :', time_evp_fwd
         print *, 'solve_evp_real_2stage solve_tridi        :', time_evp_solve
