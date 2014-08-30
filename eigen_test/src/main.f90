@@ -36,6 +36,7 @@ program eigen_test
   is_master = check_master()
 
   if (is_master) then
+    print '("---------- Eigen Test start ----------")'
     print '("----- Configurations -----")'
     call print_command_argument(arg)
     print '("approximate required memory per process (Mbytes): ", f10.1)', &
@@ -110,6 +111,7 @@ program eigen_test
   if (is_master) then
     call get_wall_clock_time(base_count, t_end)
     print '("whole execution time (sec): ", f12.2)', t_end
+    print *
   end if
 
   call mpi_finalize(ierr)
