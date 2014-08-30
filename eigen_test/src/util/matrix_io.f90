@@ -21,6 +21,7 @@ contains
     type(sparse_mat), intent(out) :: matrix
 
     integer, parameter :: iunit = 8
+    integer :: ierr
 
     if (check_master()) then
       print '("start reading matrix file ", a)', trim(filename)
@@ -29,7 +30,10 @@ contains
     matrix%size = info%rows
     matrix%num_non_zeros = info%entries
 
-    allocate(matrix%suffix(2, info%entries), matrix%value(info%entries))
+    allocate(matrix%suffix(2, info%entries), matrix%value(info%entries), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('read_matrix_file: allocation failed', ierr)
+    end if
 
     open(iunit, file = filename)
 
@@ -91,17 +95,13 @@ contains
     do line_count = 1, num_non_zeros
       read(unit_num, *, iostat=ierr) i, j, value_wrk
       if (ierr /= 0) then
-        stop '[Error] read_matrix_file_value: Invalid format of matrix value'
+        call terminate('read_matrix_file_value: invalid format of matrix value', ierr)
       endif
 
       ! if (debug_mode) write(*,*)'i,j, matrix_value=',i, j, value_wrk
 
-      if (i < 1 .or. i > mat_size) then
-        stop '[Error] read_matrix_file_value: Index of matrix out of range'
-      endif
-
-      if (j < 1 .or. j > mat_size) then
-        stop '[Error] read_matrix_file_value: Index of matrix out of range'
+      if (i < 1 .or. i > mat_size .or. j < 1 .or. j > mat_size) then
+        call terminate('read_matrix_file_value: index of matrix out of range', ierr)
       endif
 
       mat_value(line_count) = value_wrk
@@ -164,7 +164,7 @@ contains
         call mpi_bcast(stat, 1, mpi_integer, 0, mpi_comm_world, err) ! Share stat for file opening
         if (stat /= 0) then
           if (check_master ()) print *, 'iostat: ', stat
-          call terminate('[Error] print_eigenvectors: cannot open ' // trim(filename))
+          call terminate('print_eigenvectors: cannot open ' // trim(filename), stat)
         end if
 
         call mpi_barrier(mpi_comm_world, stat)

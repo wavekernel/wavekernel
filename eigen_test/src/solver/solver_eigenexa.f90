@@ -39,14 +39,13 @@ contains
     call descinit(eigenpairs%blacs%desc, dim, dim, 1, 1, 0, 0, context, nx, info)
     if (info /= 0) then
       print '(a, i0)', 'info(descinit): ', info
-      call terminate('[Error] setup_distributed_matrix_for_eigenexa: descinit failed')
+      call terminate('setup_distributed_matrix_for_eigenexa: descinit failed', info)
     end if
 
     allocate(matrix_A(nx, ny), eigenpairs%blacs%Vectors(nx, ny), &
          eigenpairs%blacs%values(dim), stat = info)
     if (info /= 0) then
-      print '(a, i0)', 'stat(allocate): ', info
-      call terminate('[Error] setup_distributed_matrix_for_eigenexa: allocation failed')
+      call terminate('setup_distributed_matrix_for_eigenexa: allocation failed', info)
     end if
 
     matrix_A(:, :) = 0.0d0
@@ -80,7 +79,7 @@ contains
 
     dim = desc_mat(rows_)
     if (dim /= n_vec) then
-      call terminate('[Error] eigen_solver_eigenexa: current version of EigenExa does not support partial eigenvector computation')
+      call terminate('eigen_solver_eigenexa: current version of EigenExa does not support partial eigenvector computation', 1)
     end if
 
     ! Unlike usual ScaLAPACK routines, EigenExa requires both of upper and lower
@@ -98,7 +97,7 @@ contains
                mat, i, i + 1, desc_mat, dim)
         end do
       else
-        call terminate("[Error] eigen_solver_eigenexa: uplo must be 'U' or 'L'")
+        call terminate("eigen_solver_eigenexa: uplo must be 'U' or 'L'", 1)
       end if
     end if
 

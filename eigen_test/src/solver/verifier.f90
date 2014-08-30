@@ -28,11 +28,14 @@ contains
     double precision, allocatable :: left(:), right(:) ! residual = left - right
     double precision, allocatable :: res_norm(:) ! residual norm
 
-    integer :: j, dim
+    integer :: j, dim, ierr
 
     dim = matrix_A%size
 
-    allocate(left(dim), right(dim), res_norm(arg%n_check_vec))
+    allocate(left(dim), right(dim), res_norm(arg%n_check_vec), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('eval_residual_norm_local: allocation failed', ierr)
+    end if
     res_norm(:) = 0.0d0
 
     call convert_sparse_matrix_to_dense(matrix_A, a)
@@ -79,7 +82,7 @@ contains
     integer :: indxg2p ! ScaLAPACK function
 
     if (arg%is_generalized_problem .and. .not. present(matrix_B)) then
-      call terminate('[Error] eval_residual_norm_blacs: matrix_B is not provided')
+      call terminate('eval_residual_norm_blacs: matrix_B is not provided', 1)
     end if
 
     if (trim(arg%solver_type) == 'eigenexa' .or. &
@@ -198,7 +201,7 @@ contains
     double precision, intent(out) :: cos_ave, cos_max
     integer, intent(out) :: cos_max_index1, cos_max_index2
 
-    integer :: dim, n, i, j, k
+    integer :: dim, n, i, j, k, ierr
     double precision :: dot
     double precision, allocatable :: norms(:), coss(:)
 
@@ -206,7 +209,10 @@ contains
 
     dim = size(eigenpairs%vectors, 1)
     n = index2 - index1 + 1
-    allocate(norms(n), coss(n * (n - 1) / 2))
+    allocate(norms(n), coss(n * (n - 1) / 2), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('eval_orthogonality_local: allocation failed', ierr)
+    end if
 
     do i = 1, n
       norms(i) = dnrm2(dim, eigenpairs%vectors(index1 + i - 1, :), 1)
@@ -251,7 +257,7 @@ contains
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, context  ! Process info.
     integer :: n, block_row, block_col, dim  ! Global matrix info.
     integer :: local_cols, local_rows  ! Local matrix info.
-    integer :: diag, i, j, owner_proc_row, owner_proc_col, max_in_col_index, info
+    integer :: diag, i, j, owner_proc_row, owner_proc_col, max_in_col_index, info, ierr
     double precision :: max_in_col, scale, sum_in_col
     double precision, allocatable :: InnerProducts(:, :), Cos_maxes(:), Cos_sums(:)
     integer, allocatable :: Cos_maxes_index(:)
@@ -272,9 +278,15 @@ contains
     call descinit(desc_Cos_maxes, 1, n, 1, block_col, 0, 0, context, 1, info)
     call descinit(desc_Cos_maxes_index, 1, n, 1, block_col, 0, 0, context, 1, info)
     call descinit(desc_Cos_sums, 1, n, 1, block_col, 0, 0, context, 1, info)
-    allocate(InnerProducts(local_rows, local_cols), stat = info)
+    allocate(InnerProducts(local_rows, local_cols), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('eval_orthogonality_blacs: allocation failed', ierr)
+    end if
     if (my_proc_row == 0) then
-      allocate(Cos_maxes(local_cols), Cos_maxes_index(local_cols), Cos_sums(local_cols), stat = info)
+      allocate(Cos_maxes(local_cols), Cos_maxes_index(local_cols), Cos_sums(local_cols), stat = ierr)
+      if (ierr /= 0) then
+        call terminate('eval_orthogonality_blacs: allocation failed', ierr)
+      end if
     end if
 
     call pdgemm('T', 'N', n, n, dim, 1.0d0, &

@@ -18,7 +18,7 @@ contains
     double precision, allocatable, intent(out) :: matrix_A(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('[Error] lib_eigen_solver: EigenExa is not supported in this build')
+    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
   end subroutine setup_distributed_matrix_for_eigenexa
 
 
@@ -28,7 +28,7 @@ contains
     type(eigenpairs_types_union), intent(out) :: eigenpairs
     character, intent(in), optional :: uplo
 
-    call terminate('[Error] lib_eigen_solver: EigenExa is not supported in this build')
+    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
   end subroutine eigen_solver_eigenexa
 
 
@@ -39,6 +39,6 @@ contains
     double precision, allocatable, intent(out) :: matrix_A(:, :), matrix_B(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('[Error] lib_eigen_solver: EigenExa is not supported in this build')
+    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
   end subroutine setup_distributed_matrix_for_general_eigenexa
 end module solver_eigenexa

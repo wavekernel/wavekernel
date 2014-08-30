@@ -62,13 +62,13 @@ contains
          0, 0, proc%context, local_rows, info)
     if (info /= 0) then
       print *, 'info(descinit): ', info
-      call terminate('[Error] setup_distributed_matrix: descinit failed')
+      call terminate('setup_distributed_matrix: descinit failed', info)
     end if
 
     allocate(mat(1 : local_rows, 1 : get_local_cols(proc, desc)), stat = info)
     if (info /= 0) then
       print *, 'stat(allocate): ', info
-      call terminate('[Error] setup_distributed_matrix: allocation failed')
+      call terminate('setup_distributed_matrix: allocation failed', info)
     end if
 
     mat(:, :) = 0.0d0
@@ -81,11 +81,15 @@ contains
     type(sparse_mat), intent(in) :: mat_in
     double precision, intent(out), allocatable :: mat(:,:)
 
-    integer :: k, i, j, n
+    integer :: k, i, j, n, ierr
 
     n = mat_in%size
 
-    allocate (mat(n, n))
+    allocate (mat(n, n), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('convert_sparse_matrix_to_dense: allocation failed', ierr)
+    end if
+
     mat(:, :) = 0.0d0
 
     do k = 1, mat_in%num_non_zeros
@@ -111,6 +115,7 @@ contains
     integer :: pr, pc, br, bc
     integer :: m1_local, m2_local, m1_global, m2_global
     integer :: n1_local, n2_local, n1_global, n2_global
+    integer :: ierr
 
     integer :: numroc, iceil
 
@@ -118,7 +123,7 @@ contains
     n = desc(cols_)
     if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
       if (m /= size(global_mat, 1) .or. n /= size(global_mat, 2)) then
-        stop '[Error] gather_matrix: Illegal matrix size'
+        call terminate('gather_matrix: illegal matrix size', 1)
       end if
     end if
     mb = desc(block_row_)
@@ -129,11 +134,14 @@ contains
     call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
 
     if (my_proc_row == dest_row .and. my_proc_col == dest_col) then
-       buf_size_row = numroc(m, mb, 0, 0, n_procs_row)
-       buf_size_col = numroc(n, nb, 0, 0, n_procs_col)
-       allocate(recv_buf(buf_size_row, buf_size_col))
-     else
-       allocate(recv_buf(0, 0)) ! Only destination process uses receive buffer
+      buf_size_row = numroc(m, mb, 0, 0, n_procs_row)
+      buf_size_col = numroc(n, nb, 0, 0, n_procs_col)
+      allocate(recv_buf(buf_size_row, buf_size_col), stat = ierr)
+    else
+      allocate(recv_buf(0, 0), stat = ierr) ! Only destination process uses receive buffer
+    end if
+    if (ierr /= 0) then
+      call terminate('gather_matrix: allocation failed', ierr)
     end if
 
     do pr = 0, n_procs_row - 1
@@ -247,13 +255,16 @@ contains
     call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
     n_global = size(array_global)
     max_buf_size = numroc(n_global, block_size, 0, 0, n_procs_col)
-    allocate(send_buf(max_buf_size))
+    allocate(send_buf(max_buf_size), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('allgather_row_wise: allocation failed', ierr)
+    end if
 
     do sender_proc_col = 0, n_procs_col - 1
       n_local = numroc(n_global, block_size, sender_proc_col, 0, n_procs_col)
       if (my_proc_col == sender_proc_col) then
         if (n_local /= size(array_local)) then
-          stop '[Error] distribute_matrix: Wrong local array size'
+          call terminate('distribute_matrix: wrong local array size', 1)
         end if
         send_buf(1 : n_local) = array_local(1 : n_local)
         call dgebs2d(context, 'Row', ' ', max_buf_size, 1, send_buf, max_buf_size)

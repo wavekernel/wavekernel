@@ -142,7 +142,10 @@ contains
       call get_wall_clock_time(base_count, times(4))
       deallocate(matrix_A_redist)
       eigenpairs%type_number = 2
-      allocate(eigenpairs%blacs%values(n))
+      allocate(eigenpairs%blacs%values(n), stat = ierr)
+      if (ierr /= 0) then
+        call terminate('eigen_solver, general_eigenexa: allocation failed', ierr)
+      end if
       eigenpairs%blacs%values(:) = eigenpairs_tmp%blacs%values(:)
       eigenpairs%blacs%desc(:) = eigenpairs_tmp%blacs%desc(:)
       call setup_distributed_matrix('Eigenvectors', proc, n, n, &
@@ -183,7 +186,10 @@ contains
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
       call setup_distributed_matrix('Eigenvectors', proc, n, n, &
            eigenpairs%blacs%desc, eigenpairs%blacs%Vectors, desc_A(block_row_))
-      allocate(eigenpairs%blacs%values(n))
+      allocate(eigenpairs%blacs%values(n), stat = ierr)
+      if (ierr /= 0) then
+        call terminate('eigen_solver, general_elpa: allocation failed', ierr)
+      end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
@@ -194,7 +200,7 @@ contains
       ! Return of cholesky_real is stored in the upper triangle.
       call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
-        call terminate('solver_main, general_elpa: cholesky_real failed')
+        call terminate('solver_main, general_elpa: cholesky_real failed', ierr)
       end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -203,7 +209,7 @@ contains
       call invert_trm_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
-      !  call terminate('solver_main, general_elpa: invert_trm_real failed')
+      !  call terminate('solver_main, general_elpa: invert_trm_real failed', 1)
       !end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -233,7 +239,7 @@ contains
            eigenpairs%blacs%values, eigenpairs%blacs%Vectors, na_rows, &
            nblk, mpi_comm_rows, mpi_comm_cols)
       if (.not. success) then
-        call terminate('solver_main, general_elpa: solve_evp_real failed')
+        call terminate('solver_main, general_elpa: solve_evp_real failed', 1)
       endif
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -292,7 +298,7 @@ contains
       ! Return of cholesky_real is stored in the upper triangle.
       call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
-        call terminate('solver_main, general_elpa_eigenexa: cholesky_real failed')
+        call terminate('solver_main, general_elpa_eigenexa: cholesky_real failed', 1)
       end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -345,7 +351,10 @@ contains
 
       deallocate(matrix_A_redist)
       eigenpairs%type_number = 2
-      allocate(eigenpairs%blacs%values(n))
+      allocate(eigenpairs%blacs%values(n), stat = ierr)
+      if (ierr /= 0) then
+        call terminate('eigen_solver, general_elpa_eigenexa: allocation failed', ierr)
+      end if
       eigenpairs%blacs%values(:) = eigenpairs_tmp%blacs%values(:)
       eigenpairs%blacs%desc(:) = eigenpairs_tmp%blacs%desc(:)
       call setup_distributed_matrix('Eigenvectors', proc, n, n, &
@@ -377,7 +386,7 @@ contains
         print *, 'total           : ', times(10) - times(1)
       end if
     case default
-      stop '[Error] lib_eigen_solver: Unknown solver'
+      call terminate('eigen_solver: Unknown solver', 1)
     end select
   end subroutine eigen_solver
 end module solver_main

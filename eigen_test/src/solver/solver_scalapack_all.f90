@@ -7,7 +7,7 @@ module solver_scalapack_all
   use distribute_matrix, only : &
        get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
   use eigenpairs_types, only : eigenpairs_types_union
-  use processes, only : process
+  use processes, only : process, terminate
   use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
 
@@ -56,11 +56,11 @@ contains
     subdiag_size = numroc(dim - 1, desc_A(block_col_), proc%my_proc_col, 0, proc%n_procs_col)
     work_size = max(desc_A(block_row_) * (desc_A(local_rows_) + 1), 3 * desc_A(block_row_))
 
-    allocate(diag_local(diag_size))
-    allocate(subdiag_local(subdiag_size))
-    allocate(tau(diag_size))
-    allocate(work(work_size))
-    allocate(work_print(desc_A(block_row_)))
+    allocate(diag_local(diag_size), subdiag_local(subdiag_size), tau(diag_size), &
+         work(work_size), work_print(desc_A(block_row_)), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('eigen_solver_scalapack_all: allocation failed', ierr)
+    end if
 
     call get_wall_clock_time(base_count, t_pdsytrd)
 
@@ -74,9 +74,10 @@ contains
     call get_wall_clock_time(base_count, t_pdsytrd_end)
 
     ! Diagonal elements of the tridiagonal matrix Initially
-    allocate(eigenpairs%blacs%values(dim))
-
-    allocate(subdiag_global(dim - 1))
+    allocate(eigenpairs%blacs%values(dim), subdiag_global(dim - 1), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('eigen_solver_scalapack_all: allocation failed', ierr)
+    end if
 
     call allgather_row_wise(diag_local, proc%context, desc_A(block_col_), &
          eigenpairs%blacs%values)
@@ -90,8 +91,10 @@ contains
     work_size = 6 * dim + 2 * eigenpairs%blacs%desc(local_rows_) * &
          eigenvectors_local_cols
     iwork_size = 2 + 7 * dim + 8 * proc%n_procs_col
-    allocate(work(work_size))
-    allocate(iwork(iwork_size))
+    allocate(work(work_size), iwork(iwork_size), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('eigen_solver_scalapack_all: allocation failed', ierr)
+    end if
 
     call get_wall_clock_time(base_count, t_pdstedc)
 
@@ -107,7 +110,10 @@ contains
     side = 'l'
     work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, eigenpairs%blacs%desc)
     deallocate(work)
-    allocate(work(work_size))
+    allocate(work(work_size), stat = ierr)
+    if (ierr /= 0) then
+      call terminate('eigen_solver_scalapack_all: allocation failed', ierr)
+    end if
 
     call pdormtr(side, uplo, 'n', dim, dim, A, 1, 1, desc_A, tau, &
          eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, work, work_size, info)

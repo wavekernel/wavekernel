@@ -93,7 +93,7 @@ contains
            .and. (dim == arg%matrix_B_info%cols)
     end if
     if (.not. is_size_valid) then
-      call terminate('[Error] validate_argument: Matrix dimension mismatch')
+      call terminate('validate_argument: Matrix dimension mismatch', 1)
     end if
 
     ! Solver type and problem type matched?
@@ -118,18 +118,18 @@ contains
       is_solver_valid = arg%is_generalized_problem
     case default
       is_solver_valid = .false.
-      call terminate("[Error] validate_argument: Unknown solver '" // &
-           trim(arg%solver_type) // "'")
+      call terminate("validate_argument: Unknown solver '" // &
+           trim(arg%solver_type) // "'", 1)
     end select
     if (.not. is_solver_valid) then
       if (arg%is_generalized_problem) then
-        call terminate("[Error] validate_argument: solver '" // &
+        call terminate("validate_argument: solver '" // &
              trim(arg%solver_type) // &
-             "' is not for generalized eigenvalue problem")
+             "' is not for generalized eigenvalue problem", 1)
       else
-        call terminate("[Error] validate_argument: solver '" // &
+        call terminate("validate_argument: solver '" // &
              trim(arg%solver_type) // &
-             "' is not for standard eigenvalue problem")
+             "' is not for standard eigenvalue problem", 1)
       end if
     end if
 
@@ -145,25 +145,25 @@ contains
       is_n_vec_valid = .true.
     end select
     if (.not. is_n_vec_valid) then
-      call terminate("[Error] validate_argument: Solver '" // &
+      call terminate("validate_argument: Solver '" // &
            trim(arg%solver_type) // &
-           "' does not support partial eigenvalue computation")
+           "' does not support partial eigenvalue computation", 1)
     end if
 
     if (arg%printed_vecs_start < 0 .or. arg%printed_vecs_end < 0 .or. &
          arg%printed_vecs_end > arg%n_vec .or. &
          arg%printed_vecs_start > arg%printed_vecs_end) then
-      call terminate('[Error] validate_argument: Specified numbers with -p option are not valid')
+      call terminate('validate_argument: Specified numbers with -p option are not valid', 1)
     end if
 
     if (arg%n_check_vec < 0 .or. arg%n_check_vec > arg%n_vec) then
-      call terminate('[Error] validate_argument: Specified numbers with -c option are not valid')
+      call terminate('validate_argument: Specified numbers with -c option are not valid', 1)
     end if
 
     if (arg%ortho_check_index_start < 0 .or. arg%ortho_check_index_end < 0 .or. &
          arg%ortho_check_index_end > arg%n_vec .or. &
          arg%ortho_check_index_start > arg%ortho_check_index_end) then
-      call terminate('[Error] validate_argument: Specified numbers with -t option are not valid')
+      call terminate('validate_argument: Specified numbers with -t option are not valid', 1)
     end if
   end subroutine validate_argument
 
@@ -285,7 +285,7 @@ contains
           call get_command_argument(argi + 1, arg_str)
           i = index(arg_str, ',')
           if (i == 0) then
-            call terminate('[Error] read_command_argument: wrong format for -t option')
+            call terminate('read_command_argument: wrong format for -t option', 1)
           else
             read (arg_str(1 : i - 1), *) arg%ortho_check_index_start
             read (arg_str(i + 1 :), *) arg%ortho_check_index_end
@@ -295,7 +295,7 @@ contains
           arg%verbose_level = 1
         case ('h')
           call print_help()
-          call terminate('')
+          call terminate('read_command_argument: help printed', 0)
         case ('-block-size')
           call get_command_argument(argi + 1, arg_str)
           read (arg_str, *) arg%block_size
@@ -306,8 +306,8 @@ contains
           arg%is_printing_grid_mapping = .true.
         case default
           call print_help()
-          call terminate('[Error] read_command_argument: unknown option ' // &
-               trim(arg_str))
+          call terminate('read_command_argument: unknown option' // &
+               trim(arg_str), 1)
         end select
       else if (len_trim(arg%matrix_A_filename) == 0) then
         ! The first non-option argument specifies the (left) input matrix
@@ -315,22 +315,22 @@ contains
         ! Check whether the file exists
         inquire(file = trim(arg%matrix_A_filename), exist = exists)
         if (.not. exists) then
-          call terminate("[Error] read_command_argument: Matrix A file '" // &
-               trim(arg%matrix_A_filename) // "' not found")
+          call terminate("read_command_argument: Matrix A file '" // &
+               trim(arg%matrix_A_filename) // "' not found", 1)
         end if
       else
         arg%matrix_B_filename = trim(arg_str)
         inquire(file = arg%matrix_B_filename, exist = exists)
         if (.not. exists) then
-          call terminate("[Error] read_command_argument: Matrix B file '" // &
-               trim(arg%matrix_B_filename) // "' not found")
+          call terminate("read_command_argument: Matrix B file '" // &
+               trim(arg%matrix_B_filename) // "' not found", 1)
         end if
       end if
       argi = argi + 1
     enddo
 
     if (len_trim(arg%matrix_A_filename) == 0) then
-      call terminate('[Error] read_command_argument: Matrix A file not specified')
+      call terminate('read_command_argument: Matrix A file not specified', 1)
     end if
     arg%is_generalized_problem = (len_trim(arg%matrix_B_filename) /= 0)
 

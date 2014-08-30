@@ -44,8 +44,7 @@ contains
 
     call mpi_comm_size(mpi_comm_world, num_mpi_procs, ierr)
     if (ierr /= 0) then
-      write (0, *) '[Error] get_num_procs: mpi_comm_size failed, error code is: ', ierr
-      stop
+      call terminate('get_num_procs: mpi_comm_size failed', ierr)
     end if
 
     num_omp_procs = 1
@@ -113,20 +112,24 @@ contains
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
     if (ierr /= 0) then
-      write (0, *) '[Error] check_master: mpi_comm_rank failed, error code is ', ierr
-      stop
+      call terminate('check_master: mpi_comm_rank failed', ierr)
     end if
 
     check_master = (my_rank == 0)
   end function check_master
 
 
-  subroutine terminate(err_msg)
+  subroutine terminate(error_message, error_code)
     include 'mpif.h'
 
-    character(*), intent(in) :: err_msg
+    character(*), intent(in) :: error_message
+    integer, intent(in) :: error_code
 
-    write (0, *) err_msg
-    call mpi_abort(mpi_comm_world, 1)
+    if (error_code == 0) then
+      write (0, '("[Info] ", a)') error_message
+    else
+      write (0, '("[Error] ", a)') error_message
+    end if
+    call mpi_abort(mpi_comm_world, error_code)
   end subroutine terminate
 end module processes

@@ -30,7 +30,7 @@ contains
              '("The leading minor that is not positive definite (up to order 10) is:")'
         call eigentest_pdlaprnt(info, info, B, 1, 1, desc_B, 0, 0, '  B', 6, work_pdlaprnt)
       end if
-      call terminate('[Error] reduce_generalized: pdpotrf failed')
+      call terminate('reduce_generalized: pdpotrf failed', info)
     end if
 
     call get_wall_clock_time(base_count, times(1))
@@ -39,7 +39,7 @@ contains
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
     if (info /= 0) then
       if (check_master()) print '("info(pdsygst): ", i0)', info
-      call terminate('[Error] reduce_generalized: pdsygst failed')
+      call terminate('reduce_generalized: pdsygst failed', info)
     end if
 
     call get_wall_clock_time(base_count, times(2))
@@ -62,7 +62,7 @@ contains
          Vectors, 1, 1, desc_Vectors, info)
     if (info /= 0) then
       if (check_master()) print '("info(pdtrtrs): ", i0)', info
-      call terminate('[Error] reduce_generalized: pdtrtrs failed')
+      call terminate('reduce_generalized: pdtrtrs failed', info)
     end if
   end subroutine recovery_generalized
 end module generalized_to_standard
