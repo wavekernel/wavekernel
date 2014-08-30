@@ -9,6 +9,7 @@ module solver_main
   use processes, only : process, setup_distribution, print_map_of_grid_to_processes, &
        check_master, terminate
   use time, only : get_wall_clock_base_count, get_wall_clock_time
+
   implicit none
 
   private
@@ -271,6 +272,122 @@ contains
         print *, 'solve_evp_real_2stage transform_back_EVs :', time_evp_back
         print *, 'solve_evp_real_2stage total              :', &
              time_evp_back+time_evp_solve+time_evp_fwd
+      end if
+    case ('general_elpa_eigenexa')
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(1) = mpi_wtime()
+
+      nblk = 128
+      call setup_distribution(proc)
+      call mpi_comm_rank(mpi_comm_world, myid, mpierr)
+      !context = mpi_comm_world
+      !call BLACS_Gridinit( mpi_comm_world, 'C', np_rows, np_cols )
+      call BLACS_Gridinfo( mpi_comm_world, np_rows, np_cols, my_prow, my_pcol )
+      call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
+           mpi_comm_rows, mpi_comm_cols)
+      na_rows = numroc(n, nblk, my_prow, 0, np_rows)
+      na_cols = numroc(n, nblk, my_pcol, 0, np_cols)
+      call descinit(sc_desc, n, n, nblk, nblk, 0, 0, mpi_comm_world, na_rows, info)
+      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+      call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
+      call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
+      call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
+      call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
+      call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(2) = mpi_wtime()
+
+      ! Return of cholesky_real is stored in the upper triangle.
+      call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      if (.not. success) then
+        if (myid == 0) then
+          print *, 'cholesky_real failed'
+        end if
+        stop
+      end if
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(3) = mpi_wtime()
+
+      call invert_trm_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      ! invert_trm_real always returns fail
+      !if (.not. success) then
+      !  if (myid == 0) then
+      !    print *, 'invert_trm_real failed'
+      !  end if
+      !  stop
+      !end if
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(4) = mpi_wtime()
+
+      ! Reduce A as U^-T A U^-1
+      ! A <- U^-T A
+      ! This operation can be done as below:
+      ! call pdtrmm('Left', 'Upper', 'Trans', 'No_unit', na, na, 1.0d0, &
+      !      b, 1, 1, sc_desc, a, 1, 1, sc_desc)
+      ! but it is slow. Instead use mult_at_b_real.
+      call mult_at_b_real('Upper', 'Full', n, n, &
+           matrix_B_dist, na_rows, matrix_A2_dist, na_rows, &
+           nblk, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
+      deallocate(matrix_A2_dist)
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(5) = mpi_wtime()
+
+      ! A <- A U^-1
+      call pdtrmm('Right', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
+           matrix_B_dist, 1, 1, sc_desc, matrix_A_dist, 1, 1, sc_desc)
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(6) = mpi_wtime()
+
+      call setup_distributed_matrix_for_eigenexa(n, desc_A_re, matrix_A_redist, eigenpairs_tmp)
+      call pdgemr2d(n, n, matrix_A_dist, 1, 1, desc_A, matrix_A_redist, 1, 1, desc_A_re, desc_A(context_))
+      deallocate(matrix_A_dist)
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(7) = mpi_wtime()
+
+      call eigen_solver_eigenexa(matrix_A_redist, desc_A_re, arg%n_vec, eigenpairs_tmp, 'L')
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(8) = mpi_wtime()
+
+      deallocate(matrix_A_redist)
+      eigenpairs%type_number = 2
+      allocate(eigenpairs%blacs%values(n))
+      eigenpairs%blacs%values(:) = eigenpairs_tmp%blacs%values(:)
+      eigenpairs%blacs%desc(:) = eigenpairs_tmp%blacs%desc(:)
+      call setup_distributed_matrix('Eigenvectors', proc, n, n, &
+           eigenpairs%blacs%desc, eigenpairs%blacs%Vectors, desc_A(block_row_))
+      call pdgemr2d(n, n, eigenpairs_tmp%blacs%Vectors, 1, 1, eigenpairs_tmp%blacs%desc, &
+           eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
+           eigenpairs_tmp%blacs%desc(context_))
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(9) = mpi_wtime()
+
+      ! Z <- U^-1 Z
+      call pdtrmm('Left', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
+           matrix_B_dist, 1, 1, sc_desc, eigenpairs%blacs%Vectors, 1, 1, sc_desc)
+
+      call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
+      times(10) = mpi_wtime()
+
+      if (myid == 0) then
+        print '(a)','| ELPA solver complete.'
+        print *, 'init            : ', times(2) - times(1)
+        print *, 'cholesky_real   : ', times(3) - times(2)
+        print *, 'invert_trm_real : ', times(4) - times(3)
+        print *, 'pdtrmm_A_left   : ', times(5) - times(4)
+        print *, 'pdtrmm_A_right  : ', times(6) - times(5)
+        print *, 'pdgemr2d_A      : ', times(7) - times(6)
+        print *, 'solve_evp       : ', times(8) - times(7)
+        print *, 'pdgemr2d_B      : ', times(9) - times(8)
+        print *, 'pdtrmm_EVs      : ', times(10) - times(9)
+        print *, 'total           : ', times(10) - times(1)
       end if
     case default
       stop '[Error] lib_eigen_solver: Unknown solver'

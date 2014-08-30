@@ -114,6 +114,8 @@ contains
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa')
       is_solver_valid = arg%is_generalized_problem
+    case ('general_elpa_eigenexa')
+      is_solver_valid = arg%is_generalized_problem
     case default
       is_solver_valid = .false.
       call terminate("[Error] validate_argument: Unknown solver '" // &
