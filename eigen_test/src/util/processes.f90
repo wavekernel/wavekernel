@@ -127,7 +127,6 @@ contains
     character(*), intent(in) :: err_msg
 
     write (0, *) err_msg
-    call mpi_finalize()
-    stop
+    call mpi_abort(mpi_comm_world, 1)
   end subroutine terminate
 end module processes

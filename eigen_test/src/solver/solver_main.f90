@@ -194,10 +194,7 @@ contains
       ! Return of cholesky_real is stored in the upper triangle.
       call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
-        if (myid == 0) then
-          print *, 'cholesky_real failed'
-        end if
-        stop
+        call terminate('solver_main, general_elpa: cholesky_real failed')
       end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -206,10 +203,7 @@ contains
       call invert_trm_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
-      !  if (myid == 0) then
-      !    print *, 'invert_trm_real failed'
-      !  end if
-      !  stop
+      !  call terminate('solver_main, general_elpa: invert_trm_real failed')
       !end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -239,9 +233,7 @@ contains
            eigenpairs%blacs%values, eigenpairs%blacs%Vectors, na_rows, &
            nblk, mpi_comm_rows, mpi_comm_cols)
       if (.not. success) then
-        write(6, *) "solve_evp_real_2stage produced &
-             & an error                  ! Aborting..."
-        call mpi_abort(mpi_comm_world, mpierr)
+        call terminate('solver_main, general_elpa: solve_evp_real failed')
       endif
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -301,10 +293,7 @@ contains
       ! Return of cholesky_real is stored in the upper triangle.
       call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
-        if (myid == 0) then
-          print *, 'cholesky_real failed'
-        end if
-        stop
+        call terminate('solver_main, general_elpa_eigenexa: cholesky_real failed')
       end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
