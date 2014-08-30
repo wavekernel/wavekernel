@@ -248,8 +248,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(8) = mpi_wtime()
 
-      if (myid == 0) then
-        print '(a)','| ELPA solver complete.'
+      if (check_master()) then
         print *, 'init            : ', times(2) - times(1)
         print *, 'cholesky_real   : ', times(3) - times(2)
         print *, 'invert_trm_real : ', times(4) - times(3)
@@ -259,11 +258,11 @@ contains
         print *, 'pdtrmm_EVs      : ', times(8) - times(7)
         print *, 'total           : ', times(8) - times(1)
         print *
-        print *, 'solve_evp_real_2stage transform_to_tridi :', time_evp_fwd
-        print *, 'solve_evp_real_2stage solve_tridi        :', time_evp_solve
-        print *, 'solve_evp_real_2stage transform_back_EVs :', time_evp_back
-        print *, 'solve_evp_real_2stage total              :', &
-             time_evp_back+time_evp_solve+time_evp_fwd
+        print *, 'solve_evp_real transform_to_tridi :', time_evp_fwd
+        print *, 'solve_evp_real solve_tridi        :', time_evp_solve
+        print *, 'solve_evp_real transform_back_EVs :', time_evp_back
+        print *, 'solve_evp_real total              :', &
+             time_evp_fwd + time_evp_solve + time_evp_back
       end if
     case ('general_elpa_eigenexa')
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -365,8 +364,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(10) = mpi_wtime()
 
-      if (myid == 0) then
-        print '(a)','| ELPA solver complete.'
+      if (check_master()) then
         print *, 'init            : ', times(2) - times(1)
         print *, 'cholesky_real   : ', times(3) - times(2)
         print *, 'invert_trm_real : ', times(4) - times(3)
