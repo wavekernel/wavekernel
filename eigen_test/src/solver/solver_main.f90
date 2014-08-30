@@ -231,13 +231,13 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(8) = mpi_wtime()
 
-      success = solve_evp_real_2stage(n, n, matrix_A_dist, na_rows, &
-           eigenpairs%blacs%values, eigenpairs%blacs%Vectors, &
-           na_rows, nblk, mpi_comm_rows, mpi_comm_cols, mpi_comm_world)
+      success = solve_evp_real(n, n, matrix_A_dist, na_rows, &
+           eigenpairs%blacs%values, eigenpairs%blacs%Vectors, na_rows, &
+           nblk, mpi_comm_rows, mpi_comm_cols)
       if (.not. success) then
         write(6, *) "solve_evp_real_2stage produced &
              & an error                  ! Aborting..."
-        call MPI_ABORT(mpi_comm_world, mpierr)
+        call mpi_abort(mpi_comm_world, mpierr)
       endif
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
