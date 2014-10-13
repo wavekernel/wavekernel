@@ -5,6 +5,7 @@ module verifier
        setup_distributed_matrix, distribute_global_sparse_matrix
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_local, &
        eigenpairs_blacs
+  use global_variables, only : g_block_size
   use matrix_io, only : sparse_mat
   use processes, only : process, terminate
   implicit none
@@ -88,10 +89,10 @@ contains
     if (trim(arg%solver_type) == 'eigenexa' .or. &
          trim(arg%solver_type) == 'general_eigenexa') then
       block_size = 1
-    else if (arg%block_size <= 0) then
-      block_size = 128
-    else
+    else if (arg%block_size > 0) then  ! Do not use the default block size
       block_size = arg%block_size
+    else
+      block_size = g_block_size
     end if
 
     ! call blacs_get(-1, 0, proc%context)

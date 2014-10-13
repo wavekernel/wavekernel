@@ -6,6 +6,7 @@ module solver_main
        gather_matrix, distribute_global_sparse_matrix
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
   use generalized_to_standard, only : reduce_generalized, recovery_generalized
+  use global_variables, only : g_block_size
   use processes, only : process, setup_distribution, print_map_of_grid_to_processes, &
        check_master, terminate
   use time, only : get_wall_clock_base_count, get_wall_clock_time
@@ -32,7 +33,7 @@ contains
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: n, desc_A(desc_size), desc_A2(desc_size), desc_B(desc_size), desc_A_re(desc_size), &
-         myid, nblk, np_rows, np_cols, nprow, npcol, my_prow, my_pcol, &
+         myid, np_rows, np_cols, nprow, npcol, my_prow, my_pcol, &
          na_rows, na_cols, mpi_comm_rows, mpi_comm_cols, &
          sc_desc(desc_size)
     integer :: ierr, mpierr, info
@@ -47,42 +48,30 @@ contains
     double precision :: times(10)
 
     n = arg%matrix_A_info%rows
+    if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
+    if (arg%block_size > 0) then  ! Do not use the default block size.
+      g_block_size = arg%block_size
+    end if
 
     select case (trim(arg%solver_type))
     case ('lapack')
       call eigen_solver_lapack(matrix_A, eigenpairs)
     case ('scalapack_all')
       call setup_distribution(proc)
-      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      if (arg%block_size <= 0) then  ! Default block size
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
-      else
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
-      end if
+      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
     case ('scalapack_select')
       call setup_distribution(proc)
-      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      if (arg%block_size <= 0) then  ! Default block size
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
-      else
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
-      end if
+      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
            arg%n_vec, eigenpairs)
     case ('general_scalapack_all')
       call get_wall_clock_base_count(base_count)
       call setup_distribution(proc)
-      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      if (arg%block_size <= 0) then  ! Default block size
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
-        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
-      else
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
-        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist, arg%block_size)
-      end if
+      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+      call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
       call get_wall_clock_time(base_count, times(1))
@@ -102,14 +91,8 @@ contains
       end if
     case ('general_scalapack_select')
       call setup_distribution(proc)
-      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
-      if (arg%block_size <= 0) then  ! Default block size
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
-        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
-      else
-        call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist, arg%block_size)
-        call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist, arg%block_size)
-      end if
+      call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+      call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
       call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
@@ -119,14 +102,12 @@ contains
            eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
     case ('eigenexa')
       call setup_distribution(proc)
-      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       call setup_distributed_matrix_for_eigenexa(n, desc_A, matrix_A_dist, eigenpairs)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_eigenexa(matrix_A_dist, desc_A, arg%n_vec, eigenpairs)
     case ('general_eigenexa')
       call get_wall_clock_base_count(base_count)
       call setup_distribution(proc)
-      if (arg%is_printing_grid_mapping) call print_map_of_grid_to_processes()
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
       call setup_distributed_matrix_for_eigenexa(n, desc_A_re, matrix_A_redist, eigenpairs_tmp)
@@ -169,8 +150,6 @@ contains
     case ('general_elpa')
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
-
-      nblk = 128
       call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
       !context = mpi_comm_world
@@ -178,9 +157,9 @@ contains
       call BLACS_Gridinfo( mpi_comm_world, np_rows, np_cols, my_prow, my_pcol )
       call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
            mpi_comm_rows, mpi_comm_cols)
-      na_rows = numroc(n, nblk, my_prow, 0, np_rows)
-      na_cols = numroc(n, nblk, my_pcol, 0, np_cols)
-      call descinit(sc_desc, n, n, nblk, nblk, 0, 0, mpi_comm_world, na_rows, info)
+      na_rows = numroc(n, g_block_size, my_prow, 0, np_rows)
+      na_cols = numroc(n, g_block_size, my_pcol, 0, np_cols)
+      call descinit(sc_desc, n, n, g_block_size, g_block_size, 0, 0, mpi_comm_world, na_rows, info)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
@@ -198,7 +177,7 @@ contains
       times(2) = mpi_wtime()
 
       ! Return of cholesky_real is stored in the upper triangle.
-      call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      call cholesky_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
         call terminate('solver_main, general_elpa: cholesky_real failed', ierr)
       end if
@@ -206,7 +185,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(3) = mpi_wtime()
 
-      call invert_trm_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      call invert_trm_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
       !  call terminate('solver_main, general_elpa: invert_trm_real failed', 1)
@@ -223,7 +202,7 @@ contains
       ! but it is slow. Instead use mult_at_b_real.
       call mult_at_b_real('Upper', 'Full', n, n, &
            matrix_B_dist, na_rows, matrix_A2_dist, na_rows, &
-           nblk, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
+           g_block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(5) = mpi_wtime()
@@ -237,7 +216,7 @@ contains
 
       success = solve_evp_real(n, n, matrix_A_dist, na_rows, &
            eigenpairs%blacs%values, eigenpairs%blacs%Vectors, na_rows, &
-           nblk, mpi_comm_rows, mpi_comm_cols)
+           g_block_size, mpi_comm_rows, mpi_comm_cols)
       if (.not. success) then
         call terminate('solver_main, general_elpa: solve_evp_real failed', 1)
       endif
@@ -273,8 +252,6 @@ contains
     case ('general_elpa2')
       call mpi_barrier(mpi_comm_world, mpierr)
       times(1) = mpi_wtime()
-
-      nblk = 128
       call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
       !context = mpi_comm_world
@@ -282,9 +259,9 @@ contains
       call BLACS_Gridinfo( mpi_comm_world, np_rows, np_cols, my_prow, my_pcol )
       call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
            mpi_comm_rows, mpi_comm_cols)
-      na_rows = numroc(n, nblk, my_prow, 0, np_rows)
-      na_cols = numroc(n, nblk, my_pcol, 0, np_cols)
-      call descinit(sc_desc, n, n, nblk, nblk, 0, 0, mpi_comm_world, na_rows, info)
+      na_rows = numroc(n, g_block_size, my_prow, 0, np_rows)
+      na_cols = numroc(n, g_block_size, my_pcol, 0, np_cols)
+      call descinit(sc_desc, n, n, g_block_size, g_block_size, 0, 0, mpi_comm_world, na_rows, info)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
@@ -302,7 +279,7 @@ contains
       times(2) = mpi_wtime()
 
       ! Return of cholesky_real is stored in the upper triangle.
-      call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      call cholesky_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
         call terminate('solver_main, general_elpa: cholesky_real failed', ierr)
       end if
@@ -310,7 +287,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr)
       times(3) = mpi_wtime()
 
-      call invert_trm_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      call invert_trm_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
       !  call terminate('solver_main, general_elpa: invert_trm_real failed', 1)
@@ -327,7 +304,7 @@ contains
       ! but it is slow. Instead use mult_at_b_real.
       call mult_at_b_real('Upper', 'Full', n, n, &
            matrix_B_dist, na_rows, matrix_A2_dist, na_rows, &
-           nblk, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
+           g_block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
 
       call mpi_barrier(mpi_comm_world, mpierr)
       times(5) = mpi_wtime()
@@ -341,7 +318,7 @@ contains
 
       success = solve_evp_real_2stage(n, n, matrix_A_dist, na_rows, &
            eigenpairs%blacs%values, eigenpairs%blacs%Vectors, na_rows, &
-           nblk, mpi_comm_rows, mpi_comm_cols, mpi_comm_world)
+           g_block_size, mpi_comm_rows, mpi_comm_cols, mpi_comm_world)
       if (.not. success) then
         call terminate('solver_main, general_elpa2: solve_evp_real failed', 1)
       endif
@@ -377,8 +354,6 @@ contains
     case ('general_elpa_eigenexa')
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
-
-      nblk = 128
       call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
       !context = mpi_comm_world
@@ -386,9 +361,9 @@ contains
       call BLACS_Gridinfo( mpi_comm_world, np_rows, np_cols, my_prow, my_pcol )
       call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
            mpi_comm_rows, mpi_comm_cols)
-      na_rows = numroc(n, nblk, my_prow, 0, np_rows)
-      na_cols = numroc(n, nblk, my_pcol, 0, np_cols)
-      call descinit(sc_desc, n, n, nblk, nblk, 0, 0, mpi_comm_world, na_rows, info)
+      na_rows = numroc(n, g_block_size, my_prow, 0, np_rows)
+      na_cols = numroc(n, g_block_size, my_pcol, 0, np_cols)
+      call descinit(sc_desc, n, n, g_block_size, g_block_size, 0, 0, mpi_comm_world, na_rows, info)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
@@ -400,7 +375,7 @@ contains
       times(2) = mpi_wtime()
 
       ! Return of cholesky_real is stored in the upper triangle.
-      call cholesky_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      call cholesky_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
         call terminate('solver_main, general_elpa_eigenexa: cholesky_real failed', 1)
       end if
@@ -408,7 +383,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(3) = mpi_wtime()
 
-      call invert_trm_real(n, matrix_B_dist, na_rows, nblk, mpi_comm_rows, mpi_comm_cols, success)
+      call invert_trm_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
       !  if (myid == 0) then
@@ -428,7 +403,7 @@ contains
       ! but it is slow. Instead use mult_at_b_real.
       call mult_at_b_real('Upper', 'Full', n, n, &
            matrix_B_dist, na_rows, matrix_A2_dist, na_rows, &
-           nblk, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
+           g_block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
       deallocate(matrix_A2_dist)
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only

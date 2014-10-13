@@ -1,7 +1,8 @@
 module distribute_matrix
   use descriptor_parameters
+  use global_variables, only : g_block_size
   use matrix_io, only : sparse_mat
-  use processes, only : process, layout_procs, terminate
+  use processes, only : check_master, process, layout_procs, terminate
   implicit none
 
   public :: get_local_cols, setup_distributed_matrix, &
@@ -21,8 +22,7 @@ contains
   end function get_local_cols
 
 
-  subroutine setup_distributed_matrix(name, proc, rows, cols, desc, mat, &
-       block_size)
+  subroutine setup_distributed_matrix(name, proc, rows, cols, desc, mat, block_size)
     character(*), intent(in) :: name
     type(process), intent(in) :: proc
     integer, intent(in) :: rows, cols
@@ -36,20 +36,20 @@ contains
     if (present(block_size)) then
       actual_block_size = block_size
     else
-      actual_block_size = 128
+      actual_block_size = g_block_size
     end if
 
     ! If there is a process which owns no entries in given block size
     ! configuration, diminish the block size and warn about in.
     max_block_size = max(rows / proc%n_procs_row, cols / proc%n_procs_col)
     if (actual_block_size > max_block_size) then
-      if (proc%my_rank == 0) then
+      if (check_master()) then
         print '("[Warning] setup_distributed_matrix: size of matrix is very small relative to the number of processes")'
       end if
       actual_block_size = max_block_size
     end if
 
-    if (proc%my_rank == 0) then
+    if (check_master()) then
       print '( "Creating distributed matrix ", A, " with M, N, MB, NB: ", &
            &I0, ", ", I0, ", ", I0, ", ", I0 )', name, rows, cols, &
            actual_block_size, actual_block_size
