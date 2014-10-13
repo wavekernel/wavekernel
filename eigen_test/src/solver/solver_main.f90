@@ -53,23 +53,24 @@ contains
       g_block_size = arg%block_size
     end if
 
+    if (trim(arg%solver_type) /= 'lapack') then
+      call setup_distribution(proc)
+    end if
+
     select case (trim(arg%solver_type))
     case ('lapack')
       call eigen_solver_lapack(matrix_A, eigenpairs)
     case ('scalapack_all')
-      call setup_distribution(proc)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
     case ('scalapack_select')
-      call setup_distribution(proc)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
            arg%n_vec, eigenpairs)
     case ('general_scalapack_all')
       call get_wall_clock_base_count(base_count)
-      call setup_distribution(proc)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
@@ -90,7 +91,6 @@ contains
         print *, 'general_scalapack_all recovery_generalized: ', times(4)
       end if
     case ('general_scalapack_select')
-      call setup_distribution(proc)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
@@ -107,7 +107,6 @@ contains
       call eigen_solver_eigenexa(matrix_A_dist, desc_A, arg%n_vec, eigenpairs)
     case ('general_eigenexa')
       call get_wall_clock_base_count(base_count)
-      call setup_distribution(proc)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
       call setup_distributed_matrix_for_eigenexa(n, desc_A_re, matrix_A_redist, eigenpairs_tmp)
@@ -150,7 +149,6 @@ contains
     case ('general_elpa')
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
-      call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
       !context = mpi_comm_world
       !call BLACS_Gridinit( mpi_comm_world, 'C', np_rows, np_cols )
@@ -252,7 +250,6 @@ contains
     case ('general_elpa2')
       call mpi_barrier(mpi_comm_world, mpierr)
       times(1) = mpi_wtime()
-      call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
       !context = mpi_comm_world
       !call BLACS_Gridinit( mpi_comm_world, 'C', np_rows, np_cols )
@@ -354,7 +351,6 @@ contains
     case ('general_elpa_eigenexa')
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
-      call setup_distribution(proc)
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
       !context = mpi_comm_world
       !call BLACS_Gridinit( mpi_comm_world, 'C', np_rows, np_cols )
