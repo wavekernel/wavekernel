@@ -100,19 +100,19 @@ contains
     select case (trim(arg%solver_type))
     case ('lapack')
       is_solver_valid = .not. arg%is_generalized_problem
-    case ('scalapack_all')
+    case ('scalapack')
       is_solver_valid = .not. arg%is_generalized_problem
     case ('scalapack_select')
       is_solver_valid = .not. arg%is_generalized_problem
-    case ('general_scalapack_all')
+    case ('general_scalapack')
       is_solver_valid = arg%is_generalized_problem
     case ('general_scalapack_select')
       is_solver_valid = arg%is_generalized_problem
     case ('eigenexa')
       is_solver_valid = .not. arg%is_generalized_problem
-    case ('general_eigenexa')
+    case ('general_scalapack_eigenexa')
       is_solver_valid = arg%is_generalized_problem
-    case ('general_elpa')
+    case ('general_elpa1')
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa2')
       is_solver_valid = arg%is_generalized_problem

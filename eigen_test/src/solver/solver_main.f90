@@ -60,7 +60,7 @@ contains
     select case (trim(arg%solver_type))
     case ('lapack')
       call eigen_solver_lapack(matrix_A, eigenpairs)
-    case ('scalapack_all')
+    case ('scalapack')
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
@@ -69,7 +69,7 @@ contains
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_scalapack_select(proc, desc_A, matrix_A_dist, &
            arg%n_vec, eigenpairs)
-    case ('general_scalapack_all')
+    case ('general_scalapack')
       call mpi_barrier(mpi_comm_world, mpierr)
       times(1) = mpi_wtime()
       call get_wall_clock_base_count(base_count)
@@ -90,12 +90,12 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr)
       times(5) = mpi_wtime()
       if (check_master()) then
-        print *, 'general_scalapack_all elapsed time (printed in solver_main): '
-        print *, 'general_scalapack_all setup_matrix: ', times(2) - times(1)
-        print *, 'general_scalapack_all reduce_generalized: ', times(3) - times(2)
-        print *, 'general_scalapack_all eigen_solver_scalapack: ', times(4) - times(3)
-        print *, 'general_scalapack_all recovery_generalized: ', times(5) - times(4)
-        print *, 'general_scalapack_all total: ', times(5) - times(1)
+        print *, 'general_scalapack elapsed time (printed in solver_main): '
+        print *, 'general_scalapack setup_matrix: ', times(2) - times(1)
+        print *, 'general_scalapack reduce_generalized: ', times(3) - times(2)
+        print *, 'general_scalapack eigen_solver_scalapack: ', times(4) - times(3)
+        print *, 'general_scalapack recovery_generalized: ', times(5) - times(4)
+        print *, 'general_scalapack total: ', times(5) - times(1)
       end if
     case ('general_scalapack_select')
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
@@ -112,7 +112,7 @@ contains
       call setup_distributed_matrix_for_eigenexa(n, desc_A, matrix_A_dist, eigenpairs)
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call eigen_solver_eigenexa(matrix_A_dist, desc_A, arg%n_vec, eigenpairs)
-    case ('general_eigenexa')
+    case ('general_scalapack_eigenexa')
       call mpi_barrier(mpi_comm_world, mpierr)
       times(1) = mpi_wtime()
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
@@ -136,7 +136,7 @@ contains
       eigenpairs%type_number = 2
       allocate(eigenpairs%blacs%values(n), stat = ierr)
       if (ierr /= 0) then
-        call terminate('eigen_solver, general_eigenexa: allocation failed', ierr)
+        call terminate('eigen_solver, general_scalapack_eigenexa: allocation failed', ierr)
       end if
       eigenpairs%blacs%values(:) = eigenpairs_tmp%blacs%values(:)
       eigenpairs%blacs%desc(:) = eigenpairs_tmp%blacs%desc(:)
@@ -152,16 +152,16 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr)
       times(7) = mpi_wtime()
       if (check_master()) then
-        print *, 'general_eigenexa elapsed time (printed in solver_main): '
-        print *, 'general_eigenexa setup_matrix: ', times(2) - times(1)
-        print *, 'general_eigenexa reduce_generalized: ', times(3) - times(2)
-        print *, 'general_eigenexa pdgemr2d_A: ', times(4) - times(3)
-        print *, 'general_eigenexa eigen_solver_eigenexa: ', times(5) - times(4)
-        print *, 'general_eigenexa pdgemr2d_B: ', times(6) - times(5)
-        print *, 'general_eigenexa recovery_generalized: ', times(7) - times(6)
-        print *, 'general_eigenexa total: ', times(7) - times(1)
+        print *, 'general_scalapack_eigenexa elapsed time (printed in solver_main): '
+        print *, 'general_scalapack_eigenexa setup_matrix: ', times(2) - times(1)
+        print *, 'general_scalapack_eigenexa reduce_generalized: ', times(3) - times(2)
+        print *, 'general_scalapack_eigenexa pdgemr2d_A: ', times(4) - times(3)
+        print *, 'general_scalapack_eigenexa eigen_solver_eigenexa: ', times(5) - times(4)
+        print *, 'general_scalapack_eigenexa pdgemr2d_B: ', times(6) - times(5)
+        print *, 'general_scalapack_eigenexa recovery_generalized: ', times(7) - times(6)
+        print *, 'general_scalapack_eigenexa total: ', times(7) - times(1)
       end if
-    case ('general_elpa')
+    case ('general_elpa1')
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
@@ -180,7 +180,7 @@ contains
            eigenpairs%blacs%desc, eigenpairs%blacs%Vectors, desc_A(block_row_))
       allocate(eigenpairs%blacs%values(n), stat = ierr)
       if (ierr /= 0) then
-        call terminate('eigen_solver, general_elpa: allocation failed', ierr)
+        call terminate('eigen_solver, general_elpa1: allocation failed', ierr)
       end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
@@ -192,7 +192,7 @@ contains
       ! Return of cholesky_real is stored in the upper triangle.
       call cholesky_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
-        call terminate('solver_main, general_elpa: cholesky_real failed', ierr)
+        call terminate('solver_main, general_elpa1: cholesky_real failed', ierr)
       end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -201,7 +201,7 @@ contains
       call invert_trm_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
-      !  call terminate('solver_main, general_elpa: invert_trm_real failed', 1)
+      !  call terminate('solver_main, general_elpa1: invert_trm_real failed', 1)
       !end if
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -231,7 +231,7 @@ contains
            eigenpairs%blacs%values, eigenpairs%blacs%Vectors, na_rows, &
            g_block_size, mpi_comm_rows, mpi_comm_cols)
       if (.not. success) then
-        call terminate('solver_main, general_elpa: solve_evp_real failed', 1)
+        call terminate('solver_main, general_elpa1: solve_evp_real failed', 1)
       endif
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -281,7 +281,7 @@ contains
            eigenpairs%blacs%desc, eigenpairs%blacs%Vectors, desc_A(block_row_))
       allocate(eigenpairs%blacs%values(n), stat = ierr)
       if (ierr /= 0) then
-        call terminate('eigen_solver, general_elpa: allocation failed', ierr)
+        call terminate('eigen_solver, general_elpa2: allocation failed', ierr)
       end if
       call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
       call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
@@ -293,7 +293,7 @@ contains
       ! Return of cholesky_real is stored in the upper triangle.
       call cholesky_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
-        call terminate('solver_main, general_elpa: cholesky_real failed', ierr)
+        call terminate('solver_main, general_elpa2: cholesky_real failed', ierr)
       end if
 
       call mpi_barrier(mpi_comm_world, mpierr)
@@ -302,7 +302,7 @@ contains
       call invert_trm_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
-      !  call terminate('solver_main, general_elpa: invert_trm_real failed', 1)
+      !  call terminate('solver_main, general_elpa2: invert_trm_real failed', 1)
       !end if
 
       call mpi_barrier(mpi_comm_world, mpierr)
