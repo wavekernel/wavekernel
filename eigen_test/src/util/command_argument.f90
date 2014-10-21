@@ -112,11 +112,15 @@ contains
       is_solver_valid = .not. arg%is_generalized_problem
     case ('general_scalapack_eigenexa')
       is_solver_valid = arg%is_generalized_problem
+    case ('general_scalapack_eigenk')
+      is_solver_valid = arg%is_generalized_problem
     case ('general_elpa1')
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa2')
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa_eigenexa')
+      is_solver_valid = arg%is_generalized_problem
+    case ('general_elpa_eigenk')
       is_solver_valid = arg%is_generalized_problem
     case default
       is_solver_valid = .false.

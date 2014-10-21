@@ -8,7 +8,7 @@ module solver_eigenexa
 
   private
   public :: setup_distributed_matrix_for_eigenexa, &
-       setup_distributed_matrix_for_general_eigenexa, eigen_solver_eigenexa
+       setup_distributed_matrix_for_general_eigenexa, eigen_solver_eigenexa, eigen_solver_eigenk
 
 contains
 
@@ -41,4 +41,15 @@ contains
 
     call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
   end subroutine setup_distributed_matrix_for_general_eigenexa
+
+
+  subroutine setup_distributed_matrix_for_general_eigenk( &
+       dim, desc_A, matrix_A, desc_B, matrix_B, eigenpairs)
+    integer, intent(in) :: dim
+    integer, intent(out) :: desc_A(desc_size), desc_B(desc_size)
+    double precision, allocatable, intent(out) :: matrix_A(:, :), matrix_B(:, :)
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
+
+    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
+  end subroutine setup_distributed_matrix_for_general_eigenk
 end module solver_eigenexa
