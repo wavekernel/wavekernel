@@ -14,9 +14,7 @@ program eigen_test
   type(argument) :: arg
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
-  double precision :: rn_ave, rn_max
-  double precision :: cos_ave, cos_max
-  integer :: cos_max_index1, cos_max_index2
+  double precision :: rn_ave, rn_max, orthogonality
   integer :: num_mpi_procs, num_omp_procs, j, ierr
   integer, parameter :: iunit = 10
   logical :: is_master
@@ -99,12 +97,13 @@ program eigen_test
   end if
 
   if (arg%ortho_check_index_start /= 0) then
-    call eval_orthogonality(arg, eigenpairs, &
-         cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    if (arg%is_generalized_problem) then
+      call eval_orthogonality(arg, eigenpairs, orthogonality, matrix_B)
+    else
+      call eval_orthogonality(arg, eigenpairs, orthogonality)
+    end if
     if (is_master) then
-      print '("eigenvector pair cosine (average): ", e15.8)', cos_ave
-      print '("eigenvector pair cosine (max):     ", e15.8, " at ", i0, ", " i0)', &
-           cos_max, cos_max_index1, cos_max_index2
+      print '("orthogonality criterion: ", e15.8)', orthogonality
     end if
   end if
 

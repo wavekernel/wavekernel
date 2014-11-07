@@ -111,7 +111,6 @@ contains
          block_size = block_size)
     call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
     A_norm = pdlange('F', dim, dim, matrix_A_dist, 1, 1, desc_A, 0)
-    print *, 'A_norm: ', A_norm
 
     if (arg%is_generalized_problem) then
       call setup_distributed_matrix('B', proc, dim, dim, &
@@ -196,166 +195,99 @@ contains
   end subroutine eval_residual_norm
 
 
-  ! For each pair of vectors within the index range [index1, index2],
-  ! computes cosine of the angle between them, and report the average and
-  ! the maximum (with the index pair) in the cosine values.
-  subroutine eval_orthogonality_local(index1, index2, eigenpairs, &
-       cos_ave, cos_max, cos_max_index1, cos_max_index2)
-    integer, intent(in) :: index1, index2
-    type(eigenpairs_local), intent(in) :: eigenpairs
-    double precision, intent(out) :: cos_ave, cos_max
-    integer, intent(out) :: cos_max_index1, cos_max_index2
-
-    integer :: dim, n, i, j, k, ierr
-    double precision :: dot
-    double precision, allocatable :: norms(:), coss(:)
-
-    double precision :: ddot, dnrm2  ! Functions.
-
-    dim = size(eigenpairs%vectors, 1)
-    n = index2 - index1 + 1
-    allocate(norms(n), coss(n * (n - 1) / 2), stat = ierr)
-    if (ierr /= 0) then
-      call terminate('eval_orthogonality_local: allocation failed', ierr)
-    end if
-
-    do i = 1, n
-      norms(i) = dnrm2(dim, eigenpairs%vectors(index1 + i - 1, :), 1)
-    end do
-
-    ! Computes inner products for all index pairs.
-    ! Conversion between an index pair and an entire pair is:
-    ! (i, j) -> k = (j - 1) * (j - 2) / 2 + i
-    ! k -> j = floor((3 + sqrt(8 * k - 6)) / 2)
-    do j = 2, n
-      do i = 1, j - 1
-        k = (j - 1) * (j - 2) / 2 + i
-        dot = ddot(dim, eigenpairs%vectors(i + index1 - 1, :), 1, &
-        eigenpairs%vectors(j + index1 - 1, :), 1)
-        coss(k) = abs(dot) / (norms(i) * norms(j))
-      end do
-    end do
-
-    ! Finds max value and its index.
-    k = maxloc(coss, dim = 1)
-    cos_max = coss(k)
-    cos_max_index2 = int((3.0d0 + sqrt(8.0d0 * dble(k) - 6.0d0)) / 2.0d0)
-    cos_max_index1 = k - (cos_max_index2 - 1) * (cos_max_index2 - 2) / 2
-    cos_max_index2 = cos_max_index2 + index1 - 1
-    cos_max_index1 = cos_max_index1 + index1 - 1
-
-    cos_ave = sum(coss) / dble(n * (n - 1) / 2)
-  end subroutine eval_orthogonality_local
-
-
-  ! Distributed parallel version of subroutine eval_orthogonality_local.
-  ! Returns correct values only in the master processor (coordinate (0, 0)).
-  subroutine eval_orthogonality_blacs(index1, index2, eigenpairs, &
-       cos_ave, cos_max, cos_max_index1, cos_max_index2)
+  subroutine eval_orthogonality_blacs(index1, index2, eigenpairs, orthogonality, matrix_B)
     include 'mpif.h'
 
     integer, intent(in) :: index1, index2
     type(eigenpairs_blacs), intent(in) :: eigenpairs
-    double precision, intent(out) :: cos_ave, cos_max
-    integer, intent(out) :: cos_max_index1, cos_max_index2
+    type(sparse_mat), intent(in), optional :: matrix_B
+    double precision, intent(out) :: orthogonality
 
-    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, context  ! Process info.
-    integer :: n, block_row, block_col, dim  ! Global matrix info.
-    integer :: local_cols, local_rows  ! Local matrix info.
-    integer :: diag, i, j, owner_proc_row, owner_proc_col, max_in_col_index, info, ierr
-    double precision :: max_in_col, scale, sum_in_col
-    double precision, allocatable :: InnerProducts(:, :), Cos_maxes(:), Cos_sums(:)
-    integer, allocatable :: Cos_maxes_index(:)
-    integer :: desc_InnerProducts(desc_size), desc_Cos_maxes(desc_size), desc_Cos_maxes_index(desc_size), desc_Cos_sums(desc_size)
+    type(process) :: proc
+    integer :: dim, n, block_size
+    integer :: diag, i, j, owner_proc_row, owner_proc_col, info
+    double precision :: scale
+    double precision, allocatable :: InnerProducts(:, :), matrix_B_dist(:, :), BV(:, :)
+    integer :: desc_InnerProducts(desc_size), desc_B(desc_size), desc_BV(desc_size)
 
-    integer :: indxg2p, indxg2l, numroc, blacs_pnum  ! Functions.
+    ! Functions.
+    integer :: indxg2p, indxg2l, blacs_pnum
+    double precision :: pdlange
 
     dim = eigenpairs%desc(rows_)  ! Dimension of the original problem.
     n = index2 - index1 + 1  ! The number of vectors to be checked.
-    context = eigenpairs%desc(context_)
-
-    call blacs_gridinfo(eigenpairs%desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
-    block_row = eigenpairs%desc(block_row_)
-    block_col = eigenpairs%desc(block_col_)
-    local_rows = max(1, numroc(n, block_row, my_proc_row, 0, n_procs_row))
-    local_cols = max(1, numroc(n, block_col, my_proc_col, 0, n_procs_col))
-    call descinit(desc_InnerProducts, n, n, block_row, block_col, 0, 0, context, local_rows, info)
-    call descinit(desc_Cos_maxes, 1, n, 1, block_col, 0, 0, context, 1, info)
-    call descinit(desc_Cos_maxes_index, 1, n, 1, block_col, 0, 0, context, 1, info)
-    call descinit(desc_Cos_sums, 1, n, 1, block_col, 0, 0, context, 1, info)
-    allocate(InnerProducts(local_rows, local_cols), stat = ierr)
-    if (ierr /= 0) then
-      call terminate('eval_orthogonality_blacs: allocation failed', ierr)
+    block_size = eigenpairs%desc(block_row_)
+    if (block_size /= eigenpairs%desc(block_col_)) then
+      call terminate('eval_orthogonality_blacs: anisotropic block size not supported',1)
     end if
-    if (my_proc_row == 0) then
-      allocate(Cos_maxes(local_cols), Cos_maxes_index(local_cols), Cos_sums(local_cols), stat = ierr)
-      if (ierr /= 0) then
-        call terminate('eval_orthogonality_blacs: allocation failed', ierr)
-      end if
+    proc%context = eigenpairs%desc(context_)
+    call blacs_pinfo(proc%my_rank, proc%n_procs)
+    call blacs_gridinfo(proc%context, proc%n_procs_row, proc%n_procs_col, &
+         proc%my_proc_row, proc%my_proc_col)
+
+    call setup_distributed_matrix('InnerProducts', proc, n, n, &
+         desc_InnerProducts, InnerProducts, block_size = block_size)
+    if (present(matrix_B)) then
+      call setup_distributed_matrix('B', proc, dim, dim, &
+           desc_B, matrix_B_dist, block_size = block_size)
+      call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
+      call setup_distributed_matrix('BV', proc, dim, n, &
+           desc_BV, BV, block_size = block_size)
+      ! BV <- B * V
+      call pdgemm('N', 'N', dim, n, dim, 1.0d0, &
+           matrix_B_dist, 1, 1, desc_B, &
+           eigenpairs%Vectors, 1, index1, eigenpairs%desc, &
+           0.0d0, BV, 1, 1, desc_BV)
+      ! InnerProducts <- V' * BV
+      call pdgemm('T', 'N', n, n, dim, 1.0d0, &
+           eigenpairs%Vectors, 1, index1, eigenpairs%desc, &
+           BV, 1, 1, desc_BV, &
+           0.0d0, InnerProducts, 1, 1, desc_InnerProducts)
+    else
+      ! InnerProducts <- V' * V
+      call pdgemm('T', 'N', n, n, dim, 1.0d0, &
+           eigenpairs%Vectors, 1, index1, eigenpairs%desc, &
+           eigenpairs%Vectors, 1, index1, eigenpairs%desc, &
+           0.0d0, InnerProducts, 1, 1, desc_InnerProducts)
     end if
 
-    call pdgemm('T', 'N', n, n, dim, 1.0d0, &
-         eigenpairs%Vectors, 1, index1, eigenpairs%desc, &
-         eigenpairs%Vectors, 1, index1, eigenpairs%desc, &
-         0.0d0, InnerProducts, 1, 1, desc_InnerProducts)
-
-    ! Scales elements to obtain cosine values.
+    ! Scale elements and subtract identity matrix from it.
     do diag = 1, n
-      owner_proc_row = indxg2p(diag, block_row, 0, 0, n_procs_row)
-      owner_proc_col = indxg2p(diag, block_col, 0, 0, n_procs_col)
-      if (my_proc_col == owner_proc_col .and. my_proc_row == owner_proc_row) then
-        i = indxg2l(diag, block_row, 0, 0, n_procs_row)
-        j = indxg2l(diag, block_col, 0, 0, n_procs_col)
+      owner_proc_row = indxg2p(diag, block_size, 0, 0, proc%n_procs_row)
+      owner_proc_col = indxg2p(diag, block_size, 0, 0, proc%n_procs_col)
+      if (proc%my_proc_col == owner_proc_col .and. proc%my_proc_row == owner_proc_row) then
+        i = indxg2l(diag, block_size, 0, 0, proc%n_procs_row)
+        j = indxg2l(diag, block_size, 0, 0, proc%n_procs_col)
         scale = 1.0d0 / sqrt(InnerProducts(i, j))  ! Inverse of norm.
+        InnerProducts(i, j) = 0.0d0  ! InnerProducts <- InnerProducts - I
       end if
       call mpi_bcast(scale, 1, mpi_double_precision, &
-           blacs_pnum(context, owner_proc_row, owner_proc_col), mpi_comm_world, info)
+           blacs_pnum(proc%context, owner_proc_row, owner_proc_col), mpi_comm_world, info)
       call pdscal(n, scale, InnerProducts, 1, diag, desc_InnerProducts, 1)
       call pdscal(n, scale, InnerProducts, diag, 1, desc_InnerProducts, n)
     end do
 
-    do diag = 1, n - 1
-      ! Finds the maximum absolute cosine value and its index in each column
-      call pdamax(n - diag, max_in_col, max_in_col_index, InnerProducts, diag + 1, diag, desc_InnerProducts, 1)
-      ! Computes sum of absolute cosine values in each column
-      call pdasum(n - diag, sum_in_col, InnerProducts, diag + 1, diag, desc_InnerProducts, 1)
-      owner_proc_col = indxg2p(diag, block_col, 0, 0, n_procs_col)
-      if (my_proc_col == owner_proc_col .and. my_proc_row == 0) then
-        ! This process owns the result of the pdamax/pdasum and
-        ! the corresponding local array of Cos_maxes/Cos_maxes_index/Cos_sums simultaneously.
-        j = indxg2l(diag, block_col, 0, 0, n_procs_col)
-        Cos_maxes(j) = max_in_col
-        Cos_maxes_index(j) = max_in_col_index
-        Cos_sums(j) = sum_in_col
-      end if
-    end do
-
-    ! Aggregates in the direction of row
-    call pdamax(n - 1, cos_max, cos_max_index1, Cos_maxes, 1, 1, desc_Cos_maxes, 1)
-    cos_max = abs(cos_max)
-    call pielget('R', ' ', cos_max_index2, Cos_maxes_index, 1, cos_max_index1, desc_Cos_maxes_index)
-    cos_max_index1 = cos_max_index1 + index1 - 1
-    cos_max_index2 = cos_max_index2 + index1 - 1
-    call pdasum(n - 1, cos_ave, Cos_sums, 1, 1, desc_Cos_sums, 1)
-    cos_ave = cos_ave / dble(n * (n - 1) / 2)
+    orthogonality = pdlange('F', n, n, InnerProducts, 1, 1, desc_InnerProducts, 0)
   end subroutine eval_orthogonality_blacs
 
 
-  subroutine eval_orthogonality(arg, eigenpairs, &
-       cos_ave, cos_max, cos_max_index1, cos_max_index2)
+  subroutine eval_orthogonality(arg, eigenpairs, orthogonality, matrix_B)
     type(argument), intent(in) :: arg
     type(eigenpairs_types_union), intent(in) :: eigenpairs
-    double precision, intent(out) :: cos_ave, cos_max
-    integer, intent(out) :: cos_max_index1, cos_max_index2
+    type(sparse_mat), intent(in), optional :: matrix_B
+    double precision, intent(out) :: orthogonality
 
-    if (eigenpairs%type_number == 1) then
-      call eval_orthogonality_local(arg%ortho_check_index_start, &
-           arg%ortho_check_index_end, eigenpairs%local, &
-           cos_ave, cos_max, cos_max_index1, cos_max_index2)
-    else if (eigenpairs%type_number == 2) then
-      call eval_orthogonality_blacs(arg%ortho_check_index_start, &
-           arg%ortho_check_index_end, eigenpairs%blacs, &
-           cos_ave, cos_max, cos_max_index1, cos_max_index2)
+    if (eigenpairs%type_number == 2) then
+      if (arg%is_generalized_problem .and. .not. present(matrix_B)) then
+        call terminate('eval_orthogonality: matrix_B is not provided', 1)
+      end if
+      if (present(matrix_B)) then
+        call eval_orthogonality_blacs(arg%ortho_check_index_start, &
+             arg%ortho_check_index_end, eigenpairs%blacs, orthogonality, matrix_B)
+      else
+        call eval_orthogonality_blacs(arg%ortho_check_index_start, &
+             arg%ortho_check_index_end, eigenpairs%blacs, orthogonality)
+      end if
     else
       print '("[Warning] eval_orthogonality: orthogonality evaluator for output of this type is not implemeted yet")'
     end if
