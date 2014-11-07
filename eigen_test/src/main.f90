@@ -14,7 +14,7 @@ program eigen_test
   type(argument) :: arg
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
-  double precision :: rn_ave, rn_max, orthogonality
+  double precision :: A_norm, rn_ave, rn_max, orthogonality
   integer :: num_mpi_procs, num_omp_procs, j, ierr
   integer, parameter :: iunit = 10
   logical :: is_master
@@ -84,13 +84,14 @@ program eigen_test
     if (is_master) print '(/, "----- Checker Call -----")'
     if (arg%is_generalized_problem) then
       call eval_residual_norm(arg, matrix_A, eigenpairs, &
-           rn_ave, rn_max, matrix_B)
+           A_norm, rn_ave, rn_max, matrix_B)
     else
       call eval_residual_norm(arg, matrix_A, eigenpairs, &
-           rn_ave, rn_max)
+           A_norm, rn_ave, rn_max)
     end if
 
     if (is_master) then
+      print '("A norm: ", e15.8)', A_norm
       print '("residual norm (average): ", e15.8)', rn_ave
       print '("residual norm (max):     ", e15.8)', rn_max
     end if

@@ -16,13 +16,13 @@ module verifier
 contains
 
   subroutine eval_residual_norm_local(arg, matrix_A, eigenpairs, &
-       res_norm_ave, res_norm_max, matrix_B)
+       A_norm, res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(in) :: eigenpairs
 
-    double precision, intent(out) :: res_norm_ave, res_norm_max
+    double precision, intent(out) :: A_norm, res_norm_ave, res_norm_max
 
     double precision, allocatable :: a(:,:)
     double precision, allocatable :: b(:,:)
@@ -30,6 +30,7 @@ contains
     double precision, allocatable :: res_norm(:) ! residual norm
 
     integer :: j, dim, ierr
+    double precision :: dlange  ! Function.
 
     dim = matrix_A%size
 
@@ -57,13 +58,14 @@ contains
            eigenpairs%local%vectors(:, j))))
     enddo
 
-    res_norm_max = maxval(res_norm)
-    res_norm_ave = sum(res_norm) / dble(arg%n_check_vec)
+    A_norm = dlange('F', dim, dim, a, dim, 0)
+    res_norm_max = maxval(res_norm) / A_norm
+    res_norm_ave = sum(res_norm) / A_norm / dble(arg%n_check_vec)
   end subroutine eval_residual_norm_local
 
 
   subroutine eval_residual_norm_blacs(arg, matrix_A, eigenpairs, &
-       res_norm_ave, res_norm_max, matrix_B)
+       A_norm, res_norm_ave, res_norm_max, matrix_B)
     include 'mpif.h'
 
     type(argument), intent(in) :: arg
@@ -71,14 +73,14 @@ contains
     type(eigenpairs_blacs), intent(inout) :: eigenpairs
     type(sparse_mat), intent(in), optional :: matrix_B
     ! residual norm average, max
-    double precision, intent(out) :: res_norm_ave, res_norm_max
+    double precision, intent(out) :: A_norm, res_norm_ave, res_norm_max
 
     type(process) :: proc
     integer :: dim, desc_Residual(desc_size), desc_A(desc_size), desc_B(desc_size)
     double precision, allocatable :: Residual(:, :), matrix_A_dist(:, :), matrix_B_dist(:, :)
     ! ave_and_max is declared as array due to usage of bcast
     ! 3rd element is for the index of the max value (discarded currently)
-    double precision :: res_norm, A_norm, ave_and_max(3)
+    double precision :: res_norm, ave_and_max(3)
     integer :: j, block_size, owner_proc_col, ierr
     ! ScaLAPACK functions
     integer :: indxg2p
@@ -170,24 +172,24 @@ contains
 
 
   subroutine eval_residual_norm(arg, matrix_A, eigenpairs, &
-       res_norm_ave, res_norm_max, matrix_B)
+       A_norm, res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(inout) :: eigenpairs
     ! residual norm average, max
-    double precision, intent(out) :: res_norm_ave, res_norm_max
+    double precision, intent(out) :: A_norm, res_norm_ave, res_norm_max
 
     if (eigenpairs%type_number == 1) then
       call eval_residual_norm_local(arg, matrix_A, eigenpairs, &
-           res_norm_ave, res_norm_max, matrix_B)
+           A_norm, res_norm_ave, res_norm_max, matrix_B)
     else if (eigenpairs%type_number == 2) then
       if (arg%is_generalized_problem) then
         call eval_residual_norm_blacs(arg, matrix_A, eigenpairs%blacs, &
-             res_norm_ave, res_norm_max, matrix_B)
+             A_norm, res_norm_ave, res_norm_max, matrix_B)
       else
         call eval_residual_norm_blacs(arg, matrix_A, eigenpairs%blacs, &
-             res_norm_ave, res_norm_max)
+             A_norm, res_norm_ave, res_norm_max)
       end if
     else
       print '("[Warning] eval_residual_norm: output of this type is not supported yet")'
