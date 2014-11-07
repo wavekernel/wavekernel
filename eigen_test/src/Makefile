@@ -25,11 +25,34 @@ else
 	FFLAGS_EIGENEXA = $(FFLAGS) -Wno-unused-dummy-argument
 endif
 
+OBJS_ELPA = solver/solver_elpa.o
+ifeq ($(Use_ELPA), 1)
+	SRCS_ELPA = solver/solver_elpa.f90
+	FFLAGS_ELPA = $(FFLAGS)
+else
+	SRCS_ELPA = solver/solver_elpa_dummy.f90
+	FFLAGS_ELPA = $(FFLAGS) -Wno-unused-dummy-argument
+endif
+
+OBJS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa.o
+ifeq ($(Use_ELPA), 1)
+	ifeq ($(Use_EigenExa), 1)
+		SRCS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa.f90
+		FFLAGS_ELPA_EIGENEXA = $(FFLAGS)
+	else
+		SRCS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa_dummy.f90
+		FFLAGS_ELPA_EIGENEXA = $(FFLAGS) -Wno-unused-dummy-argument
+	endif
+else
+	SRCS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa_dummy.f90
+	FFLAGS_ELPA_EIGENEXA = $(FFLAGS) -Wno-unused-dummy-argument
+endif
+
 OBJS_UTIL_F77 = util/eigentest_pdlaprnt.o util/mmio.o
 
 OBJS_UTIL = util/time.o util/descriptor_parameters.o util/global_variables.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o util/modules.o
 
-OBJS_LIB = $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_UTIL) $(OBJS_UTIL_F77)
+OBJS_LIB = $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_ELPA) $(OBJS_ELPA_EIGENEXA) $(OBJS_UTIL) $(OBJS_UTIL_F77)
 
 OBJS = $(OBJS_MAIN) $(OBJS_LIB)
 
@@ -41,6 +64,12 @@ $(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_UTIL): %.o: %.f90
 
 $(OBJS_EIGENEXA): $(SRCS_EIGENEXA)
 	$(FC) -c $(FFLAGS_EIGENEXA) $(LIBS) $< -o $@
+
+$(OBJS_ELPA): $(SRCS_ELPA)
+	$(FC) -c $(FFLAGS_ELPA) $(LIBS) $< -o $@
+
+$(OBJS_ELPA_EIGENEXA): $(SRCS_ELPA_EIGENEXA)
+	$(FC) -c $(FFLAGS_ELPA_EIGENEXA) $(LIBS) $< -o $@
 
 $(TARGET_MAIN): $(OBJS)
 	$(FC) $(LDFLAGS) $^ $(LIBS) -o $@
