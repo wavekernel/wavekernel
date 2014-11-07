@@ -78,9 +78,11 @@ contains
     double precision, allocatable :: Residual(:, :), matrix_A_dist(:, :), matrix_B_dist(:, :)
     ! ave_and_max is declared as array due to usage of bcast
     ! 3rd element is for the index of the max value (discarded currently)
-    double precision :: norm, ave_and_max(3)
+    double precision :: res_norm, A_norm, ave_and_max(3)
     integer :: j, block_size, owner_proc_col, ierr
-    integer :: indxg2p ! ScaLAPACK function
+    ! ScaLAPACK functions
+    integer :: indxg2p
+    double precision :: pdlange
 
     if (arg%is_generalized_problem .and. .not. present(matrix_B)) then
       call terminate('eval_residual_norm_blacs: matrix_B is not provided', 1)
@@ -108,6 +110,8 @@ contains
     call setup_distributed_matrix('A', proc, dim, dim, desc_A, matrix_A_dist, &
          block_size = block_size)
     call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
+    A_norm = pdlange('F', dim, dim, matrix_A_dist, 1, 1, desc_A, 0)
+    print *, 'A_norm: ', A_norm
 
     if (arg%is_generalized_problem) then
       call setup_distributed_matrix('B', proc, dim, dim, &
@@ -145,11 +149,11 @@ contains
 
     ! Store 2-norm of each residual column in the first row of the column
     do j = 1, arg%n_check_vec
-      call pdnrm2(dim, norm, Residual, 1, j, desc_Residual, 1)
+      call pdnrm2(dim, res_norm, Residual, 1, j, desc_Residual, 1)
       owner_proc_col = indxg2p(j, desc_Residual(block_col_), 0, &
            desc_Residual(csrc_), proc%n_procs_col)
       if (proc%my_proc_row == 0 .and. proc%my_proc_col == owner_proc_col) then
-        call pdelset(Residual, 1, j, desc_Residual, norm)
+        call pdelset(Residual, 1, j, desc_Residual, res_norm)
       end if
     end do
 
@@ -161,8 +165,8 @@ contains
          Residual, 1, 1, desc_Residual, desc_Residual(rows_))
     call mpi_bcast(ave_and_max(1), 3, mpi_double_precision, 0, mpi_comm_world, ierr)
 
-    res_norm_ave = ave_and_max(1) / dble(arg%n_check_vec)
-    res_norm_max = ave_and_max(2)
+    res_norm_ave = ave_and_max(1) / A_norm / dble(arg%n_check_vec)
+    res_norm_max = ave_and_max(2) / A_norm
   end subroutine eval_residual_norm_blacs
 
 
