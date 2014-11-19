@@ -14,8 +14,8 @@ module solver_elpa_eigenexa
   use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
-
-  !private
+  private
+  public :: solve_with_general_elpa_eigenexa, solve_with_general_elpa_eigenk
 
 contains
 

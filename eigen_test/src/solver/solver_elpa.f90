@@ -12,8 +12,8 @@ module solver_elpa
   use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
-
-  !private
+  private
+  public :: solve_with_general_elpa1, solve_with_general_elpa2
 
 contains
 
