@@ -255,11 +255,11 @@ contains
 
     ! Scale elements and subtract identity matrix from it.
     do diag = 1, n
-      owner_proc_row = indxg2p(diag, block_size, 0, 0, proc%n_procs_row)
-      owner_proc_col = indxg2p(diag, block_size, 0, 0, proc%n_procs_col)
+      owner_proc_row = indxg2p(diag, desc_InnerProducts(block_row_), 0, 0, proc%n_procs_row)
+      owner_proc_col = indxg2p(diag, desc_InnerProducts(block_col_), 0, 0, proc%n_procs_col)
       if (proc%my_proc_col == owner_proc_col .and. proc%my_proc_row == owner_proc_row) then
-        i = indxg2l(diag, block_size, 0, 0, proc%n_procs_row)
-        j = indxg2l(diag, block_size, 0, 0, proc%n_procs_col)
+        i = indxg2l(diag, desc_InnerProducts(block_row_), 0, 0, proc%n_procs_row)
+        j = indxg2l(diag, desc_InnerProducts(block_col_), 0, 0, proc%n_procs_col)
         scale = 1.0d0 / sqrt(InnerProducts(i, j))  ! Inverse of norm.
         InnerProducts(i, j) = 0.0d0  ! InnerProducts <- InnerProducts - I
       end if

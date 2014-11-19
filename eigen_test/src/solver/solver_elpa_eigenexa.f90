@@ -27,6 +27,7 @@ contains
     type(eigenpairs_types_union), intent(out) :: eigenpairs
     integer :: desc_A(desc_size), desc_A2(desc_size), desc_B(desc_size), &
          desc_A_re(desc_size), &
+         block_size, max_block_size, &
          myid, np_rows, np_cols, my_prow, my_pcol, &
          na_rows, na_cols, mpi_comm_rows, mpi_comm_cols, &
          sc_desc(desc_size), ierr, info, mpierr
@@ -41,14 +42,15 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
-      !context = mpi_comm_world
-      !call BLACS_Gridinit( mpi_comm_world, 'C', np_rows, np_cols )
       call BLACS_Gridinfo( mpi_comm_world, np_rows, np_cols, my_prow, my_pcol )
       call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
            mpi_comm_rows, mpi_comm_cols)
-      na_rows = numroc(n, g_block_size, my_prow, 0, np_rows)
-      na_cols = numroc(n, g_block_size, my_pcol, 0, np_cols)
-      call descinit(sc_desc, n, n, g_block_size, g_block_size, 0, 0, mpi_comm_world, na_rows, info)
+
+      max_block_size = min(n / np_rows, n / np_cols)
+      block_size = min(max_block_size, g_block_size)
+      na_rows = numroc(n, block_size, my_prow, 0, np_rows)
+      na_cols = numroc(n, block_size, my_pcol, 0, np_cols)
+      call descinit(sc_desc, n, n, block_size, block_size, 0, 0, mpi_comm_world, na_rows, info)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
@@ -60,7 +62,7 @@ contains
       times(2) = mpi_wtime()
 
       ! Return of cholesky_real is stored in the upper triangle.
-      call cholesky_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
+      call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
         call terminate('solver_main, general_elpa_eigenexa: cholesky_real failed', 1)
       end if
@@ -68,7 +70,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(3) = mpi_wtime()
 
-      call invert_trm_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
+      call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
       !  if (myid == 0) then
@@ -88,7 +90,7 @@ contains
       ! but it is slow. Instead use mult_at_b_real.
       call mult_at_b_real('Upper', 'Full', n, n, &
            matrix_B_dist, na_rows, matrix_A2_dist, na_rows, &
-           g_block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
+           block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
       deallocate(matrix_A2_dist)
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
@@ -160,6 +162,7 @@ contains
     type(eigenpairs_types_union), intent(out) :: eigenpairs
     integer :: desc_A(desc_size), desc_A2(desc_size), desc_B(desc_size), &
          desc_A_re(desc_size), &
+         block_size, max_block_size, &
          myid, np_rows, np_cols, my_prow, my_pcol, &
          na_rows, na_cols, mpi_comm_rows, mpi_comm_cols, &
          sc_desc(desc_size), ierr, info, mpierr
@@ -173,14 +176,15 @@ contains
           call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(1) = mpi_wtime()
       call mpi_comm_rank(mpi_comm_world, myid, mpierr)
-      !context = mpi_comm_world
-      !call BLACS_Gridinit( mpi_comm_world, 'C', np_rows, np_cols )
       call BLACS_Gridinfo( mpi_comm_world, np_rows, np_cols, my_prow, my_pcol )
       call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
            mpi_comm_rows, mpi_comm_cols)
-      na_rows = numroc(n, g_block_size, my_prow, 0, np_rows)
-      na_cols = numroc(n, g_block_size, my_pcol, 0, np_cols)
-      call descinit(sc_desc, n, n, g_block_size, g_block_size, 0, 0, mpi_comm_world, na_rows, info)
+
+      max_block_size = min(n / np_rows, n / np_cols)
+      block_size = min(max_block_size, g_block_size)
+      na_rows = numroc(n, block_size, my_prow, 0, np_rows)
+      na_cols = numroc(n, block_size, my_pcol, 0, np_cols)
+      call descinit(sc_desc, n, n, block_size, block_size, 0, 0, mpi_comm_world, na_rows, info)
       call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
       call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
       call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
@@ -192,7 +196,7 @@ contains
       times(2) = mpi_wtime()
 
       ! Return of cholesky_real is stored in the upper triangle.
-      call cholesky_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
+      call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
       if (.not. success) then
         call terminate('solver_main, general_elpa_eigenk: cholesky_real failed', 1)
       end if
@@ -200,7 +204,7 @@ contains
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
       times(3) = mpi_wtime()
 
-      call invert_trm_real(n, matrix_B_dist, na_rows, g_block_size, mpi_comm_rows, mpi_comm_cols, success)
+      call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
       ! invert_trm_real always returns fail
       !if (.not. success) then
       !  if (myid == 0) then
@@ -220,7 +224,7 @@ contains
       ! but it is slow. Instead use mult_at_b_real.
       call mult_at_b_real('Upper', 'Full', n, n, &
            matrix_B_dist, na_rows, matrix_A2_dist, na_rows, &
-           g_block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
+           block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
       deallocate(matrix_A2_dist)
 
       call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
