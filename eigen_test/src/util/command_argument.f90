@@ -114,6 +114,8 @@ contains
       is_solver_valid = arg%is_generalized_problem
     case ('general_scalapack_eigenk')
       is_solver_valid = arg%is_generalized_problem
+    case ('general_elpa_scalapack')
+      is_solver_valid = arg%is_generalized_problem
     case ('general_elpa1')
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa2')

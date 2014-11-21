@@ -9,8 +9,8 @@ module solver_elpa_eigenexa
   use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
-
-  !private
+  private
+  public :: solve_with_general_elpa_eigenexa, solve_with_general_elpa_eigenk
 
 contains
 
@@ -21,7 +21,7 @@ contains
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('', 1)
+    call terminate('solve_elpa_eigenexa: ELPA is not supported in this build', 1)
     end subroutine solve_with_general_elpa_eigenexa
 
 
@@ -32,6 +32,6 @@ contains
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('', 1)
-    end subroutine solve_with_general_elpa_eigenk
+    call terminate('solve_elpa_eigenexa: ELPA is not supported in this build', 1)
+  end subroutine solve_with_general_elpa_eigenk
 end module solver_elpa_eigenexa

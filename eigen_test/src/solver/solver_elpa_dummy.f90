@@ -7,17 +7,33 @@ module solver_elpa
   use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
-
-  !private
+  private
+  public :: solve_with_general_elpa_scalapck, solve_with_general_elpa1, solve_with_general_elpa2
 
 contains
+
+  subroutine solve_with_general_elpa_scalapck(n,matrix_A, eigenpairs, matrix_B)
+    type(sparse_mat), intent(in) :: matrix_A
+    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
+
+    call terminate('solve_elpa: ELPA is not supported in this build', 1)
+  end subroutine solve_with_general_elpa_scalapck
 
   subroutine solve_with_general_elpa1(n,matrix_A, eigenpairs, matrix_B)
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('', 1)
+    call terminate('solve_elpa: ELPA is not supported in this build', 1)
+  end subroutine solve_with_general_elpa1
+
+  subroutine solve_with_general_elpa1(n,matrix_A, eigenpairs, matrix_B)
+    type(sparse_mat), intent(in) :: matrix_A
+    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
+
+    call terminate('solve_elpa: ELPA is not supported in this build', 1)
   end subroutine solve_with_general_elpa1
 
 
@@ -26,6 +42,6 @@ contains
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('', 1)
+    call terminate('solve_elpa: ELPA is not supported in this build', 1)
   end subroutine solve_with_general_elpa2
 end module solver_elpa
