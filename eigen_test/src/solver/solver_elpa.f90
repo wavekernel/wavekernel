@@ -40,7 +40,7 @@ contains
     call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
     times(1) = mpi_wtime()
     call mpi_comm_rank(mpi_comm_world, myid, mpierr)
-    call BLACS_Gridinfo(mpi_comm_world, np_rows, np_cols, my_prow, my_pcol)
+    call blacs_gridinfo(proc%context, np_rows, np_cols, my_prow, my_pcol)
     call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
          mpi_comm_rows, mpi_comm_cols)
 
@@ -48,7 +48,7 @@ contains
     block_size = min(max_block_size, g_block_size)
     na_rows = numroc(n, block_size, my_prow, 0, np_rows)
     na_cols = numroc(n, block_size, my_pcol, 0, np_cols)
-    call descinit(sc_desc, n, n, block_size, block_size, 0, 0, mpi_comm_world, na_rows, info)
+    call descinit(sc_desc, n, n, block_size, block_size, 0, 0, proc%context, na_rows, info)
     call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
     call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
     call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
@@ -166,7 +166,7 @@ contains
     call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
     times(1) = mpi_wtime()
     call mpi_comm_rank(mpi_comm_world, myid, mpierr)
-    call BLACS_Gridinfo(mpi_comm_world, np_rows, np_cols, my_prow, my_pcol)
+    call blacs_gridinfo(proc%context, np_rows, np_cols, my_prow, my_pcol)
     call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
          mpi_comm_rows, mpi_comm_cols)
 
@@ -174,7 +174,7 @@ contains
     block_size = min(max_block_size, g_block_size)
     na_rows = numroc(n, block_size, my_prow, 0, np_rows)
     na_cols = numroc(n, block_size, my_pcol, 0, np_cols)
-    call descinit(sc_desc, n, n, block_size, block_size, 0, 0, mpi_comm_world, na_rows, info)
+    call descinit(sc_desc, n, n, block_size, block_size, 0, 0, proc%context, na_rows, info)
     call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
     call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
     call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
@@ -287,7 +287,7 @@ contains
     call mpi_barrier(mpi_comm_world, mpierr)
     times(1) = mpi_wtime()
     call mpi_comm_rank(mpi_comm_world, myid, mpierr)
-    call BLACS_Gridinfo( mpi_comm_world, np_rows, np_cols, my_prow, my_pcol )
+    call blacs_gridinfo(proc%context, np_rows, np_cols, my_prow, my_pcol)
     call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
          mpi_comm_rows, mpi_comm_cols)
 
@@ -295,7 +295,7 @@ contains
     block_size = min(max_block_size, g_block_size)
     na_rows = numroc(n, block_size, my_prow, 0, np_rows)
     na_cols = numroc(n, block_size, my_pcol, 0, np_cols)
-    call descinit(sc_desc, n, n, block_size, block_size, 0, 0, mpi_comm_world, na_rows, info)
+    call descinit(sc_desc, n, n, block_size, block_size, 0, 0, proc%context, na_rows, info)
     call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
     call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
     call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
