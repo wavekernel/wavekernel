@@ -41,7 +41,7 @@ contains
 
     ! If there is a process which owns no entries in given block size
     ! configuration, diminish the block size and warn about in.
-    max_block_size = min(rows / proc%n_procs_row, cols / proc%n_procs_col)
+    max_block_size = max(min(rows / proc%n_procs_row, cols / proc%n_procs_col), 1)
     if (actual_block_size > max_block_size) then
       if (check_master()) then
         print '("[Warning] setup_distributed_matrix: size of matrix is very small relative to the number of processes")'
