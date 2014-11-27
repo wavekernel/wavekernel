@@ -205,7 +205,7 @@ contains
         print *, 'general_scalapack_eigenk total                : ', times(7) - times(1)
       end if
     case ('general_elpa_scalapack')
-      call solve_with_general_elpa_scalapck(n, proc, matrix_A, eigenpairs, matrix_B)
+      call solve_with_general_elpa_scalapack(n, proc, matrix_A, eigenpairs, matrix_B)
     case ('general_elpa1')
       call solve_with_general_elpa1(n, proc, matrix_A, eigenpairs, matrix_B)
     case ('general_elpa2')

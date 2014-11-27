@@ -8,17 +8,17 @@ module solver_elpa
 
   implicit none
   private
-  public :: solve_with_general_elpa_scalapck, solve_with_general_elpa1, solve_with_general_elpa2
+  public :: solve_with_general_elpa_scalapack, solve_with_general_elpa1, solve_with_general_elpa2
 
 contains
 
-  subroutine solve_with_general_elpa_scalapck(n,matrix_A, eigenpairs, matrix_B)
+  subroutine solve_with_general_elpa_scalapack(n,matrix_A, eigenpairs, matrix_B)
     type(sparse_mat), intent(in) :: matrix_A
     type(sparse_mat), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     call terminate('solve_elpa: ELPA is not supported in this build', 1)
-  end subroutine solve_with_general_elpa_scalapck
+  end subroutine solve_with_general_elpa_scalapack
 
   subroutine solve_with_general_elpa1(n,matrix_A, eigenpairs, matrix_B)
     type(sparse_mat), intent(in) :: matrix_A

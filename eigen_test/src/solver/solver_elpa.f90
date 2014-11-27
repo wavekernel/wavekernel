@@ -13,11 +13,11 @@ module solver_elpa
 
   implicit none
   private
-  public :: solve_with_general_elpa_scalapck, solve_with_general_elpa1, solve_with_general_elpa2
+  public :: solve_with_general_elpa_scalapack, solve_with_general_elpa1, solve_with_general_elpa2
 
 contains
 
-  subroutine solve_with_general_elpa_scalapck(n, proc, matrix_A, eigenpairs, matrix_B)
+  subroutine solve_with_general_elpa_scalapack(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
     type(sparse_mat), intent(in) :: matrix_A
@@ -142,7 +142,7 @@ contains
       print *, 'pdtrmm_EVs      : ', times(8) - times(7)
       print *, 'total           : ', times(8) - times(1)
     end if
-  end subroutine solve_with_general_elpa_scalapck
+  end subroutine solve_with_general_elpa_scalapack
 
   subroutine solve_with_general_elpa1(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
