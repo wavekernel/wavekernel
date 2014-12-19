@@ -18,18 +18,8 @@ contains
     double precision, allocatable, intent(out) :: matrix_A(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
+    call terminate('solver_eigenexa: EigenExa is not supported in this build', 1)
   end subroutine setup_distributed_matrix_for_eigenexa
-
-
-  subroutine eigen_solver_eigenexa(mat, desc_mat, n_vec, eigenpairs, uplo)
-    double precision, intent(in) :: mat(:, :)
-    integer, intent(in) :: desc_mat(desc_size), n_vec
-    type(eigenpairs_types_union), intent(out) :: eigenpairs
-    character, intent(in), optional :: uplo
-
-    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
-  end subroutine eigen_solver_eigenexa
 
 
   subroutine setup_distributed_matrix_for_general_eigenexa( &
@@ -39,7 +29,7 @@ contains
     double precision, allocatable, intent(out) :: matrix_A(:, :), matrix_B(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
+    call terminate('solver_eigenexa: EigenExa is not supported in this build', 1)
   end subroutine setup_distributed_matrix_for_general_eigenexa
 
 
@@ -50,6 +40,26 @@ contains
     double precision, allocatable, intent(out) :: matrix_A(:, :), matrix_B(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    call terminate('lib_eigen_solver: EigenExa is not supported in this build', 1)
+    call terminate('solver_eigenexa: EigenExa is not supported in this build', 1)
   end subroutine setup_distributed_matrix_for_general_eigenk
+
+
+  subroutine eigen_solver_eigenexa(mat, desc_mat, n_vec, eigenpairs, uplo)
+    double precision, intent(inout) :: mat(:, :)
+    integer, intent(in) :: desc_mat(desc_size), n_vec
+    type(eigenpairs_types_union), intent(inout) :: eigenpairs
+    character, intent(in), optional :: uplo
+
+    call terminate('solver_eigenexa: EigenExa is not supported in this build', 1)
+  end subroutine eigen_solver_eigenexa
+
+
+  subroutine eigen_solver_eigenk(mat, desc_mat, n_vec, eigenpairs, uplo)
+    double precision, intent(inout) :: mat(:, :)
+    integer, intent(in) :: desc_mat(desc_size), n_vec
+    type(eigenpairs_types_union), intent(inout) :: eigenpairs
+    character, intent(in), optional :: uplo
+
+    call terminate('solver_eigenexa: EigenExa is not supported in this build', 1)
+  end subroutine eigen_solver_eigenk
 end module solver_eigenexa
