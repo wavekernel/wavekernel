@@ -1,0 +1,59 @@
+FF = mpifrtpx -Fixed
+FC = mpifrtpx -Fixed
+#FF = mpifrtpx -Fixed -Haefosux -Eg -NRtrap -Nline
+#FC = mpifrtpx -Fixed -Haefosux -Eg -NRtrap -Nline
+CC = mpifccpx
+
+# Optimization flags for Fujitsu compiler
+CCFLAG = -g -Kfast,openmp,ocl,XFILL -Cpp
+
+SCALAPACK = -SCALAPACK
+BLAS      = -SSL2BLAMP
+LAPACK    =
+LIB       = EigenExa
+AR        = ar
+RANLIB    = ranlib
+RM        = rm -f
+
+# EigenExa-2.2b later is recomended to use
+EIGENPATH = /opt/aics/EigenExa/EigenExa-2.2b
+EIGENPATH = $(HOME)/EigenExa-2.2b
+
+INCPATH = -I$(EIGENPATH) -I$(EIGENPATH)/include
+INCFLAG = $(INCPATH)
+
+LDPATH  = -L$(EIGENPATH) -L$(EIGENPATH)/include
+LDFLAG  = $(LDPATH) $(CCFLAG) -l$(LIB) $(SCALAPACK) $(BLAS)
+
+OBJS = KMATH_EIGEN_GEV_main.o \
+       KMATH_EIGEN_GEV.o KMATH_EIGEN_GEV_check.o mat_set.o
+
+
+all : a.out
+
+
+a.out : $(OBJS)
+	$(FF) -o a.out $(CCFLAG) $(OBJS) $(LDFLAG)
+
+KMATH_EIGEN_GEV_main.o : KMATH_EIGEN_GEV_main.F
+	$(FF) -c KMATH_EIGEN_GEV_main.F $(CCFLAG) $(INCFLAG)
+KMATH_EIGEN_GEV.o : KMATH_EIGEN_GEV.F KMATH_EIGEN_GEV_1.F KMATH_EIGEN_GEV_2.F KMATH_EIGEN_GEV_misc.F
+	$(FF) -c KMATH_EIGEN_GEV.F $(CCFLAG) $(INCFLAG)
+KMATH_EIGEN_GEV_check.o : KMATH_EIGEN_GEV_check.F
+	$(FF) -c KMATH_EIGEN_GEV_check.F $(CCFLAG) $(INCFLAG)
+mat_set.o: mat_set.f
+	$(FF) -c mat_set.f $(CCFLAG) $(INCFLAG)
+#mat_set.f: $(EIGENPATH)/mat_set.f
+#	@if [ -e mat_set.f ]; then \
+#		\rm mat_set.f; \
+#	fi
+#	@ln -s $(EIGENPATH)/mat_set.f .
+
+
+clean :
+	-\rm -f *.o a.out mat_set.f
+
+
+ifeq ($(wildcard $(EIGENPATH)),)
+	$(error Not available directory $$EIGENPATH=$(EIGENPATH).)
+endif
