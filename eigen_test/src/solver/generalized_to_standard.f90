@@ -10,15 +10,17 @@ module generalized_to_standard
 contains
 
   subroutine reduce_generalized(dim, A, desc_A, B, desc_B)
+    include 'mpif.h'
+
     integer, intent(in) :: dim, desc_A(9), desc_B(9)
     double precision, intent(inout) :: A(:, :), B(:, :)
     integer :: base_count
-    double precision :: times(2)
 
-    integer :: info
-    double precision :: scale, work_pdlaprnt(desc_B(block_row_))
+    integer :: info, ierr
+    double precision :: scale, work_pdlaprnt(desc_B(block_row_)), times(3)
 
-    call get_wall_clock_base_count(base_count)
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(1) = mpi_wtime()
 
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
@@ -33,7 +35,8 @@ contains
       call terminate('reduce_generalized: pdpotrf failed', info)
     end if
 
-    call get_wall_clock_time(base_count, times(1))
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(2) = mpi_wtime()
 
     ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
@@ -42,10 +45,12 @@ contains
       call terminate('reduce_generalized: pdsygst failed', info)
     end if
 
-    call get_wall_clock_time(base_count, times(2))
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(3) = mpi_wtime()
+
     if (check_master()) then
-      print *, '  reduce_generalized pdpotrf: ', times(1)
-      print *, '  reduce_generalized pdsygst: ', times(2)
+      print *, '  reduce_generalized pdpotrf: ', times(2) - times(1)
+      print *, '  reduce_generalized pdsygst: ', times(3) - times(2)
     end if
   end subroutine reduce_generalized
 

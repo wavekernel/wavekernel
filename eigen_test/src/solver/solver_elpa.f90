@@ -133,14 +133,14 @@ contains
     times(8) = mpi_wtime()
 
     if (check_master()) then
-      print *, 'init            : ', times(2) - times(1)
-      print *, 'cholesky_real   : ', times(3) - times(2)
-      print *, 'invert_trm_real : ', times(4) - times(3)
-      print *, 'pdtrmm_A_left   : ', times(5) - times(4)
-      print *, 'pdtrmm_A_right  : ', times(6) - times(5)
-      print *, 'pdsyevd         : ', times(7) - times(6)
-      print *, 'pdtrmm_EVs      : ', times(8) - times(7)
-      print *, 'total           : ', times(8) - times(1)
+      print *, 'solve_with_general_elpa_scalapack init            : ', times(2) - times(1)
+      print *, 'solve_with_general_elpa_scalapack cholesky_real   : ', times(3) - times(2)
+      print *, 'solve_with_general_elpa_scalapack invert_trm_real : ', times(4) - times(3)
+      print *, 'solve_with_general_elpa_scalapack pdtrmm_A_left   : ', times(5) - times(4)
+      print *, 'solve_with_general_elpa_scalapack pdtrmm_A_right  : ', times(6) - times(5)
+      print *, 'solve_with_general_elpa_scalapack pdsyevd         : ', times(7) - times(6)
+      print *, 'solve_with_general_elpa_scalapack pdtrmm_EVs      : ', times(8) - times(7)
+      print *, 'solve_with_general_elpa_scalapack total           : ', times(8) - times(1)
     end if
   end subroutine solve_with_general_elpa_scalapack
 
@@ -249,14 +249,14 @@ contains
     times(8) = mpi_wtime()
 
     if (check_master()) then
-      print *, 'init            : ', times(2) - times(1)
-      print *, 'cholesky_real   : ', times(3) - times(2)
-      print *, 'invert_trm_real : ', times(4) - times(3)
-      print *, 'pdtrmm_A_left   : ', times(5) - times(4)
-      print *, 'pdtrmm_A_right  : ', times(6) - times(5)
-      print *, 'solve_evp_real  : ', times(7) - times(6)
-      print *, 'pdtrmm_EVs      : ', times(8) - times(7)
-      print *, 'total           : ', times(8) - times(1)
+      print *, 'solve_with_general_elpa1 init            : ', times(2) - times(1)
+      print *, 'solve_with_general_elpa1 cholesky_real   : ', times(3) - times(2)
+      print *, 'solve_with_general_elpa1 invert_trm_real : ', times(4) - times(3)
+      print *, 'solve_with_general_elpa1 pdtrmm_A_left   : ', times(5) - times(4)
+      print *, 'solve_with_general_elpa1 pdtrmm_A_right  : ', times(6) - times(5)
+      print *, 'solve_with_general_elpa1 solve_evp_real  : ', times(7) - times(6)
+      print *, 'solve_with_general_elpa1 pdtrmm_EVs      : ', times(8) - times(7)
+      print *, 'solve_with_general_elpa1 total           : ', times(8) - times(1)
       print *
       print *, 'solve_evp_real transform_to_tridi :', time_evp_fwd
       print *, 'solve_evp_real solve_tridi        :', time_evp_solve
@@ -370,14 +370,14 @@ contains
     times(8) = mpi_wtime()
 
     if (check_master()) then
-      print *, 'init                  : ', times(2) - times(1)
-      print *, 'cholesky_real         : ', times(3) - times(2)
-      print *, 'invert_trm_real       : ', times(4) - times(3)
-      print *, 'pdtrmm_A_left         : ', times(5) - times(4)
-      print *, 'pdtrmm_A_right        : ', times(6) - times(5)
-      print *, 'solve_evp_real_2stage : ', times(7) - times(6)
-      print *, 'pdtrmm_EVs            : ', times(8) - times(7)
-      print *, 'total                 : ', times(8) - times(1)
+      print *, 'solve_with_general_elpa2 init                  : ', times(2) - times(1)
+      print *, 'solve_with_general_elpa2 cholesky_real         : ', times(3) - times(2)
+      print *, 'solve_with_general_elpa2 invert_trm_real       : ', times(4) - times(3)
+      print *, 'solve_with_general_elpa2 pdtrmm_A_left         : ', times(5) - times(4)
+      print *, 'solve_with_general_elpa2 pdtrmm_A_right        : ', times(6) - times(5)
+      print *, 'solve_with_general_elpa2 solve_evp_real_2stage : ', times(7) - times(6)
+      print *, 'solve_with_general_elpa2 pdtrmm_EVs            : ', times(8) - times(7)
+      print *, 'solve_with_general_elpa2 total                 : ', times(8) - times(1)
       print *
       print *, 'solve_evp_real_2stage transform_to_tridi :', time_evp_fwd
       print *, 'solve_evp_real_2stage solve_tridi        :', time_evp_solve

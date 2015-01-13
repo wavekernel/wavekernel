@@ -140,16 +140,16 @@ contains
     times(10) = mpi_wtime()
 
     if (check_master()) then
-      print *, 'init                  : ', times(2) - times(1)
-      print *, 'cholesky_real         : ', times(3) - times(2)
-      print *, 'invert_trm_real       : ', times(4) - times(3)
-      print *, 'pdtrmm_A_left         : ', times(5) - times(4)
-      print *, 'pdtrmm_A_right        : ', times(6) - times(5)
-      print *, 'pdgemr2d_A            : ', times(7) - times(6)
-      print *, 'eigen_solver_eigenexa : ', times(8) - times(7)
-      print *, 'pdgemr2d_B            : ', times(9) - times(8)
-      print *, 'pdtrmm_EVs            : ', times(10) - times(9)
-      print *, 'total                 : ', times(10) - times(1)
+      print *, 'solve_with_general_elpa_eigenexa init                  : ', times(2) - times(1)
+      print *, 'solve_with_general_elpa_eigenexa cholesky_real         : ', times(3) - times(2)
+      print *, 'solve_with_general_elpa_eigenexa invert_trm_real       : ', times(4) - times(3)
+      print *, 'solve_with_general_elpa_eigenexa pdtrmm_A_left         : ', times(5) - times(4)
+      print *, 'solve_with_general_elpa_eigenexa pdtrmm_A_right        : ', times(6) - times(5)
+      print *, 'solve_with_general_elpa_eigenexa pdgemr2d_A            : ', times(7) - times(6)
+      print *, 'solve_with_general_elpa_eigenexa eigen_solver_eigenexa : ', times(8) - times(7)
+      print *, 'solve_with_general_elpa_eigenexa pdgemr2d_B            : ', times(9) - times(8)
+      print *, 'solve_with_general_elpa_eigenexa pdtrmm_EVs            : ', times(10) - times(9)
+      print *, 'solve_with_general_elpa_eigenexa total                 : ', times(10) - times(1)
     end if
   end subroutine solve_with_general_elpa_eigenexa
 
@@ -274,16 +274,16 @@ contains
     times(10) = mpi_wtime()
 
     if (check_master()) then
-      print *, 'init                : ', times(2) - times(1)
-      print *, 'cholesky_real       : ', times(3) - times(2)
-      print *, 'invert_trm_real     : ', times(4) - times(3)
-      print *, 'pdtrmm_A_left       : ', times(5) - times(4)
-      print *, 'pdtrmm_A_right      : ', times(6) - times(5)
-      print *, 'pdgemr2d_A          : ', times(7) - times(6)
-      print *, 'eigen_solver_eigenk : ', times(8) - times(7)
-      print *, 'pdgemr2d_B          : ', times(9) - times(8)
-      print *, 'pdtrmm_EVs          : ', times(10) - times(9)
-      print *, 'total               : ', times(10) - times(1)
+      print *, 'solve_with_general_elpa_eigenk init                : ', times(2) - times(1)
+      print *, 'solve_with_general_elpa_eigenk cholesky_real       : ', times(3) - times(2)
+      print *, 'solve_with_general_elpa_eigenk invert_trm_real     : ', times(4) - times(3)
+      print *, 'solve_with_general_elpa_eigenk pdtrmm_A_left       : ', times(5) - times(4)
+      print *, 'solve_with_general_elpa_eigenk pdtrmm_A_right      : ', times(6) - times(5)
+      print *, 'solve_with_general_elpa_eigenk pdgemr2d_A          : ', times(7) - times(6)
+      print *, 'solve_with_general_elpa_eigenk eigen_solver_eigenk : ', times(8) - times(7)
+      print *, 'solve_with_general_elpa_eigenk pdgemr2d_B          : ', times(9) - times(8)
+      print *, 'solve_with_general_elpa_eigenk pdtrmm_EVs          : ', times(10) - times(9)
+      print *, 'solve_with_general_elpa_eigenk total               : ', times(10) - times(1)
     end if
   end subroutine solve_with_general_elpa_eigenk
 end module solver_elpa_eigenexa

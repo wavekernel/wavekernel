@@ -74,8 +74,10 @@ contains
     double precision :: t_intervals(n_intervals)
     double precision :: t_all_end
     character(*), parameter :: interval_names(n_intervals) = (/'total'/)
+    double precision :: times(3)
 
-    call get_wall_clock_base_count(base_count)
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(1) = mpi_wtime()
 
     dim = desc_mat(rows_)
     if (dim /= n_vec) then
@@ -101,6 +103,9 @@ contains
       end if
     end if
 
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(2) = mpi_wtime()
+
     call eigen_get_matdims(dim, nx, ny)
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
@@ -109,18 +114,12 @@ contains
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
          m_forward = m_forward, m_backward = m_backward)
 
-    call get_wall_clock_time(base_count, t_all_end)
-
-    t_intervals(1) = t_all_end
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(3) = mpi_wtime()
 
     if (my_rank == 0) then
-      call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-      print '("elapsed time (sec)")'
-      do i = 1, n_intervals
-        print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
-      end do
-    else
-      call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+      print *, 'eigen_solver_eigenexa pdcopy   : ', times(2) - times(1)
+      print *, 'eigen_solver_eigenexa eigen_sx : ', times(3) - times(2)
     end if
   end subroutine eigen_solver_eigenexa
 
@@ -142,8 +141,10 @@ contains
     double precision :: t_intervals(n_intervals)
     double precision :: t_all_end
     character(*), parameter :: interval_names(n_intervals) = (/'total'/)
+    double precision :: times(3)
 
-    call get_wall_clock_base_count(base_count)
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(1) = mpi_wtime()
 
     dim = desc_mat(rows_)
     if (dim /= n_vec) then
@@ -169,6 +170,9 @@ contains
       end if
     end if
 
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(2) = mpi_wtime()
+
     call eigen_get_matdims(dim, nx, ny)
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
@@ -177,18 +181,12 @@ contains
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
          m_forward = m_forward, m_backward = m_backward)
 
-    call get_wall_clock_time(base_count, t_all_end)
-
-    t_intervals(1) = t_all_end
+    call mpi_barrier(mpi_comm_world, ierr)
+    times(3) = mpi_wtime()
 
     if (my_rank == 0) then
-      call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-      print '("elapsed time (sec)")'
-      do i = 1, n_intervals
-        print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
-      end do
-    else
-      call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+      print *, 'eigen_solver_eigenk pdcopy  : ', times(2) - times(1)
+      print *, 'eigen_solver_eigenk eigen_s : ', times(3) - times(2)
     end if
   end subroutine eigen_solver_eigenk
 end module solver_eigenexa
