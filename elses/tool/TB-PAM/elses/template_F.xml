@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<element type="Huckel" name="F">
+  <mass> 18.9984d0 </mass>
+
+  <initial_charge> 0.00 </initial_charge>
+
+  <principal_quantum_number>
+    2 3*2 5*3
+  </principal_quantum_number>
+
+  <initial_occupation>
+    2.00 3*1.66666666 5*0.0
+  </initial_occupation>
+
+  <initial_diagonal_elements>
+    VARIABLE_DIAG_S 3*VARIABLE_DIAG_P 5*VARIABLE_DIAG_D
+  </initial_diagonal_elements>
+
+  <chemical_hardness> VARIABLE_HARDNESS </chemical_hardness>
+
+  <zeta>
+    VARIABLE_ZETA_S 3*VARIABLE_ZETA_P 5*VARIABLE_ZETA_D
+  </zeta>
+  <zeta2>
+    VARIABLE_ZETA2_S 3*VARIABLE_ZETA2_P 5*VARIABLE_ZETA2_D
+  </zeta2>
+
+  <c1>
+    VARIABLE_C1_S 3*VARIABLE_C1_P 5*VARIABLE_C1_D
+  </c1>
+  <c2>
+    VARIABLE_C2_S 3*VARIABLE_C2_P 5*VARIABLE_C2_D
+  </c2>
+
+  <repulsive_rescaling>
+    VARIABLE_REPULSIVE_S 3*VARIABLE_REPULSIVE_P 5*VARIABLE_REPULSIVE_D
+  </repulsive_rescaling>
+</element>

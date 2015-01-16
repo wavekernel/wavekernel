@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<element type="Huckel" name="S">
+  <mass> 32.065 </mass>
+
+  <initial_charge> 0.00 </initial_charge>
+
+  <principal_quantum_number>
+    3 3*3
+  </principal_quantum_number>
+
+  <initial_occupation>
+    2.00 3*1.33333333
+  </initial_occupation>
+
+  <initial_diagonal_elements>
+    -30.000000 3*-20.000000
+  </initial_diagonal_elements>
+
+  <chemical_hardness> 20.000000 </chemical_hardness>
+
+  <zeta>
+    1.000000 3*1.000000
+  </zeta>
+  <zeta2>
+    0.000000 3*0.000000
+  </zeta2>
+
+  <c1>
+    0.000000 3*0.000000
+  </c1>
+  <c2>
+    0.000000 3*0.000000
+  </c2>
+
+  <repulsive_rescaling>
+    0.500000 3*0.500000
+  </repulsive_rescaling>
+</element>

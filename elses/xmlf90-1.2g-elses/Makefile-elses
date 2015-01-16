@@ -1,0 +1,18 @@
+#
+# Makefile specially designed for ELSES
+#
+include ../Makefile.inc
+
+.PHONY: all
+all:
+	@$(MAKE) -C strings -f Makefile-elses all
+	@$(MAKE) -C sax -f Makefile-elses all
+	@$(MAKE) -C dom -f Makefile-elses all
+	@$(AR) -r macros/lib/libflib.a strings/*.o sax/*.o dom/*.o
+
+.PHONY: clean
+clean:
+	@$(MAKE) -C strings -f Makefile-elses clean
+	@$(MAKE) -C sax -f Makefile-elses clean
+	@$(MAKE) -C dom -f Makefile-elses clean
+	@rm -f macros/lib/libflib.a

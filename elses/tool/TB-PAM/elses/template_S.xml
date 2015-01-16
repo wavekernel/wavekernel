@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<element type="Huckel" name="S">
+  <mass> 32.065 </mass>
+
+  <initial_charge> 0.00 </initial_charge>
+
+  <principal_quantum_number>
+    3 3*3
+  </principal_quantum_number>
+
+  <initial_occupation>
+    2.00 3*1.33333333
+  </initial_occupation>
+
+  <initial_diagonal_elements>
+    VARIABLE_DIAG_S 3*VARIABLE_DIAG_P
+  </initial_diagonal_elements>
+
+  <chemical_hardness> VARIABLE_HARDNESS </chemical_hardness>
+
+  <zeta>
+    VARIABLE_ZETA_S 3*VARIABLE_ZETA_P
+  </zeta>
+  <zeta2>
+    VARIABLE_ZETA2_S 3*VARIABLE_ZETA2_P
+  </zeta2>
+
+  <c1>
+    VARIABLE_C1_S 3*VARIABLE_C1_P
+  </c1>
+  <c2>
+    VARIABLE_C2_S 3*VARIABLE_C2_P
+  </c2>
+
+  <repulsive_rescaling>
+    VARIABLE_REPULSIVE_S 3*VARIABLE_REPULSIVE_P
+  </repulsive_rescaling>
+</element>

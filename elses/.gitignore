@@ -1,0 +1,14 @@
+# Input Data
+sample/
+tool/band/samples/
+
+# Document
+src/HTML/
+*.doc
+
+# Backup
+*.old
+*.bak
+
+# Link
+Makefile.inc

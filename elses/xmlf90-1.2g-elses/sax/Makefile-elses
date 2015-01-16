@@ -1,0 +1,38 @@
+#
+# Makefile specially designed for LSES
+#
+
+include ../../Makefile.inc
+
+FFLAGS-XML = $(FFLAGS)
+
+F90 ?= $(FC)
+F77 ?= $(FC)
+
+.SUFFIXES: .f90
+
+.f90.o:
+	$(F90) -c $(FFLAGS-XML) $<
+
+OBJS = flib_sax.o m_buffer.o m_charset.o m_converters.o m_debug.o \
+	m_dictionary.o m_elstack.o m_entities.o m_fsm.o m_io.o \
+	m_reader.o m_xml_error.o m_xml_parser.o
+
+.PHONY: all
+all: $(OBJS)
+
+.PHONY: clean
+clean:
+	@rm -f *.o *.mod *~
+
+
+m_reader.o: m_io.o m_debug.o
+m_elstack.o: m_buffer.o
+m_dictionary.o: m_buffer.o
+m_entities.o: m_buffer.o
+m_converters.o: m_debug.o
+m_fsm.o: m_buffer.o m_dictionary.o m_charset.o m_entities.o m_elstack.o
+m_xml_error.o: m_elstack.o
+m_xml_parser.o: m_buffer.o m_elstack.o m_reader.o m_fsm.o m_dictionary.o \
+                m_debug.o m_xml_error.o m_entities.o
+flib_sax.o: m_dictionary.o m_xml_parser.o m_converters.o m_xml_error.o

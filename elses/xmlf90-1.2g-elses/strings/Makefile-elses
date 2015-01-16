@@ -1,0 +1,24 @@
+#
+# Makefile specially designed for LSES
+#
+
+include ../../Makefile.inc
+
+FFLAGS-XML = $(FFLAGS)
+
+F90 ?= $(FC)
+F77 ?= $(FC)
+
+.SUFFIXES: .f90
+
+.f90.o:
+	$(F90) -c $(FFLAGS-XML) $<
+
+OBJS = m_strings.o
+
+.PHONY: all
+all: $(OBJS)
+
+.PHONY: clean
+clean:
+	@rm -f *.o *.mod *~

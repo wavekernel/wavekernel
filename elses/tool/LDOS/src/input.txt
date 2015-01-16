@@ -1,0 +1,5 @@
+-16.0d0, -16.0d0, 177,    eps_ref,eps_shift,nitemax,
+ 0,-0.14d0,               iswEscale,Esample,
+-50d0, 50d0, 1001,   enmin,enmax,nenemax,
+ 1, 1.00d+2, 2.0d0,       iswgamma,gamma,gammaXmesh,
+   1,   1,   1,           target_i,target_j,target_k,

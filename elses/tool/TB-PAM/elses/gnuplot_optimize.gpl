@@ -1,0 +1,98 @@
+# plot TB parameters and evaluation function
+# in the optimization procedur
+#---------------------------------------------------------
+set grid
+set key reverse Left
+set xlabel "Downhill simplex iteration"
+#----------------------------------------------------------
+set ylabel "Atomic level [eV]"
+plot "optimize.log" u 1 w lp lw 2 title "s orbital"
+replot "optimize.log" u 2 w lp lw 2 title "p orbital"
+replot "optimize.log" u 3 w lp lw 2 title "d orbital"
+
+pause -1 "Hit return key"
+
+set terminal pos color eps 'Arial' 20
+set output "optimize_atomic_level.eps"
+replot
+set output
+set terminal x11
+#----------------------------------------------------------
+set ylabel "Zeta [a.u.]"
+set y2label "c_arg [degree] or c2/c1"
+set y2tics nomirro
+set ytics nomirro
+
+plot "optimize.log"   u  4 w lp lw 2 title "zeta1"
+replot "optimize.log" u  7 w lp lw 2 title "zeta2"
+replot "optimize.log" u 10 w lp lw 2 axis x1y2 title "c_arg or c2/c1"
+
+pause -1 "Hit return key"
+
+set terminal pos color eps "Arial" 20
+set out "optimize_zeta_s_orbital.eps"
+replot
+set terminal x11
+#----------------------------------------------------------
+set ylabel "Zeta [a.u.]"
+set y2label "c_arg [degree] or c2/c1"
+set y2tics nomirro
+set ytics nomirro
+
+plot "optimize.log"   u  5 w lp lw 2 title "zeta1"
+replot "optimize.log" u  8 w lp lw 2 title "zeta2"
+replot "optimize.log" u 11 w lp lw 2 axis x1y2 title "c_arg or c2/c1"
+
+pause -1 "Hit return key"
+
+set terminal pos color eps "Arial" 20
+set out "optimize_zeta_p_orbital.eps"
+replot
+set terminal x11
+#----------------------------------------------------------
+set ylabel "Zeta [a.u.]"
+set y2label "c_arg [degree] or c2/c1"
+set y2tics nomirro
+set ytics nomirro
+
+plot "optimize.log"   u  6 w lp lw 2 title "zeta1"
+replot "optimize.log" u  9 w lp lw 2 title "zeta2"
+replot "optimize.log" u 12 w lp lw 2 axis x1y2 title "c_arg or c2/c1"
+
+pause -1 "Hit return key"
+
+set terminal pos color eps "Arial" 20
+set output "optimize_zeta_d_orbital.eps"
+replot
+set output
+set terminal x11
+#----------------------------------------------------------
+unset y2tics
+unset y2label
+set ytics mirror
+#----------------------------------------------------------
+set ylabel "R.R. parameter [a.u.]"
+plot "optimize.log" u 13 w lp t "s orbital"
+replot "optimize.log" u 14 w lp t "p orbital"
+replot "optimize.log" u 15 w lp t "d orbital"
+
+pause -1 "Hit return key"
+
+set terminal pos color eps "Arial" 20
+set output "optimize_rrp.eps"
+replot
+set output
+set terminal x11
+#----------------------------------------------------------
+set ylabel "Evaluation function [a.u.]"
+plot "optimize.log" u 16 w lp t "eval_f_tot"
+replot "optimize.log" u 17 w lp t "eval_f_ebd"
+replot "optimize.log" u 18 w lp t "eval_f_etot"
+
+pause -1 "Hit return key"
+
+set terminal pos color eps "Arial" 20
+set output "eval_func.eps"
+replot
+set output 
+set terminal x11

@@ -1,0 +1,15 @@
+Dr. Iguchi provided a work-around for the
+problem that Intel Fortran 11 failes to build
+elses program.
+Thank you Dr. Iguchi.
+
+"How to apply the patch file to elses source tree"
+
+1. Change directory to the "elses" (parent of "src").
+2. Put a following command to the prompt.
+patch -p6 < elses-ice-20090606.patch
+
+The option "-p6" eliminates first 6 "/" (slash) from
+the absolute path embedded in the patch file.
+If this option is omitted, "patch" program ask you
+a file to be patched.

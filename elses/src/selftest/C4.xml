@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<structure name="selftest" mdstep="0">
+ 
+ <unitcell>
+   <vector unit="a.u."> 10.0  0.0  0.0 </vector>
+   <vector unit="a.u.">  0.0 10.0  0.0 </vector>
+   <vector unit="a.u.">  0.0  0.0 10.0 </vector>
+ </unitcell>
+  
+ <heatbath>
+  <massperatom unit="a.u."> 25.00000000</massperatom>
+  <position unit="a.u.">  0.00000000   </position>
+  <velocity unit="a.u.">  0.00000000   </velocity>
+ </heatbath>
+ 
+ <atom element="C" class="selftest" motion="free">
+  <position unit="internal"> 0.0 0.0 0.0 </position>
+  <velocity unit="a.u.">  0.0 0.0 0.0 </velocity>
+ </atom>
+
+ <atom element="C" class="selftest" motion="free">
+  <position unit="internal"> 1.0 0.0 0.0 </position>
+  <velocity unit="a.u.">  1.0 0.0 0.0 </velocity>
+ </atom>
+
+ <atom element="C" class="selftest" motion="free">
+  <position unit="internal"> 0.0 1.0 0.0 </position>
+  <velocity unit="a.u.">  0.0 1.0 0.0 </velocity>
+ </atom>
+
+ <atom element="C" class="selftest" motion="free">
+  <position unit="internal"> 0.0 0.0 1.0 </position>
+  <velocity unit="a.u.">  0.0 0.0 1.0 </velocity>
+ </atom>
+
+ </structure>

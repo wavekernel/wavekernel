@@ -1,0 +1,4 @@
+diff flib_cml.f90 ../../../../2007.11.21/elses/xmlf90-1.2g-elses/cml/flib_cml.f90
+diff m_cmlw.f90 ../../../../2007.11.21/elses/xmlf90-1.2g-elses/cml/m_cmlw.f90
+diff m_stmw.f90 ../../../../2007.11.21/elses/xmlf90-1.2g-elses/cml/m_stmw.f90
+diff makefile ../../../../2007.11.21/elses/xmlf90-1.2g-elses/cml/makefile

@@ -1,0 +1,64 @@
+#### parameters
+# set parameters below
+
+param_zeta1_min=3.0
+param_zeta1_max=5.0
+param_zeta2_min=0.1
+param_zeta2_max=1.0
+doublezeta_n=3
+
+## if you use cratio=c2/c1, use below
+param_cratio_min=0.0
+param_cratio_max=10.0
+param_carg_min=180.0/pi*atan(param_cratio_min)
+param_carg_max=180.0/pi*atan(param_cratio_max)
+## end if
+
+## if you use carg=arg(c1,c2), use below
+#param_carg_min=0.0
+#param_carg_max=80.0
+## end if
+
+#### do not edit below
+cos_min=cos(param_carg_min*pi/180.0)
+sin_min=sin(param_carg_min*pi/180.0)
+
+cos_max=cos(param_carg_max*pi/180.0)
+sin_max=sin(param_carg_max*pi/180.0)
+
+gfunc(z1,z2)=(sqrt(z1*z2)/((z1+z2)/2))**(2*doublezeta_n+1)
+
+g_min = gfunc(param_zeta1_max,param_zeta2_min)
+g_max = gfunc(param_zeta1_min,param_zeta2_max)
+
+set parametric
+set key outside
+
+set grid
+set xra [-1.5:1.5]
+set yra [-1.5:1.5]
+set xtics 0.5
+set ytics 0.5
+set size ratio 1.0
+set xla "c1"
+set yla "c2"
+set title "region of [c1,c2] evaluated by the simplex operation"
+
+  plot [0:1] 1.0/sqrt(1.0+g_min*sin(2*(t-0.5)*pi))*cos((t-0.5)*pi),\
+             1.0/sqrt(1.0+g_min*sin(2*(t-0.5)*pi))*sin((t-0.5)*pi) \
+             t "gamma_min"
+
+replot       1.0/sqrt(1.0+g_max*sin(2*(t-0.5)*pi))*cos((t-0.5)*pi),\
+             1.0/sqrt(1.0+g_max*sin(2*(t-0.5)*pi))*sin((t-0.5)*pi) \
+             t "gamma_max"
+
+replot 1.5*t*cos_min, 1.5*t*sin_min t "carg or cratio _min"
+replot 1.5*t*cos_max, 1.5*t*sin_max t "carg or cratio _max"
+
+pause -1 "Hit return key"
+
+set ter pos eps col sol 16
+set out "dzparam.eps"
+replot
+
+#!convert -density 200 dzparam.eps dzparam.png

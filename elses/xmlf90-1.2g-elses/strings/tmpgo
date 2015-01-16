@@ -1,0 +1,6 @@
+echo "====makefile-elses===="
+diff Makefile-elses ../../../../2007.11.21/elses/xmlf90-1.2g-elses/strings/Makefile-elses
+echo "====m_strings===="
+diff m_strings.f90 ../../../../2007.11.21/elses/xmlf90-1.2g-elses/strings/m_strings.f90
+echo "====makefile===="
+diff makefile ../../../../2007.11.21/elses/xmlf90-1.2g-elses/strings/makefile

@@ -1,0 +1,43 @@
+#
+# Makefile specially designed for LSES
+#
+
+include ../../Makefile.inc
+
+FFLAGS-XML = $(FFLAGS) $(MOD_OPT)../sax $(MOD_OPT)../strings
+
+F90 ?= $(FC)
+F77 ?= $(FC)
+
+.SUFFIXES: .f90
+
+.f90.o:
+	$(F90) -c $(FFLAGS-XML) $<
+
+OBJS = flib_dom.o m_dom_attribute.o m_dom_debug.o m_dom_document.o \
+	m_dom_element.o m_dom_error.o m_dom_namednodemap.o m_dom_node.o \
+	m_dom_nodelist.o m_dom_parse.o m_dom_types.o m_dom_utils.o
+
+.PHONY: all
+all: $(OBJS)
+
+.PHONY: clean
+clean:
+	@rm -f *.o *.mod *~
+
+
+m_dom_document.o:  m_dom_types.o
+m_dom_nodelist.o: m_dom_types.o
+m_dom_namednodemap.o:  m_dom_types.o
+m_dom_node.o:  m_dom_types.o m_dom_nodelist.o m_dom_namednodemap.o \
+              m_dom_debug.o m_dom_error.o
+m_dom_attribute.o: m_dom_types.o  m_dom_node.o
+m_dom_element.o: m_dom_types.o m_dom_nodelist.o m_dom_namednodemap.o \
+                 m_dom_attribute.o m_dom_document.o m_dom_debug.o m_dom_node.o
+m_dom_parse.o: m_dom_types.o m_dom_element.o m_dom_document.o m_dom_node.o \
+               m_dom_debug.o
+m_dom_utils.o: m_dom_types.o m_dom_element.o m_dom_document.o m_dom_node.o \
+                m_dom_namednodemap.o m_dom_debug.o
+flib_dom.o:  m_dom_types.o m_dom_nodelist.o m_dom_namednodemap.o \
+             m_dom_attribute.o m_dom_document.o m_dom_node.o \
+             m_dom_node.o m_dom_element.o m_dom_parse.o m_dom_utils.o

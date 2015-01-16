@@ -1,0 +1,110 @@
+#================================================================
+# ELSES version 0.03
+# Copyright (C) ELSES. 2007-2012 all rights reserved
+#================================================================
+
+TOPDIR ?= .
+
+# Common settings
+MOD_OPT=-I
+#XML_SELFTEST = './elses-xml-selftest'
+# For cross compiler systems,
+XML_SELFTEST = echo './elses-xml-selftest'
+%.o:%.mod
+
+XML-DIR = xmlf90-1.2g-elses
+
+BINDIR=$(TOPDIR)/bin
+SRCDIR=$(TOPDIR)/src
+
+FFLAGS-NRL =$(MOD_OPT)$(TOPDIR)/src/Nrl
+FFLAGS-XML =\
+ $(MOD_OPT)$(TOPDIR)/$(XML-DIR)/strings\
+ $(MOD_OPT)$(TOPDIR)/$(XML-DIR)/sax\
+ $(MOD_OPT)$(TOPDIR)/$(XML-DIR)/dom\
+ $(MOD_OPT)$(SRCDIR)
+LIBS-XML = -L$(TOPDIR)/$(XML-DIR)/macros/lib -lflib
+OBJS-XML = $(SRCDIR)/elses-xml-config.o $(SRCDIR)/elses-config.o\
+ $(SRCDIR)/elses-xml-misc.o $(SRCDIR)/elses-xml-sax-counter.o\
+ $(SRCDIR)/elses-xml-sax-handler.o $(SRCDIR)/elses-xml-sax-parser.o
+
+##  for Intel Fortran compiler (ifort)
+#FC = ifort
+#FFLAGS = -O -openmp 
+#LDFLAGS = $(FFLAGS)
+#LIBS = -L /opt/intel/mkl/10.0.3.020/lib/em64t -lmkl_lapack -lmkl -lguide -lpthread
+#LIBS = -L/opt/intel/mkl/10.0.3.020/lib/32 -lmkl_lapack -lmkl -lguide -lpthread
+#LIBS  = /opt/acml3.6.0/ifort64/lib/libacml.a 
+
+##  for PGI Fortran compiler (pgf90)
+#FC = pgf90
+#FFLAGS = -O2 -g -mp
+#LDFLAGS = -mp
+#LIBS = -lacml
+
+##  for GNU G95 Fortran compiler (g95)
+#FC = g95 -mno-cygwin
+#FC = g95
+#FFLAGS = -g -ftrace=full
+#LDFLAGS =
+#LIBS = -llapack -lblas
+#LIBS =  -L /opt/acml3.6.0/gnu64/lib -lacml -lacml_mv -lg2c
+
+##  for GNU Fortran compiler (gfortran)
+#FC = gfortran
+#FFLAGS = -O2 -fopenmp
+#LDFLAGS = -fopenmp
+#LIBS = -L/usr/local/lib -llapack -lblas
+
+##  for GNU Fortran compiler (gfortran on MacOS-X with Xcode)
+#FC = gfortran
+#FC = openmpif90
+#FFLAGS = -O2 -fopenmp
+#FFLAGS = -Wall -pedantic -fbounds-check -fbacktrace -O -Wuninitialized -ffpe-trap=invalid,zero,overflow
+#FFLAGS = -Wall -pedantic -fbounds-check -fbacktrace -O -Wuninitialized -ffpe-trap=invalid,zero,overflow -std=f95
+#LDFLAGS = -fopenmp
+#LIBS = -framework vecLib
+
+## for IBM pSeries p5-570 System
+#F90 = xlf90
+#F77 = xlf
+#FFLAGS = -O2 -q64
+#LDFLAGS =
+#LIBS = -L/usr/local/lib -llapack -lessl
+
+## for NEC SX, SUPER-UX
+#FC = sxf90
+#FFLAGS = -C vopt -P openmp
+#LDFLAGS = -P openmp
+#LIBS = -L/lib -llapack -lblas
+
+## Solaris
+#FC = sunf95
+#FFLAGS = -g -C
+#LIBS = -L/opt/SunStudioExpress/lib -lsunperf 
+#MOD_OPT=-M
+
+###############################################################
+## For Developer; Intel Fortran compiler (ifort)
+FC = ifort
+#FC = mpif90
+#FC = ifort -lmpi
+#FFLAGS = -O2 -openmp-stubs
+#FFLAGS = -g -O2 -openmp -mcmodel=medium
+#FFLAGS = -O2 -assume nobuffered_io
+#FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv
+FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv  -implicitnone
+#FFLAGS = -g -assume nobuffered_io -warn nodeclarations -check all -traceback
+LDFLAGS = $(FFLAGS)
+#LIBS  = /opt/acml4.4.0/ifort64/lib/libacml.a 
+LIBS  = /opt/acml4.4.0/ifort64_mp/lib/libacml_mp.a /opt/acml4.4.0/ifort64_mp/lib/libacml_mv.a  -lguide -lpthread
+#LIBS = -L/opt/intel/mkl/10.0/lib/32 -lmkl_lapack -lguide -lmkl_ia32
+#LIBS = -L /opt/intel/mkl/10.0.3.020/lib/em64t -lmkl_lapack -lmkl -lguide -lpthread
+#LIBS = -mkl=sequential
+
+# For ifort 11.1.0.038
+# LIBS = -L /opt/intel/Compiler/11.1/038/mkl/lib/em64t -lmkl_lapack \
+# -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+# For ifort 11.1.0.064
+#LIBS = -L /opt/intel/Compiler/11.1/064/mkl/lib/em64t -lmkl_lapack \
+# -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread

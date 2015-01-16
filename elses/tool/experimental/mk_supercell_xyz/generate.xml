@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<generate name="structure_new">
+  <unitcell>
+    <vector unit="Angstrom"> 35.4799984686    0.0              0.0             </vector>
+    <vector unit="Angstrom">  0.0           141.9199938742     0.0             </vector>
+    <vector unit="Angstrom">  0.0             0.0            283.8399877484    </vector>
+  </unitcell>
+
+  <cluster structure="structure_new.xyz">
+  </cluster>
+</generate>

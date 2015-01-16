@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<element type="Huckel" name="O">
+  <mass> 16.000 </mass>
+
+  <initial_charge> 0.00 </initial_charge>
+
+  <principal_quantum_number>
+    2 3*2 5*3
+  </principal_quantum_number>
+
+  <initial_occupation>
+    2.00 3*1.33333333 5*0.0
+  </initial_occupation>
+
+  <initial_diagonal_elements>
+    -30.000000 3*-10.000000 5*-2.000000
+  </initial_diagonal_elements>
+
+  <chemical_hardness> 10.000000 </chemical_hardness>
+
+  <zeta>
+    4.000000 3*2.000000 5*1.000000
+  </zeta>
+  <zeta2>
+    0.000000 3*0.000000 5*1.000000
+  </zeta2>
+
+  <c1>
+    0.000000 3*0.000000 5*0.149896
+  </c1>
+  <c2>
+    0.000000 3*0.000000 5*0.850104
+  </c2>
+
+  <repulsive_rescaling>
+    2.000000 3*2.000000 5*2.000000
+  </repulsive_rescaling>
+</element>
