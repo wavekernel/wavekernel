@@ -1,3 +1,8 @@
+# Executable
+bin/
+src/elses
+src/elses-xml-selftest
+
 # Input Data
 sample/
 tool/band/samples/
