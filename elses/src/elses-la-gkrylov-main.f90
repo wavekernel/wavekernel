@@ -7,7 +7,7 @@ module M_la_gkrylov_main
   implicit none
 !
   private
-  public :: gkrylov_main
+  public :: gkrylov_main  ! OUTDATED ROUTINE
 !
   contains
 !
@@ -115,6 +115,9 @@ module M_la_gkrylov_main
     real(8) :: ddmax
 !
     character(len=72) :: msg
+!
+    write(*,*)'ERROR:Outdated routine is called :gkrylov_main'
+    stop
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Initial procedure

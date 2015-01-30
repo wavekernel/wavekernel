@@ -841,8 +841,18 @@ module M_la_gkrylov_main_dstm
 !
       do j=1,m_int
         jjk=interaction_list(j)
-         dm_wrk(j,1) = dot_product( u_hst(jjk,:),  den_mat_kr_b(:) )
-         dm_wrk(j,2) = dot_product( u_hst(jjk,:), eden_mat_kr_b(:) )
+!       if (size(u_hst,2) /= size(den_mat_kr_b, 1)) then
+!          write(*,*)'ERROR(qm_solver_gkrylov_dst):Unmatched array size:u_hst, dens_mat_kr_b=', & 
+!&              size(u_hst,2), size(den_mat_kr_b, 1)
+!         stop
+!        endif
+!        if (size(u_hst,2) /= size(eden_mat_kr_b, 1)) then
+!         write(*,*)'ERROR(qm_solver_gkrylov_dst):Unmatched array size:u_hst, edens_mat_kr_b=', & 
+!&             size(u_hst,2), size(eden_mat_kr_b, 1)
+!        stop
+!        endif
+         dm_wrk(j,1) = dot_product( u_hst(jjk,1:kr_dim_max),  den_mat_kr_b(1:kr_dim_max) )
+         dm_wrk(j,2) = dot_product( u_hst(jjk,1:kr_dim_max), eden_mat_kr_b(1:kr_dim_max) )
       enddo
 !   
 !     call convert_dm_and_edm(atm_index,orb_index,dm_loc,edm_loc,jsv4jsk,jsk4jsv,jjkset)

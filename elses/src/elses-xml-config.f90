@@ -1154,10 +1154,11 @@ contains
     type(fnode), pointer :: calc_node
     type(fnode), pointer :: output_node
 
-!   integer              :: i
+    integer              :: ierr
     character(len=256)   :: value
     logical              :: ex
     integer              :: i_verbose, log_unit
+    real(8), parameter   :: elses_xml_version_current=5.01d0
 !
     i_verbose=config%option%verbose
     log_unit=config%calc%distributed%log_unit
@@ -1190,12 +1191,31 @@ contains
     config%name = value
     if (log_unit > 0) write(log_unit,'(a,a)')'INFO-XML:config name=',trim(config%name)
 
+    ! get elses_xml_version attribute
+    value = getAttribute(config_node,"elses_xml_version")
+    if ( value == "" ) then
+      config%elses_xml_version=1.0d0
+    else
+      if ( value == "current" ) then
+        config%elses_xml_version=elses_xml_version_current
+        if (log_unit > 0) write(log_unit,'(a)')'INFO-XML:ELSES XML version= (current)'
+      else
+        read(unit=value,fmt=*,iostat=ierr) config%elses_xml_version
+        if ( ierr /= 0 ) then
+          if (log_unit > 0) write(log_unit,'(a,a)')'ERROR-XML(elses_xml_version):',trim(value)
+          write(*,'(a,a)')'ERROR-XML(elses_xml_version):',trim(value)
+          stop
+        endif
+      endif
+    endif
+    if (log_unit > 0) write(log_unit,'(a,f10.4)')'INFO-XML:ELSES XML version=',config%elses_xml_version
+
     ! get <system> node
     system_node => getFirstElementByTagName(config_node,"system")
     if( .not. associated(system_node) ) then
        call XML_error("<system> not found")
     else
-       call system_load( config%system, system_node )
+       call system_load( config%system, system_node, config%elses_xml_version )
     end if
 
     ! get <calc> node
@@ -1227,11 +1247,13 @@ contains
 
   ! parse <system> node
   !! Copyright (C) ELSES. 2007-2015 all rights reserved
-  subroutine system_load( system, system_node )
+  subroutine system_load( system, system_node, elses_xml_version )
     use M_sax_parser,      only : struc_load_sax
     implicit none
     type(system_type), intent(out) :: system
     type(fnode), pointer :: system_node
+    real(8),           intent(in)  :: elses_xml_version
+
 
     type(fnodeList), pointer :: vtarget_node
     type(fnodeList), pointer :: velement_node
@@ -1419,9 +1441,16 @@ contains
     ! get <boundary> node
     node => getFirstElementByTagName(system_node,"boundary")
     if( .not. associated(node) ) then
-       system%boundary%periodic_x = .true.
-       system%boundary%periodic_y = .true.
-       system%boundary%periodic_z = .true.
+       if (elses_xml_version+1.0d-6 > 5.01d0) then 
+         if (log_unit >  0) write(log_unit, '(a)') 'ERROR in config XML file: boundary tag missing'
+         write(*,*) 'ERROR in config XML file: boundary tag missing'
+         stop
+       else
+         system%boundary%periodic_x = .true.
+         system%boundary%periodic_y = .true.
+         system%boundary%periodic_z = .true.
+         if (log_unit >  0) write(log_unit, '(a)') 'WARNING-XML: boundary tag missing. Periodic boundary condition is assumed'
+       endif
     else
        value = getAttribute(node,"x")
        if( value == "nonperiodic" ) then

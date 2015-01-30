@@ -56,6 +56,8 @@ module M_qm_engine
      use M_qm_output_matrices,  only : output_levels_matrices !(subroutine)
      use M_output_eigenstates,  only : output_eigenstates     !(subroutine)
 !
+     use M_ext_test_qd,         only : test_for_quantum_dynamics !(subroutine)
+!
      implicit none
 !    real(DOUBLE_PRECISION) :: dq, dq_1, x, mix_r
      integer :: ierr, n_csc_loop
@@ -137,6 +139,7 @@ module M_qm_engine
          call output_levels_matrices
 !           ---> Plot the levels and matrices (dhij, dsij)
          call output_eigenstates('output_basis_information.txt', .true.)
+!        call test_for_quantum_dynamics ! ADDED FOR EXPERIMENTAL QD CALCULATION (2015.1.17)
          write(*,'(a)')'.... ELSES ended in the matrix_generation mode.'
          stop
        endif   

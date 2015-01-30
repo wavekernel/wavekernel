@@ -10,14 +10,14 @@ module M_qm_solver_gkrylov
   private
 !
 ! Public routines
-  public qm_solver_gkrylov
+  public qm_solver_gkrylov ! OUTDATED ROUTINE (to be delted) 
 !
   contains
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  subroutine qm_solver_gkrylov(scheme_mode)
+  subroutine qm_solver_gkrylov(scheme_mode)  ! OUTDATED ROUTINE (to be delted)
 !
     use M_config,           only : config !(unchaged)
     use elses_mod_orb2,     only : js2j ! (unchanged)
@@ -73,7 +73,9 @@ module M_qm_solver_gkrylov
     real(8), allocatable :: u_b_hst_wrk(:)
     real(8), allocatable :: wt_kr_wrk(:)
     integer              :: kr_dim_max
-
+!
+    write(*,*)'ERROR:Outdated routine is called :qm_solver_gkrylov'
+    stop
 !
     if (i_verbose >= 1) then
       write(*,*)'@@ qm_solver_gkrylov:scheme mode=',trim(scheme_mode)
@@ -225,8 +227,9 @@ module M_qm_solver_gkrylov
             wt_kr_wrk(1:kr_dim_max_input)=wt_kr(1:kr_dim_max_input,orb_index,atm_index)
             kr_dim_max=kr_dim_str(orb_index,atm_index)
           endif  
-          call gkrylov_main(j_src,b,jsv4jsk,jsk4jsv,jjkset,prc_index,scheme_mode, & 
-&                    s_inv_e_j_wrk,dm_wrk,u_hst_wrk, v_mat_kr, eig_wrk, u_b_hst_wrk, wt_kr_wrk, kr_dim_max)
+          write(*,*)' ERROR:OUTDATED routine is tried to be called: gkrylov_main '
+!         call gkrylov_main(j_src,b,jsv4jsk,jsk4jsv,jjkset,prc_index,scheme_mode, & 
+!&                    s_inv_e_j_wrk,dm_wrk,u_hst_wrk, v_mat_kr, eig_wrk, u_b_hst_wrk, wt_kr_wrk, kr_dim_max)
           if ((i_kr_hst_str == 1)  .and. (prc_index == 1)) then
             u_hst_str(1:m_int,1:kr_dim_max_input, orb_index, atm_index)=u_hst_wrk(1:m_int,1:kr_dim_max_input)
             eig_kr(1:kr_dim_max_input,orb_index,atm_index)=eig_wrk(1:kr_dim_max_input)

@@ -466,6 +466,7 @@ module M_config
      type(system_type)   :: system
      type(calc_type)     :: calc
      type(output_type)   :: output
+     real(8)             :: elses_xml_version
   end type config_type
 
   type(config_type)      :: config
