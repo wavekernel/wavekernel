@@ -119,6 +119,7 @@ program main
   times(3) = mpi_wtime()
 
   if (check_master()) then
+    print *, 'dim   : ', dim
     print *, 'setup : ', times(2) - times(1)
     print *, 'trans : ', times(3) - times(2)
   end if
