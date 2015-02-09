@@ -24,6 +24,7 @@
 !
       integer            :: nargc
       character*256      :: argv
+      real(8)            :: times(8)
 
 
 *-
@@ -298,7 +299,7 @@
          if ( new_comm /= MPI_COMM_NULL ) then
 *
          if ( msolver == 0 ) then
-         call eigen_sx( n, n, a, nm, w, z, nm,
+         call eigen_sx( n, n, a, nm, w, z, nm, times,
      &                  m_forward=m, m_backward=mb, mode=mode )
          else
          call eigen_s ( n, n, a, nm, w, z, nm,
@@ -428,4 +429,3 @@
 *----------------------------------------------------------------------
 *-
       end program EigenExa_benchmark
-

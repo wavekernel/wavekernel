@@ -1,7 +1,7 @@
        module eigen_libs
 !--
           use eigen_blacs, only :  eigen_get_blacs_context
-          implicit NONE   
+          implicit NONE
 
           character(32), private ::  CodeNAME = 'EigenExa'
           type version_t
@@ -11,14 +11,14 @@
              character(32) :: date      ! Release date
              character(32) :: vcode     ! Version code name
           end type  version_t
-          type(version_t), private  :: Eigen_Version 
+          type(version_t), private  :: Eigen_Version
      &       = version_t ( 2, 2, 2, 'Oct. 30,2014', 'Kiritsubo' )
 !--
           integer, parameter ::  eigen_NB    = 64
 !--
        interface
 !--
-          subroutine eigen_sx( n, nvec, a, lda, w, z, ldz,
+          subroutine eigen_sx( n, nvec, a, lda, w, z, ldz, times,
      &                         m_forward, m_backward, mode )
           integer, intent(in)    :: n, nvec, lda, ldz
             ! lda and ldz are the leading dimensions corresponding to
@@ -33,6 +33,7 @@
             ! = 'X' : mode 'A' + improve accuracy of eigenvalues
           real(8), intent(inout) :: a(1:lda, *)
           real(8), intent(out)   :: w(*), z(1:ldz, *)
+          real(8), intent(out)   :: times(8)
           end subroutine  eigen_sx
 !--
           subroutine eigen_s( n, nvec, a, lda, w, z, ldz,
@@ -738,4 +739,3 @@
        end function  machine_epsilon
 !--
        end module eigen_libs
-

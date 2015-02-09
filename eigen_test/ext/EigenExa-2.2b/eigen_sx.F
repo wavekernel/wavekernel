@@ -1,4 +1,4 @@
-         subroutine eigen_sx( n, nvec, a, lda, w, z, ldz,
+         subroutine eigen_sx( n, nvec, a, lda, w, z, ldz, times,
      &                        m_forward, m_backward, mode )
 !$       use OMP_LIB
          use MPI
@@ -10,6 +10,7 @@
          character, intent(in), optional :: mode
          real(8), intent(inout) :: a(lda,*)
          real(8), intent(out)   :: w(*), z(ldz,*)
+         real(8), intent(out)   :: times(8)
          real(8), pointer       :: d(:), e(:), e2(:)
 *-
          real(8)                :: hs0, hs1, s0, s1
@@ -68,6 +69,8 @@
 
 #if TIMER_PRINT
          s1 = eigen_get_wtime( )
+         times(1) = s1-s0
+         times(2) = 1D-9*ret_1/(s1-s0)
          if ( my_rank == 0 ) then
             print*,"TRD-BLK", n, s1-s0, 1D-9*ret_1/(s1-s0), "GFLOPS"
             print*,"TRD-BLK-INFO",n," ",m0
@@ -117,6 +120,8 @@
 
 #if TIMER_PRINT
          s1 = eigen_get_wtime( )
+         times(3) = s1-s0
+         times(4) = 1D-9*ret_2/(s1-s0)
          if ( my_rank == 0 ) then
             print*,"D&C", s1-s0, 1D-9*ret_2/(s1-s0), "GFLOPS"
 #if DEBUG
@@ -155,6 +160,8 @@
 
 #if TIMER_PRINT
          s1 = eigen_get_wtime( )
+         times(5) = s1-s0
+         times(6) = 1D-9*ret_3/(s1-s0)
          if ( my_rank == 0 ) then
             print*,"TRDBAK", n, s1-s0, 1D-9*ret_3/(s1-s0), "GFLOPS"
          end if
@@ -173,6 +180,8 @@
 #if TIMER_PRINT
          hs1 = eigen_get_wtime ( )
          ret = ret_1 + ret_2 + ret_3
+         times(7) = hs1-hs0
+         times(8) = 1D-9*ret/(hs1-hs0)
          if ( my_rank == 0 ) then
             print*,"Total", hs1-hs0, 1D-9*ret/(hs1-hs0), "GFLOPS"
          end if
@@ -197,4 +206,3 @@
 *-------------------------------------------------------------------
 *-
          end subroutine  eigen_sx
-
