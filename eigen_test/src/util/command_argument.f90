@@ -469,6 +469,26 @@ contains
     setting_elem%value_integer = arg%matrix_A_info%rows
     call fson_value_add(setting_in_fson, setting_elem)
 
+    ! Set solver.
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_OBJECT
+    call fson_set_name_to_val('solver', setting_elem)
+    call fson_set_val_as_string(arg%solver_type, setting_elem)
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    ! Set blocksize.
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_INTEGER
+    call fson_set_name_to_val('g_block_size', setting_elem)
+    setting_elem%value_integer = g_block_size
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_INTEGER
+    call fson_set_name_to_val('block_size', setting_elem)
+    setting_elem%value_integer = arg%block_size
+    call fson_value_add(setting_in_fson, setting_elem)
+
     call fson_value_add(output, setting_in_fson)
   end subroutine fson_setting_add
 end module command_argument
