@@ -40,7 +40,6 @@
             call eigen_scaling( n, a(1,1), lda, SIGMA )
 !         end if
 !         end if
-         print*,"Scaling factor = ",SIGMA
 *-
 *-------------------------------------------------------------------
 *-
@@ -48,6 +47,10 @@
 *-
          world_size = TRD_nnod
          my_rank    = TRD_inod-1
+
+         if (my_rank == 0) then
+            print*,"Scaling factor = ",SIGMA
+         end if
 *-
 *-------------------------------------------------------------------
 *-
