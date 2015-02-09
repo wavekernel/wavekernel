@@ -50,7 +50,7 @@ endif
 
 OBJS_UTIL_F77 = util/eigentest_pdlaprnt.o util/mmio.o
 
-OBJS_UTIL = util/time.o util/descriptor_parameters.o util/global_variables.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o util/event_logger.o util/fson.o util/modules.o
+OBJS_UTIL = util/descriptor_parameters.o util/global_variables.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o util/event_logger.o util/fson.o util/modules.o
 
 OBJS_LIB = $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_ELPA) $(OBJS_ELPA_EIGENEXA) $(OBJS_UTIL) $(OBJS_UTIL_F77)
 

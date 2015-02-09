@@ -12,7 +12,6 @@ module solver_elpa_eigenexa
   use matrix_io, only : sparse_mat
   use processes, only : check_master, setup_distribution, terminate
   use solver_eigenexa
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
   private

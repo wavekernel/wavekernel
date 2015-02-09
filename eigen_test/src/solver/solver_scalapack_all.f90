@@ -13,7 +13,6 @@ module solver_scalapack_all
   use generalized_to_standard, only : reduce_generalized, recovery_generalized
   use processes, only : check_master, process, terminate
   use matrix_io, only : sparse_mat
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
 
   private

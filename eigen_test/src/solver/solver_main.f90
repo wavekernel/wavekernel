@@ -11,7 +11,6 @@ module solver_main
   use global_variables, only : g_block_size
   use processes, only : process, setup_distribution, print_map_of_grid_to_processes, &
        check_master, terminate
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
 

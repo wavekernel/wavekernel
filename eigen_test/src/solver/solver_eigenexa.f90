@@ -8,7 +8,6 @@ module solver_eigenexa
   use generalized_to_standard, only : reduce_generalized, recovery_generalized
   use matrix_io, only : sparse_mat
   use processes, only : check_master, terminate, process
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
 

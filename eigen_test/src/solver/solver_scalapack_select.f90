@@ -9,7 +9,6 @@ module solver_scalapack_select
        get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
   use eigenpairs_types, only : eigenpairs_types_union
   use processes, only : process
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
 
   private
@@ -22,7 +21,7 @@ contains
     double precision, intent(in) :: A(:, :)
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
-    integer :: ierr, info
+    integer :: info
     integer :: dim, work_size, iwork_size
 
     double precision, allocatable :: work(:)
@@ -37,16 +36,16 @@ contains
     double precision :: abstol, orfac
 
     ! Time
-    integer, parameter :: n_intervals = 1
-    integer :: i, base_count
-    double precision :: t_intervals(n_intervals)
-    double precision :: t_all_end
-    character(*), parameter :: interval_names(n_intervals) = (/'total'/)
+    !integer, parameter :: n_intervals = 1
+    !integer :: i, base_count
+    !double precision :: t_intervals(n_intervals)
+    !double precision :: t_all_end
+    !character(*), parameter :: interval_names(n_intervals) = (/'total'/)
 
     ! Functions
     double precision :: pdlamch
 
-    call get_wall_clock_base_count(base_count)
+    !call get_wall_clock_base_count(base_count)
 
     eigenpairs%type_number = 2
 
@@ -82,19 +81,19 @@ contains
       end if
     end if
 
-    call get_wall_clock_time(base_count, t_all_end)
+    !all get_wall_clock_time(base_count, t_all_end)
 
-    t_intervals(1) = t_all_end
+    !t_intervals(1) = t_all_end
 
-    if (proc%my_rank == 0) then
-       call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-       print '("elapsed time (sec)")'
-       do i = 1, n_intervals
-         print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
-       end do
-    else
-       call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-    end if
+    !if (proc%my_rank == 0) then
+    !   call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+    !   print '("elapsed time (sec)")'
+    !   do i = 1, n_intervals
+    !     print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
+    !   end do
+    !else
+    !   call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+    !end if
   end subroutine eigen_solver_scalapack_select
 
 

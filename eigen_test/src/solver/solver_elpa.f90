@@ -10,7 +10,6 @@ module solver_elpa
   use event_logger_m, only : add_event
   use matrix_io, only : sparse_mat
   use processes, only : check_master, terminate
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
   private

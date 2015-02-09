@@ -3,7 +3,6 @@ module generalized_to_standard
   use descriptor_parameters
   use event_logger_m, only : add_event
   use processes, only : check_master, terminate
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
 
   private

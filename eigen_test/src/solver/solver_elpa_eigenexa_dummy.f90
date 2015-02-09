@@ -6,7 +6,6 @@ module solver_elpa_eigenexa
   use eigenpairs_types, only : eigenpairs_types_union
   use matrix_io, only : sparse_mat
   use processes, only : check_master, terminate
-  use time, only : get_wall_clock_base_count, get_wall_clock_time
 
   implicit none
   private
