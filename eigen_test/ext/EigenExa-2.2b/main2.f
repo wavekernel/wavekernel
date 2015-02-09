@@ -302,7 +302,7 @@
          call eigen_sx( n, n, a, nm, w, z, nm, times,
      &                  m_forward=m, m_backward=mb, mode=mode )
          else
-         call eigen_s ( n, n, a, nm, w, z, nm,
+         call eigen_s ( n, n, a, nm, w, z, nm, times,
      &                  m_forward=m, m_backward=mb, mode=mode )
          end if
          flops = a(1, 1)

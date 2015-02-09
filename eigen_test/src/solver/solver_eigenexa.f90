@@ -138,7 +138,7 @@ contains
 
     integer :: i, dim, nx, ny, my_rank, ierr
     integer, parameter :: m_forward = 48, m_backward = 128
-    double precision :: time_start, time_start_part, time_end
+    double precision :: time_start, time_start_part, time_end, eigen_times(8)
 
     time_start = mpi_wtime()
     time_start_part = time_start
@@ -176,8 +176,16 @@ contains
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
 
     call eigen_s(dim, dim, mat, nx, &
-         eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
+         eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, eigen_times, &
          m_forward = m_forward, m_backward = m_backward)
+    call add_event('eigen_s:fwd', eigen_times(1))
+    call add_event('eigen_s:fwd_Gflops', eigen_times(2))
+    call add_event('eigen_s:dc', eigen_times(3))
+    call add_event('eigen_s:dc_Gflops', eigen_times(4))
+    call add_event('eigen_s:bak', eigen_times(5))
+    call add_event('eigen_s:bak_Gflops', eigen_times(6))
+    call add_event('eigen_s:total', eigen_times(7))
+    call add_event('eigen_s:total_Gflops', eigen_times(8))
 
     time_end = mpi_wtime()
     call add_event('eigen_solver_eigenk:eigen_s', time_end - time_start_part)

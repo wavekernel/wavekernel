@@ -36,7 +36,7 @@
           real(8), intent(out)   :: times(8)
           end subroutine  eigen_sx
 !--
-          subroutine eigen_s( n, nvec, a, lda, w, z, ldz,
+          subroutine eigen_s( n, nvec, a, lda, w, z, ldz, times,
      &                         m_forward, m_backward, mode )
           integer, intent(in)    :: n, nvec, lda, ldz
             ! lda and ldz are the leading dimensions corresponding to
@@ -51,6 +51,7 @@
             ! = 'X' : mode 'A' + improve accuracy of eigenvalues
           real(8), intent(inout) :: a(1:lda, *)
           real(8), intent(out)   :: w(*), z(1:ldz, *)
+          real(8), intent(out)   :: times(8)
           end subroutine  eigen_s
 !--
        end interface
