@@ -3,6 +3,7 @@ program eigen_test
   use fson
   use fson_value_m
   use fson_string_m
+  use distribute_matrix
   use event_logger_m
   use solver_main, only : eigen_solver
   use command_argument, only : argument, required_memory, &
@@ -48,12 +49,11 @@ program eigen_test
   call add_event('main:read_command_argument', time_end - time_start_part)
   time_start_part = time_end
 
-  call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
-  if (arg%is_generalized_problem) then
-    call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
-  end if
-
   if (check_master()) then
+    call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
+    if (arg%is_generalized_problem) then
+      call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
+    end if
     output => fson_value_create()
     output%value_type = TYPE_OBJECT
     call fson_setting_add(arg, output)
@@ -63,6 +63,11 @@ program eigen_test
     if (check_master()) print '(/, "dry run mode, exit")'
     call mpi_finalize(ierr)
     stop
+  end if
+
+  call bcast_sparse_matrix(0, arg%matrix_A_info, matrix_A)
+  if (arg%is_generalized_problem) then
+    call bcast_sparse_matrix(0, arg%matrix_B_info, matrix_B)
   end if
 
   time_end = mpi_wtime()

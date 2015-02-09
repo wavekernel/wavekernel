@@ -1,4 +1,5 @@
 module event_logger_m
+  use mpi
   use fson
   use fson_value_m
   use fson_string_m
@@ -23,7 +24,13 @@ contains
     real(8), intent(in) :: val
     type(event_t), pointer :: new_event, p
 
+    integer :: my_rank, ierr
     logical :: is_found
+
+    call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
+    if (my_rank == 0) then
+      write (0, *) '[Event] ', name, ',', val
+    end if
 
     is_found = .false.
     p => events

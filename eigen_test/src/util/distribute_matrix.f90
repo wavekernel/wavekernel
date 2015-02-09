@@ -1,5 +1,6 @@
 module distribute_matrix
   use mpi
+  use command_argument, only : matrix_info
   use descriptor_parameters
   use event_logger_m, only : add_event
   use global_variables, only : g_block_size
@@ -9,7 +10,8 @@ module distribute_matrix
 
   public :: get_local_cols, setup_distributed_matrix, &
        distribute_global_dense_matrix, distribute_global_sparse_matrix, &
-       convert_sparse_matrix_to_dense, gather_matrix, allgather_row_wise
+       convert_sparse_matrix_to_dense, gather_matrix, allgather_row_wise, &
+       bcast_sparse_matrix
 
 contains
 
@@ -320,4 +322,49 @@ contains
   time_end = mpi_wtime()
   call add_event('allgather_row_wise', time_end - time_start)
   end subroutine allgather_row_wise
+
+
+  subroutine bcast_sparse_matrix(root, mat_info, mat)
+    integer, intent(in) :: root
+    type(matrix_info), intent(inout) :: mat_info
+    type(sparse_mat), intent(inout) :: mat
+
+    integer :: my_rank, ierr
+    double precision :: time_start, time_start_part, time_end
+
+    time_start = mpi_wtime()
+    time_start_part = time_start
+
+    call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
+    call mpi_bcast(mat_info%rep, 10, mpi_character, root, mpi_comm_world, ierr)
+    call mpi_bcast(mat_info%field, 7, mpi_character, root, mpi_comm_world, ierr)
+    call mpi_bcast(mat_info%symm, 19, mpi_character, root, mpi_comm_world, ierr)
+    call mpi_bcast(mat_info%rows, 1, mpi_integer, root, mpi_comm_world, ierr)
+    call mpi_bcast(mat_info%cols, 1, mpi_integer, root, mpi_comm_world, ierr)
+    call mpi_bcast(mat_info%entries, 1, mpi_integer, root, mpi_comm_world, ierr)
+    call mpi_bcast(mat%size, 1, mpi_integer, root, mpi_comm_world, ierr)
+    call mpi_bcast(mat%num_non_zeros, 1, mpi_integer, root, mpi_comm_world, ierr)
+    if (my_rank /= root) then
+      allocate(mat%suffix(2, mat_info%entries), mat%value(mat_info%entries), stat=ierr)
+      if (ierr /= 0) then
+        call terminate('bcast_sparse_matrix: allocation failed', ierr)
+      end if
+    end if
+
+    time_end = mpi_wtime()
+    call add_event('bcast_sparse_matrix:bcast_aux', time_end - time_start_part)
+    time_start_part = time_end
+
+    call mpi_bcast(mat%suffix, 2 * mat_info%entries, mpi_integer, root, mpi_comm_world, ierr)
+
+    time_end = mpi_wtime()
+    call add_event('bcast_sparse_matrix:bcast_suffix', time_end - time_start_part)
+    time_start_part = time_end
+
+    call mpi_bcast(mat%value, mat_info%entries, mpi_double_precision, root, mpi_comm_world, ierr)
+
+    time_end = mpi_wtime()
+    call add_event('bcast_sparse_matrix:bcast_value', time_end - time_start_part)
+    call add_event('bcast_sparse_matrix:total', time_end - time_start)
+  end subroutine bcast_sparse_matrix
 end module distribute_matrix
