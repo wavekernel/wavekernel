@@ -1,3 +1,6 @@
+# Intermediate
+*.lst
+
 # Executable
 bin/
 src/elses
