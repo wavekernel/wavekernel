@@ -1,5 +1,6 @@
 module processes
   use mpi
+  use event_logger_m
   implicit none
 
   type process
@@ -123,6 +124,11 @@ contains
     integer, intent(in) :: error_code
 
     integer :: ierr
+
+    ! Print events before exit.
+    if (check_master()) then
+      call print_events()
+    end if
 
     if (error_code == 0) then
       write (0, '("[Info] ", a)') error_message
