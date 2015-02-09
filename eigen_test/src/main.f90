@@ -6,7 +6,7 @@ program eigen_test
   use event_logger_m
   use solver_main, only : eigen_solver
   use command_argument, only : argument, required_memory, &
-       read_command_argument, print_command_argument
+       read_command_argument, print_command_argument, fson_setting_add
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
   use time, only : get_wall_clock_base_count, get_wall_clock_time
   use processes, only : get_num_procs, check_master
@@ -51,6 +51,12 @@ program eigen_test
   call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
   if (arg%is_generalized_problem) then
     call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
+  end if
+
+  if (is_master) then
+    output => fson_value_create()
+    output%value_type = TYPE_OBJECT
+    call fson_setting_add(arg, output)
   end if
 
   if (arg%is_dry_run) then
@@ -117,8 +123,6 @@ program eigen_test
     print '("whole execution time (sec): ", f12.2)', t_end
     print *
 
-    output => fson_value_create()
-    output%value_type = TYPE_OBJECT
     call fson_events_add(output)
     open(iunit, file=trim(arg%log_filename), status='unknown')
     call fson_print(iunit, output)

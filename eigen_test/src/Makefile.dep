@@ -1,4 +1,4 @@
-./util/command_argument.o : ./util/processes.o
+./util/command_argument.o : ./util/processes.o ./util/global_variables.o ./util/fson.o ./util/fson.o ./util/fson.o
 ./util/matrix_io.o : ./util/processes.o ./util/eigenpairs_types.o ./util/event_logger.o ./util/command_argument.o
 ./util/modules.o : ./solver/verifier.o ./solver/solver_scalapack_select.o ./solver/solver_scalapack_all.o ./solver/solver_lapack.o ./solver/solver_elpa_eigenexa.o ./solver/solver_elpa.o ./solver/solver_eigenexa.o ./util/processes.o ./solver/generalized_to_standard.o ./util/eigenpairs_types.o ./util/distribute_matrix.o
 ./util/processes.o :

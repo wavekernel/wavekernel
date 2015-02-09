@@ -24,7 +24,7 @@ contains
 
     double precision :: time_start, time_start_part, time_end
     integer, parameter :: iunit = 8
-    integer :: ierr
+    integer :: rows, cols, num_non_zeros, ierr
 
     time_start = mpi_wtime()
     time_start_part = time_start
@@ -47,7 +47,7 @@ contains
 
     open(iunit, file = filename)
     ! read_matrix_file_header is added to skip comment lines
-    call read_matrix_file_header(iunit)
+    call read_matrix_file_header(iunit, rows, cols, num_non_zeros)
 
     time_end = mpi_wtime()
     call add_event('read_matrix_file:header', time_end - time_start_part)
@@ -63,10 +63,10 @@ contains
   end subroutine read_matrix_file
 
 
-  subroutine read_matrix_file_header(unit_num)
+  subroutine read_matrix_file_header(unit_num, rows, cols, num_non_zeros)
     integer, intent(in) :: unit_num
 
-    integer :: ierr, mat_size, mat_size2, num_non_zeros
+    integer :: ierr, rows, cols, num_non_zeros
     character(len=1024) :: chara_wrk
 
     ! Read the first line
@@ -78,7 +78,7 @@ contains
       if (index(chara_wrk, '%') /= 1) exit
     enddo
 
-    read (chara_wrk, *, iostat = ierr) mat_size, mat_size2, num_non_zeros
+    read (chara_wrk, *, iostat = ierr) rows, cols, num_non_zeros
   end subroutine read_matrix_file_header
 
 

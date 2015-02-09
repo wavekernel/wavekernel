@@ -1,4 +1,8 @@
 module command_argument
+  use fson
+  use fson_value_m
+  use fson_string_m
+  use global_variables
   use processes, only : check_master, terminate
   implicit none
 
@@ -36,7 +40,7 @@ module command_argument
 
   private
   public :: matrix_info, argument, required_memory, &
-       read_command_argument, print_command_argument
+       read_command_argument, print_command_argument, fson_setting_add
 
 contains
 
@@ -400,4 +404,69 @@ contains
     print '("verified eigenpairs: ", i0)', arg%n_check_vec
     print '("log output file: ", a)', trim(arg%log_filename)
   end subroutine print_command_argument
+
+
+  subroutine fson_setting_add(arg, output)
+    type(argument), intent(in) :: arg
+    type(fson_value), pointer, intent(inout) :: output
+
+    type(fson_value), pointer :: setting_in_fson, setting_elem
+    type(fson_string), pointer :: str
+    character(len=1024) :: argv
+    integer :: index_arg
+
+    setting_in_fson => fson_value_create()
+    setting_in_fson%value_type = TYPE_OBJECT
+    call fson_set_name_to_val('setting', setting_in_fson)
+
+    ! Set version.
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_OBJECT
+    call fson_set_name_to_val('version', setting_elem)
+    call fson_set_val_as_string(g_version, setting_elem)
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    ! Set command.
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_STRING
+    call fson_set_name_to_val('command', setting_elem)
+    str => fson_string_create()
+    do index_arg = 0, command_argument_count()
+      call getarg(index_arg, argv)
+      call fson_string_append(str, trim(argv))
+      if (index_arg < command_argument_count()) then
+        call fson_string_append(str, ' ')
+      end if
+    end do
+    setting_elem%value_string => str
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    ! Set file names.
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_OBJECT
+    call fson_set_name_to_val('matrix_A_filename', setting_elem)
+    call fson_set_val_as_string(trim(arg%matrix_A_filename), setting_elem)
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_OBJECT
+    call fson_set_name_to_val('matrix_B_filename', setting_elem)
+    call fson_set_val_as_string(trim(arg%matrix_B_filename), setting_elem)
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_OBJECT
+    call fson_set_name_to_val('log_filename', setting_elem)
+    call fson_set_val_as_string(trim(arg%log_filename), setting_elem)
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    ! Set dimension.
+    setting_elem => fson_value_create()
+    setting_elem%value_type = TYPE_INTEGER
+    call fson_set_name_to_val('dimension', setting_elem)
+    setting_elem%value_integer = arg%matrix_A_info%rows
+    call fson_value_add(setting_in_fson, setting_elem)
+
+    call fson_value_add(output, setting_in_fson)
+  end subroutine fson_setting_add
 end module command_argument
