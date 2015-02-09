@@ -25,11 +25,13 @@ contains
     type(event_t), pointer :: new_event, p
 
     integer :: my_rank, ierr
+    double precision :: t
     logical :: is_found
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
+    t = mpi_wtime()
     if (my_rank == 0) then
-      write (0, *) '[Event] ', name, ',', val
+      write (0, *) '[Event', t, '] ', name, ',', val
     end if
 
     is_found = .false.
