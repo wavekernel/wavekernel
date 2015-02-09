@@ -1,0 +1,21 @@
+# for gcc compiler
+FF             = mpif90 -ffixed-form
+FC             = mpif90 -ffixed-form
+CC             = mpicc
+AR             = ar
+SMPFLAG        = -fopenmp
+CCFLAG         = $(SMPFLAG) -O3
+CPPFLAG        =
+MACRO_D_PREFIX = -D
+INCFLAG        = -I./
+MODFLAG        = -J./
+
+# For the case that you are going to use Intel MKL library.
+# -lmkl_rt is available gcc4.4 or prior.
+# For gcc4.5.* or later version, appropriate libs for GNU-thread
+# are required.
+BLAS           = -lblas
+LAPACK         = -llapack
+SCALAPACK      = -lscalapack
+LDFLAG         = $(SMPFLAG) $(SCALAPACK) $(LAPACK) $(BLAS)
+TESTFLAG       =

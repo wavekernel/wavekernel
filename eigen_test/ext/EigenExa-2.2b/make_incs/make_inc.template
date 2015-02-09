@@ -1,0 +1,22 @@
+# Template
+FF             =  {MPI Fortran compiler, ex. mpif90}
+FC             =  {MPI Fortran compiler, ex. mpif90}
+CC             =  {MPI C complier, ex. mpicc}
+AR             =  {ARchiver, ex. ar}
+SMPFLAG        =  {compiler option to activate OpenMP parallelization}
+CCFLAG         =  {compiler options to be passed, ex. -O3 $(SMPFLAG) }
+CPPFLAG        =  {compiler option to activate the C preprocessor}
+MACRO_D_PREFIX =  {prefix of compiler option for a Macro definition, ex. -D}
+INCFLAG        =  {complier options: include path, ex. -I/usr/local/include}
+MODFLAG        =  {compiler option: module path, if you need}
+BLAS           =  {Linker options: for BLAS, ex. -L/usr/local/lib -lblas }
+LAPACK         =  {Linker options: for LAPACK ex. -L/usr/local/lib -llapack}
+SCALAPACK      =  {Linker options: for the ScaLAPACK library}
+LDFLAG         =  $(SMPFLAG) $(SCALAPACK) $(LAPACK) $(BLAS) {add if you need}
+TESTFLAG       =  {other compiler options to the test programs}
+
+#SHARED         = "true" {This is the trigger to build a shared library}
+EXPORT_MAP     =  export.map
+SHARED_LDFLAG  = {Linker options: ex. -shared or -qmkshrobj}
+SHARED_LIBEIGEN_LDFLAG = {Linker options: for build a shared library}
+
