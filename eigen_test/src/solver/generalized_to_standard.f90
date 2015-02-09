@@ -1,5 +1,7 @@
 module generalized_to_standard
+  use mpi
   use descriptor_parameters
+  use event_logger_m, only : add_event
   use processes, only : check_master, terminate
   use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
@@ -10,17 +12,14 @@ module generalized_to_standard
 contains
 
   subroutine reduce_generalized(dim, A, desc_A, B, desc_B)
-    include 'mpif.h'
-
     integer, intent(in) :: dim, desc_A(9), desc_B(9)
     double precision, intent(inout) :: A(:, :), B(:, :)
-    integer :: base_count
 
-    integer :: info, ierr
-    double precision :: scale, work_pdlaprnt(desc_B(block_row_)), times(3)
+    integer :: info
+    double precision :: scale, work_pdlaprnt(desc_B(block_row_))
+    double precision :: time_start, time_end
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(1) = mpi_wtime()
+    time_start = mpi_wtime()
 
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
@@ -35,8 +34,9 @@ contains
       call terminate('reduce_generalized: pdpotrf failed', info)
     end if
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(2) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('reduce_generalized:pdpotrf', time_end - time_start)
+    time_start = time_end
 
     ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
     call pdsygst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, info)
@@ -45,13 +45,9 @@ contains
       call terminate('reduce_generalized: pdsygst failed', info)
     end if
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(3) = mpi_wtime()
-
-    if (check_master()) then
-      print *, '  reduce_generalized pdpotrf: ', times(2) - times(1)
-      print *, '  reduce_generalized pdsygst: ', times(3) - times(2)
-    end if
+    time_end = mpi_wtime()
+    call add_event('reduce_generalized:pdsygst', time_end - time_start)
+    time_start = time_end
   end subroutine reduce_generalized
 
 
@@ -60,7 +56,10 @@ contains
     double precision, intent(in) :: B(:, :)
     double precision, intent(inout) :: Vectors(:, :)
 
+    double precision :: time_start, time_end
     integer :: info
+
+    time_start = mpi_wtime()
 
     ! Recovery eigenvectors by V <- L'^(-1) * V
     call pdtrtrs('L', 'T', 'N', dim, n_vec, B, 1, 1, desc_B, &
@@ -69,5 +68,8 @@ contains
       if (check_master()) print '("info(pdtrtrs): ", i0)', info
       call terminate('reduce_generalized: pdtrtrs failed', info)
     end if
+
+    time_end = mpi_wtime()
+    call add_event('recovery_generalized:pdtrtrs', time_end - time_start)
   end subroutine recovery_generalized
 end module generalized_to_standard

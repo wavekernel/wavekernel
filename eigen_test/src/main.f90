@@ -1,4 +1,9 @@
 program eigen_test
+  use mpi
+  use fson
+  use fson_value_m
+  use fson_string_m
+  use event_logger_m
   use solver_main, only : eigen_solver
   use command_argument, only : argument, required_memory, &
        read_command_argument, print_command_argument
@@ -9,8 +14,6 @@ program eigen_test
   use verifier, only : eval_residual_norm, eval_orthogonality
   implicit none
 
-  include 'mpif.h'
-
   type(argument) :: arg
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
@@ -20,6 +23,7 @@ program eigen_test
   logical :: is_master
   integer :: base_count
   double precision :: t_end
+  type(fson_value), pointer :: output
 
   call get_wall_clock_base_count(base_count)
 
@@ -112,6 +116,13 @@ program eigen_test
     call get_wall_clock_time(base_count, t_end)
     print '("whole execution time (sec): ", f12.2)', t_end
     print *
+
+    output => fson_value_create()
+    output%value_type = TYPE_OBJECT
+    call fson_events_add(output)
+    open(iunit, file=trim(arg%log_filename), status='unknown')
+    call fson_print(iunit, output)
+    close(iunit)
   end if
 
   call mpi_finalize(ierr)

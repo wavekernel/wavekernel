@@ -13,6 +13,7 @@ module command_argument
   type argument
     character(len=256) :: matrix_A_filename = ''
     character(len=256) :: matrix_B_filename = '' ! Empty means standard eigenvalue problem
+    character(len=256) :: log_filename = 'log.json'
     type(matrix_info) :: matrix_A_info, matrix_B_info
     character(len=256) :: solver_type
     character(len=256) :: output_filename = 'eigenvalues.dat'
@@ -57,6 +58,7 @@ contains
       print *, '  -p <num>  Specify the number of eigenvector to be output'
       print *, '  -p <num1>,<num2>  Specify range of the number of eigenvectors to be output'
       print *, '  -t <num1>,<num2>  Consider eigenvectors indexed <num1> to <num2>(included) in orthogonality checking'
+      print *, '  -l <file>  Set output file name for elapse time log to <file>'
       print *, '  -h  Print this help and exit'
       print *, '  --dry-run  Read command arguments and matrix files and instantly exit'
       print *, '  --print-grid-mapping  Print which process is assigned to each coordinate in BLACS grid'
@@ -301,6 +303,10 @@ contains
           argi = argi + 1
         case ('v')
           arg%verbose_level = 1
+        case ('l')
+          call get_command_argument(argi + 1, arg_str)
+          arg%log_filename = trim(arg_str)
+          argi = argi + 1
         case ('h')
           call print_help()
           call terminate('read_command_argument: help printed', 0)
@@ -392,5 +398,6 @@ contains
     print '("eigenvalues output file: ", a)', trim(arg%output_filename)
     print '("required eigenpairs: ", i0)', arg%n_vec
     print '("verified eigenpairs: ", i0)', arg%n_check_vec
+    print '("log output file: ", a)', trim(arg%log_filename)
   end subroutine print_command_argument
 end module command_argument

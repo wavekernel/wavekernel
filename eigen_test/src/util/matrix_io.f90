@@ -1,5 +1,7 @@
 module matrix_io
+  use mpi
   use command_argument, only : argument, matrix_info
+  use event_logger_m, only : add_event
   use eigenpairs_types, only : eigenpairs_types_union
   use processes, only : check_master, terminate
   implicit none
@@ -20,8 +22,12 @@ contains
     type(matrix_info), intent(in) :: info
     type(sparse_mat), intent(out) :: matrix
 
+    double precision :: time_start, time_start_part, time_end
     integer, parameter :: iunit = 8
     integer :: ierr
+
+    time_start = mpi_wtime()
+    time_start_part = time_start
 
     if (check_master()) then
       print '("start reading matrix file ", a)', trim(filename)
@@ -35,14 +41,25 @@ contains
       call terminate('read_matrix_file: allocation failed', ierr)
     end if
 
-    open(iunit, file = filename)
+    time_end = mpi_wtime()
+    call add_event('read_matrix_file:allocate', time_end - time_start_part)
+    time_start_part = time_end
 
+    open(iunit, file = filename)
     ! read_matrix_file_header is added to skip comment lines
     call read_matrix_file_header(iunit)
+
+    time_end = mpi_wtime()
+    call add_event('read_matrix_file:header', time_end - time_start_part)
+    time_start_part = time_end
+
     call read_matrix_file_value(0, iunit, info%rows, &
          info%entries, matrix%value, matrix%suffix)
-
     close(iunit)
+
+    time_end = mpi_wtime()
+    call add_event('read_matrix_file:value', time_end - time_start_part)
+    call add_event('read_matrix_file:total', time_end - time_start)
   end subroutine read_matrix_file
 
 
@@ -117,7 +134,11 @@ contains
   subroutine print_matrix(name, mat, m, n)
     character(*), intent(in) :: name
     double precision, intent(in) :: mat(:, :)
+
     integer :: i, j, m, n
+    double precision :: time_start, time_end
+
+    time_start = mpi_wtime()
 
     if (m < 0) then
        m = size(mat, 1)
@@ -130,19 +151,22 @@ contains
           print ' (A, "(", I6, ",", I6, ")=", D30.18) ', name, i, j, mat(i, j)
        end do
     end do
+
+    time_end = mpi_wtime()
+    call add_event('print_matrix', time_end - time_start)
   end subroutine print_matrix
 
 
   subroutine print_eigenvectors(arg, eigenpairs)
-    include 'mpif.h'
-
     type(argument) :: arg
     type(eigenpairs_types_union) :: eigenpairs
 
-    double precision :: work(arg%matrix_A_info%rows)
+    double precision :: work(arg%matrix_A_info%rows), time_start, time_end
     integer :: max_num_digits, len, i, digit, stat, err
     character(512) :: num_str, filename
     integer, parameter :: iunit = 10
+
+    time_start = mpi_wtime()
 
     if (eigenpairs%type_number == 1) then
       stop '[Error] print_eigenvectors: printer for a local matrix not implemented yet'
@@ -176,5 +200,8 @@ contains
         end if
       end do
     end if
+
+    time_end = mpi_wtime()
+    call add_event('print_eigenvectors', time_end - time_start)
   end subroutine print_eigenvectors
 end module matrix_io

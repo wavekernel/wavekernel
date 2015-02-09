@@ -1,4 +1,5 @@
 module processes
+  use mpi
   implicit none
 
   type process
@@ -36,7 +37,6 @@ contains
 
   subroutine get_num_procs(num_mpi_procs, num_omp_procs)
     !$ use omp_lib
-    include 'mpif.h'
 
     integer, intent(out) :: num_mpi_procs, num_omp_procs
 
@@ -80,15 +80,16 @@ contains
 
 
   subroutine print_map_of_grid_to_processes()
-    include 'mpif.h'
-
     integer :: context, num_procs_row, num_procs_col, proc_row, proc_col
-    integer :: my_rank
+    integer :: my_rank, ierr
     integer, allocatable :: map(:, :)
 
     call blacs_get(-1, 0, context) ! Get default system context
 
-    call mpi_comm_rank(mpi_comm_world, my_rank)
+    call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
+    if (ierr /= 0) then
+      call terminate('print_map_of_grid_to_processes: mpi_comm_rank failed', ierr)
+    end if
     if (my_rank /= 0) return
 
     call blacs_gridinfo(context, num_procs_row, num_procs_col, proc_row, proc_col)
@@ -106,8 +107,6 @@ contains
 
 
   logical function check_master()
-    include 'mpif.h'
-
     integer :: my_rank, ierr
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
@@ -120,16 +119,16 @@ contains
 
 
   subroutine terminate(error_message, error_code)
-    include 'mpif.h'
-
     character(*), intent(in) :: error_message
     integer, intent(in) :: error_code
+
+    integer :: ierr
 
     if (error_code == 0) then
       write (0, '("[Info] ", a)') error_message
     else
       write (0, '("[Error] ", a)') error_message
     end if
-    call mpi_abort(mpi_comm_world, error_code)
+    call mpi_abort(mpi_comm_world, error_code, ierr)
   end subroutine terminate
 end module processes

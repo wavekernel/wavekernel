@@ -1,9 +1,10 @@
 module solver_eigenexa
   use eigen_libs
-
+  use mpi
   use distribute_matrix, only : process
   use descriptor_parameters
   use eigenpairs_types, only : eigenpairs_types_union
+  use event_logger_m, only : add_event
   use matrix_io, only : sparse_mat
   use processes, only : check_master, terminate
   use time, only : get_wall_clock_base_count, get_wall_clock_time
@@ -22,6 +23,9 @@ contains
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: nx, ny, context, info
+    double precision :: time_start, time_end
+
+    time_start = mpi_wtime()
 
     if (check_master()) then
       print '( "Creating 2 distributed matrices for EigenExa with &
@@ -50,6 +54,9 @@ contains
 
     matrix_A(:, :) = 0.0d0
     eigenpairs%blacs%Vectors(:, :) = 0.0d0
+
+    time_end = mpi_wtime()
+    call add_event('setup_distributed_matrix_for_eigenexa', time_end - time_start)
   end subroutine setup_distributed_matrix_for_eigenexa
 
 
@@ -58,26 +65,17 @@ contains
   !       If not present, it is assumed that both of upper and lower
   !       triangular parts are stored.
   subroutine eigen_solver_eigenexa(mat, desc_mat, n_vec, eigenpairs, uplo)
-    include 'mpif.h'
-
     double precision, intent(inout) :: mat(:, :)
     integer, intent(in) :: desc_mat(desc_size), n_vec
     type(eigenpairs_types_union), intent(inout) :: eigenpairs
     character, intent(in), optional :: uplo
 
-    integer :: dim, nx, ny, my_rank, ierr
+    integer :: i, dim, nx, ny, my_rank, ierr
     integer, parameter :: m_forward = 48, m_backward = 128
+    double precision :: time_start, time_start_part, time_end
 
-    ! Time
-    integer, parameter :: n_intervals = 1
-    integer :: i, base_count
-    double precision :: t_intervals(n_intervals)
-    double precision :: t_all_end
-    character(*), parameter :: interval_names(n_intervals) = (/'total'/)
-    double precision :: times(3)
-
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(1) = mpi_wtime()
+    time_start = mpi_wtime()
+    time_start_part = time_start
 
     dim = desc_mat(rows_)
     if (dim /= n_vec) then
@@ -103,8 +101,9 @@ contains
       end if
     end if
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(2) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_eigenexa:transpose', time_end - time_start_part)
+    time_start_part = time_end
 
     call eigen_get_matdims(dim, nx, ny)
 
@@ -114,37 +113,24 @@ contains
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
          m_forward = m_forward, m_backward = m_backward)
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(3) = mpi_wtime()
-
-    if (my_rank == 0) then
-      print *, 'eigen_solver_eigenexa pdcopy   : ', times(2) - times(1)
-      print *, 'eigen_solver_eigenexa eigen_sx : ', times(3) - times(2)
-    end if
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_eigenexa:eigen_sx', time_end - time_start_part)
+    call add_event('eigen_solver_eigenexa:total', time_end - time_start_part)
   end subroutine eigen_solver_eigenexa
 
 
   subroutine eigen_solver_eigenk(mat, desc_mat, n_vec, eigenpairs, uplo)
-    include 'mpif.h'
-
     double precision, intent(inout) :: mat(:, :)
     integer, intent(in) :: desc_mat(desc_size), n_vec
     type(eigenpairs_types_union), intent(inout) :: eigenpairs
     character, intent(in), optional :: uplo
 
-    integer :: dim, nx, ny, my_rank, ierr
+    integer :: i, dim, nx, ny, my_rank, ierr
     integer, parameter :: m_forward = 48, m_backward = 128
+    double precision :: time_start, time_start_part, time_end
 
-    ! Time
-    integer, parameter :: n_intervals = 1
-    integer :: i, base_count
-    double precision :: t_intervals(n_intervals)
-    double precision :: t_all_end
-    character(*), parameter :: interval_names(n_intervals) = (/'total'/)
-    double precision :: times(3)
-
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(1) = mpi_wtime()
+    time_start = mpi_wtime()
+    time_start_part = time_start
 
     dim = desc_mat(rows_)
     if (dim /= n_vec) then
@@ -170,8 +156,9 @@ contains
       end if
     end if
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(2) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_eigenk:transpose', time_end - time_start_part)
+    time_start_part = time_end
 
     call eigen_get_matdims(dim, nx, ny)
 
@@ -181,12 +168,8 @@ contains
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
          m_forward = m_forward, m_backward = m_backward)
 
-    call mpi_barrier(mpi_comm_world, ierr)
-    times(3) = mpi_wtime()
-
-    if (my_rank == 0) then
-      print *, 'eigen_solver_eigenk pdcopy  : ', times(2) - times(1)
-      print *, 'eigen_solver_eigenk eigen_s : ', times(3) - times(2)
-    end if
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_eigenk:eigen_s', time_end - time_start_part)
+    call add_event('eigen_solver_eigenk:total', time_end - time_start)
   end subroutine eigen_solver_eigenk
 end module solver_eigenexa

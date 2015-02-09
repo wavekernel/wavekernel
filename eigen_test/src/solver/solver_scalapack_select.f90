@@ -3,6 +3,7 @@
 ! Copyright (C) ELSES. 2007-2011 all rights reserved
 !================================================================
 module solver_scalapack_select
+  use mpi
   use descriptor_parameters
   use distribute_matrix, only : &
        get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
@@ -16,8 +17,6 @@ module solver_scalapack_select
 
 contains
   subroutine eigen_solver_scalapack_select(proc, desc_A, A, n_vec, eigenpairs)
-    include 'mpif.h'
-
     type(process) :: proc
     integer, intent(in) :: desc_A(9), n_vec
     double precision, intent(in) :: A(:, :)

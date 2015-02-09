@@ -1,5 +1,7 @@
 module distribute_matrix
+  use mpi
   use descriptor_parameters
+  use event_logger_m, only : add_event
   use global_variables, only : g_block_size
   use matrix_io, only : sparse_mat
   use processes, only : check_master, process, layout_procs, terminate
@@ -32,6 +34,9 @@ contains
 
     integer :: numroc
     integer :: max_block_size, actual_block_size, local_rows, info
+    double precision :: time_start, time_end
+
+    time_start = mpi_wtime()
 
     if (present(block_size)) then
       actual_block_size = block_size
@@ -72,6 +77,9 @@ contains
     end if
 
     mat(:, :) = 0.0d0
+
+    time_end = mpi_wtime()
+    call add_event('setup_distributed_matrix', time_end - time_start)
   end subroutine setup_distributed_matrix
 
 
@@ -82,6 +90,9 @@ contains
     double precision, intent(out), allocatable :: mat(:,:)
 
     integer :: k, i, j, n, ierr
+    double precision :: time_start, time_end
+
+    time_start = mpi_wtime()
 
     n = mat_in%size
 
@@ -100,6 +111,9 @@ contains
         mat(j, i) = mat_in%value(k)
       endif
     enddo
+
+    time_end = mpi_wtime()
+    call add_event('convert_sparse_matrix_to_dense', time_end - time_start)
   end subroutine convert_sparse_matrix_to_dense
 
 
@@ -116,8 +130,11 @@ contains
     integer :: m1_local, m2_local, m1_global, m2_global
     integer :: n1_local, n2_local, n1_global, n2_global
     integer :: ierr
+    double precision :: time_start, time_end
 
     integer :: numroc, iceil
+
+    time_start = mpi_wtime()
 
     m = desc(rows_)
     n = desc(cols_)
@@ -170,6 +187,9 @@ contains
           end if
        end do
     end do
+
+    time_end = mpi_wtime()
+    call add_event('gather_matrix', time_end - time_start)
   end subroutine gather_matrix
 
 
@@ -182,8 +202,11 @@ contains
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
     integer :: m_start, n_start, m_end, n_end, m_start_global, n_start_global
     integer :: i, j
+    double precision :: time_start, time_end
 
     integer :: iceil
+
+    time_start = mpi_wtime()
 
     m = desc(rows_)
     n = desc(cols_)
@@ -213,6 +236,9 @@ contains
                n_start_global : n_start_global + n_end - n_start)
        end do
     end do
+
+    time_end = mpi_wtime()
+    call add_event('distribute_global_dense_matrix', time_end - time_start)
   end subroutine distribute_global_dense_matrix
 
 
@@ -222,6 +248,9 @@ contains
     double precision, intent(out) :: mat(:,:)
 
     integer :: k, i, j
+    double precision :: time_start, time_end
+
+    time_start = mpi_wtime()
 
     do k = 1, mat_in%num_non_zeros
       i = mat_in%suffix(1, k)
@@ -231,6 +260,9 @@ contains
       call pdelset(mat, j, i, desc, mat_in%value(k))
       endif
     enddo
+
+    time_end = mpi_wtime()
+    call add_event('distribute_global_sparse_matrix', time_end - time_start)
   end subroutine distribute_global_sparse_matrix
 
 
@@ -249,8 +281,11 @@ contains
     integer :: n_global, n_local, max_buf_size, ierr
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, sender_proc_col
     integer :: block_, head_global, tail_global, head_local
+    double precision :: time_start, time_end
 
     integer :: numroc, iceil
+
+    time_start = mpi_wtime()
 
     call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
     n_global = size(array_global)
@@ -281,5 +316,8 @@ contains
              send_buf(head_local : head_local + tail_global - head_global)
       end do
     end do
+
+  time_end = mpi_wtime()
+  call add_event('allgather_row_wise', time_end - time_start)
   end subroutine allgather_row_wise
 end module distribute_matrix

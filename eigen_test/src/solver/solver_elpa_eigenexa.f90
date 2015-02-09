@@ -2,12 +2,13 @@ module solver_elpa_eigenexa
   use eigen_libs
   use ELPA1
   use ELPA2
-
+  use mpi
   use global_variables, only : g_block_size
   use distribute_matrix, only : process, setup_distributed_matrix, &
        gather_matrix, distribute_global_sparse_matrix
   use descriptor_parameters
   use eigenpairs_types, only : eigenpairs_types_union
+  use event_logger_m, only : add_event
   use matrix_io, only : sparse_mat
   use processes, only : check_master, setup_distribution, terminate
   use solver_eigenexa
@@ -34,13 +35,13 @@ contains
     logical :: success
     type(eigenpairs_types_union) :: eigenpairs_tmp
 
-    double precision :: times(10)
+    double precision :: time_start, time_start_part, time_end
     double precision, allocatable :: matrix_A_dist(:, :), matrix_A2_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
     integer :: numroc
-    include 'mpif.h'
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(1) = mpi_wtime()
+    time_start = mpi_wtime()
+    time_start_part = time_start
+
     call mpi_comm_rank(mpi_comm_world, myid, mpierr)
     call blacs_gridinfo(proc%context, np_rows, np_cols, my_prow, my_pcol)
     call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
@@ -58,8 +59,9 @@ contains
     call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(2) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:init', time_end - time_start_part)
+    time_start_part = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
     call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
@@ -67,8 +69,9 @@ contains
       call terminate('solver_main, general_elpa_eigenexa: cholesky_real failed', 1)
     end if
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(3) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:cholesky_real', time_end - time_start_part)
+    time_start_part = time_end
 
     call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
     ! invert_trm_real always returns fail
@@ -79,8 +82,9 @@ contains
     !  stop
     !end if
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(4) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:invert_trm_real', time_end - time_start_part)
+    time_start_part = time_end
 
     ! Reduce A as U^-T A U^-1
     ! A <- U^-T A
@@ -93,27 +97,31 @@ contains
          block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
     deallocate(matrix_A2_dist)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(5) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:mult_at_b_real', time_end - time_start_part)
+    time_start_part = time_end
 
     ! A <- A U^-1
     call pdtrmm('Right', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
          matrix_B_dist, 1, 1, sc_desc, matrix_A_dist, 1, 1, sc_desc)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(6) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:pdtrmm_right', time_end - time_start_part)
+    time_start_part = time_end
 
     call setup_distributed_matrix_for_eigenexa(n, desc_A_re, matrix_A_redist, eigenpairs_tmp)
     call pdgemr2d(n, n, matrix_A_dist, 1, 1, desc_A, matrix_A_redist, 1, 1, desc_A_re, desc_A(context_))
     deallocate(matrix_A_dist)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(7) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:pdgemr2d_1', time_end - time_start_part)
+    time_start_part = time_end
 
     call eigen_solver_eigenexa(matrix_A_redist, desc_A_re, n, eigenpairs_tmp, 'L')
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(8) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:eigen_solver_eigenexa', time_end - time_start_part)
+    time_start_part = time_end
 
     deallocate(matrix_A_redist)
     eigenpairs%type_number = 2
@@ -129,28 +137,17 @@ contains
          eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
          eigenpairs_tmp%blacs%desc(context_))
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(9) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:pdgemr2d_2', time_end - time_start_part)
+    time_start_part = time_end
 
     ! Z <- U^-1 Z
     call pdtrmm('Left', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
          matrix_B_dist, 1, 1, sc_desc, eigenpairs%blacs%Vectors, 1, 1, sc_desc)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(10) = mpi_wtime()
-
-    if (check_master()) then
-      print *, 'solve_with_general_elpa_eigenexa init                  : ', times(2) - times(1)
-      print *, 'solve_with_general_elpa_eigenexa cholesky_real         : ', times(3) - times(2)
-      print *, 'solve_with_general_elpa_eigenexa invert_trm_real       : ', times(4) - times(3)
-      print *, 'solve_with_general_elpa_eigenexa pdtrmm_A_left         : ', times(5) - times(4)
-      print *, 'solve_with_general_elpa_eigenexa pdtrmm_A_right        : ', times(6) - times(5)
-      print *, 'solve_with_general_elpa_eigenexa pdgemr2d_A            : ', times(7) - times(6)
-      print *, 'solve_with_general_elpa_eigenexa eigen_solver_eigenexa : ', times(8) - times(7)
-      print *, 'solve_with_general_elpa_eigenexa pdgemr2d_B            : ', times(9) - times(8)
-      print *, 'solve_with_general_elpa_eigenexa pdtrmm_EVs            : ', times(10) - times(9)
-      print *, 'solve_with_general_elpa_eigenexa total                 : ', times(10) - times(1)
-    end if
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:pdtrmm_EV', time_end - time_start_part)
+    call add_event('solve_with_general_elpa_eigenexa:total', time_end - time_start)
   end subroutine solve_with_general_elpa_eigenexa
 
 
@@ -168,13 +165,13 @@ contains
          sc_desc(desc_size), ierr, info, mpierr
     logical :: success
     type(eigenpairs_types_union) :: eigenpairs_tmp
-    double precision :: times(10)
+    double precision :: time_start, time_start_part, time_end
     double precision, allocatable :: matrix_A_dist(:, :), matrix_A2_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
     integer :: numroc
-    include 'mpif.h'
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(1) = mpi_wtime()
+    time_start = mpi_wtime()
+    time_start_part = time_start
+
     call mpi_comm_rank(mpi_comm_world, myid, mpierr)
     call blacs_gridinfo(proc%context, np_rows, np_cols, my_prow, my_pcol)
     call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
@@ -192,8 +189,9 @@ contains
     call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(2) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:init', time_end - time_start_part)
+    time_start_part = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
     call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
@@ -201,8 +199,9 @@ contains
       call terminate('solver_main, general_elpa_eigenk: cholesky_real failed', 1)
     end if
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(3) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:cholesky_real', time_end - time_start_part)
+    time_start_part = time_end
 
     call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
     ! invert_trm_real always returns fail
@@ -213,8 +212,9 @@ contains
     !  stop
     !end if
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(4) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:invert_trm_real', time_end - time_start_part)
+    time_start_part = time_end
 
     ! Reduce A as U^-T A U^-1
     ! A <- U^-T A
@@ -227,27 +227,31 @@ contains
          block_size, mpi_comm_rows, mpi_comm_cols, matrix_A_dist, na_rows)
     deallocate(matrix_A2_dist)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(5) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:mult_at_b_real', time_end - time_start_part)
+    time_start_part = time_end
 
     ! A <- A U^-1
     call pdtrmm('Right', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
          matrix_B_dist, 1, 1, sc_desc, matrix_A_dist, 1, 1, sc_desc)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(6) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:pdtrmm_right', time_end - time_start_part)
+    time_start_part = time_end
 
     call setup_distributed_matrix_for_eigenexa(n, desc_A_re, matrix_A_redist, eigenpairs_tmp)
     call pdgemr2d(n, n, matrix_A_dist, 1, 1, desc_A, matrix_A_redist, 1, 1, desc_A_re, desc_A(context_))
     deallocate(matrix_A_dist)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(7) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:pdgemr2d_1', time_end - time_start_part)
+    time_start_part = time_end
 
     call eigen_solver_eigenk(matrix_A_redist, desc_A_re, n, eigenpairs_tmp, 'L')
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(8) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:eigen_solver_eigenk', time_end - time_start_part)
+    time_start_part = time_end
 
     deallocate(matrix_A_redist)
     eigenpairs%type_number = 2
@@ -263,27 +267,16 @@ contains
          eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
          eigenpairs_tmp%blacs%desc(context_))
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(9) = mpi_wtime()
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:pdgemr2d_2', time_end - time_start_part)
+    time_start_part = time_end
 
     ! Z <- U^-1 Z
     call pdtrmm('Left', 'Upper', 'No_trans', 'No_unit', n, n, 1.0d0, &
          matrix_B_dist, 1, 1, sc_desc, eigenpairs%blacs%Vectors, 1, 1, sc_desc)
 
-    call mpi_barrier(mpi_comm_world, mpierr) ! for correct timings only
-    times(10) = mpi_wtime()
-
-    if (check_master()) then
-      print *, 'solve_with_general_elpa_eigenk init                : ', times(2) - times(1)
-      print *, 'solve_with_general_elpa_eigenk cholesky_real       : ', times(3) - times(2)
-      print *, 'solve_with_general_elpa_eigenk invert_trm_real     : ', times(4) - times(3)
-      print *, 'solve_with_general_elpa_eigenk pdtrmm_A_left       : ', times(5) - times(4)
-      print *, 'solve_with_general_elpa_eigenk pdtrmm_A_right      : ', times(6) - times(5)
-      print *, 'solve_with_general_elpa_eigenk pdgemr2d_A          : ', times(7) - times(6)
-      print *, 'solve_with_general_elpa_eigenk eigen_solver_eigenk : ', times(8) - times(7)
-      print *, 'solve_with_general_elpa_eigenk pdgemr2d_B          : ', times(9) - times(8)
-      print *, 'solve_with_general_elpa_eigenk pdtrmm_EVs          : ', times(10) - times(9)
-      print *, 'solve_with_general_elpa_eigenk total               : ', times(10) - times(1)
-    end if
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenk:pdtrmm_EV', time_end - time_start_part)
+    call add_event('solve_with_general_elpa_eigenk:total', time_end - time_start)
   end subroutine solve_with_general_elpa_eigenk
 end module solver_elpa_eigenexa
