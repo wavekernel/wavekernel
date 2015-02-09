@@ -7,7 +7,7 @@ program eigen_test
   use event_logger_m
   use solver_main, only : eigen_solver
   use command_argument, only : argument, required_memory, &
-       read_command_argument, print_command_argument, fson_setting_add
+       read_command_argument, validate_argument, print_command_argument, fson_setting_add
   use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
@@ -50,6 +50,7 @@ program eigen_test
   time_start_part = time_end
 
   if (check_master()) then
+    call validate_argument(arg)
     call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
     if (arg%is_generalized_problem) then
       call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)

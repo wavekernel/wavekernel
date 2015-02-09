@@ -40,7 +40,7 @@ module command_argument
 
   private
   public :: matrix_info, argument, required_memory, &
-       read_command_argument, print_command_argument, fson_setting_add
+       read_command_argument, validate_argument, print_command_argument, fson_setting_add
 
 contains
 
@@ -333,17 +333,21 @@ contains
         ! The first non-option argument specifies the (left) input matrix
         arg%matrix_A_filename = trim(arg_str)
         ! Check whether the file exists
-        inquire(file = trim(arg%matrix_A_filename), exist = exists)
-        if (.not. exists) then
-          call terminate("read_command_argument: Matrix A file '" // &
-               trim(arg%matrix_A_filename) // "' not found", 1)
+        if (check_master()) then
+           inquire(file = trim(arg%matrix_A_filename), exist = exists)
+           if (.not. exists) then
+              call terminate("read_command_argument: Matrix A file '" // &
+                   trim(arg%matrix_A_filename) // "' not found", 1)
+           end if
         end if
       else
         arg%matrix_B_filename = trim(arg_str)
-        inquire(file = arg%matrix_B_filename, exist = exists)
-        if (.not. exists) then
-          call terminate("read_command_argument: Matrix B file '" // &
-               trim(arg%matrix_B_filename) // "' not found", 1)
+        if (check_master()) then
+           inquire(file = arg%matrix_B_filename, exist = exists)
+           if (.not. exists) then
+              call terminate("read_command_argument: Matrix B file '" // &
+                   trim(arg%matrix_B_filename) // "' not found", 1)
+           end if
         end if
       end if
       argi = argi + 1
@@ -354,9 +358,11 @@ contains
     end if
     arg%is_generalized_problem = (len_trim(arg%matrix_B_filename) /= 0)
 
-    call wrap_mminfo(arg%matrix_A_filename, arg%matrix_A_info)
-    if (arg%is_generalized_problem) then
-      call wrap_mminfo(arg%matrix_B_filename, arg%matrix_B_info)
+    if (check_master()) then
+       call wrap_mminfo(arg%matrix_A_filename, arg%matrix_A_info)
+       if (arg%is_generalized_problem) then
+          call wrap_mminfo(arg%matrix_B_filename, arg%matrix_B_info)
+       end if
     end if
 
     if (arg%n_vec == -1) then ! unspecified in command line arguments
@@ -366,8 +372,6 @@ contains
     if (arg%n_check_vec == -1) then
       arg%n_check_vec = arg%n_vec
     end if
-
-    call validate_argument(arg)
   end subroutine read_command_argument
 
 
