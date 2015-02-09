@@ -90,7 +90,7 @@ contains
     double precision, allocatable, intent(inout) :: mat_value(:)
     integer, allocatable, intent(inout) :: mat_suffix(:,:)
 
-    integer :: line_count
+    integer :: line_count, print_count
     logical :: debug_mode
     integer :: i, j, ierr
     double precision :: value_wrk
@@ -109,7 +109,13 @@ contains
     if (debug_mode) write(*,*)'size(mat_suffix,1)=',size(mat_suffix,1)
     if (debug_mode) write(*,*)'size(mat_suffix,2)=',size(mat_suffix,2)
 
+    print_count = 1
     do line_count = 1, num_non_zeros
+      if (line_count > num_non_zeros / 10 * print_count .and. check_master()) then
+         write (0, *) '[Event', mpi_wtime(), '] read matrix element number ', line_count
+         print_count = print_count + 1
+      end if
+
       read(unit_num, *, iostat=ierr) i, j, value_wrk
       if (ierr /= 0) then
         call terminate('read_matrix_file_value: invalid format of matrix value', ierr)
