@@ -6,7 +6,7 @@ module generalized_to_standard
   implicit none
 
   private
-  public :: reduce_generalized, recovery_generalized
+  public :: reduce_generalized, reduce_generalized_new, recovery_generalized
 
 contains
 
@@ -48,6 +48,55 @@ contains
     call add_event('reduce_generalized:pdsygst', time_end - time_start)
     time_start = time_end
   end subroutine reduce_generalized
+
+
+  subroutine reduce_generalized_new(dim, A, desc_A, B, desc_B)
+    integer, intent(in) :: dim, desc_A(9), desc_B(9)
+    double precision, intent(inout) :: A(:, :), B(:, :)
+
+    integer :: nprow, npcol, myrow, mycol, info
+    integer :: nb, np0, nq0, lwork
+    double precision :: scale, work_pdlaprnt(desc_B(block_row_))
+    double precision, allocatable :: work(:)
+    double precision :: time_start, time_end
+    integer :: numroc
+
+    time_start = mpi_wtime()
+
+    ! B = LL', overwritten to B
+    call pdpotrf('L', dim, B, 1, 1, desc_B, info)
+    if (info /= 0) then
+      if (check_master()) print '("info(pdpotrf): ", i0)', info
+      if (info > 0) then
+        info = min(info, 10)
+        if (check_master()) print &
+             '("The leading minor that is not positive definite (up to order 10) is:")'
+        call eigentest_pdlaprnt(info, info, B, 1, 1, desc_B, 0, 0, '  B', 6, work_pdlaprnt)
+      end if
+      call terminate('reduce_generalized_new: pdpotrf failed', info)
+    end if
+
+    time_end = mpi_wtime()
+    call add_event('reduce_generalized_new:pdpotrf', time_end - time_start)
+    time_start = time_end
+
+    ! Reduction to standard problem by A <- L^(-1) * A * L'^(-1)
+    call blacs_gridinfo(desc_A(context_), nprow, npcol, myrow, mycol)
+    nb = desc_A(block_row_)
+    np0 = numroc(dim, nb, 0, 0, nprow)
+    nq0 = numroc(dim, nb, 0, 0, npcol)
+    lwork = 2 * np0 * nb + nq0 * nb + nb * nb
+    allocate(work(lwork))
+    call pdsyngst(1, 'L', dim, A, 1, 1, desc_A, B, 1, 1, desc_B, scale, work, lwork, info)
+    if (info /= 0) then
+      if (check_master()) print '("info(pdsyngst): ", i0)', info
+      call terminate('reduce_generalized_new: pdsyngst failed', info)
+    end if
+
+    time_end = mpi_wtime()
+    call add_event('reduce_generalized_new:pdsyngst', time_end - time_start)
+    time_start = time_end
+  end subroutine reduce_generalized_new
 
 
   subroutine recovery_generalized(dim, n_vec, B, desc_B, Vectors, desc_Vectors)

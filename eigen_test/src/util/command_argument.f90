@@ -130,6 +130,8 @@ contains
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa_eigenk')
       is_solver_valid = arg%is_generalized_problem
+    case ('general_scalapacknew_eigenk')
+      is_solver_valid = arg%is_generalized_problem
     case default
       is_solver_valid = .false.
       call terminate("validate_argument: Unknown solver '" // &

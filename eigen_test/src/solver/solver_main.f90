@@ -24,7 +24,8 @@ contains
     use solver_scalapack_all, only : eigen_solver_scalapack_all, solve_with_general_scalapack
     use solver_scalapack_select, only : eigen_solver_scalapack_select
     use solver_eigenexa, only : setup_distributed_matrix_for_eigenexa, eigen_solver_eigenexa, eigen_solver_eigenk, &
-         solve_with_general_scalapack_eigenexa, solve_with_general_scalapack_eigenk
+         solve_with_general_scalapack_eigenexa, solve_with_general_scalapack_eigenk, &
+         solve_with_general_scalapacknew_eigenk
     use solver_elpa
     use solver_elpa_eigenexa
 
@@ -90,6 +91,8 @@ contains
       call solve_with_general_elpa_eigenexa(n, proc, matrix_A, eigenpairs, matrix_B)
     case ('general_elpa_eigenk')
       call solve_with_general_elpa_eigenk(n, proc, matrix_A, eigenpairs, matrix_B)
+    case ('general_scalapacknew_eigenk')
+      call solve_with_general_scalapacknew_eigenk(n, proc, matrix_A, eigenpairs, matrix_B)
     case default
       call terminate('eigen_solver: Unknown solver', 1)
     end select
