@@ -126,7 +126,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('eigen_solver_eigenexa:eigen_sx', time_end - time_start_part)
-    call add_event('eigen_solver_eigenexa:total', time_end - time_start_part)
+    call add_event('eigen_solver_eigenexa:total', time_end - time_start)
   end subroutine eigen_solver_eigenexa
 
 
