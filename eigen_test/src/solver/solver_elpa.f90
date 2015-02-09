@@ -63,7 +63,7 @@ contains
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_elpa_scalapack:init', time_end - time_start)
+    call add_event('solve_with_general_elpa_scalapack:setup_matrices', time_end - time_start)
     time_start = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
@@ -184,7 +184,7 @@ contains
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_elpa1:init', time_end - time_start)
+    call add_event('solve_with_general_elpa1:setup_matrices', time_end - time_start)
     time_start = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
@@ -298,7 +298,7 @@ contains
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_elpa2:init', time_end - time_start)
+    call add_event('solve_with_general_elpa2:setup_matrices', time_end - time_start)
     time_start = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.

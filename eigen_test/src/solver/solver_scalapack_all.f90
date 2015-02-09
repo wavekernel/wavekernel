@@ -6,14 +6,18 @@ module solver_scalapack_all
   use mpi
   use descriptor_parameters
   use distribute_matrix, only : &
-       get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix
+       get_local_cols, gather_matrix, allgather_row_wise, setup_distributed_matrix, &
+       distribute_global_sparse_matrix
   use eigenpairs_types, only : eigenpairs_types_union
-  use processes, only : process, terminate
+  use event_logger_m, only : add_event
+  use generalized_to_standard, only : reduce_generalized, recovery_generalized
+  use processes, only : check_master, process, terminate
+  use matrix_io, only : sparse_mat
   use time, only : get_wall_clock_base_count, get_wall_clock_time
   implicit none
 
   private
-  public :: eigen_solver_scalapack_all
+  public :: eigen_solver_scalapack_all, solve_with_general_scalapack
 
 contains
 
@@ -33,20 +37,11 @@ contains
     double precision, allocatable :: subdiag_global(:)
     double precision, allocatable :: tau(:), work(:), work_print(:)
     integer, allocatable :: iwork(:)
-
-    ! Time
-    integer, parameter :: n_intervals = 7
-    integer :: i, base_count
-    double precision :: t_intervals(n_intervals)
-    double precision :: t_pdsytrd, t_pdsytrd_end, t_pdstedc, &
-         t_pdstedc_end, t_pdormtr_end, t_all_end
-    character(*), parameter :: interval_names(n_intervals) = (/'init   ', &
-         'pdsytrd', 'gather1', 'pdstedc', 'pdormtr', 'finish ', 'total  '/)
-
-    ! Functions
+    double precision :: time_start, time_start_part, time_end
     integer :: numroc
 
-    call get_wall_clock_base_count(base_count)
+    time_start = mpi_wtime()
+    time_start_part = time_start
 
     eigenpairs%type_number = 2
 
@@ -61,7 +56,9 @@ contains
       call terminate('eigen_solver_scalapack_all: allocation failed', ierr)
     end if
 
-    call get_wall_clock_time(base_count, t_pdsytrd)
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_scalapack_all:allocate', time_end - time_start_part)
+    time_start_part = time_end
 
     uplo = 'l'
     call pdsytrd(uplo, dim, A, 1, 1, desc_A, diag_local, subdiag_local, tau, work, work_size, info)
@@ -70,7 +67,9 @@ contains
        print '("info(pdsytrd): ", i0)', info
     end if
 
-    call get_wall_clock_time(base_count, t_pdsytrd_end)
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_scalapack_all:pdsytrd', time_end - time_start_part)
+    time_start_part = time_end
 
     ! Diagonal elements of the tridiagonal matrix Initially
     allocate(eigenpairs%blacs%values(dim), subdiag_global(dim - 1), stat = ierr)
@@ -95,7 +94,9 @@ contains
       call terminate('eigen_solver_scalapack_all: allocation failed', ierr)
     end if
 
-    call get_wall_clock_time(base_count, t_pdstedc)
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_scalapack_all:gather1', time_end - time_start_part)
+    time_start_part = time_end
 
     call pdstedc('i', dim, eigenpairs%blacs%values, subdiag_global, &
          eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, &
@@ -104,7 +105,9 @@ contains
        print '("info(pdstedc): ", i0)', info
     end if
 
-    call get_wall_clock_time(base_count, t_pdstedc_end)
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_scalapack_all:pdstedc', time_end - time_start_part)
+    time_start_part = time_end
 
     side = 'l'
     work_size = work_size_for_pdormtr(side, uplo, dim, dim, 1, 1, 1, 1, desc_A, eigenpairs%blacs%desc)
@@ -120,30 +123,54 @@ contains
        print '("info(pdormtr): ", i0)', info
     end if
 
-    call get_wall_clock_time(base_count, t_pdormtr_end)
-
-    ! call eigentest_pdlaprnt(dim, dim, eigenpairs%blacs%Vectors, 1, 1, eigenpairs%blacs%desc, 0, 0, 'Eigenvectors', 6, work_print)
-
-    call get_wall_clock_time(base_count, t_all_end)
-
-    t_intervals(1) = t_pdsytrd
-    t_intervals(2) = t_pdsytrd_end - t_pdsytrd
-    t_intervals(3) = t_pdstedc - t_pdsytrd_end
-    t_intervals(4) = t_pdstedc_end - t_pdstedc
-    t_intervals(5) = t_pdormtr_end - t_pdstedc_end
-    t_intervals(6) = t_all_end - t_pdormtr_end
-    t_intervals(7) = t_all_end
-
-    if (proc%my_rank == 0) then
-       call MPI_Reduce(MPI_IN_PLACE, t_intervals, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-       print '("elapsed time (sec)")'
-       do i = 1, n_intervals
-         print '("  ", a, " ", f12.2)', interval_names(i), t_intervals(i)
-       end do
-    else
-       call MPI_Reduce(t_intervals, 0, n_intervals, MPI_REAL8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
-    end if
+    time_end = mpi_wtime()
+    call add_event('eigen_solver_scalapack_all:pdormtr', time_end - time_start_part)
+    call add_event('eigen_solver_scalapack_all:total', time_end - time_start)
   end subroutine eigen_solver_scalapack_all
+
+
+  subroutine solve_with_general_scalapack(n, proc, matrix_A, eigenpairs, matrix_B)
+    integer, intent(in) :: n
+    type(process), intent(in) :: proc
+    type(sparse_mat), intent(in) :: matrix_A
+    type(sparse_mat), intent(in) :: matrix_B
+    type(eigenpairs_types_union), intent(out) :: eigenpairs
+
+    integer :: desc_A(desc_size), desc_B(desc_size)
+    double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :)
+    double precision :: time_start, time_start_part, time_end
+
+    time_start = mpi_wtime()
+    time_start_part = time_start
+
+    call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
+    call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
+    call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
+    call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
+
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_scalapack:setup_matrices', time_end - time_start_part)
+    time_start_part = time_end
+
+    call reduce_generalized(n, matrix_A_dist, desc_A, matrix_B_dist, desc_B)
+
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_scalapack:reduce_generalized', time_end - time_start_part)
+    time_start_part = time_end
+
+    call eigen_solver_scalapack_all(proc, desc_A, matrix_A_dist, eigenpairs)
+
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_scalapack:eigen_solver_scalapack_all', time_end - time_start_part)
+    time_start_part = time_end
+
+    call recovery_generalized(n, n, matrix_B_dist, desc_B, &
+         eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
+
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_scalapack:recovery_generalized', time_end - time_start_part)
+    call add_event('solve_with_general_scalapack:total', time_end - time_start)
+  end subroutine solve_with_general_scalapack
 
 
   integer function work_size_for_pdormtr(side, uplo, m, n, ia, ja, ic, jc, desc_A, desc_C) result(size)
@@ -173,28 +200,28 @@ contains
     call blacs_gridinfo(context, n_procs_row, n_procs_col, my_proc_row, my_proc_col)
 
     if (is_upper) then
-       iaa = ia
-       jaa = ja + 1
-       icc = ic
-       jcc = jc
+      iaa = ia
+      jaa = ja + 1
+      icc = ic
+      jcc = jc
     else
-       iaa = ia + 1
-       jaa = ja
-       if (is_left) then
-          icc = ic + 1
-          jcc = jc
-       else
-          icc = ic
-          jcc = jc + 1
-       end if
+      iaa = ia + 1
+      jaa = ja
+      if (is_left) then
+        icc = ic + 1
+        jcc = jc
+      else
+        icc = ic
+        jcc = jc + 1
+      end if
     end if
 
     if (is_left) then
-       mi = m - 1
-       ni = n
+      mi = m - 1
+      ni = n
     else
-       mi = m
-       ni = n - 1
+      mi = m
+      ni = n - 1
     end if
 
     iroffc = mod(icc - 1, mb_c)
@@ -206,17 +233,17 @@ contains
     nqc0 = numroc(ni + icoffc, nb_c, my_proc_col, iccol, n_procs_col)
 
     if (is_left) then
-       size = max((nb_a * (nb_a - 1)) / 2, (nqc0 + mpc0) * nb_a) + nb_a * nb_a
+      size = max((nb_a * (nb_a - 1)) / 2, (nqc0 + mpc0) * nb_a) + nb_a * nb_a
     else
-       iroffa = mod(iaa - 1, mb_a)
-       icoffa = mod(jaa - 1, nb_a)
-       iarow = indxg2p(iaa, mb_a, my_proc_row, desc_A(7), n_procs_row)
-       npa0 = numroc(ni + iroffa, mb_a, my_proc_row, iarow, n_procs_row)
-       lcmq = ilcm(n_procs_row, n_procs_col) / n_procs_col
-       size = max((nb_a * (nb_a - 1)) / 2, &
-            (nqc0 + max(npa0 + numroc(numroc(ni + icoffc, nb_a, 0, 0, n_procs_col), &
-            nb_a, 0, 0, lcmq), mpc0)) * nb_a) + &
-            nb_a * nb_a
+      iroffa = mod(iaa - 1, mb_a)
+      icoffa = mod(jaa - 1, nb_a)
+      iarow = indxg2p(iaa, mb_a, my_proc_row, desc_A(7), n_procs_row)
+      npa0 = numroc(ni + iroffa, mb_a, my_proc_row, iarow, n_procs_row)
+      lcmq = ilcm(n_procs_row, n_procs_col) / n_procs_col
+      size = max((nb_a * (nb_a - 1)) / 2, &
+           (nqc0 + max(npa0 + numroc(numroc(ni + icoffc, nb_a, 0, 0, n_procs_col), &
+           nb_a, 0, 0, lcmq), mpc0)) * nb_a) + &
+           nb_a * nb_a
     end if
   end function work_size_for_pdormtr
 end module solver_scalapack_all

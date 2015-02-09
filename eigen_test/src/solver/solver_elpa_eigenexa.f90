@@ -60,7 +60,7 @@ contains
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_elpa_eigenexa:init', time_end - time_start_part)
+    call add_event('solve_with_general_elpa_eigenexa:setup_matrices', time_end - time_start_part)
     time_start_part = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
@@ -190,7 +190,7 @@ contains
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_elpa_eigenk:init', time_end - time_start_part)
+    call add_event('solve_with_general_elpa_eigenk:setup_matrices', time_end - time_start_part)
     time_start_part = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
