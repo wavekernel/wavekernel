@@ -179,13 +179,20 @@ module M_qm_solver_gkrylov_dst
     real(8), allocatable :: e_num_on_atom_dst(:)    ! DIFFERENT VALUES AMONG NODES
     real(8), allocatable :: e_num_on_basis_dst(:,:) ! DIFFERENT VALUES AMONG NODES
 !
+    integer              :: v_level  ! verbose level
+    integer              :: lu       ! log unit
+!
+    v_level = config%option%verbose_level
+    lu      = config%calc%distributed%log_unit
     n_csc_loop = config%calc%genoOption%CSC_max_loop_count
     nval_max=maxval(nval)
     if (allocated(atm_force_tb0))  atm_force_tb0(:,:)=0.0d0
 !
-    if (i_verbose >= 1) then
-      write(*,*)'@@ qm_solver_gkrylov_dst:scheme mode,n_csc_loop=',trim(scheme_mode),n_csc_loop
-      write(*,*)'  nval_max=',nval_max
+    if (v_level >= 1) then
+      if (lu > 0) then
+        write(lu,*)'@@ qm_solver_gkrylov_dst:scheme mode,n_csc_loop=',trim(scheme_mode),n_csc_loop
+        write(lu,*)'  nval_max=',nval_max
+      endif
     endif  
 !
     if (config%calc%solver%mode_for_large_memory == 1) then
@@ -203,14 +210,18 @@ module M_qm_solver_gkrylov_dst
       if (i_verbose >= 0) write(*,*)'INFO:calc_rest_part=',calc_rest_part
     endif
 !
-    if (i_verbose >= 1) then 
-      write(*,*)'INFO:calc_atm_energy_by_2nd_def= ', calc_atm_energy_by_2nd_def
-      write(*,*)'INFO:calc_cohp                 = ', calc_cohp
+    if (v_level  >= 1) then 
+      if (lu >0) then
+        write(lu,*)'INFO:calc_atm_energy_by_2nd_def= ', calc_atm_energy_by_2nd_def
+        write(lu,*)'INFO:calc_cohp                 = ', calc_cohp
+      endif
     endif   
 !
     dst_micro_mat_is_active = .true.
-    if (i_verbose >= 1) then
-     write(*,*)' dst_micro_mat_is_active= ',dst_micro_mat_is_active
+    if (v_level >= 1) then
+      if (lu >0) then
+        write(lu,*)' dst_micro_mat_is_active= ',dst_micro_mat_is_active
+      endif
     endif  
 !
 !
@@ -265,10 +276,12 @@ module M_qm_solver_gkrylov_dst
 !
     kr_dim_max_input=config%calc%solver%dimension
 !
-    if (i_verbose >=1) then
-      write(*,'(a,i10)')'INFO:kr_dim_max_input    =', kr_dim_max_input
-      write(*,'(a,i10)')'INFO:maxval(nval)        =', maxval(nval)
-      write(*,'(a,i10)')'INFO:len_dst_atm_list(1) =', len_dst_atm_list(1)
+    if (v_level >=1) then
+      if (lu > 0) then
+        write(lu,'(a,i10)')'INFO:kr_dim_max_input    =', kr_dim_max_input
+        write(lu,'(a,i10)')'INFO:maxval(nval)        =', maxval(nval)
+        write(lu,'(a,i10)')'INFO:len_dst_atm_list(1) =', len_dst_atm_list(1)
+      endif
     endif       
 !
     if (.not. allocated(kr_dim_dst)) then
@@ -350,7 +363,7 @@ module M_qm_solver_gkrylov_dst
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     do prc_index=1,2
 !
-      if (log_unit > 0)  write(log_unit,*)' prc_index = ',prc_index
+      if (lu > 0)  write(lu,*)' prc_index = ',prc_index
 !
 !     call set_dst_final
 !     stop 'Stop manually:prc_index'
@@ -360,10 +373,10 @@ module M_qm_solver_gkrylov_dst
       call get_system_clock_time(time_wrk)
       time_wrk_previous=time_wrk
 !
-      if (log_unit > 0)  write(log_unit,*)'len_dst_atm_list(1)=',len_dst_atm_list(1)
+      if (lu > 0)  write(lu,*)'len_dst_atm_list(1)=',len_dst_atm_list(1)
 !
-      if (i_verbose >= 1) then 
-        if (log_unit > 0)  write(log_unit,*)'call chl_allocated_dst:prc_index=', prc_index
+      if (v_level >= 1) then 
+        if (lu > 0)  write(lu,*)'call chk_allocated_dst:prc_index=', prc_index
         call chk_allocated_dst
       endif  
 !
@@ -393,6 +406,12 @@ module M_qm_solver_gkrylov_dst
 !$       stop
 !$     endif
 !     write(*,*)'OMP loop start:id,num_theads=',id_of_my_omp_thread, number_of_omp_threads
+      if (v_level >= 1) then 
+       if (lu > 0) then 
+         write(lu,'(a,2i10)')'INFO:OMP_id, P_OMP in Krylov loop =', & 
+&                              omp_get_thread_num(), omp_get_num_threads()
+       endif
+      endif
       if (allocated(atm_wrk_force_omp)) atm_wrk_force_omp(:,:,id_of_my_omp_thread)=0.0d0
 !$omp  do schedule(static)
       do dst_atm_index=1,len_dst_atm_list(1)

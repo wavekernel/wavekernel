@@ -1289,6 +1289,9 @@ contains
       system%structure%split%set = .true.
       value = getAttribute(node,"number_of_files")
       read(unit=value, fmt=*) system%structure%split%number_of_files
+      if (system%structure%split%number_of_files == 0) system%structure%split%set = .false.
+    endif
+    if (system%structure%split%set) then
       if (log_unit >  0) write(log_unit,'(a,i10)')'INFO-XML-SPLIT: Optional attribute detected : number_of_files =', & 
 &                              system%structure%split%number_of_files
     endif

@@ -32,10 +32,10 @@ OBJS-XML = $(SRCDIR)/elses-xml-config.o $(SRCDIR)/elses-config.o\
 LIBS-EXT = 
 
 ##  for Intel Fortran compiler (ifort)
-FC = ifort
-FFLAGS = -O -openmp 
-LDFLAGS = $(FFLAGS)
-LIBS = -L /opt/intel/mkl/10.0.3.020/lib/em64t -lmkl_lapack -lmkl -lguide -lpthread
+#FC = ifort
+#FFLAGS = -O -openmp 
+#LDFLAGS = $(FFLAGS)
+#LIBS = -L /opt/intel/mkl/10.0.3.020/lib/em64t -lmkl_lapack -lmkl -lguide -lpthread
 #LIBS = -L/opt/intel/mkl/10.0.3.020/lib/32 -lmkl_lapack -lmkl -lguide -lpthread
 #LIBS  = /opt/acml3.6.0/ifort64/lib/libacml.a 
 
@@ -54,10 +54,10 @@ LIBS = -L /opt/intel/mkl/10.0.3.020/lib/em64t -lmkl_lapack -lmkl -lguide -lpthre
 #LIBS =  -L /opt/acml3.6.0/gnu64/lib -lacml -lacml_mv -lg2c
 
 ##  for GNU Fortran compiler (gfortran)
-#FC = gfortran
-#FFLAGS = -O2 -fopenmp
-#LDFLAGS = -fopenmp
-#LIBS = -L/usr/local/lib -llapack -lblas
+FC = gfortran
+FFLAGS = -O2 -fopenmp
+LDFLAGS = -fopenmp
+LIBS = -L/usr/lib64 -llapack -lblas
 
 ##  for GNU Fortran compiler (gfortran on MacOS-X with Xcode)
 #FC = gfortran

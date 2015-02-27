@@ -74,7 +74,7 @@ program elses_generate_cubefile
   cube_filename_header_wrk=""
   write(*,*)'Read the options'
   call read_options(level_index_ini, level_index_fin, sign_inversion, r_cut, filename_input_wrk, cube_filename_header_wrk)
-!     -----> The values of  (level_index_ini) and (level_index_fin) are -1 (dummy value), 
+!     -----> The values of  (level_index_ini) and (level_index_fin) are -1 (dummy value),
 !                  if not specified
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -109,7 +109,7 @@ program elses_generate_cubefile
 !
 ! write(*,*)'Read the options'
 ! call read_options(level_index_ini, level_index_fin, sign_inversion, r_cut)
-!     -----> The values of  (level_index_ini) and (level_index_fin) are -1 (dummy value), 
+!     -----> The values of  (level_index_ini) and (level_index_fin) are -1 (dummy value),
 !                  if not specified
 !
   write(*,*)'Read eigenstate file'
@@ -140,9 +140,9 @@ program elses_generate_cubefile
 !
     call output_cubefile(sign_inversion, r_cut)
 !
-  enddo  
+  enddo
 !
-!  
+!
 contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -192,8 +192,8 @@ contains
       unit_of_size   = 'internal'
       origin_of_grid_region(:) = -0.5d0
       size_of_grid_region(:)   = 1.0d0
-      return 
-    endif  
+      return
+    endif
 !
     itry_max=2
     do itry=1,itry_max
@@ -208,17 +208,17 @@ contains
         if (trim(unit_of_origin) /= 'dummy') then
           origin_of_grid_region(1:3)=data_wrk(1:3)
 !         write(*,'(a,3f20.10,a,a)')'grid origin = ', data_wrk(1:3), '    unit=', trim(chara_wrk2)
-        endif  
-      endif  
+        endif
+      endif
       if (itry == 2) then
         if (trim(chara_wrk2)=='au') unit_of_size='au'
         if (trim(chara_wrk2)=='internal') unit_of_size='internal'
         if (trim(unit_of_size) /= 'dummy') then
           size_of_grid_region(1:3)=data_wrk(1:3)
 !         write(*,'(a,3f20.10,a,a)')'grid sizes  = ', data_wrk(1:3), '    unit=', trim(chara_wrk2)
-        endif  
-      endif  
-    enddo  
+        endif
+      endif
+    enddo
 !
     if (file_exist .eqv. .true.) close(iunit)
 !
@@ -248,7 +248,7 @@ contains
 !
     level_index_ini=-1     ! dummy value
     level_index_fin=-1     ! dummy value
-    sign_inversion = .false. 
+    sign_inversion = .false.
     r_cut_wrk = -1.0d0 ! dummy value
 !
 !   write(*,*)'INFO:the number of the options  : ', count
@@ -258,18 +258,18 @@ contains
 !     write(*,*)'i, argc=',i, trim(argc)
       read(argc,*,iostat=ierr) k
       if (ierr /= 0) then
-        acceptable_option = .false. 
+        acceptable_option = .false.
 !       write(*,*)'INFO:an option found : ', trim(argc)
-        if (argc(1:3)  == '-si') then 
-          acceptable_option = .true. 
+        if (argc(1:3)  == '-si') then
+          acceptable_option = .true.
           sign_inversion = .true.
           cycle
-        endif  
+        endif
         if (argc(1:15) == '-sign_inversion') then
-          acceptable_option = .true. 
+          acceptable_option = .true.
           sign_inversion = .true.
           cycle
-        endif   
+        endif
         if (argc(1:11) == '-cutoff_au=') then
           read(argc(12:),*,iostat=ierr) r_cut_wrk
           if (ierr /= 0) then
@@ -278,9 +278,9 @@ contains
           endif
 !         write(*,*)'OPTION: cutoff [au] =', r_cut_wrk
           cycle
-        endif   
+        endif
         if (argc(1:16) == '-lcao_coef_file=') then
-          acceptable_option = .true. 
+          acceptable_option = .true.
           read(argc(17:),*,iostat=ierr) filename_wrk
           if (ierr /= 0) then
             write(*,*)'ERROR in option:', trim(argc)
@@ -292,9 +292,9 @@ contains
           endif
           filename_wrk=trim(adjustl(filename_wrk))
           cycle
-        endif   
+        endif
         if (argc(1:22) == '-cube_filename_header=') then
-          acceptable_option = .true. 
+          acceptable_option = .true.
           read(argc(23:),*,iostat=ierr) cube_header_wrk
           if (ierr /= 0) then
             write(*,*)'ERROR in option:', trim(argc)
@@ -306,13 +306,13 @@ contains
           endif
           cube_header_wrk=trim(adjustl(cube_header_wrk))
           cycle
-        endif   
+        endif
         if (.not. acceptable_option) then
           write(*,*)'ERROR(generate cube) in option : ', trim(argc)
           stop
         endif
       else
-        if (level_index_ini == -1) then 
+        if (level_index_ini == -1) then
 !         write(*,*)'level_index_ini = ', k
           level_index_ini = k
           cycle
@@ -321,9 +321,9 @@ contains
 !           write(*,*)'level_index_fin = ', k
             level_index_fin = k
             cycle
-          endif   
+          endif
         endif
-      endif   
+      endif
     enddo
 !
     write(*,*)'INFO:sign inversion = ', sign_inversion
@@ -338,7 +338,7 @@ contains
 !
     return
 !
- 
+
   end subroutine read_options
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -396,7 +396,7 @@ contains
 !       ---> skip the first line of the file
 !     write(*,*)' first line=',trim(str_wrk)
     endif
-!    
+!
 !   read(10,'(a)',iostat=ierr) str_wrk
 !   write(*,*)' secondt line=',trim(str_wrk)
 !   stop 'stop manually'
@@ -459,18 +459,18 @@ contains
       read(10,*,iostat=ierr) unitvectorA(1:3)
       write(*,*)' i_pbc_x does not appear in the file'
       i_pbc_x=0
-    endif   
+    endif
 !
     if (unitvectorA(1)       < 0.0d0)   ierr2=1
     if (dabs(unitvectorA(2)) > 1.0d-10) ierr2=1
     if (dabs(unitvectorA(3)) > 1.0d-10) ierr2=1
     if (i_pbc_x*i_pbc_x /= i_pbc_x)     ierr2=1   ! i_pbc should be zero or one
 !
-    if ((ierr /=0) .or. (ierr2 /=0)) then 
+    if ((ierr /=0) .or. (ierr2 /=0)) then
       write(*,*)' ERROR in IO (unitvectorA)'
       write(*,*)'   The file format may be old (upto_v0.03.09)'
       stop
-    endif     
+    endif
 !
     if (trim(file_format) /= 'upto_v0.03.09') then
       read(10,*,iostat=ierr) unitvectorB(1:3), i_pbc_y
@@ -479,18 +479,18 @@ contains
       read(10,*,iostat=ierr) unitvectorB(1:3)
       write(*,*)' i_pbc_y does not appear in the file'
       i_pbc_y=0
-    endif   
+    endif
 !
     if (unitvectorB(2)       < 0.0d0)   ierr2=1
     if (dabs(unitvectorB(1)) > 1.0d-10) ierr2=1
     if (dabs(unitvectorB(3)) > 1.0d-10) ierr2=1
     if (i_pbc_y*i_pbc_y /= i_pbc_y)     ierr2=1   ! i_pbc should be zero or one
 !
-    if ((ierr /=0) .or. (ierr2 /=0)) then 
+    if ((ierr /=0) .or. (ierr2 /=0)) then
       write(*,*)' ERROR in IO (unitvectorB)'
       write(*,*)'   The file format may be old (upto_v0.03.09)'
       stop
-    endif     
+    endif
 !
     if (trim(file_format) /= 'upto_v0.03.09') then
       read(10,*,iostat=ierr) unitvectorC(1:3), i_pbc_z
@@ -499,39 +499,39 @@ contains
       read(10,*,iostat=ierr) unitvectorC(1:3)
       write(*,*)' i_pbc_z does not appear in the file'
       i_pbc_z=0
-    endif   
+    endif
 !
     if (unitvectorC(3)       < 0.0d0)   ierr2=1
     if (dabs(unitvectorC(1)) > 1.0d-10) ierr2=1
     if (dabs(unitvectorC(2)) > 1.0d-10) ierr2=1
     if (i_pbc_z*i_pbc_z /= i_pbc_z)     ierr2=1   ! i_pbc should be zero or one
 !
-    if ((ierr /=0) .or. (ierr2 /=0)) then 
+    if ((ierr /=0) .or. (ierr2 /=0)) then
       write(*,*)' ERROR in IO (unitvectorC)'
       write(*,*)'   The file format may be old (upto_v0.03.09)'
       stop
-    endif     
+    endif
 !
     if (trim(file_format) /= 'upto_v0.03.09') then
       i_pbc=i_pbc_x*i_pbc_y*i_pbc_z
       write(*,*) 'FileRead:i_pbc_x, y, z=',i_pbc_x, i_pbc_y, i_pbc_z
       write(*,*) 'FileRead:i_pbc=',i_pbc
-    endif  
+    endif
 !
     if (i_pbc_x /= i_pbc_y) then
       write(*,*)'ERROR;Now not supported:Periodic in 1 or 2 direction(s)'
       stop
-    endif   
+    endif
 !
     if (i_pbc_y /= i_pbc_z) then
       write(*,*)'ERROR;Now not supported:Periodic in 1 or 2 direction(s)'
       stop
-    endif   
+    endif
 !
     if (i_pbc_z /= i_pbc_x) then
       write(*,*)'ERROR;Now not supported:Periodic in 1 or 2 direction(s)'
       stop
-    endif   
+    endif
 !
 
     write(*,*)'FileRead : atom information'
@@ -608,9 +608,9 @@ contains
       do i=1,n_eigen_vectors
         do j=1,n_tot_base
           read(10,*) index_j, atmp(j,i)
-        enddo  
-      enddo  
-    else   
+        enddo
+      enddo
+    else
       do i=1,n_eigen_vectors
         do j=1,n_tot_base
           read(10,*) index_j, atmp(j,i), chara, index_i
@@ -618,11 +618,11 @@ contains
           if (i /= index_i) then
             write(*,*) 'ERROR:Unmatched index_i',index_i,i
             stop
-          endif   
+          endif
           if (j /= index_j) then
             write(*,*) 'ERROR:Unmatched index_j',index_j,j
             stop
-          endif   
+          endif
         end do
       end do
     endif
@@ -630,13 +630,13 @@ contains
     close(10)
 !
     if (level_index_ini == -1) then
-      level_index_ini = 1 
+      level_index_ini = 1
       level_index_fin = n_eigen_vectors
     else
       if (level_index_fin == -1) then
         level_index_fin = level_index_ini
       endif
-    endif   
+    endif
 !
     ierr=0
     if (level_index_ini < 1) ierr=1
@@ -647,7 +647,7 @@ contains
       write(*,*)'ERROR!(generate cube) :the lowest  level index = ', level_index_ini
       write(*,*)'ERROR!(generate cube) :the highest level index = ', level_index_fin
       stop
-    endif   
+    endif
 !
     write(*,*)'INFO:the lowest  level index for output = ', level_index_ini
     write(*,*)'INFO:the highest level index for output = ', level_index_fin
@@ -655,7 +655,7 @@ contains
   end subroutine read_eigenstates_file
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!Calculation of amptitudes of wave function at 
+!Calculation of amptitudes of wave function at
 !every mesh points, and output a cube file.
 !
   subroutine output_cubefile(sign_inversion, r_cut_wrk)
@@ -680,11 +680,11 @@ contains
     logical :: cutoff_is_imposed
 !
     if (sign_inversion) then
-      sign_value = -1.0d0 
+      sign_value = -1.0d0
     else
-      sign_value =  1.0d0 
+      sign_value =  1.0d0
     endif
-!   
+!
     if (r_cut_wrk > 1.0d-10) then
       write(*,*)'OPTION:The cutoff radius for plot [au] =', r_cut_wrk
       cutoff_is_imposed = .true.
@@ -706,19 +706,19 @@ contains
 !
     if (trim(unit_of_origin) == 'internal') then
       origin_of_grid_region_au(1:3)=origin_of_grid_region(1:3)*size_of_cell_au(1:3)
-    endif  
+    endif
 !
     if (trim(unit_of_origin) == 'au') then
       origin_of_grid_region_au(1:3)=origin_of_grid_region(1:3)
-    endif  
+    endif
 !
     if (trim(unit_of_size) == 'internal') then
       size_of_grid_region_au(1:3)=size_of_grid_region(1:3)*size_of_cell_au(1:3)
-    endif  
+    endif
 !
     if (trim(unit_of_origin) == 'au') then
       size_of_grid_region_au(1:3)=size_of_grid_region(1:3)
-    endif  
+    endif
 !
     write(*,*)'Generate a cube file:level_index=',level_index
 !
@@ -747,7 +747,7 @@ contains
        do j=0,mesh_point_y-1
           mesh_index=1
           do k=0, mesh_point_z-1
-             
+
                 x = origin_of_grid_region_au(1) + size_of_grid_region_au(1)/mesh_point_x*i
                 y = origin_of_grid_region_au(2) + size_of_grid_region_au(2)/mesh_point_y*j
                 z = origin_of_grid_region_au(3) + size_of_grid_region_au(3)/mesh_point_z*k
@@ -768,11 +768,11 @@ contains
                  dx=(x-atom_info(atom_index)%position(1))/unitvectorA(1)
                  dy=(y-atom_info(atom_index)%position(2))/unitvectorB(2)
                  dz=(z-atom_info(atom_index)%position(3))/unitvectorC(3)
-                 if (i_pbc == 1) then 
+                 if (i_pbc == 1) then
                    dx = modulo(dx + 0.5d0, 1.0d0) - 0.5d0
                    dy = modulo(dy + 0.5d0, 1.0d0) - 0.5d0
                    dz = modulo(dz + 0.5d0, 1.0d0) - 0.5d0
-                 endif   
+                 endif
                  dx=dx*unitvectorA(1)
                  dy=dy*unitvectorB(2)
                  dz=dz*unitvectorC(3)
@@ -782,7 +782,7 @@ contains
                  n=dz
 !
                  if (cutoff_is_imposed) then
-                   if (r > r_cut_wrk) then 
+                   if (r > r_cut_wrk) then
                      wf_index = wf_index+atom_info(atom_index)%num_val_orb
                      cycle
                    endif
@@ -803,7 +803,7 @@ contains
 !                write(*,'("(l,m,n)=",3F)') l,m,n
 
 !!!! Until now, the visualization of the 4d orbital and higher orbital
-!!!! was not implemented               
+!!!! was not implemented
 
                 do orbital_index=1, atom_info(atom_index)%num_val_orb
 
@@ -811,8 +811,8 @@ contains
 
                    zeta=atom_info(atom_index)%zeta(orbital_index)
                    zeta2=atom_info(atom_index)%zeta2(orbital_index)
-                   c1=atom_info(atom_index)%c1(orbital_index)                  
-                   c2=atom_info(atom_index)%c2(orbital_index)  
+                   c1=atom_info(atom_index)%c1(orbital_index)
+                   c2=atom_info(atom_index)%c2(orbital_index)
 
                    if(c2 == 0d0) then
                       c1=1.0d0
@@ -937,7 +937,7 @@ contains
                    wf_index=wf_index+1
 
                 end do
-                
+
 !                write(*,'(" wf=",F\)') wf
 !                write(*,'("")')
 
@@ -947,31 +947,29 @@ contains
              if (dabs(wf) >= 1.0d80) then
                 write(*,*)'ERROR:Too large amplitude'
                 stop
-             endif   
+             endif
 !
 !             write(18,'("wf=",E15.8)') wf
 !
              wf = wf * sign_value
 !
-             if(mod(mesh_index,6)==0) then
-                write(10,'(1X,E18.8e3)') wf
-                mesh_index=0
-             else
-                write(10,'(1X,E18.8e3)',advance='no') wf
+             ! Start a new line before writing 6n+1 th elements.
+             if(mesh_index > 1 .and. mod(mesh_index-1,6)==0) then
+                write(10, '()')
              end if
+             write(10,'(1X,E18.8e3)',advance='no') wf
 
              mesh_index=mesh_index+1
-
           end do
           write(10,'()')
        end do
     end do
-    
+
 !   deallocate(atom_info)
 !   deallocate(atmp)
 
     close(10)
-    
+
   end subroutine output_cubefile
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !Reduce the atomic positions within the periodic boundary condition
@@ -1002,7 +1000,7 @@ contains
         pos(j)=pos(j)-dble(int(pos(j)))
         if (pos(j) < 0) then
           pos(j)=pos(j)+1.0d0
-        endif  
+        endif
       enddo
 !     write(*,*)'i,tx1=',i,pos(1)
 !     write(*,*)'i,ty1=',i,pos(2)
@@ -1012,7 +1010,7 @@ contains
 !     write(*,*)'i,ty=',i,pos(2), atom_info(i)%position(2)
 !     write(*,*)'i,tz=',i,pos(3), atom_info(i)%position(3)
       atom_info(i)%position(1:3)=pos(1:3)
-    enddo   
+    enddo
 !   stop
   end subroutine reduction_with_periodic_bc
 !
@@ -1038,25 +1036,25 @@ contains
           pos_cen(j)=0.0d0
           pos_max(j)=ddd
           pos_min(j)=ddd
-        endif 
+        endif
         pos_cen(j)=pos_cen(j)+ddd/dble(natom)
         if (ddd > pos_max(j)) pos_max(j)=ddd
         if (ddd < pos_min(j)) pos_min(j)=ddd
-      enddo   
+      enddo
       write(*,*)'j,max,min,cen=', j, pos_max(j), pos_min(j), pos_cen(j)
-    enddo  
+    enddo
 !
     do j=1,3
       ddd=pos_max(j)
       if (ddd > 1.0d0) then
          pos_max(j)=dble(int(ddd)+1)
          write(*,'(a,i10,2f20.10)')'j, Max_region, Max_pos=',j,pos_max(j), ddd
-      endif   
+      endif
       ddd=pos_min(j)
       if (ddd < 0.0d0) then
          pos_min(j)=-dble(int(abs(ddd))+1)
          write(*,'(a,i10,2f20.10)')'j, Min_region, Min_pos=',j,pos_min(j), ddd
-      endif   
+      endif
       supercell_scale(j)=pos_max(j)-pos_min(j)
       write(*,'(a,i10,f20.10)')'j, supercell_scale =',j, supercell_scale(j)
     enddo
@@ -1068,8 +1066,8 @@ contains
         ddd=ddd-(pos_max(j)+pos_min(j))/2.0d0
         atom_info(i)%position(j)=ddd*cell(j)
         write(*,*)'j,i,pos_new=',j,i,atom_info(i)%position(j)
-      enddo   
-    enddo  
+      enddo
+    enddo
 !
     supercell_scale(1:3)=supercell_scale(1:3)*2.0d0
 !
@@ -1110,13 +1108,13 @@ contains
     if (ierr /= 0) then
       write(*,*)'Alloc. error'
       stop
-    endif   
+    endif
 !
     allocate(weight(max_nval, max_atomic_number),stat=ierr)
     if (ierr /= 0) then
       write(*,*)'Alloc. error'
       stop
-    endif   
+    endif
 !
     open(iunit1,file=filename1, status='unknown')
     open(iunit2,file=filename2, status='unknown')
@@ -1124,7 +1122,7 @@ contains
     write(iunit2,*)'Analysis on wavefunction weight (or |coefficient|^2) [experimental function]'
 !
     do lvl_index=1,n_tot_base
-      weight(:,:)=0.0d0 
+      weight(:,:)=0.0d0
       weight_flag(:)=0
 !
       j=0
@@ -1133,10 +1131,10 @@ contains
         atm_num_index=atom_info(atm_index)%atomic_number
         weight_flag(atm_num_index)=1
         do orb_index=1, atom_info(atm_index)%num_val_orb
-          j=j+1 
+          j=j+1
           if (j > n_tot_base) then
             write(*,*)'ERROR(plot_detailed_information) '
-          endif   
+          endif
           coef=atmp(j,lvl_index)
           write(iunit1,'(4i10,f20.10)') lvl_index, atm_index, atm_num_index, orb_index,coef
           weight(orb_index, atm_num_index)=weight(orb_index, atm_num_index)+coef*coef
@@ -1154,7 +1152,7 @@ contains
            write(iunit2,'(2i10,f25.10, 3f10.5)') lvl_index, atm_num_index, &
                 sum(weight(:,atm_num_index)), weight(1, atm_num_index),&
                 sum(weight(2:4, atm_num_index)), sum(weight(5:9, atm_num_index))
-        endif  
+        endif
       enddo
     end do
 !
@@ -1168,4 +1166,3 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 end program elses_generate_cubefile
-

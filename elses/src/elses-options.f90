@@ -50,6 +50,8 @@ contains
           config%option%filename = argv
        end if
     end do
+
+    config%option%verbose_level = config%option%verbose
     
     return
   end subroutine elses_process_options

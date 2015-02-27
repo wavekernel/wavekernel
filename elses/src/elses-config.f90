@@ -454,7 +454,8 @@ module M_config
 
   type :: option_type
      character(len=256)  :: filename
-     integer             :: verbose
+     integer             :: verbose       ! Old variable 
+     integer             :: verbose_level ! New variable (8. Feb. 2015)
      integer             :: debug
      character(len=16)   :: functionality
      integer             :: log_node_number

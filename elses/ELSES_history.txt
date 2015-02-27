@@ -2,6 +2,216 @@
 ELSES history
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+日付 2015/02/26
+担当者名 星健夫
+
+更新ファイル
+src/elses-lib-quad-precision.f90
+
+概要：
+実験的機能の更新(4倍精度テストルーチン)。
+シミュレーション機能変化なし。
+
+詳細：
+4倍精度テストルーチンのコード
+src/elses-lib-quad-precision.f90
+を、dummy routine
+src/code_optional/elses-lib-quad-precision-dummy.f90
+におきかえた。
+true routineは、
+src/code_optional/elses-lib-quad-precision.f90
+にある。
+
+メモ：
+4倍精度テストルーチンは、
+4倍精度が使えるかどうかのテストのためだけに実施している。
+したがって、ダミールーチンに置き換えても支障はない。
+なお、gfortranはv.4.6(2011年3月)から4倍精度に対応。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2015/02/25
+担当者名 星健夫
+
+更新ファイル
+Makefile
+src/elses-00-version-info.f90
+
+バージョン番号更新(v0.05.00→v0.05.01)
+--------------------------------------------------------------------------------
+***************************************************
+2015/02/21
+ELSES v0.05.00 Released (elses-v0.05.00-20150117-rel.tgz)
+Note: identical to RC
+***************************************************
+--------------------------------------------------------------------------------
+日付 2015/02/12
+担当者名 井町宏人　星健夫
+
+更新ファイル：
+tool/plot_eigenstates/src/elses-generate-cubefile.f90
+
+概要：
+elses-generate-cubefileの微修正。
+
+詳細：
+メッシュ数が6の倍数のときに、
+出力cubeファイルに不要な空行がはいる現象を解消。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2015/02/08(2)
+担当者名 星健夫
+
+更新ファイル：
+src/elses-qm-solver-gkrylov-dst.f90
+
+概要：
+DSTワークフローの微更新。
+計算機能への影響なし。
+
+詳細：
+log nodeへの書き出しを微修正。
+
+メモ：
+代表的な更新点としては、(verbose level)が1以上のとき、
+mainのKrylov loopの中で、OMP並列度数をnode logに出力。
+例：
+INFO:OMP_id, P_OMP in Krylov loop =        12        20
+INFO:OMP_id, P_OMP in Krylov loop =         4        20
+INFO:OMP_id, P_OMP in Krylov loop =        15        20
+INFO:OMP_id, P_OMP in Krylov loop =        13        20
+INFO:OMP_id, P_OMP in Krylov loop =        16        20
+INFO:OMP_id, P_OMP in Krylov loop =        11        20
+INFO:OMP_id, P_OMP in Krylov loop =         9        20
+INFO:OMP_id, P_OMP in Krylov loop =         7        20
+INFO:OMP_id, P_OMP in Krylov loop =         6        20
+INFO:OMP_id, P_OMP in Krylov loop =         8        20
+INFO:OMP_id, P_OMP in Krylov loop =         1        20
+INFO:OMP_id, P_OMP in Krylov loop =        17        20
+INFO:OMP_id, P_OMP in Krylov loop =        18        20
+INFO:OMP_id, P_OMP in Krylov loop =         2        20
+INFO:OMP_id, P_OMP in Krylov loop =        19        20
+INFO:OMP_id, P_OMP in Krylov loop =        10        20
+INFO:OMP_id, P_OMP in Krylov loop =         3        20
+INFO:OMP_id, P_OMP in Krylov loop =         5        20
+INFO:OMP_id, P_OMP in Krylov loop =         0        20
+INFO:OMP_id, P_OMP in Krylov loop =        14        20
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2015/02/08
+担当者名 星健夫
+
+更新ファイル：
+src/elses-config.f90
+src/elses-options.f90
+
+概要：
+verbose level設定変数の再設定。
+計算機能への影響なし。
+
+詳細：
+verbose level設定変数は、歴史的経緯で混乱しているので
+config%option%verbose_level
+として、再定義。
+今後はこちらを使い、それ以外は廃止の方向とする。
+
+メモ：
+verbose level設定変数は、現状で以下の3種が存在している。
+(1) config%option%verbose_level (利用を推奨)
+→ユーザーが設定した値(ELSES実行時のoptionで指定した値)
+(2) config%option%verbose
+→非DSTワークフローでは、(1)と同じ。
+DSTワークフローでは、ノードによって値が違う
+・root node：(1)の値
+・root node以外：-1に強制設定
+(3) i_verbose [module M_qm_domain]
+→(2)と同じ
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2015/02/05
+担当者名 星健夫
+
+更新ファイル：
+src/elses-xml-config.f90
+
+概要：
+実験的機能(XML file のsplit reading)の更新。
+本機能を使っていなければ、影響なし。
+
+詳細：
+以下の一文を追加。
+if (system%structure%split%number_of_files == 0) system%structure%split%set 
+= .false.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2015/01/30(2)
+担当者名 星健夫
+
+更新ファイル：
+src/elses-la-gkrylov-main.f90
+src/elses-qm-solver-gkrylov.f90
+
+概要：
+不要ファイルの整理
+
+詳細：
+上記2ファイルは、不要ファイル(Outdated routine)。
+念のため、該当サブルーチンがcallされると、stopするようにした。
+近日、ファイルごと削除する。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2015/01/30
+担当者名 星健夫
+
+更新ファイル：
+src/eelses-la-gkrylov-main-dstm.f90
+
+概要：
+DSTワークフローにおける、
+京での不都合を解消。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2015/01/21
+担当者名 星健夫
+
+更新ファイル：
+src/elses-config.f90
+src/elses-xml-config.f90
+sample/sample_geno/C6H6_opt/config.xml
+
+概要：
+設定XML仕様にバージョン導入。
+旧仕様・新仕様の両方に対応しているので、従来機能に変更なし。
+
+詳細：
+設定XMLファイル(典型名:config.xml)の仕様にバージョン
+(ELSES XML version)を導入した。
+例は、
+sample/sample_geno/C6H6_opt/config.xml
+にある、下記行：
+<config name="C6H6_geno_opt_20150121" elses_xml_version="5.01">
+ここでは
+(ELSES XML version) = 5.01
+に設定されている。defaultでは、
+(ELSES XML version) = 1.00
+と設定される。
+elses_xml_version="current"
+とすると、規定されている最新仕様になる。
+
+ELSES XML versionの仕様：
+・ver. 1.0 (upto ELSES v0.05.00)
+最初の仕様。
+・ver. 5.01 (ELSES v0.05.01)
+設定XMLでbounary tagを要求する。
+注：従来の仕様では、boundary tagが無いときは、周期系を仮定していた
+
+内部仕様：
+(ELSES XML version)は、
+config%elses_xml_version (実数)
+に格納される。「current」のときの値は、
+subroutine config_loadの
+real(8), parameter   :: elses_xml_version_current=5.01d0
+で設定される。
+--------------------------------------------------------------------------------
 ***************************************************
 2015/01/17
 ELSES v0.05.00 Release Candidate (elses-v0.05.00-20150117-rc.tgz)
