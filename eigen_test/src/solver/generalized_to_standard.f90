@@ -46,7 +46,6 @@ contains
 
     time_end = mpi_wtime()
     call add_event('reduce_generalized:pdsygst', time_end - time_start)
-    time_start = time_end
   end subroutine reduce_generalized
 
 
@@ -95,7 +94,6 @@ contains
 
     time_end = mpi_wtime()
     call add_event('reduce_generalized_new:pdsyngst', time_end - time_start)
-    time_start = time_end
   end subroutine reduce_generalized_new
 
 
@@ -118,6 +116,6 @@ contains
     end if
 
     time_end = mpi_wtime()
-    call add_event('recovery_generalized:pdtrtrs', time_end - time_start)
+    call add_event('recovery_generalized', time_end - time_start)
   end subroutine recovery_generalized
 end module generalized_to_standard

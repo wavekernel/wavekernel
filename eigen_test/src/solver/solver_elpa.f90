@@ -238,7 +238,7 @@ contains
     call add_event('solve_evp_real:fwd', time_evp_fwd)
     call add_event('solve_evp_real:solve', time_evp_solve)
     call add_event('solve_evp_real:back', time_evp_back)
-    call add_event('solve_evp_real:total', time_evp_fwd + time_evp_solve + time_evp_back)
+    call add_event('solve_evp_real', time_evp_fwd + time_evp_solve + time_evp_back)
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_elpa1:solve_evp_real', time_end - time_start)
@@ -351,7 +351,7 @@ contains
     call add_event('solve_evp_real_2stage:fwd', time_evp_fwd)
     call add_event('solve_evp_real_2stage:solve', time_evp_solve)
     call add_event('solve_evp_real_2stage:back', time_evp_back)
-    call add_event('solve_evp_real_2stage:total', time_evp_fwd + time_evp_solve + time_evp_back)
+    call add_event('solve_evp_real_2stage', time_evp_fwd + time_evp_solve + time_evp_back)
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_elpa2:solve_evp_real_2stage', time_end - time_start)

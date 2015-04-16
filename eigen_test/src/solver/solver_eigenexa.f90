@@ -116,17 +116,17 @@ contains
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, eigen_times, &
          m_forward = m_forward, m_backward = m_backward)
     call add_event('eigen_sx:fwd', eigen_times(1))
-    call add_event('eigen_sx:fwd_Gflops', eigen_times(2))
+    call add_event('!eigen_sx:fwd_Gflops', eigen_times(2))
     call add_event('eigen_sx:dc', eigen_times(3))
-    call add_event('eigen_sx:dc_Gflops', eigen_times(4))
+    call add_event('!eigen_sx:dc_Gflops', eigen_times(4))
     call add_event('eigen_sx:bak', eigen_times(5))
-    call add_event('eigen_sx:bak_Gflops', eigen_times(6))
-    call add_event('eigen_sx:total', eigen_times(7))
-    call add_event('eigen_sx:total_Gflops', eigen_times(8))
+    call add_event('!eigen_sx:bak_Gflops', eigen_times(6))
+    call add_event('eigen_sx', eigen_times(7))
+    call add_event('!eigen_sx:total_Gflops', eigen_times(8))
 
     time_end = mpi_wtime()
     call add_event('eigen_solver_eigenexa:eigen_sx', time_end - time_start_part)
-    call add_event('eigen_solver_eigenexa:total', time_end - time_start)
+    call add_event('eigen_solver_eigenexa', time_end - time_start)
   end subroutine eigen_solver_eigenexa
 
 
@@ -179,17 +179,17 @@ contains
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, eigen_times, &
          m_forward = m_forward, m_backward = m_backward)
     call add_event('eigen_s:fwd', eigen_times(1))
-    call add_event('eigen_s:fwd_Gflops', eigen_times(2))
+    call add_event('!eigen_s:fwd_Gflops', eigen_times(2))
     call add_event('eigen_s:dc', eigen_times(3))
-    call add_event('eigen_s:dc_Gflops', eigen_times(4))
+    call add_event('!eigen_s:dc_Gflops', eigen_times(4))
     call add_event('eigen_s:bak', eigen_times(5))
-    call add_event('eigen_s:bak_Gflops', eigen_times(6))
-    call add_event('eigen_s:total', eigen_times(7))
-    call add_event('eigen_s:total_Gflops', eigen_times(8))
+    call add_event('!eigen_s:bak_Gflops', eigen_times(6))
+    call add_event('eigen_s', eigen_times(7))
+    call add_event('!eigen_s:total_Gflops', eigen_times(8))
 
     time_end = mpi_wtime()
     call add_event('eigen_solver_eigenk:eigen_s', time_end - time_start_part)
-    call add_event('eigen_solver_eigenk:total', time_end - time_start)
+    call add_event('eigen_solver_eigenk', time_end - time_start)
   end subroutine eigen_solver_eigenk
 
 
@@ -266,7 +266,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_scalapack_eigenexa:recovery_generalized', time_end - time_start_part)
-    call add_event('solve_with_general_scalapack_eigenexa:total', time_end - time_start)
+    call add_event('solve_with_general_scalapack_eigenexa', time_end - time_start)
   end subroutine solve_with_general_scalapack_eigenexa
 
 
@@ -334,7 +334,7 @@ contains
          eigenpairs_tmp%blacs%desc(context_))
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_scalapack_eigenexa:pdgemr2d_2', time_end - time_start_part)
+    call add_event('solve_with_general_scalapack_eigenk:pdgemr2d_2', time_end - time_start_part)
     time_start_part = time_end
 
     call recovery_generalized(n, n, matrix_B_dist, desc_B, &
@@ -342,7 +342,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_scalapack_eigenk:recovery_generalized', time_end - time_start_part)
-    call add_event('solve_with_general_scalapack_eigenk:total', time_end - time_start)
+    call add_event('solve_with_general_scalapack_eigenk', time_end - time_start)
   end subroutine solve_with_general_scalapack_eigenk
 
 
@@ -410,7 +410,7 @@ contains
          eigenpairs_tmp%blacs%desc(context_))
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_scalapacknew_eigenexa:pdgemr2d_2', time_end - time_start_part)
+    call add_event('solve_with_general_scalapacknew_eigenk:pdgemr2d_2', time_end - time_start_part)
     time_start_part = time_end
 
     call recovery_generalized(n, n, matrix_B_dist, desc_B, &
@@ -418,6 +418,6 @@ contains
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_scalapacknew_eigenk:recovery_generalized', time_end - time_start_part)
-    call add_event('solve_with_general_scalapacknew_eigenk:total', time_end - time_start)
+    call add_event('solve_with_general_scalapacknew_eigenk', time_end - time_start)
   end subroutine solve_with_general_scalapacknew_eigenk
 end module solver_eigenexa

@@ -124,7 +124,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('eigen_solver_scalapack_all:pdormtr', time_end - time_start_part)
-    call add_event('eigen_solver_scalapack_all:total', time_end - time_start)
+    call add_event('eigen_solver_scalapack_all', time_end - time_start)
   end subroutine eigen_solver_scalapack_all
 
 
@@ -168,7 +168,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_scalapack:recovery_generalized', time_end - time_start_part)
-    call add_event('solve_with_general_scalapack:total', time_end - time_start)
+    call add_event('solve_with_general_scalapack', time_end - time_start)
   end subroutine solve_with_general_scalapack
 
 

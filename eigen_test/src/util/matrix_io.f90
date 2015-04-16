@@ -59,7 +59,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('read_matrix_file:value', time_end - time_start_part)
-    call add_event('read_matrix_file:total', time_end - time_start)
+    call add_event('read_matrix_file', time_end - time_start)
   end subroutine read_matrix_file
 
 

@@ -60,6 +60,10 @@ program eigen_test
     call fson_setting_add(arg, output)
   end if
 
+  time_end = mpi_wtime()
+  call add_event('main:read_matrix_files', time_end - time_start_part)
+  time_start_part = time_end
+
   call bcast_sparse_matrix(0, arg%matrix_A_info, matrix_A)
   if (arg%is_generalized_problem) then
     call bcast_sparse_matrix(0, arg%matrix_B_info, matrix_B)
@@ -72,7 +76,7 @@ program eigen_test
   end if
 
   time_end = mpi_wtime()
-  call add_event('main:read_matrix_file', time_end - time_start_part)
+  call add_event('main:bcast_sparse_matrices', time_end - time_start_part)
   time_start_part = time_end
 
   if (check_master()) print '(/, "----- Solver Call -----")'
@@ -141,7 +145,7 @@ program eigen_test
 
   time_end = mpi_wtime()
   call add_event('main:eval_orthogonality', time_end - time_start_part)
-  call add_event('main:total', time_end - time_start)
+  call add_event('main', time_end - time_start)
 
   if (check_master()) then
     call fson_events_add(output)

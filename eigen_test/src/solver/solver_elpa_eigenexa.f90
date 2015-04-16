@@ -51,15 +51,25 @@ contains
     na_rows = numroc(n, block_size, my_prow, 0, np_rows)
     na_cols = numroc(n, block_size, my_pcol, 0, np_cols)
     call descinit(sc_desc, n, n, block_size, block_size, 0, 0, proc%context, na_rows, info)
+
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:init', time_end - time_start_part)
+    time_start_part = time_end
+
     call setup_distributed_matrix('A', proc, n, n, desc_A, matrix_A_dist)
     call setup_distributed_matrix('A2', proc, n, n, desc_A2, matrix_A2_dist)
     call setup_distributed_matrix('B', proc, n, n, desc_B, matrix_B_dist)
+
+    time_end = mpi_wtime()
+    call add_event('solve_with_general_elpa_eigenexa:setup_distributed_matrices', time_end - time_start_part)
+    time_start_part = time_end
+
     call distribute_global_sparse_matrix(matrix_A, desc_A, matrix_A_dist)
     call distribute_global_sparse_matrix(matrix_A, desc_A2, matrix_A2_dist)
     call distribute_global_sparse_matrix(matrix_B, desc_B, matrix_B_dist)
 
     time_end = mpi_wtime()
-    call add_event('solve_with_general_elpa_eigenexa:setup_matrices', time_end - time_start_part)
+    call add_event('solve_with_general_elpa_eigenexa:distribute_global_sparse_matrices', time_end - time_start_part)
     time_start_part = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
@@ -146,7 +156,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_elpa_eigenexa:pdtrmm_EV', time_end - time_start_part)
-    call add_event('solve_with_general_elpa_eigenexa:total', time_end - time_start)
+    call add_event('solve_with_general_elpa_eigenexa', time_end - time_start)
   end subroutine solve_with_general_elpa_eigenexa
 
 
@@ -276,6 +286,6 @@ contains
 
     time_end = mpi_wtime()
     call add_event('solve_with_general_elpa_eigenk:pdtrmm_EV', time_end - time_start_part)
-    call add_event('solve_with_general_elpa_eigenk:total', time_end - time_start)
+    call add_event('solve_with_general_elpa_eigenk', time_end - time_start)
   end subroutine solve_with_general_elpa_eigenk
 end module solver_elpa_eigenexa

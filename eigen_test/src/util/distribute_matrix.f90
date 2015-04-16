@@ -365,6 +365,6 @@ contains
 
     time_end = mpi_wtime()
     call add_event('bcast_sparse_matrix:bcast_value', time_end - time_start_part)
-    call add_event('bcast_sparse_matrix:total', time_end - time_start)
+    call add_event('bcast_sparse_matrix', time_end - time_start)
   end subroutine bcast_sparse_matrix
 end module distribute_matrix

@@ -200,7 +200,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('eval_residual_norm_blacs:finish', time_end - time_start_part)
-    call add_event('eval_residual_norm_blacs:total', time_end - time_start)
+    call add_event('eval_residual_norm_blacs', time_end - time_start)
   end subroutine eval_residual_norm_blacs
 
 
@@ -326,7 +326,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('eval_orthogonality_blacs:finish', time_end - time_start_part)
-    call add_event('eval_orthogonality_blacs:total', time_end - time_start)
+    call add_event('eval_orthogonality_blacs', time_end - time_start)
   end subroutine eval_orthogonality_blacs
 
 
