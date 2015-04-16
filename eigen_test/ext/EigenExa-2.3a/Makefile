@@ -1,4 +1,4 @@
-INSTALL_DIR = $(HOME)/lib/EigenExa2.2b
+INSTALL_DIR = $(HOME)/lib/EigenExa2.3a/
 #INSTALL_DIR = $(HOME)/lib64
 #INSTALL_DIR =
 
@@ -13,6 +13,7 @@ INSTALL_DIR = $(HOME)/lib/EigenExa2.2b
 #include make_incs/make_inc.K_FX10
 #include make_incs/make_inc.K_FX10.shared
 #include make_incs/make_inc.BlueGeneQ
+#include make_incs/make_inc.SX
 include make_incs/make_inc
 
 
@@ -77,20 +78,19 @@ TESTEIGEN = eigenexa_benchmark a.out comm_create.exe comm_null.exe cart.exe
 LD_EIGEN  = -L./ -lEigenExa
 
 # MACROS
-AT_SYNC   = \
-	$(MACRO_D_PREFIX)USE_SYNC=0 \
-	$(MACRO_D_PREFIX)_DEBUG_=0 \
-	$(MACRO_D_PREFIX)_DEBUG2_=0
+AT_DBG   =
 AT_BCAST_OVERLAP = \
 	$(MACRO_D_PREFIX)AT_BCAST_OVERLAP=1 \
 	$(MACRO_D_PREFIX)OVERLAP_DECISION_TYPE=3
-DEBUGFLAG = \
-	$(MACRO_D_PREFIX)TIMER_PRINT=1
 #DEBUGFLAG = \
 #	$(MACRO_D_PREFIX)TIMER_PRINT=0
+#DEBUGFLAG = \
+#	$(MACRO_D_PREFIX)TIMER_PRINT=1
+DEBUGFLAG = \
+	$(MACRO_D_PREFIX)TIMER_PRINT=2
 
 BASIC_CCFLAG = $(CCFLAG) $(INCFLAG) $(MODFLAG) $(CPPFLAG) $(DEBUGFLAG)
-NOOPT_CCFLAG = $(CCFLAG) $(INCFLAG) $(MODFLAG) $(CPPFLAG) $(DEBUGFLAG)
+NOOPT_CCFLAG = $(C0FLAG) $(INCFLAG) $(MODFLAG) $(CPPFLAG) $(DEBUGFLAG)
 BASIC_LDFLAG = $(LD_EIGEN) $(LDFLAG) $(LD_EIGEN) $(LDFLAG)
 
 
@@ -123,7 +123,7 @@ test : $(TESTEIGEN)
 .f.o:
 	$(FF) -o $@ -c $< $(CCFLAG) $(INCFLAG) $(MODFLAG) $(DEBUGFLAG)
 .c.o:
-	$(CC) -o $@ -c $< $(CCFLAG) $(INCFLAG)
+	$(CC) -o $@ -c $< $(INCFLAG)
 
 
 #
@@ -164,20 +164,28 @@ eigen_devel.o : eigen_devel.F
 comm.o : comm.F
 	$(FF) -o $@ -c $< $(NOOPT_CCFLAG)
 eigen_trd.o : eigen_trd.F
-	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_SYNC)
+	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_DBG)
 eigen_prd.o : eigen_prd.F
-	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_SYNC)
+	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_DBG)
 eigen_trd_t2.o : eigen_trd_t2.F
-	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_SYNC)
+	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_DBG)
 eigen_prd_t2.o : eigen_prd_t2.F
-	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_SYNC)
+	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_DBG)
 trbakwy4.o : trbakwy4.F
 	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_BCAST_OVERLAP)
 trbakwy4_body.o : trbakwy4_body.F
 	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(AT_BCAST_OVERLAP)
+
+#
+# rures for the benchmark programs
+#
+main2.o: main2.f
+	$(FF) -o $@ -c $< $(NOOPT_CCFLAG) $(TEST_FLAG)
 mat_set.o : mat_set.f
 	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(TEST_FLAG)
 ev_test.o : ev_test.f
+	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(TEST_FLAG)
+w_test.o : w_test.f
 	$(FF) -o $@ -c $< $(BASIC_CCFLAG) $(TEST_FLAG)
 
 

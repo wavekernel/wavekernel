@@ -1,0 +1,21 @@
+# for intel compiler
+FF             = mpif90 -fixed
+FC             = mpif90 -fixed
+#FF             = mpif90 -fixed -ftrapuv -CA -CU -fexceptions
+#FC             = mpif90 -fixed -ftrapuv -CA -CU -fexceptions
+CC             = mpicc
+AR             = xiar
+SMPFLAG        = -openmp
+CCFLAG         = $(SMPFLAG) -Os -xHOST
+C0FLAG         = $(SMPFLAG) -O0
+CPPFLAG        = -fpp
+MACRO_D_PREFIX = -D
+INCFLAG        = -I./
+MODFLAG        = -module ./
+BLAS           = -mkl=parallel
+LAPACK         = 
+SCALAPACK      = -L$(HOME)/lib64 -lscalapack
+#SCALAPACK      = -L$(HOME)/lib64 -lscalapack_intel_mpich3.0.2
+LDFLAG         = $(SMPFLAG) $(SCALAPACK) $(LAPACK) $(BLAS)
+TEST_FLAG      = -fp-model strict
+

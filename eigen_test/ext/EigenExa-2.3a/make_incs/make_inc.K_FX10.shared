@@ -1,0 +1,23 @@
+# for Fujitsu K or FX10 corss-compiler
+FF             =  mpifrtpx -Fixed
+FC             =  mpifrtpx -Fixed
+#FF             =  mpifrtpx -Fixed -Haefosux -Eg -NRtrap -Nline
+#FC             =  mpifrtpx -Fixed -Haefosux -Eg -NRtrap -Nline
+CC             =  mpifccpx
+SMPFLAG        =  -Kopenmp
+CCFLAG         =  $(SMPFLAG) -shared -KPIC -Kfast -Kocl -Ksimd -KXFILL 
+C0FLAG         =  $(SMPFLAG) -shared -KPIC
+CPPFLAG        =  -Cpp
+MACRO_D_PREFIX =  -D
+INCFLAG        =  -I./
+MODFLAG        =  -M./
+BLAS           =  -SSL2BLAMP
+SCALAPACK      =  -SCALAPACK
+LDFLAG         =  $(SMPFLAG) $(SCALAPACK) $(BLAS)
+TEST_FLAG      =
+
+SHARED         = "true"
+EXPORT_MAP     =  export.map
+SHARED_LDFLAG  = -shared
+SHARED_LIBEIGEN_LDFLAG = -Xg -Xlinker --version-script=$(EXPORT_MAP)
+

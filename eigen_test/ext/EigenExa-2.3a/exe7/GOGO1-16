@@ -1,0 +1,23 @@
+#!/bin/bash
+#PJM --rsc-list "rscgrp=small"
+#PJM --rsc-list "node=4x4"
+#PJM --rsc-list "elapse=04:00:00"
+#PJM -S
+#PJM --stg-transfiles all
+#PJM --mpi "use-rankdir"
+#PJM --stgin "rank=* ./a.out %r:./"
+#PJM --stgin "rank=0 ./IN %r:./"
+
+date
+echo $PJM_O_WORKDIR
+echo '*************************************************'
+cat $PJM_O_WORKDIR/.d*$PJM_JOBID | awk '/^\#PJM/{print}'
+echo '*************************************************'
+
+. /work/system/Env_base
+
+export OMP_NUM_THREADS=8
+export PARALLEL=8
+
+mpiexec ./a.out
+

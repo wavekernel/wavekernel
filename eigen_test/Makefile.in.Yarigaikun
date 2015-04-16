@@ -1,3 +1,3 @@
 FC = mpif90
 FFLAGS = -O3 -Wall -fopenmp
-LIBS = -L$(HOME)/lib -I$(HOME)/lib -I$(HOME)/include -I$(HOME)/include/elpa_openmp-2014.06.001/modules -lelpa_openmp -lEigenExa -lscalapack -llapack -lblas -lgomp
+LIBS = -L$(HOME)/lib -L$(HOME)/lib/EigenExa2.3a -I$(HOME)/lib -I$(HOME)/lib/EigenExa2.3a -I$(HOME)/include -I$(HOME)/include/elpa_openmp-2014.06.001/modules -lelpa_openmp -lEigenExa -lscalapack -llapack -lblas -lgomp
