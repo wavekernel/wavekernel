@@ -48,10 +48,19 @@ contains
     if (check_master()) then
       print *, 'Usage: eigen_test -s <solver_type> <options> <matrix_A> [<matrix_B>]'
       print *, 'Solver types are:'
-      print *, '  scalapack_all (standard)'
+      print *, '  scalapack (standard)'
       print *, '  scalapac_select (standard, selecting)'
-      print *, '  general_scalapack_all (generalized)'
+      print *, '  general_scalapack (generalized)'
       print *, '  general_scalapack_select (generalized, selecting)'
+      print *, '  eigensx (standard)'
+      print *, '  general_scalapack_eigensx (generalized)'
+      print *, '  general_scalapack_eigens (generalized)'
+      print *, '  general_elpa_scalapack (generalized)'
+      print *, '  general_elpa1 (generalized)'
+      print *, '  general_elpa2 (generalized)'
+      print *, '  general_elpa_eigensx (generalized)'
+      print *, '  general_elpa_eigens (generalized)'
+      print *, '  general_scalapacknew_eigens (generalized)'
       print *, 'Options are:'
       print *, '  -n <num>  (available with selecting solvers) Compute only &
            &<num> eigenpairs in ascending order of their eigenvalues'
@@ -114,11 +123,11 @@ contains
       is_solver_valid = arg%is_generalized_problem
     case ('general_scalapack_select')
       is_solver_valid = arg%is_generalized_problem
-    case ('eigenexa')
+    case ('eigensx')
       is_solver_valid = .not. arg%is_generalized_problem
-    case ('general_scalapack_eigenexa')
+    case ('general_scalapack_eigensx')
       is_solver_valid = arg%is_generalized_problem
-    case ('general_scalapack_eigenk')
+    case ('general_scalapack_eigens')
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa_scalapack')
       is_solver_valid = arg%is_generalized_problem
@@ -126,11 +135,11 @@ contains
       is_solver_valid = arg%is_generalized_problem
     case ('general_elpa2')
       is_solver_valid = arg%is_generalized_problem
-    case ('general_elpa_eigenexa')
+    case ('general_elpa_eigensx')
       is_solver_valid = arg%is_generalized_problem
-    case ('general_elpa_eigenk')
+    case ('general_elpa_eigens')
       is_solver_valid = arg%is_generalized_problem
-    case ('general_scalapacknew_eigenk')
+    case ('general_scalapacknew_eigens')
       is_solver_valid = arg%is_generalized_problem
     case default
       is_solver_valid = .false.
@@ -153,9 +162,9 @@ contains
     select case (trim(arg%solver_type))
     case ('lapack')
       is_n_vec_valid = arg%n_vec == dim
-    case ('scalapack_all')
+    case ('scalapack')
       is_n_vec_valid = arg%n_vec == dim
-    case ('general_scalapack_all')
+    case ('general_scalapack')
       is_n_vec_valid = arg%n_vec == dim
     case default
       is_n_vec_valid = .true.
@@ -239,11 +248,11 @@ contains
     select case (trim(arg%solver_type))
     case ('lapack')
       required_memory = required_memory_lapack(arg)
-    case ('scalapack_all')
+    case ('scalapack')
       required_memory = required_memory_parallel_standard(arg)
     case ('scalapack_select')
       required_memory = required_memory_parallel_standard(arg)
-    case ('general_scalapack_all')
+    case ('general_scalapack')
       required_memory = required_memory_parallel_generalized(arg)
     case ('general_scalapack_select')
       required_memory = required_memory_parallel_generalized(arg)
