@@ -68,11 +68,11 @@ contains
            &checking. Default is 0. Set -1 to consider all the vectors'
       print *, '  -o <file>  Set output file name for eigenvalues to <file>'
       print *, '  -d <dir>  Set output files directory for eigenvectors to <dir>'
-      print *, '  -p <num>  Specify the number of eigenvector to be output'
       print *, '  -p <num1>,<num2>  Specify range of the number of eigenvectors to be output'
       print *, '  -t <num1>,<num2>  Consider eigenvectors indexed <num1> to <num2>(included) in orthogonality checking'
       print *, '  -l <file>  Set output file name for elapse time log to <file>'
       print *, '  -h  Print this help and exit'
+      print *, '  --block-size <n>  Change block size in block cyclic distribution'
       print *, '  --dry-run  Read command arguments and matrix files and instantly exit'
       print *, '  --print-grid-mapping  Print which process is assigned to each coordinate in BLACS grid'
       call flush(6)
@@ -299,8 +299,7 @@ contains
           call get_command_argument(argi + 1, arg_str)
           i = index(arg_str, ',')
           if (i == 0) then
-            read (arg_str, *) arg%printed_vecs_start
-            arg%printed_vecs_end = arg%printed_vecs_start
+            call terminate("read_command_argument: comma needed for printed eigenvector range specification", 1)
           else
             read (arg_str(1 : i - 1), *) arg%printed_vecs_start
             read (arg_str(i + 1 :), *) arg%printed_vecs_end
