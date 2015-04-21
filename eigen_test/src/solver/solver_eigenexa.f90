@@ -112,6 +112,7 @@ contains
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
 
+#if	USE_EIGENEXA_WITH_TIMER
     call eigen_sx(dim, dim, mat, nx, &
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, eigen_times, &
          m_forward = m_forward, m_backward = m_backward)
@@ -123,6 +124,11 @@ contains
     call add_event('!eigen_sx:bak_Gflops', eigen_times(6))
     call add_event('eigen_sx', eigen_times(7))
     call add_event('!eigen_sx:total_Gflops', eigen_times(8))
+#else
+    call eigen_sx(dim, dim, mat, nx, &
+         eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
+         m_forward = m_forward, m_backward = m_backward)
+#endif
 
     time_end = mpi_wtime()
     call add_event('eigen_solver_eigenexa:eigen_sx', time_end - time_start_part)
@@ -175,6 +181,7 @@ contains
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
 
+#if	USE_EIGENEXA_WITH_TIMER
     call eigen_s(dim, dim, mat, nx, &
          eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, eigen_times, &
          m_forward = m_forward, m_backward = m_backward)
@@ -186,6 +193,11 @@ contains
     call add_event('!eigen_s:bak_Gflops', eigen_times(6))
     call add_event('eigen_s', eigen_times(7))
     call add_event('!eigen_s:total_Gflops', eigen_times(8))
+#else
+    call eigen_s(dim, dim, mat, nx, &
+         eigenpairs%blacs%values, eigenpairs%blacs%Vectors, nx, &
+         m_forward = m_forward, m_backward = m_backward)
+#endif
 
     time_end = mpi_wtime()
     call add_event('eigen_solver_eigenk:eigen_s', time_end - time_start_part)

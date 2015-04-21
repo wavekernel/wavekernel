@@ -1,6 +1,9 @@
 include ../Makefile.in
 
-LDFLAGS = $(FFLAGS)
+EIGENEXA_WITH_TIMER_FLAG = $(MACRO_PREFIX)USE_EIGENEXA_WITH_TIMER=0
+#EIGENEXA_WITH_TIMER_FLAG = $(MACRO_PREFIX)USE_EIGENEXA_WITH_TIMER=1
+FCFLAGS_INTERNAL = $(FCFLAGS)
+LDFLAGS_INTERNAL = $(LDFLAGS)
 
 TARGET_MAIN = eigen
 
@@ -19,33 +22,33 @@ OBJS_SOLVER = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapac
 OBJS_EIGENEXA = solver/solver_eigenexa.o
 ifeq ($(Use_EigenExa), 1)
 	SRCS_EIGENEXA = solver/solver_eigenexa.f90
-	FFLAGS_EIGENEXA = $(FFLAGS)
+	FCFLAGS_EIGENEXA = $(FCFLAGS_INTERNAL) $(CPPFLAG) $(EIGENEXA_WITH_TIMER_FLAG)
 else
 	SRCS_EIGENEXA = solver/solver_eigenexa_dummy.f90
-	FFLAGS_EIGENEXA = $(FFLAGS) -Wno-unused-dummy-argument
+	FCFLAGS_EIGENEXA = $(FCFLAGS_INTERNAL) -Wno-unused-dummy-argument
 endif
 
 OBJS_ELPA = solver/solver_elpa.o
 ifeq ($(Use_ELPA), 1)
 	SRCS_ELPA = solver/solver_elpa.f90
-	FFLAGS_ELPA = $(FFLAGS)
+	FCFLAGS_ELPA = $(FCFLAGS_INTERNAL)
 else
 	SRCS_ELPA = solver/solver_elpa_dummy.f90
-	FFLAGS_ELPA = $(FFLAGS) -Wno-unused-dummy-argument
+	FCFLAGS_ELPA = $(FCFLAGS_INTERNAL) -Wno-unused-dummy-argument
 endif
 
 OBJS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa.o
 ifeq ($(Use_ELPA), 1)
 	ifeq ($(Use_EigenExa), 1)
 		SRCS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa.f90
-		FFLAGS_ELPA_EIGENEXA = $(FFLAGS)
+		FCFLAGS_ELPA_EIGENEXA = $(FCFLAGS_INTERNAL)
 	else
 		SRCS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa_dummy.f90
-		FFLAGS_ELPA_EIGENEXA = $(FFLAGS) -Wno-unused-dummy-argument
+		FCFLAGS_ELPA_EIGENEXA = $(FCFLAGS_INTERNAL) -Wno-unused-dummy-argument
 	endif
 else
 	SRCS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa_dummy.f90
-	FFLAGS_ELPA_EIGENEXA = $(FFLAGS) -Wno-unused-dummy-argument
+	FCFLAGS_ELPA_EIGENEXA = $(FCFLAGS_INTERNAL) -Wno-unused-dummy-argument
 endif
 
 OBJS_UTIL_F77 = util/eigentest_pdlaprnt.o util/mmio.o
@@ -57,22 +60,22 @@ OBJS_LIB = $(OBJS_SOLVER) $(OBJS_EIGENEXA) $(OBJS_ELPA) $(OBJS_ELPA_EIGENEXA) $(
 OBJS = $(OBJS_MAIN) $(OBJS_LIB)
 
 $(OBJS_UTIL_F77): %.o: %.f
-	$(FC) -c $(FFLAGS) $(LIBS) $< -o $@
+	$(FC) -c $(FCFLAGS_INTERNAL) $(LIBS) $< -o $@
 
 $(OBJS_MAIN) $(OBJS_SOLVER) $(OBJS_UTIL): %.o: %.f90
-	$(FC) -c $(FFLAGS) $(LIBS) $< -o $@
+	$(FC) -c $(FCFLAGS_INTERNAL) $(LIBS) $< -o $@
 
 $(OBJS_EIGENEXA): $(SRCS_EIGENEXA)
-	$(FC) -c $(FFLAGS_EIGENEXA) $(LIBS) $< -o $@
+	$(FC) -c $(FCFLAGS_EIGENEXA) $(LIBS) $< -o $@
 
 $(OBJS_ELPA): $(SRCS_ELPA)
-	$(FC) -c $(FFLAGS_ELPA) $(LIBS) $< -o $@
+	$(FC) -c $(FCFLAGS_ELPA) $(LIBS) $< -o $@
 
 $(OBJS_ELPA_EIGENEXA): $(SRCS_ELPA_EIGENEXA)
-	$(FC) -c $(FFLAGS_ELPA_EIGENEXA) $(LIBS) $< -o $@
+	$(FC) -c $(FCFLAGS_ELPA_EIGENEXA) $(LIBS) $< -o $@
 
 $(TARGET_MAIN): $(OBJS)
-	$(FC) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(FC) $(LDFLAGS_INTERNAL) $^ $(LIBS) -o $@
 	@mkdir -p ../bin
 	cp $(TARGET_MAIN) ../bin/$(TARGET_MAIN)
 
