@@ -1,4 +1,5 @@
 module command_argument
+  use mpi
   use fson
   use fson_value_m
   use fson_string_m
@@ -49,7 +50,7 @@ contains
       print *, 'Usage: eigen_test -s <solver_type> <options> <matrix_A> [<matrix_B>]'
       print *, 'Solver types are:'
       print *, '  scalapack (standard)'
-      print *, '  scalapac_select (standard, selecting)'
+      print *, '  scalapack_select (standard, selecting)'
       print *, '  general_scalapack (generalized)'
       print *, '  general_scalapack_select (generalized, selecting)'
       print *, '  eigensx (standard)'
@@ -80,17 +81,36 @@ contains
   end subroutine print_help
 
 
-  subroutine wrap_mminfo(filename, info)
+  subroutine wrap_mminfo(filename, minfo, ierr)
     character(*), intent(in) :: filename
-    type(matrix_info), intent(out) :: info
+    type(matrix_info), intent(out) :: minfo
+    integer, intent(out) :: ierr
 
     integer, parameter :: iunit = 8
 
-    open(unit=iunit, file=filename)
-    call mminfo(iunit, info%rep, info%field, info%symm, &
-         info%rows, info%cols, info%entries)
+    open(unit=iunit, file=filename, status='old', iostat=ierr)
+    if (ierr /= 0) then
+      return
+    end if
+    call mminfo(iunit, minfo%rep, minfo%field, minfo%symm, &
+         minfo%rows, minfo%cols, minfo%entries, ierr)
     close(iunit)
   end subroutine wrap_mminfo
+
+
+  subroutine bcast_matrix_info(root, minfo)
+    integer, intent(in) :: root
+    type(matrix_info), intent(inout) :: minfo
+
+    integer :: ierr
+
+    call mpi_bcast(minfo%rep, 10, mpi_character, root, mpi_comm_world, ierr)
+    call mpi_bcast(minfo%field, 7, mpi_character, root, mpi_comm_world, ierr)
+    call mpi_bcast(minfo%symm, 19, mpi_character, root, mpi_comm_world, ierr)
+    call mpi_bcast(minfo%rows, 1, mpi_integer, root, mpi_comm_world, ierr)
+    call mpi_bcast(minfo%cols, 1, mpi_integer, root, mpi_comm_world, ierr)
+    call mpi_bcast(minfo%entries, 1, mpi_integer, root, mpi_comm_world, ierr)
+  end subroutine bcast_matrix_info
 
 
   subroutine validate_argument(arg)
@@ -159,15 +179,14 @@ contains
     end if
 
     ! For all eigenpair computation, n_vec = n?
+    is_n_vec_valid = .false.
     select case (trim(arg%solver_type))
-    case ('lapack')
-      is_n_vec_valid = arg%n_vec == dim
-    case ('scalapack')
-      is_n_vec_valid = arg%n_vec == dim
-    case ('general_scalapack')
-      is_n_vec_valid = arg%n_vec == dim
-    case default
+    case ('scalapack_select')
       is_n_vec_valid = .true.
+    case ('general_scalapack_select')
+      is_n_vec_valid = .true.
+    case default
+      is_n_vec_valid = arg%n_vec == dim
     end select
     if (.not. is_n_vec_valid) then
       call terminate("validate_argument: Solver '" // &
@@ -267,8 +286,7 @@ contains
 
     integer :: argi = 1
     character(len=256) :: arg_str
-    logical :: exists
-    integer :: i
+    integer :: i, ierr, ierr_mpi
 
     do while (argi <= command_argument_count())
       call get_command_argument(argi, arg_str)
@@ -340,23 +358,8 @@ contains
       else if (len_trim(arg%matrix_A_filename) == 0) then
         ! The first non-option argument specifies the (left) input matrix
         arg%matrix_A_filename = trim(arg_str)
-        ! Check whether the file exists
-        if (check_master()) then
-           inquire(file = trim(arg%matrix_A_filename), exist = exists)
-           if (.not. exists) then
-              call terminate("read_command_argument: Matrix A file '" // &
-                   trim(arg%matrix_A_filename) // "' not found", 1)
-           end if
-        end if
       else
         arg%matrix_B_filename = trim(arg_str)
-        if (check_master()) then
-           inquire(file = arg%matrix_B_filename, exist = exists)
-           if (.not. exists) then
-              call terminate("read_command_argument: Matrix B file '" // &
-                   trim(arg%matrix_B_filename) // "' not found", 1)
-           end if
-        end if
       end if
       argi = argi + 1
     enddo
@@ -367,10 +370,23 @@ contains
     arg%is_generalized_problem = (len_trim(arg%matrix_B_filename) /= 0)
 
     if (check_master()) then
-       call wrap_mminfo(arg%matrix_A_filename, arg%matrix_A_info)
-       if (arg%is_generalized_problem) then
-          call wrap_mminfo(arg%matrix_B_filename, arg%matrix_B_info)
-       end if
+      call wrap_mminfo(arg%matrix_A_filename, arg%matrix_A_info, ierr)
+    end if
+    call mpi_bcast(ierr, 1, mpi_integer, 0, mpi_comm_world, ierr_mpi)
+    if (ierr /= 0) then
+      call terminate('mminfo ' // trim(arg%matrix_A_filename) // ' failed',  ierr)
+    end if
+    call bcast_matrix_info(0, arg%matrix_A_info)
+
+    if (arg%is_generalized_problem) then
+      if (check_master()) then
+        call wrap_mminfo(arg%matrix_B_filename, arg%matrix_B_info, ierr)
+      end if
+      call mpi_bcast(ierr, 1, mpi_integer, 0, mpi_comm_world, ierr_mpi)
+      if (ierr /= 0) then
+        call terminate('mminfo ' // trim(arg%matrix_B_filename) // ' failed',  ierr)
+      end if
+      call bcast_matrix_info(0, arg%matrix_B_info)
     end if
 
     if (arg%n_vec == -1) then ! unspecified in command line arguments

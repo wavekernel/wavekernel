@@ -17,14 +17,15 @@ module matrix_io
 
 contains
 
-  subroutine read_matrix_file(filename, info, matrix)
+  subroutine read_matrix_file(filename, info, matrix, ierr)
     character(*), intent(in) :: filename
     type(matrix_info), intent(in) :: info
     type(sparse_mat), intent(out) :: matrix
+    integer, intent(out) :: ierr
 
     double precision :: time_start, time_start_part, time_end
     integer, parameter :: iunit = 8
-    integer :: rows, cols, num_non_zeros, ierr
+    integer :: rows, cols, num_non_zeros
 
     time_start = mpi_wtime()
     time_start_part = time_start
@@ -38,14 +39,17 @@ contains
 
     allocate(matrix%suffix(2, info%entries), matrix%value(info%entries), stat = ierr)
     if (ierr /= 0) then
-      call terminate('read_matrix_file: allocation failed', ierr)
+      return
     end if
 
     time_end = mpi_wtime()
     call add_event('read_matrix_file:allocate', time_end - time_start_part)
     time_start_part = time_end
 
-    open(iunit, file = filename)
+    open(iunit, file=filename, status='old', iostat=ierr)
+    if (ierr /= 0) then
+      return
+    end if
     ! read_matrix_file_header is added to skip comment lines
     call read_matrix_file_header(iunit, rows, cols, num_non_zeros)
 

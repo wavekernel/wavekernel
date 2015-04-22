@@ -18,7 +18,7 @@ program eigen_test
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
   double precision :: A_norm, rn_ave, rn_max, orthogonality
-  integer :: num_mpi_procs, num_omp_procs, j, ierr
+  integer :: num_mpi_procs, num_omp_procs, j, ierr, ierr_mpi
   integer, parameter :: iunit = 10
   double precision :: time_start, time_start_part, time_end
   type(fson_value), pointer :: output
@@ -49,15 +49,27 @@ program eigen_test
   call add_event('main:read_command_argument', time_end - time_start_part)
   time_start_part = time_end
 
+  call validate_argument(arg)
+  output => fson_value_create()
+  output%value_type = TYPE_OBJECT
+  call fson_setting_add(arg, output)
+
   if (check_master()) then
-    call validate_argument(arg)
-    call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A)
-    if (arg%is_generalized_problem) then
-      call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B)
+    call read_matrix_file(arg%matrix_A_filename, arg%matrix_A_info, matrix_A, ierr)
+  end if
+  call mpi_bcast(ierr, 1, mpi_integer, 0, mpi_comm_world, ierr_mpi)
+  if (ierr /= 0) then
+    call terminate('read_matrix_file ' // trim(arg%matrix_A_filename) // ' failed',  ierr)
+  end if
+
+  if (arg%is_generalized_problem) then
+    if (check_master()) then
+      call read_matrix_file(arg%matrix_B_filename, arg%matrix_B_info, matrix_B, ierr)
     end if
-    output => fson_value_create()
-    output%value_type = TYPE_OBJECT
-    call fson_setting_add(arg, output)
+    call mpi_bcast(ierr, 1, mpi_integer, 0, mpi_comm_world, ierr_mpi)
+    if (ierr /= 0) then
+      call terminate('read_matrix_file ' // trim(arg%matrix_B_filename) // ' failed',  ierr)
+    end if
   end if
 
   time_end = mpi_wtime()

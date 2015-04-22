@@ -1,5 +1,5 @@
       subroutine mmread(iunit,rep,field,symm,rows,cols,nnz,nnzmax,
-     *                 indx,jndx,ival,rval,cval)
+     *                 indx,jndx,ival,rval,cval,ierr)
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c This routine will read data from a matrix market formatted file.
@@ -87,7 +87,7 @@ c
       double precision rpart,ipart
       integer indx(*)
       integer jndx(*)
-      integer i, rows, cols, nnz, nnzreq, nnzmax, iunit
+      integer i, rows, cols, nnz, nnzreq, nnzmax, iunit, ierr
       integer count
       character mmhead*15
       character mmtype*6
@@ -96,6 +96,8 @@ c
       character symm*19
       character tmp1*1024
       character tmp2*2
+c
+      ierr = 0
 c
 c Read header line and check validity:
 c
@@ -182,7 +184,8 @@ c
      *            ' nonzeros.'
           print *,'resize nnzmax to at least ',nnz,'. (currently ',
      *            nnzmax,')'
-          stop
+          ierr = 1
+          return
         endif
 c
 c Read data according to data type (real,integer,complex, or pattern)
@@ -206,7 +209,8 @@ c
  50       continue
         else
            print *,'''',field,''' data type not recognized.'
-           stop
+           ierr = 2
+           return
         endif
         rewind(iunit)
         return
@@ -234,7 +238,8 @@ c
      *             cols,' dense ',symm,' matrix.'
           print *,'resize nnzmax to at least ',nnzreq,'. (currently ',
      *             nnzmax,')'
-          stop
+          ierr = 3
+          return
         endif
 c
 c Read data according to data type (real,integer,complex, or pattern)
@@ -254,7 +259,8 @@ c
  70      continue
         else
            print *,'''pattern'' data not consistant with type ''array'''
-           stop
+           ierr = 4
+           return
         endif
         rewind(iunit)
         return
@@ -270,23 +276,28 @@ c Various error conditions:
 c
  1000 print *,'Premature end-of-file.'
       print *,'No lines found.'
-      stop
+      ierr = 5
+      return
  2000 print *,'Premature end-of-file.'
       print *,'No data lines found.'
-      stop
+      ierr = 6
+      return
  3000 print *,'Size info inconsistant with representation.'
       print *,'Array matrices need exactly 2 size descriptors.'
       print *, count,' were found.'
-      stop
+      ierr = 7
+      return
  3500 print *,'Size info inconsistant with representation.'
       print *,'Coordinate matrices need exactly 3 size descriptors.'
       print *, count,' were found.'
-      stop
+      ierr = 8
+      return
  4000 print *,'Premature end-of-file.'
       print *,'Check that the data file contains ',nnz,
      *        ' lines of  i,j,[val] data.'
       print *,'(it appears there are only ',i,' such lines.)'
-      stop
+      ierr = 9
+      return
  5000 print *,'Invalid matrix header: ',tmp1
       print *,'Correct header format:'
       print *,'%%MatrixMarket type representation field symmetry'
@@ -296,34 +307,38 @@ c
       print *, 'Recognized representations:'
       print *, '   array'
       print *, '   coordinate'
-      stop
+      ierr = 10
+      return
  7000 print *,'''',field,''' field is not recognized.'
       print *, 'Recognized fields:'
       print *, '   real'
       print *, '   complex'
       print *, '   integer'
       print *, '   pattern'
-      stop
+      ierr = 11
+      return
  8000 print *,'''',field,''' arrays are not recognized.'
       print *, 'Recognized fields:'
       print *, '   real'
       print *, '   complex'
       print *, '   integer'
-      stop
+      ierr = 12
+      return
  9000 print *,'''',symm,''' symmetry is not recognized.'
       print *, 'Recognized symmetries:'
       print *, '   general'
       print *, '   symmetric'
       print *, '   hermitian'
       print *, '   skew-symmetric'
-      stop
+      ierr = 13
+      return
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c End of subroutine mmread
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-      subroutine mminfo(iunit,rep,field,symm,rows,cols,nnz)
+      subroutine mminfo(iunit,rep,field,symm,rows,cols,nnz,ierr)
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c This routine will read header information from a Matrix Market
@@ -385,7 +400,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c Declarations:
 c
-      integer rows, cols, nnz, iunit
+      integer rows, cols, nnz, iunit, ierr
       integer count
       character mmhead*14
       character mmtype*6
@@ -394,6 +409,8 @@ c
       character symm*19
       character tmp1*1024
       character tmp2*2
+c
+      ierr = 0
 c
 c Read header line and check validity:
 c
@@ -420,7 +437,8 @@ c
       if ( mmtype .ne. 'matrix' ) then
          print *,'Invalid matrix type: ',mmtype
          print *,'This reader only understands type ''matrix''.'
-        stop
+         ierr = 1
+         return
       else
          call lowerc(rep,1,10)
          call lowerc(field,1,7)
@@ -503,56 +521,66 @@ c
         print *, 'Recognized representations:'
         print *, '   array'
         print *, '   coordinate'
-        stop
+        ierr = 2
+        return
       endif
 c
 c Various error conditions:
 c
  1000 print *,'Premature end-of-file.'
       print *,'No lines found.'
-      stop
+      ierr = 3
+      return
  2000 print *,'Premature end-of-file.'
       print *,'No data found.'
-      stop
+      ierr = 4
+      return
  3000 print *,'Size info inconsistant with representation.'
       print *,'Array matrices need exactly 2 size descriptors.'
       print *, count,' were found.'
-      stop
+      ierr = 5
+      return
  3500 print *,'Size info inconsistant with representation.'
       print *,'Coordinate matrices need exactly 3 size descriptors.'
       print *, count,' were found.'
-      stop
+      ierr = 6
+      return
  5000 print *,'Invalid matrix header: ',tmp1
       print *,'Correct header format:'
       print *,'%%MatrixMarket type representation field symmetry'
       print *
       print *,'Check specification and try again.'
-      stop
+      ierr = 7
+      return
  6000 print *,'''',rep,''' representation not recognized.'
       print *, 'Recognized representations:'
       print *, '   array'
       print *, '   coordinate'
-      stop
+      ierr = 8
+      return
  7000 print *,'''',field,''' field is not recognized.'
       print *, 'Recognized fields:'
       print *, '   real'
       print *, '   complex'
       print *, '   integer'
       print *, '   pattern'
-      stop
+      ierr = 9
+      return
  8000 print *,'''',field,''' arrays are not recognized.'
       print *, 'Recognized fields:'
       print *, '   real'
       print *, '   complex'
       print *, '   integer'
-      stop
+      ierr = 10
+      return
  9000 print *,'''',symm,''' symmetry is not recognized.'
       print *, 'Recognized symmetries:'
       print *, '   general'
       print *, '   symmetric'
       print *, '   hermitian'
       print *, '   skew-symmetric'
-      stop
+      ierr = 11
+      return
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -560,7 +588,7 @@ c End of subroutine mmread
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       subroutine mmwrite(ounit,rep,field,symm,rows,cols,nnz,
-     *                    indx,jndx,ival,rval,cval)
+     *                    indx,jndx,ival,rval,cval,ierr)
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c This routine will write data to a matrix market formatted file.
@@ -640,8 +668,10 @@ c
       complex cval(*)
       integer indx(*)
       integer jndx(*)
-      integer i, rows, cols, nnz, nnzreq, ounit
+      integer i, rows, cols, nnz, nnzreq, ounit, ierr
       character*(*)rep,field,symm
+c
+      ierr = 0
 c
 c Test input qualifiers:
 c
@@ -720,27 +750,31 @@ c
       print *, 'Recognized representations:'
       print *, '   array'
       print *, '   coordinate'
-      stop
+      ierr = 1
+      return
  2000 print *,'''',field,''' field is not recognized.'
       print *, 'Recognized fields:'
       print *, '   real'
       print *, '   complex'
       print *, '   integer'
       print *, '   pattern'
-      stop
+      ierr = 2
+      return
  3000 print *,'''',field,''' arrays are not recognized.'
       print *, 'Recognized fields:'
       print *, '   real'
       print *, '   complex'
       print *, '   integer'
-      stop
+      ierr = 3
+      return
  4000 print *,'''',symm,''' symmetry is not recognized.'
       print *, 'Recognized symmetries:'
       print *, '   general'
       print *, '   symmetric'
       print *, '   hermitian'
       print *, '   skew-symmetric'
-      stop
+      ierr = 4
+      return
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

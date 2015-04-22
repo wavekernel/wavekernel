@@ -3,5 +3,5 @@ module global_variables
 
   public :: g_block_size, g_version
   integer :: g_block_size = 128
-  character(*), parameter :: g_version = '20150421'
+  character(*), parameter :: g_version = '20150422'
 end module global_variables
