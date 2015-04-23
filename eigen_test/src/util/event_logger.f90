@@ -31,7 +31,7 @@ contains
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
     t = mpi_wtime()
     if (my_rank == 0) then
-      write (0, *) '[Event', t, '] ', name, ',', val
+      write (0, '(A, F20.6, 3A, E24.16e3)') '[Event', t, '] ', name, ',', val
     end if
 
     is_found = .false.
@@ -101,7 +101,7 @@ contains
 
     events_in_fson => fson_value_create()
     events_in_fson%value_type = TYPE_ARRAY
-    call fson_set_name_to_val('events', events_in_fson)
+    call fson_set_name('events', events_in_fson)
 
     p => events
     do while (associated(p))
@@ -109,19 +109,19 @@ contains
       event%value_type = TYPE_OBJECT
 
       event_elem => fson_value_create()
-      call fson_set_name_to_val('name', event_elem)
-      call fson_set_val_as_string(trim(p%name), event_elem)
+      call fson_set_name('name', event_elem)
+      call fson_set_as_string(trim(p%name), event_elem)
       call fson_value_add(event, event_elem)
 
       event_elem => fson_value_create()
       event_elem%value_type = TYPE_INTEGER
-      call fson_set_name_to_val('num_repeated', event_elem)
+      call fson_set_name('num_repeated', event_elem)
       event_elem%value_integer = p%num_repeated
       call fson_value_add(event, event_elem)
 
       event_elem => fson_value_create()
       event_elem%value_type = TYPE_REAL
-      call fson_set_name_to_val('val', event_elem)
+      call fson_set_name('val', event_elem)
       event_elem%value_real = p%val
       call fson_value_add(event, event_elem)
 

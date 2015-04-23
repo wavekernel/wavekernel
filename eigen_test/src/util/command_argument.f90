@@ -447,19 +447,19 @@ contains
 
     setting_in_fson => fson_value_create()
     setting_in_fson%value_type = TYPE_OBJECT
-    call fson_set_name_to_val('setting', setting_in_fson)
+    call fson_set_name('setting', setting_in_fson)
 
     ! Set version.
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_OBJECT
-    call fson_set_name_to_val('version', setting_elem)
-    call fson_set_val_as_string(g_version, setting_elem)
+    call fson_set_name('version', setting_elem)
+    call fson_set_as_string(g_version, setting_elem)
     call fson_value_add(setting_in_fson, setting_elem)
 
     ! Set command.
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_STRING
-    call fson_set_name_to_val('command', setting_elem)
+    call fson_set_name('command', setting_elem)
     str => fson_string_create()
     do index_arg = 0, command_argument_count()
       call getarg(index_arg, argv)
@@ -474,46 +474,46 @@ contains
     ! Set file names.
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_OBJECT
-    call fson_set_name_to_val('matrix_A_filename', setting_elem)
-    call fson_set_val_as_string(trim(arg%matrix_A_filename), setting_elem)
+    call fson_set_name('matrix_A_filename', setting_elem)
+    call fson_set_as_string(trim(arg%matrix_A_filename), setting_elem)
     call fson_value_add(setting_in_fson, setting_elem)
 
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_OBJECT
-    call fson_set_name_to_val('matrix_B_filename', setting_elem)
-    call fson_set_val_as_string(trim(arg%matrix_B_filename), setting_elem)
+    call fson_set_name('matrix_B_filename', setting_elem)
+    call fson_set_as_string(trim(arg%matrix_B_filename), setting_elem)
     call fson_value_add(setting_in_fson, setting_elem)
 
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_OBJECT
-    call fson_set_name_to_val('log_filename', setting_elem)
-    call fson_set_val_as_string(trim(arg%log_filename), setting_elem)
+    call fson_set_name('log_filename', setting_elem)
+    call fson_set_as_string(trim(arg%log_filename), setting_elem)
     call fson_value_add(setting_in_fson, setting_elem)
 
     ! Set dimension.
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
-    call fson_set_name_to_val('dimension', setting_elem)
+    call fson_set_name('dimension', setting_elem)
     setting_elem%value_integer = arg%matrix_A_info%rows
     call fson_value_add(setting_in_fson, setting_elem)
 
     ! Set solver.
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_OBJECT
-    call fson_set_name_to_val('solver', setting_elem)
-    call fson_set_val_as_string(arg%solver_type, setting_elem)
+    call fson_set_name('solver', setting_elem)
+    call fson_set_as_string(arg%solver_type, setting_elem)
     call fson_value_add(setting_in_fson, setting_elem)
 
     ! Set blocksize.
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
-    call fson_set_name_to_val('g_block_size', setting_elem)
+    call fson_set_name('g_block_size', setting_elem)
     setting_elem%value_integer = g_block_size
     call fson_value_add(setting_in_fson, setting_elem)
 
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
-    call fson_set_name_to_val('block_size', setting_elem)
+    call fson_set_name('block_size', setting_elem)
     setting_elem%value_integer = arg%block_size
     call fson_value_add(setting_in_fson, setting_elem)
 

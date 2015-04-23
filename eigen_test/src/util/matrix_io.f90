@@ -116,7 +116,8 @@ contains
     print_count = 1
     do line_count = 1, num_non_zeros
       if (line_count > num_non_zeros / 10 * print_count .and. check_master()) then
-         write (0, *) '[Event', mpi_wtime(), '] read matrix element number ', line_count
+         write (0, '(A, F20.6, A, I0)') &
+              '[Event', mpi_wtime(), '] read matrix element number ', line_count
          print_count = print_count + 1
       end if
 

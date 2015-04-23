@@ -24,10 +24,11 @@
 !
 
 module fson_string_m
-
+    implicit none
     private
 
-    public :: fson_string, fson_string_create, fson_string_destroy, fson_string_length, fson_string_append, fson_string_clear
+    public :: fson_string, fson_string_create, fson_string_destroy
+    public :: fson_string_length, fson_string_append, fson_string_clear
     public :: fson_string_equals, fson_string_copy
 
     integer, parameter :: BLOCK_SIZE = 32
@@ -69,7 +70,6 @@ contains
         if(present(chars)) then
             call append_chars(new, chars)
         end if
-
     end function fson_string_create
 
     !
@@ -97,9 +97,7 @@ contains
             allocate(new)
             this % next => new
         end if
-
     end subroutine allocate_block
-
 
     !
     ! APPEND_STRING
@@ -113,8 +111,6 @@ contains
         do i = 1, length
             call append_char(str1, get_char_at(str2, i))
         end do
-
-
     end subroutine append_string
 
     !
@@ -130,8 +126,6 @@ contains
         do i = 1, length
             call append_char(str, c(i:i))
         end do
-
-
     end subroutine append_chars
 
     !
@@ -145,13 +139,11 @@ contains
             !set down the chain
             call allocate_block(str)
             call append_char(str % next, c)
-
         else
             ! set local
             str % index = str % index + 1
             str % chars(str % index:str % index) = c
         end if
-
     end subroutine append_char
 
     !
@@ -160,10 +152,7 @@ contains
     subroutine copy_chars(this, to)
         type(fson_string), pointer :: this
         character(len = *), intent(inout) :: to
-        integer :: length
-
-        !print *, 'xx'
-        !print *, 'xx: ', string_length(this)
+        integer :: length, i
 
         length = min(string_length(this), len(to))
 
@@ -175,27 +164,22 @@ contains
         do i = length + 1, len(to)
             to(i:i) = ""
         end do
-
-
     end subroutine copy_chars
-
-
 
     !
     ! CLEAR
     !
-    recursive subroutine string_clear(this)
+    recursive subroutine fson_string_clear(this)
         type(fson_string), pointer :: this
 
         if (associated(this % next)) then
-            call string_clear(this % next)
+            call fson_string_clear(this % next)
             deallocate(this % next)
             nullify (this % next)
         end if
 
         this % index = 0
-
-    end subroutine string_clear
+    end subroutine fson_string_clear
 
     !
     ! SIZE
@@ -208,9 +192,7 @@ contains
         if (str % index == BLOCK_SIZE .AND. associated(str % next)) then
             count = count + string_length(str % next)
         end if
-
     end function string_length
-
 
     !
     ! GET CHAR AT
@@ -224,7 +206,6 @@ contains
         else
             c = get_char_at(this % next, i - this % index)
         end if
-
     end function get_char_at
 
     !
@@ -251,9 +232,7 @@ contains
         end do
 
         equals = .true.
-
     end function equals_string
-
 end module fson_string_m
 
 
@@ -283,14 +262,14 @@ end module fson_string_m
 !
 
 module fson_value_m
-
     use fson_string_m
 
     implicit none
 
     private
 
-    public :: fson_value, fson_value_create, fson_value_destroy, fson_value_add, fson_value_get, fson_value_count, fson_value_print
+    public :: fson_value, fson_value_create, fson_value_destroy
+    public :: fson_value_add, fson_value_get, fson_value_count, fson_value_print
 
     !constants for the value types
     integer, public, parameter :: TYPE_UNKNOWN = -1
@@ -301,7 +280,7 @@ module fson_value_m
     integer, public, parameter :: TYPE_INTEGER = 4
     integer, public, parameter :: TYPE_REAL = 5
     integer, public, parameter :: TYPE_LOGICAL = 6
-
+    integer, public, parameter :: TYPE_REAL_ARRAY = 7
 
     !
     ! FSON VALUE
@@ -312,6 +291,7 @@ module fson_value_m
         logical :: value_logical
         integer :: value_integer
         double precision :: value_real
+        double precision, allocatable :: value_real_array(:)
         type(fson_string), pointer :: value_string => null()
         type(fson_value), pointer :: next => null()
         type(fson_value), pointer :: parent => null()
@@ -337,7 +317,6 @@ contains
         type(fson_value), pointer :: new
 
         allocate(new)
-
     end function fson_value_create
 
     !
@@ -345,6 +324,10 @@ contains
     !
     recursive subroutine fson_value_destroy(this)
         type(fson_value), pointer :: this
+
+        if(allocated(this % value_real_array)) then
+            deallocate(this % value_real_array)
+        end if
 
         if(associated(this % children)) then
             call fson_value_destroy(this % children)
@@ -367,8 +350,6 @@ contains
         end if
 
         nullify(this)
-
-
     end subroutine fson_value_destroy
 
     !
@@ -393,7 +374,6 @@ contains
         else
             this % children => member
         end if
-
     end subroutine
 
     !
@@ -410,7 +390,6 @@ contains
             count = count + 1
             p => p % next
         end do
-
     end function
 
     !
@@ -426,7 +405,6 @@ contains
         do i = 1, index - 1
             p => p % next
         end do
-
     end function get_by_index
 
     !
@@ -442,7 +420,6 @@ contains
         string => fson_string_create(name)
 
         p => get_by_name_string(this, string)
-
     end function get_by_name_chars
 
     !
@@ -467,83 +444,111 @@ contains
 
         ! didn't find anything
         nullify(p)
-
-
     end function get_by_name_string
 
     !
     ! FSON VALUE PRINT
     !
-    recursive subroutine fson_value_print(iunit, this, indent)
+    recursive subroutine fson_value_print(iunit, this, is_compact_, is_bol_, indent_)
         integer, intent(in) :: iunit
         type(fson_value), pointer :: this, element
-        integer, optional, intent(in) :: indent
+        logical, optional, intent(in) :: is_compact_, is_bol_
+        integer, optional, intent(in) :: indent_
         character (len = 1024) :: tmp_chars
-        integer :: tab, i, count, spaces
+        integer :: indent, i, count, spaces, spaces1
+        logical :: is_compact, is_bol
 
-        if (present(indent)) then
-            tab = indent
+        if (present(is_compact_)) then
+          is_compact = is_compact_
         else
-            tab = 0
+          is_compact = .false.
         end if
 
-        spaces = tab * 2
+        if (present(indent_) .and. .not. is_compact) then
+            indent = indent_
+        else
+            indent = 0
+        end if
+        spaces = indent * 2
+        if (is_compact) then
+          spaces1 = 0
+        else
+          spaces1 = spaces + 2
+        end if
+
+        if (present(is_bol_)) then
+            is_bol = is_bol_
+        else
+            is_bol = .true.
+        end if
+
+        if (is_bol) then
+            write(iunit, '(A)', advance='no') repeat(" ", spaces)
+        end if
 
         select case (this % value_type)
         case(TYPE_OBJECT)
-            write(iunit, *) repeat(" ", spaces), "{"
+            write(iunit, '(A)') "{"
             count = fson_value_count(this)
-            !print *, "count: ", count
             do i = 1, count
-                ! get the element
                 element => fson_value_get(this, i)
-                ! get the name
-                !print *, "fson_string_copy called!"
                 call fson_string_copy(element % name, tmp_chars)
-                ! print the name
-                write(iunit, *) repeat(" ", spaces), '"', trim(tmp_chars), '":'
+                write(iunit, '(4A)', advance='no') &
+                     repeat(" ", spaces1), '"', trim(tmp_chars), '": '
                 ! recursive print of the element
-                call fson_value_print(iunit, element, tab + 1)
-                ! print the separator if required
+                call fson_value_print(iunit, element, is_compact, .false., indent + 1)
                 if (i < count) then
-                    write(iunit, *) repeat(" ", spaces), ","
+                    write(iunit, '(A)') ","
+                else
+                    write(iunit, '()')
                 end if
             end do
-
-            write(iunit, *) repeat(" ", spaces), "}"
+            write(iunit, '(2A)', advance='no') repeat(" ", spaces), "}"
         case (TYPE_ARRAY)
-            write(iunit, *) repeat(" ", spaces), "["
+            write(iunit, '(A)') "["
             count = fson_value_count(this)
             do i = 1, count
-                ! get the element
                 element => fson_value_get(this, i)
                 ! recursive print of the element
-                call fson_value_print(iunit, element, tab + 1)
-                ! print the separator if required
+                call fson_value_print(iunit, element, is_compact, .true., indent + 1)
                 if (i < count) then
-                    write(iunit, *) ","
+                    write(iunit, '(A)') ","
+                else
+                    write(iunit, '()')
                 end if
             end do
-            write(iunit, *) repeat(" ", spaces), "]"
+            write(iunit, '(2A)', advance='no') repeat(" ", spaces), "]"
         case (TYPE_NULL)
-            write(iunit, *) repeat(" ", spaces), "null"
+            write(iunit, '(A)', advance='no') "null"
         case (TYPE_STRING)
             call fson_string_copy(this % value_string, tmp_chars)
-            write(iunit, *) repeat(" ", spaces), '"', trim(tmp_chars), '"'
+            write(iunit, '(3A)', advance='no') '"', trim(tmp_chars), '"'
         case (TYPE_LOGICAL)
             if (this % value_logical) then
-                write(iunit, *) repeat(" ", spaces), "true"
+                write(iunit, '(A)', advance='no') "true"
             else
-                write(iunit, *) repeat(" ", spaces), "false"
+                write(iunit, '(A)', advance='no') "false"
             end if
         case (TYPE_INTEGER)
-            write(iunit, *) repeat(" ", spaces), this % value_integer
+            write(iunit, '(I0)', advance='no') this % value_integer
         case (TYPE_REAL)
-            write(iunit, '(A, E26.16e3)') repeat(" ", spaces), this % value_real
+            write(iunit, '(E24.16e3)', advance='no') this % value_real
+        case (TYPE_REAL_ARRAY)
+            count = size(this % value_real_array)
+            write(iunit, '(A)') "["
+            do i = 1, count
+                write(iunit, '(A, E24.16e3)', advance='no') &
+                     repeat(" ", spaces1), &
+                     this % value_real_array(i)
+                if (i < count) then
+                    write(iunit, '(A)') ","
+                else
+                    write(iunit, '()')
+                end if
+            end do
+            write(iunit, '(2A)', advance='no') repeat(" ", spaces), "]"
         end select
     end subroutine fson_value_print
-
-
 end module fson_value_m
 
 
@@ -572,13 +577,14 @@ end module fson_value_m
 !
 
 module fson_path_m
-
     use fson_value_m
     use fson_string_m
 
+    implicit none
+
     private
 
-    public :: fson_path_get, array_callback
+    public :: fson_path_get
 
     interface fson_path_get
         module procedure get_by_path
@@ -591,6 +597,7 @@ module fson_path_m
     end interface fson_path_get
 
 contains
+
     !
     ! GET BY PATH
     !
@@ -667,8 +674,6 @@ contains
             else
             end if
         end if
-
-
     end subroutine get_by_path
 
     !
@@ -698,7 +703,6 @@ contains
                     return
             end select
         end do
-
     end function parse_integer
 
     !
@@ -708,7 +712,6 @@ contains
         type(fson_value), pointer :: this, p
         character(len=*), optional :: path
         integer :: value
-
 
         nullify(p)
         if(present(path)) then
@@ -721,7 +724,6 @@ contains
             print *, "Unable to resolve path: ", path
             call exit(1)
         end if
-
 
         if(p % value_type == TYPE_INTEGER) then
             value = p % value_integer
@@ -737,7 +739,6 @@ contains
             print *, "Unable to resolve value to integer: ", path
             call exit(1)
         end if
-
     end subroutine get_integer
 
     !
@@ -747,7 +748,6 @@ contains
         type(fson_value), pointer :: this, p
         character(len=*), optional :: path
         real :: value
-
 
         nullify(p)
 
@@ -761,7 +761,6 @@ contains
             print *, "Unable to resolve path: ", path
             call exit(1)
         end if
-
 
         if(p % value_type == TYPE_INTEGER) then
             value = p % value_integer
@@ -777,7 +776,6 @@ contains
             print *, "Unable to resolve value to real: ", path
             call exit(1)
         end if
-
     end subroutine get_real
 
     !
@@ -787,7 +785,6 @@ contains
         type(fson_value), pointer :: this, p
         character(len=*), optional :: path
         double precision :: value
-
 
         nullify(p)
 
@@ -801,7 +798,6 @@ contains
             print *, "Unable to resolve path: ", path
             call exit(1)
         end if
-
 
         if(p % value_type == TYPE_INTEGER) then
             value = p % value_integer
@@ -817,9 +813,7 @@ contains
             print *, "Unable to resolve value to double: ", path
             call exit(1)
         end if
-
     end subroutine get_double
-
 
     !
     ! GET LOGICAL
@@ -828,7 +822,6 @@ contains
         type(fson_value), pointer :: this, p
         character(len=*), optional :: path
         logical :: value
-
 
         nullify(p)
 
@@ -843,7 +836,6 @@ contains
             call exit(1)
         end if
 
-
         if(p % value_type == TYPE_INTEGER) then
             value = (p % value_integer > 0)
         else if (p % value_type == TYPE_LOGICAL) then
@@ -852,7 +844,6 @@ contains
             print *, "Unable to resolve value to real: ", path
             call exit(1)
         end if
-
     end subroutine get_logical
 
     !
@@ -876,20 +867,17 @@ contains
             call exit(1)
         end if
 
-
         if(p % value_type == TYPE_STRING) then
             call fson_string_copy(p % value_string, value)
         else
             print *, "Unable to resolve value to characters: ", path
             call exit(1)
         end if
-
     end subroutine get_chars
 
     !
     ! GET ARRAY
     !
-
     subroutine get_array(this, path, array_callback)
         type(fson_value), pointer :: this, p, element
         character(len=*), optional :: path
@@ -903,7 +891,6 @@ contains
                 integer :: index, count
             end subroutine array_callback
         end interface
-
 
         nullify(p)
 
@@ -919,7 +906,6 @@ contains
             call exit(1)
         end if
 
-
         if(p % value_type == TYPE_ARRAY) then
             count = fson_value_count(p)
             do index=1, count
@@ -930,10 +916,7 @@ contains
             print *, "Resolved value is not an array. ", path
             call exit(1)
         end if
-
     end subroutine get_array
-
-
 end module fson_path_m
 
 
@@ -974,8 +957,8 @@ module fson
 
     private
 
-    public :: fson_parse, fson_value, fson_get, fson_print, fson_destroy, &
-         fson_set_val_as_string, fson_set_name_to_val
+    public :: fson_parse, fson_value, fson_get, fson_print, fson_destroy
+    public :: fson_set_as_string, fson_set_name, fson_set_as_real_array, fson_set_as_cmplx_array
 
     ! FILE IOSTAT CODES
     integer, parameter :: end_of_file = -1
@@ -1032,7 +1015,6 @@ contains
         if( .not. present(unit)) then
             close (u)
         end if
-
     end function fson_parse
 
     !
@@ -1096,7 +1078,6 @@ contains
                 call exit (1)
             end select
         end if
-
     end subroutine parse_value
 
     !
@@ -1105,7 +1086,6 @@ contains
     recursive subroutine parse_object(unit, parent)
         integer, intent(inout) :: unit
         type(fson_value), pointer :: parent, pair
-
 
         logical :: eof
         character :: c
@@ -1153,7 +1133,6 @@ contains
             print *, "ERROR: Expecting end of object.", c
             call exit (1)
         end if
-
     end subroutine parse_object
 
     !
@@ -1166,7 +1145,6 @@ contains
         logical :: eof
         character :: c
 
-
         ! try to parse an element value
         element => fson_value_create()
         call parse_value(unit, element)
@@ -1175,7 +1153,6 @@ contains
         if (associated(element)) then
             call fson_value_add(array, element)
         end if
-
 
         ! popped the next character
         c = pop_char(unit, eof = eof, skip_ws = .true.)
@@ -1189,7 +1166,6 @@ contains
             ! end of array
             return
         end if
-
     end subroutine parse_array
 
     !
@@ -1240,7 +1216,6 @@ contains
                 call exit (1)
             end if
         end do
-
     end subroutine parse_for_chars
 
     !
@@ -1325,7 +1300,6 @@ contains
                 exit
             end if
         end do
-
     end function pop_char
 
     !
@@ -1338,7 +1312,7 @@ contains
 
     end subroutine push_char
 
-    subroutine fson_set_val_as_string(str, val)
+    subroutine fson_set_as_string(str, val)
         character(len=*), intent(in) :: str
         type(fson_value), pointer, intent(inout) :: val
 
@@ -1348,10 +1322,9 @@ contains
         str_fson => fson_string_create()
         call fson_string_append(str_fson, str)
         val%value_string => str_fson
-        !call fson_string_destroy(str_fson)
-    end subroutine fson_set_val_as_string
+    end subroutine fson_set_as_string
 
-    subroutine fson_set_name_to_val(name, val)
+    subroutine fson_set_name(name, val)
         character(len=*), intent(in) :: name
         type(fson_value), pointer, intent(inout) :: val
 
@@ -1360,6 +1333,39 @@ contains
         name_fson => fson_string_create()
         call fson_string_append(name_fson, name)
         val%name => name_fson
-        !call fson_string_destroy(name_fson)
-    end subroutine fson_set_name_to_val
+    end subroutine fson_set_name
+
+    subroutine fson_set_as_real_array(length, xs, val)
+        integer, intent(in) :: length
+        double precision, intent(in) :: xs(:)
+        type(fson_value), pointer, intent(inout) :: val
+
+        val%value_type = TYPE_REAL_ARRAY
+
+        if (allocated(val%value_real_array)) then
+          deallocate(val%value_real_array)
+        end if
+
+        allocate(val%value_real_array(length))
+        val%value_real_array(1:length) = xs(1:length)
+    end subroutine fson_set_as_real_array
+
+
+    subroutine fson_set_as_cmplx_array(length, xs, val)
+        integer, intent(in) :: length
+        complex(kind(0d0)), intent(in) :: xs(:)
+        type(fson_value), pointer, intent(inout) :: val
+
+        type(fson_value), pointer :: real_part, imag_part
+
+        val%value_type = TYPE_OBJECT
+        allocate(real_part)
+        allocate(imag_part)
+        call fson_set_name('real', real_part)
+        call fson_set_name('imag', imag_part)
+        call fson_set_as_real_array(length, dble(xs(1:length)), real_part)
+        call fson_set_as_real_array(length, dimag(xs(1:length)), imag_part)
+        call fson_value_add(val, real_part)
+        call fson_value_add(val, imag_part)
+    end subroutine fson_set_as_cmplx_array
 end module fson
