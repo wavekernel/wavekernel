@@ -49,7 +49,7 @@
 *
 
       SUBROUTINE EIGENTEST_PDLAPRNT( M, N, A, IA, JA, DESCA, IRPRNT,
-     $ ICPRNT, CMATNM, NOUT, WORK )
+     $ ICPRNT, NOUT, WORK )
 *
 *  -- ScaLAPACK tools routine (version 1.7) --
 *     University of Tennessee, Knoxville, Oak Ridge National Laboratory,
@@ -60,7 +60,6 @@
       INTEGER            IA, ICPRNT, IRPRNT, JA, M, N, NOUT
 *     ..
 *     .. Array Arguments ..
-      CHARACTER*(*)      CMATNM
       INTEGER            DESCA( * )
       DOUBLE PRECISION   A( * ), WORK( * )
 *     ..
@@ -158,9 +157,6 @@
 *  ICPRNT  (global input) INTEGER
 *          The column index of the printing process.
 *
-*  CMATNM  (global input) CHARACTER*(*)
-*          Identifier of the distributed matrix to be printed.
-*
 *  NOUT    (global input) INTEGER
 *          The unit number for output file. NOUT = 6, ouput to screen,
 *          NOUT = 0, output to stderr.
@@ -219,7 +215,7 @@
             IF( MYROW.EQ.IRPRNT .AND. MYCOL.EQ.ICPRNT ) THEN
                DO 10 K = 0, IB-1
                   WRITE( NOUT, FMT = 9999 )
-     $                   CMATNM, IA+K, JA+H, A( II+K+(JJ+H-1)*LDA )
+     $                   IA+K, JA+H, A( II+K+(JJ+H-1)*LDA )
    10          CONTINUE
             END IF
          ELSE
@@ -231,7 +227,7 @@
      $                       ICURROW, ICURCOL )
                DO 20 K = 1, IB
                   WRITE( NOUT, FMT = 9999 )
-     $                   CMATNM, IA+K-1, JA+H, WORK( K )
+     $                   IA+K-1, JA+H, WORK( K )
    20          CONTINUE
             END IF
          END IF
@@ -248,7 +244,7 @@
                IF( MYROW.EQ.IRPRNT .AND. MYCOL.EQ.ICPRNT ) THEN
                   DO 30 K = 0, IB-1
                      WRITE( NOUT, FMT = 9999 )
-     $                      CMATNM, I+K, JA+H, A( II+K+(JJ+H-1)*LDA )
+     $                      I+K, JA+H, A( II+K+(JJ+H-1)*LDA )
    30             CONTINUE
                END IF
             ELSE
@@ -260,7 +256,7 @@
      $                          ICURROW, ICURCOL )
                   DO 40 K = 1, IB
                      WRITE( NOUT, FMT = 9999 )
-     $                      CMATNM, I+K-1, JA+H, WORK( K )
+     $                      I+K-1, JA+H, WORK( K )
    40             CONTINUE
                END IF
             END IF
@@ -290,7 +286,7 @@
                IF( MYROW.EQ.IRPRNT .AND. MYCOL.EQ.ICPRNT ) THEN
                   DO 70 K = 0, IB-1
                      WRITE( NOUT, FMT = 9999 )
-     $                      CMATNM, IA+K, J+H, A( II+K+(JJ+H-1)*LDA )
+     $                      IA+K, J+H, A( II+K+(JJ+H-1)*LDA )
    70             CONTINUE
                END IF
             ELSE
@@ -302,7 +298,7 @@
      $                          ICURROW, ICURCOL )
                   DO 80 K = 1, IB
                      WRITE( NOUT, FMT = 9999 )
-     $                      CMATNM, IA+K-1, J+H, WORK( K )
+     $                      IA+K-1, J+H, WORK( K )
    80             CONTINUE
                END IF
             END IF
@@ -319,7 +315,7 @@
                   IF( MYROW.EQ.IRPRNT .AND. MYCOL.EQ.ICPRNT ) THEN
                      DO 90 K = 0, IB-1
                         WRITE( NOUT, FMT = 9999 )
-     $                         CMATNM, I+K, J+H, A( II+K+(JJ+H-1)*LDA )
+     $                         I+K, J+H, A( II+K+(JJ+H-1)*LDA )
    90                CONTINUE
                   END IF
                ELSE
@@ -331,7 +327,7 @@
      $                             ICURROW, ICURCOL )
                      DO 100 K = 1, IB
                         WRITE( NOUT, FMT = 9999 )
-     $                         CMATNM, I+K-1, J+H, WORK( K )
+     $                         I+K-1, J+H, WORK( K )
   100                CONTINUE
                   END IF
                END IF
@@ -352,7 +348,7 @@
 *
   130 CONTINUE
 *
- 9999 FORMAT(A,'(',I8,',',I8,')=',E30.18e3)
+ 9999 FORMAT(I8,' ',I8,' ',E26.16e3)
 *
       RETURN
 *

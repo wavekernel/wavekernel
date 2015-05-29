@@ -107,9 +107,9 @@ program eigen_test
     open(iunit, file=arg%output_filename, status='unknown')
     do j=1,arg%n_vec
       if (eigenpairs%type_number == 1) then
-        write (iunit, '(i10, f20.12)') j, eigenpairs%local%values(j)
+        write (iunit, '(I8, " ", E26.16e3)') j, eigenpairs%local%values(j)
       else if (eigenpairs%type_number == 2) then
-        write (iunit, '(i10, f20.12)') j, eigenpairs%blacs%values(j)
+        write (iunit, '(I8, " ", E26.16e3)') j, eigenpairs%blacs%values(j)
       end if
     enddo
     close(iunit)

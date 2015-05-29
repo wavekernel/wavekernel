@@ -173,16 +173,15 @@ contains
     type(eigenpairs_types_union) :: eigenpairs
 
     double precision :: work(arg%matrix_A_info%rows), time_start, time_end
-    integer :: max_num_digits, len, i, digit, stat, err
+    integer :: len, i, digit, stat, err
     character(512) :: num_str, filename
-    integer, parameter :: iunit = 10
+    integer, parameter :: iunit = 10, max_num_digits = 8
 
     time_start = mpi_wtime()
 
     if (eigenpairs%type_number == 1) then
       stop '[Error] print_eigenvectors: printer for a local matrix not implemented yet'
     else if (eigenpairs%type_number == 2) then
-      max_num_digits = int(log10(real(arg%printed_vecs_end))) + 1
       do i = arg%printed_vecs_start, arg%printed_vecs_end
         if (check_master()) then
           write (num_str, '(i0)') i
@@ -204,7 +203,7 @@ contains
 
         call mpi_barrier(mpi_comm_world, stat)
         call eigentest_pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
-             1, i, eigenpairs%blacs%desc, 0, 0, '', iunit, work)
+             1, i, eigenpairs%blacs%desc, 0, 0, iunit, work)
 
         if (check_master()) then
           close (iunit)
