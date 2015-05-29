@@ -2943,7 +2943,8 @@ contains
     character(len=256)   :: value
     logical :: mode_for_H
     integer              :: log_unit
-
+    integer              :: value_int ! integer value
+!
     log_unit=config%calc%distributed%log_unit
 !
 !   write(*,*)'@@ file_load_matrices'
@@ -3053,6 +3054,48 @@ contains
       if (log_unit>0) write(log_unit,'(a,a)') &
         &  'INFO-XML:An optional tag is found:config%output%matrix_overlap%format=', trim(value)
     endif   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+    value=getAttribute(file_node,"interval")
+    value=trim(adjustL(value))
+    if (value /= "") then
+      read(unit=value,fmt=*) value_int
+      if (mode_for_H) then  
+        config%output%matrix_hamiltonian%interval = value_int
+        if (log_unit>0) write(log_unit,'(a,i10)') &
+          &  'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%interval =', value_int
+      else
+        config%output%matrix_overlap%interval     = value_int
+        if (log_unit>0) write(log_unit,'(a,i10)') &
+          &  'INFO-XML:An optional tag is found:config%output%matrix_overlap%interval     =', value_int
+      endif   
+    endif
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+    value=getAttribute(file_node,"unit")
+    value=trim(adjustL(value))
+    if (value /= "") then
+      select case(value)
+        case ("au", "a.u.") 
+          value="a.u."
+        case default
+          write(*,*)'Stop:file_load_matrices:invalid unit:', trim(adjustL(value))
+          stop
+      end select   
+!
+      if (mode_for_H) then  
+        config%output%matrix_hamiltonian%unit = trim(adjustL(value))
+        if (log_unit>0) write(log_unit,'(a,a10)') &
+          &  'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%unit =', trim(adjustL(value))
+      else
+        config%output%matrix_overlap%unit     = trim(adjustL(value))
+        if (log_unit>0) write(log_unit,'(a,a10)') &
+          &  'INFO-XML:An optional tag is found:config%output%matrix_overlap%unit     =', trim(adjustL(value))
+      endif   
+
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

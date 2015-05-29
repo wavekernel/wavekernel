@@ -68,7 +68,9 @@ contains
 
     end do
     
-    if (.not. no_wavefunction_wrk) then
+    if (no_wavefunction_wrk) then
+       write(unit_num,'(a)') '# LCAO coefficients .. are not included.'
+    else
       call output_coefficient
     endif  
 

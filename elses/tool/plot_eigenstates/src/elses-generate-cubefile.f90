@@ -45,6 +45,7 @@ program elses_generate_cubefile
   END TYPE Tatom_info
 
   type(Tatom_info), allocatable :: atom_info(:)
+  integer,          allocatable :: wf_index_list(:,:)
 
   character(len=64) :: filename_input
   character(len=64) :: filename_input_wrk
@@ -420,7 +421,7 @@ contains
 
     implicit none
 
-    integer :: i,j,index_j, index_i
+    integer :: i,j,index_j, index_i, wf_index
     integer :: ierr, ierr2
     character(len=16) :: chara
     character(len=1024) :: str_wrk
@@ -582,6 +583,27 @@ contains
        endif
 
     end do
+!
+    write(*,*)'INFO:Number of total atomic orbitals = ',  sum(atom_info(:)%num_val_orb)
+    if (sum(atom_info(:)%num_val_orb) /= n_tot_base) then
+      write(*,*)'ERROR:Number of total atomic orbitals = ',  sum(atom_info(:)%num_val_orb)
+      stop
+    endif
+!
+    write(*,*)'INFO:Max number of atomic orbitals per atom = ',  maxval(atom_info(:)%num_val_orb)
+    allocate(wf_index_list(maxval(atom_info(:)%num_val_orb),natom), stat=ierr)
+    if (ierr /= 0) then
+      write(*,*)'Alloc. error:wf_index_list'
+      stop
+    endif
+!
+    wf_index=0
+    do i=1,natom
+      do j=1,atom_info(i)%num_val_orb
+        wf_index=wf_index+1
+        wf_index_list(j,i)=wf_index
+      enddo
+    enddo
 !
     write(*,*)'FileRead : coefficient information'
 !
@@ -759,8 +781,14 @@ contains
 !               write(*,'("(x,y,z)",3F20.10)') x,y,z
 
                 wf=0.0d0
-                wf_index=1
+!               wf_index=1
 
+!$omp  parallel default(shared) &
+!$omp& private (atom_index, orbital_index, wf_index) &
+!$omp& private (dx, dy, dz, r, l, m, n) &
+!$omp& private (sto, zeta, zeta2, c1, c2, f) &
+!$omp& reduction (+ : wf)
+!$omp  do schedule(static)
              do atom_index=1,natom
 
  !               write(*,'("atom_index=",I)') atom_index
@@ -781,12 +809,12 @@ contains
                  m=dy
                  n=dz
 !
-                 if (cutoff_is_imposed) then
-                   if (r > r_cut_wrk) then
-                     wf_index = wf_index+atom_info(atom_index)%num_val_orb
-                     cycle
-                   endif
-                 endif
+!                if (cutoff_is_imposed) then
+!                  if (r > r_cut_wrk) then
+!                    wf_index = wf_index+atom_info(atom_index)%num_val_orb
+!                    cycle
+!                  endif
+!                endif
 !
 !                if(r < 1e-10) then
 !                  r=0.0d0
@@ -807,6 +835,7 @@ contains
 
                 do orbital_index=1, atom_info(atom_index)%num_val_orb
 
+                   wf_index=wf_index_list(orbital_index, atom_index)
                    sto=0.0d0
 
                    zeta=atom_info(atom_index)%zeta(orbital_index)
@@ -934,7 +963,7 @@ contains
 
 !                   write(*,'(" wf=",F)') wf
 
-                   wf_index=wf_index+1
+!                  wf_index=wf_index+1
 
                 end do
 
@@ -942,6 +971,8 @@ contains
 !                write(*,'("")')
 
              end do
+!$omp end do
+!$omp end parallel
 !
 !            if (dabs(wf) <= 1.0d-80) wf=0.0d0
              if (dabs(wf) >= 1.0d80) then
