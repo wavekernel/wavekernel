@@ -15,6 +15,38 @@ module distribute_matrix
 
 contains
 
+  subroutine get_ipratios(mat, desc, ipratios)
+    double precision, intent(in) :: mat(:, :)
+    integer, intent(in) :: desc(desc_size)
+    double precision, intent(out) :: ipratios(desc(cols_))
+
+    integer :: i, j, n_procs_row, n_procs_col, my_proc_row, my_proc_col
+    double precision :: elem, sum_power4(desc(cols_)), sum_power2(desc(cols_))
+    integer :: indxg2p
+
+    call blacs_gridinfo(desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
+    sum_power4(:) = 0d0
+    sum_power2(:) = 0d0
+    do j = 1, desc(cols_)
+      if (indxg2p(j, desc(block_col_), 0, 0, n_procs_col) == my_proc_col) then
+        do i = 1, desc(rows_)
+          if (indxg2p(i, desc(block_row_), 0, 0, n_procs_row) == my_proc_row) then
+            call pdelget('', '', elem, mat, i, j, desc)
+            sum_power4(j) = sum_power4(j) + elem ** 4d0
+            sum_power2(j) = sum_power2(j) + elem ** 2d0
+          end if
+        end do
+      end if
+    end do
+    call dgsum2d(desc(context_), 'All', ' ', 1, desc(cols_), sum_power4, 1, -1, -1)
+    call dgsum2d(desc(context_), 'All', ' ', 1, desc(cols_), sum_power2, 1, -1, -1)
+    ipratios(:) = 0d0
+    do j = 1, desc(cols_)  ! Redundant computation.
+      ipratios(j) = sum_power4(j) / (sum_power2(j) ** 2d0)
+    end do
+  end subroutine get_ipratios
+
+
   integer function get_local_cols(proc, desc)
     type(process), intent(in) :: proc
     integer, intent(in) :: desc(desc_size)

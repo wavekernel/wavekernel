@@ -18,6 +18,7 @@ program eigen_test
   type(sparse_mat) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
   double precision :: A_norm, rn_ave, rn_max, orthogonality
+  double precision, allocatable :: ipratios(:)
   integer :: num_mpi_procs, num_omp_procs, j, ierr, ierr_mpi
   integer, parameter :: iunit = 10
   double precision :: time_start, time_start_part, time_end
@@ -121,6 +122,20 @@ program eigen_test
 
   time_end = mpi_wtime()
   call add_event('main:print_eigenpairs', time_end - time_start_part)
+  time_start_part = time_end
+
+  allocate(ipratios(eigenpairs%blacs%desc(cols_)))
+  call get_ipratios(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, ipratios)
+  if (check_master()) then
+    open(iunit, file='ipratios.dat', status='unknown')
+    do j = 1, eigenpairs%blacs%desc(cols_)
+      write (iunit, '(I8, " ", E26.16e3)') j, ipratios(j)
+    enddo
+    close(iunit)
+  end if
+
+  time_end = mpi_wtime()
+  call add_event('main:compute_and_print_ipratios', time_end - time_start_part)
   time_start_part = time_end
 
   if (arg%n_check_vec /= 0) then
