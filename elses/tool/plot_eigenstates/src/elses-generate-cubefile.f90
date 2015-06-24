@@ -55,6 +55,9 @@ program elses_generate_cubefile
   character(len=50) :: chara_tmp
   character(len=1024) :: file_format
 !
+  integer :: npe
+  integer :: omp_get_num_threads
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
   filename_input=""
@@ -67,7 +70,18 @@ program elses_generate_cubefile
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-  write(*,*)'elses-generate-cubefile'
+!$omp parallel default(shared) &
+!$omp& private(npe)
+  npe=-1
+!$  npe=omp_get_num_threads()
+!
+  if (npe == -1) then
+    write(*,*)'elses-generate-cubefile without OMP parallelism'
+  else
+    write(*,*)'elses-generate-cubefile with OMP parallelism : P_omp = ', npe
+  endif
+!
+!$omp end parallel
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -809,12 +823,9 @@ contains
                  m=dy
                  n=dz
 !
-!                if (cutoff_is_imposed) then
-!                  if (r > r_cut_wrk) then
-!                    wf_index = wf_index+atom_info(atom_index)%num_val_orb
-!                    cycle
-!                  endif
-!                endif
+                 if (cutoff_is_imposed) then
+                   if (r > r_cut_wrk) cycle
+                 endif
 !
 !                if(r < 1e-10) then
 !                  r=0.0d0

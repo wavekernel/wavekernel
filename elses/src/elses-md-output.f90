@@ -188,14 +188,18 @@ module M_md_output
      if (i_global_mat == 1) then
        call output_atom_energy
 !        --> output for atom energy (optional)
-     else
-       write(*,*)'INFO-WARN:No global matrices are defined'
-       write(*,*)'INFO-WARN:SKIPPED  output_atom_energy'
+!    else
+!      write(*,*)'INFO-WARN:No global matrices are defined'
+!      write(*,*)'INFO-WARN:SKIPPED  output_atom_energy'
      endif  
 !
      if (log_unit > 0) then
        write(log_unit,'("------------------------------------------------------------------")')
      endif  
+!
+     if (i_verbose >= 1) then
+       call plot_detailed_kin_energy
+     endif
 !
 !    close(unit_num)
 !
@@ -475,6 +479,25 @@ module M_md_output
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+   subroutine plot_detailed_kin_energy
+     use M_config,               only : config !(unchanged)
+     use M_md_velocity_routines, only : calc_kinetic_energy !(routine)
+     implicit none
+     integer :: lu
+     real(8) :: kinetic_energy
+     real(8) :: k_e_component(3)
+!
+     lu=log_unit
+!
+     if (i_verbose >=1) then
+       if (lu >0) write(lu,*)'@@ plot_detailed_kin_energy'
+       call calc_kinetic_energy(kinetic_energy, k_e_component)
+       if (lu >0) write(lu,'(a,i10,4f20.10)')'E_kin_t,x,y,z=', &
+&          config%system%structure%mdstep, kinetic_energy,k_e_component(1:3)
+     endif
+!
+   end subroutine plot_detailed_kin_energy
 !
 end module M_md_output
 

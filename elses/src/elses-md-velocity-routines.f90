@@ -7,6 +7,7 @@ module M_md_velocity_routines
   use M_config           ! (unchanged)
   use M_qm_domain,      only : i_verbose
   private
+! public :: set_zero_velocity_for_fixed_atoms
   public :: calc_kinetic_energy
   public :: calc_initial_velocity
   public :: calc_total_momentum
@@ -16,6 +17,41 @@ module M_md_velocity_routines
 !
   contains
 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  @@ Set zero velocity for fixed atoms (NOT USED, NOW)
+!
+  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  subroutine set_zero_velocity_for_fixed_atoms
+    use elses_mod_sim_cell,   only : noa              !(unchanged)
+    use elses_mod_vel,        only : velx, vely, velz !(CHANGED)
+    use elses_mod_iflag,      only : iflag            !(unchanged)
+!
+    implicit none
+    logical :: velocity_is_allocated
+    integer lu
+!
+    lu = config%calc%distributed%log_unit
+!
+    velocity_is_allocated = .true.
+    if (allocated(velx) .eqv. .false.) velocity_is_allocated = .false.
+    if (allocated(vely) .eqv. .false.) velocity_is_allocated = .false.
+    if (allocated(velz) .eqv. .false.) velocity_is_allocated = .false.
+!
+    if (.not. velocity_is_allocated) return
+!
+    if (sum(iflag(:)) == noa) return
+!
+    if (lu > 0) then
+      write(lu, '(a)') '@@ set_zero_velocity_for_fixed_atoms'
+    endif
+!
+    velx(:)=velx(:)*abs(iflag(:))
+    vely(:)=vely(:)*abs(iflag(:))
+    velz(:)=velz(:)*abs(iflag(:))
+!
+  end subroutine set_zero_velocity_for_fixed_atoms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -338,27 +374,33 @@ module M_md_velocity_routines
     real(8) :: kinetic_energy
     real(8) :: total_momentum(3)
     real(8) :: tempk0
+    integer lu
 !
+    lu = config%calc%distributed%log_unit
 !
     tempk0 = config%system%temperature
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-    write(6,*)'@@ LSES_VEL_INI_CHK:checking initial velocity'
-    write(6,*)' temperature[au]:tempk0=',tempk0
+    if (i_verbose >= 1) then
+      if (lu > 0) then
+        write(lu,*)'@@ calc_initial_velocity:checking initial velocity'
+        write(lu,*)' temperature[au]:tempk0=',tempk0
+      endif
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Parameter checking
 !
     if (tempk0 .le. -1.0d-10) then
-      write(6,*)'ERROR!(LSES_VEL_INI)'
+      write(*,*)'ERROR!(calc_initial_velocity)'
       stop
     endif   
 !
     do ioa=1,noa
       if (dabs(amm(ioa)) .le. 1.0d-10) then
-        write(6,*)'ERROR!(LSES_VEL_INI)'
-        write(6,*)'ioa, amm=',ioa,amm(ioa)
+        write(*,*)'ERROR!(calc_initial_velocity)'
+        write(*,*)'ioa, amm=',ioa,amm(ioa)
         stop
       endif   
     enddo   
@@ -371,10 +413,12 @@ module M_md_velocity_routines
     call calc_total_momentum(total_momentum)
 !
     if (i_verbose >= 1) then
-      write(*,*)'Kinetic eneregy = ',kinetic_energy
-      write(*,*)' total momemtum in x direction =',total_momentum(1)
-      write(*,*)' total momemtum in y direction =',total_momentum(2)
-      write(*,*)' total momemtum in z direction =',total_momentum(3)
+      if (lu > 0) then
+        write(lu,*)'Kinetic eneregy = ',kinetic_energy
+        write(lu,*)' total momemtum in x direction =',total_momentum(1)
+        write(lu,*)' total momemtum in y direction =',total_momentum(2)
+        write(lu,*)' total momemtum in z direction =',total_momentum(3)
+      endif
     endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -388,7 +432,7 @@ module M_md_velocity_routines
     tempk=2.d0/3.d0*kinetic_energy/dble(noa)
 !
     if(i_verbose >= 1) then
-      write(6,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
+      if (lu > 0) write(lu,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
     endif
 !
     if (dabs(tempk0) .lt. 1.0d-10) then
@@ -399,23 +443,31 @@ module M_md_velocity_routines
     tempr=tempk/tempk0
 !
     if (dabs(tempr) .gt. 1.0d-10) then
-      write(*,*) 'INFO:Optional XML tag detected : Meaningful velocity data (will be used)'
-      write(*,*) ' The temperature of the input velocity data [eV, kel]=', & 
+      if (lu > 0) then
+        write(lu,*) 'INFO:Optional XML tag detected : Meaningful velocity data (will be used)'
+        write(lu,*) ' The temperature of the input velocity data [eV, kel]=', & 
 &                    tempk*ev4au, tempk*ev4au*ev2kel
-      write(*,*) ' thb, thbold=',thb, thbold
-      write(*,*) ' vhb, vhbold=',vhb, vhbold
-      return
+        write(lu,*) ' thb, thbold=',thb, thbold
+        write(lu,*) ' vhb, vhbold=',vhb, vhbold
+        return
+      endif
     endif   
 !
-    write(*,*) '  INFO: Velocity is not set in the input file'
-    write(*,*) '  INFO: Heatbath parameters are set to be zero'
+    if (i_verbose >= 1) then
+      if (lu > 0) then
+        write(lu,*) '  INFO: Velocity is not set in the input file'
+        write(lu,*) '  INFO: Heatbath parameters are set to be zero'
+      endif
+    endif
 !
     vhb=0.0d0
     vhbold=0.0d0
     thb=0.0d0
     thbold=0.0d0
 !
-    write(*,*) '  ---> Velocity will be generated from the maxwell distribution'
+    if (i_verbose >= 1) then
+      if (lu > 0) write(lu,*) '  ---> Velocity will be generated from the maxwell distribution'
+    endif
     call set_velocity_from_maxwell
 !
 !
@@ -426,8 +478,8 @@ module M_md_velocity_routines
     tempr=tempk/tempk0
 !
     if(i_verbose >= 1) then
-      write(6,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
-      write(6,*) 'tempk/tempk0 = ',tempr
+      if (lu > 0) write(lu,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
+      if (lu > 0) write(lu,*) 'tempk/tempk0 = ',tempr
     endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -440,8 +492,8 @@ module M_md_velocity_routines
     tempr=tempk/tempk0
 !
     if(i_verbose >= 1) then
-      write(6,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
-      write(6,*) 'tempk/tempk0 = ',tempr
+      if (lu > 0) write(lu,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
+      if (lu > 0) write(lu,*) 'tempk/tempk0 = ',tempr
     endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -449,8 +501,8 @@ module M_md_velocity_routines
 !       the total kinetic energy 
 !             is exactly equal to the temper.
 !
-    if(myrank.eq.0)then
-      write(6,*) 'AFTER SCALING'
+    if(i_verbose >= 1) then
+      if (lu > 0) write(lu,*) 'AFTER SCALING'
     endif
 !      
     tempr=dsqrt(tempr)
@@ -465,8 +517,8 @@ module M_md_velocity_routines
     tempr=tempk/tempk0
 !
     if(i_verbose >= 1) then
-      write(6,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
-      write(6,*) 'tempk/tempk0 = ',tempr
+      if (lu > 0) write(lu,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
+      if (lu > 0) write(lu,*) 'tempk/tempk0 = ',tempr
     endif
 !
   end subroutine calc_initial_velocity
@@ -477,6 +529,7 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Initialization of velocity
 !          written by Hiroaki OHTANI; modified by T.Hoshi
+!          ONLY FOR FREE ATOMS
 !
   !! Copyright (C) ELSES. 2007-2015 all rights reserved
   subroutine set_velocity_from_maxwell
@@ -501,27 +554,34 @@ module M_md_velocity_routines
     real(8) dtmd2, sig, sum, rnd
     real(8) vxsum, vysum, vzsum, ekion, tempk, tempr
     real(8) tempk0
+    integer lu
+!
+    lu = config%calc%distributed%log_unit
 !
     tempk0=config%system%temperature
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-    write(6,*)'@@ LSES_VEL_INI:initial velocity'
-    write(6,*)' temperature[au]:tempk0=',tempk0
-    write(6,*)'  NOA =',noa
+    if (i_verbose >= 1) then
+      if (lu > 0) then
+        write(lu,*)'@@ set_velocity_from_maxwell'
+        write(lu,*)' temperature[au]:tempk0=',tempk0
+        write(lu,*)'  NOA =',noa
+      endif
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Parameter checking
 !
     if (tempk0 .le. -1.0d-10) then
-      write(6,*)'ERROR!(LSES_VEL_INI)'
+      write(*,*)'ERROR!(set_velocity_from_maxwell)'
       stop
     endif   
 !
     do ioa=1,noa
       if (dabs(amm(ioa)) .le. 1.0d-10) then
-        write(6,*)'ERROR!(LSES_VEL_INI)'
-        write(6,*)'ioa, amm=',ioa,amm(ioa)
+        write(*,*)'ERROR!(set_velocity_from_maxwell)'
+        write(*,*)'ioa, amm=',ioa,amm(ioa)
         stop
       endif   
     enddo   
@@ -536,7 +596,13 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Generation of Velocity under Maxwell distribution
 !
+    velx(:)=0.0d0
+    vely(:)=0.0d0
+    velz(:)=0.0d0
+!
     do ioa=1,noa
+!
+       if (iflag(ioa) /= 1) cycle
 !
        sig=tempk0*amm(ioa)
        sum = 0.d0

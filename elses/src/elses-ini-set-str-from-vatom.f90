@@ -148,7 +148,7 @@ module M_ini_load_vatom
          write(*,*) '#  between the configuration XML file'
          write(*,*) '#  and the structure XML file'
          write(*,*) '# The element tag is required '
-        write(*,*) '#  for each atom species'
+         write(*,*) '#  for each atom species'
          write(*,*) '#  in the configuration file.'
          stop
        endif   
@@ -158,6 +158,9 @@ module M_ini_load_vatom
             iflag(j)=1
          else
             iflag(j)=0
+            if (log_unit > 0 ) then
+              write(log_unit,'(a,i15)') 'INFO:fixed atom: j=',j
+            endif   
          end if
        endif  
 !         

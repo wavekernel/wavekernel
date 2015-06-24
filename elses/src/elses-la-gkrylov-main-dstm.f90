@@ -144,7 +144,7 @@ module M_la_gkrylov_main_dstm
 !
     msg=''
 !
-    if (i_verbose >=1) then 
+    if (i_verbose >=5) then 
       i_check_mode=1
     else
       i_check_mode=0
