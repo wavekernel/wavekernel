@@ -177,6 +177,7 @@
       INTEGER            H, I, IACOL, IAROW, IB, ICTXT, ICURCOL,
      $                   ICURROW, II, IIA, IN, J, JB, JJ, JJA, JN, K,
      $                   LDA, MYCOL, MYROW, NPCOL, NPROW
+      LOGICAL            IS_COL_VEC
 *     ..
 *     .. External Subroutines ..
       EXTERNAL           BLACS_BARRIER, BLACS_GRIDINFO, INFOG2L,
@@ -203,6 +204,13 @@
       II = IIA
       JJ = JJA
       LDA = DESCA( LLD_ )
+*
+*     IS_COL_VEC means the routine involves processes
+*     only in the ICPRNT-th process column
+      IS_COL_VEC = N.EQ.1 .AND. ICPRNT.EQ.ICURCOL
+      IF (IS_COL_VEC .AND. MYCOL.NE.ICPRNT) THEN
+         RETURN
+      END IF
 *
 *     Handle the first block of column separately
 *
@@ -234,7 +242,11 @@
          IF( MYROW.EQ.ICURROW )
      $      II = II + IB
          ICURROW = MOD( ICURROW+1, NPROW )
-         CALL BLACS_BARRIER( ICTXT, 'All' )
+         IF (IS_COL_VEC) THEN
+            CALL BLACS_BARRIER( ICTXT, 'Column' )
+         ELSE
+            CALL BLACS_BARRIER( ICTXT, 'All' )
+         END IF
 *
 *        Loop over remaining block of rows
 *
@@ -263,7 +275,11 @@
             IF( MYROW.EQ.ICURROW )
      $         II = II + IB
             ICURROW = MOD( ICURROW+1, NPROW )
-            CALL BLACS_BARRIER( ICTXT, 'All' )
+            IF (IS_COL_VEC) THEN
+               CALL BLACS_BARRIER( ICTXT, 'Column' )
+            ELSE
+               CALL BLACS_BARRIER( ICTXT, 'All' )
+            END IF
    50    CONTINUE
 *
         II = IIA
@@ -273,7 +289,12 @@
       IF( MYCOL.EQ.ICURCOL )
      $   JJ = JJ + JB
       ICURCOL = MOD( ICURCOL+1, NPCOL )
-      CALL BLACS_BARRIER( ICTXT, 'All' )
+      IF (IS_COL_VEC) THEN
+         CALL BLACS_BARRIER( ICTXT, 'Column' )
+         RETURN
+      ELSE
+         CALL BLACS_BARRIER( ICTXT, 'All' )
+      END IF
 *
 *     Loop over remaining column blocks
 *
@@ -284,6 +305,7 @@
             IB = IN-IA+1
             IF( ICURROW.EQ.IRPRNT .AND. ICURCOL.EQ.ICPRNT ) THEN
                IF( MYROW.EQ.IRPRNT .AND. MYCOL.EQ.ICPRNT ) THEN
+                  print *, 'G', mycol, icurcol, icprnt
                   DO 70 K = 0, IB-1
                      WRITE( NOUT, FMT = 9999 )
      $                      IA+K, J+H, A( II+K+(JJ+H-1)*LDA )

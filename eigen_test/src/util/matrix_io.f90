@@ -1,6 +1,7 @@
 module matrix_io
   use mpi
   use command_argument, only : argument, matrix_info
+  use descriptor_parameters
   use event_logger_m, only : add_event
   use eigenpairs_types, only : eigenpairs_types_union
   use processes, only : check_master, terminate
@@ -173,39 +174,42 @@ contains
     type(eigenpairs_types_union) :: eigenpairs
 
     double precision :: work(arg%matrix_A_info%rows), time_start, time_end
-    integer :: len, i, digit, stat, err
+    integer :: len, i, digit, stat, desc(desc_size)
+    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
+    integer :: print_pcol, print_prow
     character(512) :: num_str, filename
     integer, parameter :: iunit = 10, max_num_digits = 8
+    integer :: indxg2p  ! Functions.
 
     time_start = mpi_wtime()
 
     if (eigenpairs%type_number == 1) then
       stop '[Error] print_eigenvectors: printer for a local matrix not implemented yet'
     else if (eigenpairs%type_number == 2) then
+      desc(:) = eigenpairs%blacs%desc(:)
+      call blacs_gridinfo(desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
       do i = arg%printed_vecs_start, arg%printed_vecs_end
-        if (check_master()) then
+        print_pcol = indxg2p(i, desc(block_col_), 0, desc(csrc_), n_procs_col)
+        print_prow = mod(mod(i, desc(block_col_) * n_procs_col), n_procs_row)
+        if (my_proc_col == print_pcol .and. my_proc_row == print_prow) then
           write (num_str, '(i0)') i
           len = len_trim(num_str)
           num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
           do digit = 1, max_num_digits - len
             num_str(digit:digit) = '0'
           end do
-
           filename = trim(arg%eigenvector_dir) // '/' // trim(num_str) // '.dat'
           open (iunit, file=trim(filename), status='replace', iostat=stat)
+          if (stat /= 0) then
+            print *, 'iostat: ', stat
+            call terminate('print_eigenvectors: cannot open ' // trim(filename), stat)
+          end if
         end if
 
-        call mpi_bcast(stat, 1, mpi_integer, 0, mpi_comm_world, err) ! Share stat for file opening
-        if (stat /= 0) then
-          if (check_master ()) print *, 'iostat: ', stat
-          call terminate('print_eigenvectors: cannot open ' // trim(filename), stat)
-        end if
-
-        call mpi_barrier(mpi_comm_world, stat)
         call eigentest_pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
-             1, i, eigenpairs%blacs%desc, 0, 0, iunit, work)
+             1, i, desc, print_prow, print_pcol, iunit, work)
 
-        if (check_master()) then
+        if (my_proc_col == print_pcol .and. my_proc_row == print_prow) then
           close (iunit)
         end if
       end do
