@@ -4,6 +4,7 @@ module matrix_io
   use descriptor_parameters
   use event_logger_m, only : add_event
   use eigenpairs_types, only : eigenpairs_types_union
+  use global_variables
   use processes, only : check_master, terminate
   implicit none
 
@@ -117,8 +118,8 @@ contains
     print_count = 1
     do line_count = 1, num_non_zeros
       if (line_count > num_non_zeros / 10 * print_count .and. check_master()) then
-         write (0, '(A, F20.6, A, I0)') &
-              '[Event', mpi_wtime(), '] read matrix element number ', line_count
+         write (0, '(A, F16.6, A, I0)') &
+              '[Event', mpi_wtime() - g_mpi_wtime_init, '] read matrix element number ', line_count
          print_count = print_count + 1
       end if
 
@@ -192,8 +193,8 @@ contains
         print_pcol = indxg2p(i, desc(block_col_), 0, desc(csrc_), n_procs_col)
         print_prow = mod(mod(i, desc(block_col_) * n_procs_col), n_procs_row)
         if (my_proc_col == print_pcol .and. my_proc_row == print_prow) then
-          write (0, '(A, F20.6, A, I0, A, I0, A, I0, A)') &
-               '[Event', mpi_wtime(), '] print eigenvector ', i, &
+          write (0, '(A, F16.6, A, I0, A, I0, A, I0, A)') &
+               '[Event', mpi_wtime() - g_mpi_wtime_init, '] print eigenvector ', i, &
                ' on process (', my_proc_row, ', ', my_proc_col, ')'
           write (num_str, '(i0)') i
           len = len_trim(num_str)

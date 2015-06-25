@@ -3,6 +3,7 @@ module event_logger_m
   use fson
   use fson_value_m
   use fson_string_m
+  use global_variables
   implicit none
 
   type event_t
@@ -29,9 +30,9 @@ contains
     logical :: is_found
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
-    t = mpi_wtime()
+    t = mpi_wtime() - g_mpi_wtime_init
     if (my_rank == 0) then
-      write (0, '(A, F20.6, 3A, E24.16e3)') '[Event', t, '] ', name, ',', val
+      write (0, '(A, F16.6, 3A, E24.16e3)') '[Event', t, '] ', name, ',', val
     end if
 
     is_found = .false.

@@ -5,6 +5,7 @@ program eigen_test
   use fson_string_m
   use distribute_matrix
   use event_logger_m
+  use global_variables
   use solver_main, only : eigen_solver
   use command_argument, only : argument, required_memory, &
        read_command_argument, validate_argument, print_command_argument, fson_setting_add
@@ -31,6 +32,7 @@ program eigen_test
   end if
 
   time_start = mpi_wtime()
+  g_mpi_wtime_init = time_start
   time_start_part = time_start
 
   call read_command_argument(arg)
