@@ -192,6 +192,9 @@ contains
         print_pcol = indxg2p(i, desc(block_col_), 0, desc(csrc_), n_procs_col)
         print_prow = mod(mod(i, desc(block_col_) * n_procs_col), n_procs_row)
         if (my_proc_col == print_pcol .and. my_proc_row == print_prow) then
+          write (0, '(A, F20.6, A, I0, A, I0, A, I0, A)') &
+               '[Event', mpi_wtime(), '] print eigenvector ', i, &
+               ' on process (', my_proc_row, ', ', my_proc_col, ')'
           write (num_str, '(i0)') i
           len = len_trim(num_str)
           num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
