@@ -31,6 +31,7 @@ program eigen_test
     stop
   end if
 
+  call mpi_barrier(mpi_comm_world, ierr)
   time_start = mpi_wtime()
   g_mpi_wtime_init = time_start
   time_start_part = time_start
