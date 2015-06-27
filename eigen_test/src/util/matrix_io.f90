@@ -174,7 +174,7 @@ contains
     type(argument) :: arg
     type(eigenpairs_types_union) :: eigenpairs
 
-    double precision :: work(arg%matrix_A_info%rows), time_start, time_end
+    double precision :: time_start, time_end
     integer :: len, i, digit, stat, desc(desc_size)
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
     integer :: print_pcol, print_prow
@@ -191,7 +191,7 @@ contains
       call blacs_gridinfo(desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
       do i = arg%printed_vecs_start, arg%printed_vecs_end
         print_pcol = indxg2p(i, desc(block_col_), 0, desc(csrc_), n_procs_col)
-        print_prow = mod(mod(i, desc(block_col_) * n_procs_col), n_procs_row)
+        print_prow = mod(mod(i - 1, desc(block_col_) * n_procs_col), n_procs_row)
         if (my_proc_col == print_pcol .and. my_proc_row == print_prow) then
           write (0, '(A, F16.6, A, I0, A, I0, A, I0, A)') &
                '[Event', mpi_wtime() - g_mpi_wtime_init, '] print eigenvector ', i, &
@@ -210,8 +210,7 @@ contains
           end if
         end if
 
-        call eigentest_pdlaprnt(arg%matrix_A_info%rows, 1, eigenpairs%blacs%Vectors, &
-             1, i, desc, print_prow, print_pcol, iunit, work)
+        call print_vector(eigenpairs%blacs%Vectors, i, desc, print_prow, print_pcol, iunit)
 
         if (my_proc_col == print_pcol .and. my_proc_row == print_prow) then
           close (iunit)
@@ -222,4 +221,54 @@ contains
     time_end = mpi_wtime()
     call add_event('print_eigenvectors', time_end - time_start)
   end subroutine print_eigenvectors
+
+
+  subroutine print_vector(A, j, desc_A, irprnt, icprnt, nout)
+    integer, intent(in) :: j, desc_A(desc_size), irprnt, icprnt, nout
+    real(8), intent(in) :: A(:, :)
+    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, own_proc_col
+    integer :: m, mb, nb, block_num, local_j, i
+    integer :: global_top, global_bot, local_top, local_bot
+    real(8) :: work(desc_A(rows_))
+    integer :: indxg2p, indxg2l, iceil
+
+    m = desc_A(rows_)
+    mb = desc_A(block_row_)
+    nb = desc_A(block_col_)
+    work(:) = 0d0
+    call blacs_gridinfo(desc_A(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
+    own_proc_col = indxg2p(j, nb, 0, desc_A(csrc_), n_procs_col)
+    local_j = indxg2l(j, nb, 0, 0, n_procs_col)
+    ! Exit if it is an unrelated node.
+    if (my_proc_col /= own_proc_col .and. .not. &
+         (my_proc_row == irprnt .and. my_proc_col == icprnt)) then
+      return
+    end if
+    ! Copy local sub-elements of the vector to a global array to be summed.
+    if (my_proc_col == own_proc_col) then
+      do block_num = 0, iceil(m, mb) - 1
+        global_top = mb * block_num + 1
+        global_bot = min(global_top + mb - 1, m)
+        if (my_proc_row == mod(block_num, n_procs_row)) then
+          local_top = indxg2l(global_top, mb, 0, 0, n_procs_row)
+          local_bot = indxg2l(global_bot, mb, 0, 0, n_procs_row)
+          work(global_top : global_bot) = A(local_top : local_bot, local_j)
+        end if
+      end do
+      call dgsum2d(desc_A(context_), 'Column', ' ', m, 1, work, m, irprnt, own_proc_col)
+    end if
+    ! Copy the complete vector to the printing node if needed.
+    if (own_proc_col /= icprnt) then
+      if (my_proc_row == irprnt .and. my_proc_col == own_proc_col) then
+        call dgesd2d(desc_A(context_), m, 1, work, m, irprnt, icprnt)
+      else if (my_proc_row == irprnt .and. my_proc_col == icprnt) then
+        call dgerv2d(desc_A(context_), m, 1, work, m, irprnt, own_proc_col)
+      end if
+    end if
+    if (my_proc_row == irprnt .and. my_proc_col == icprnt) then
+      do i = 1, m
+        write(nout, "(I8, ' ', I8, ' ', E26.16e3)") i, j, work(i)
+      end do
+    end if
+  end subroutine print_vector
 end module matrix_io
