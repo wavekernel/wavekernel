@@ -203,14 +203,19 @@ contains
             num_str(digit:digit) = '0'
           end do
           filename = trim(arg%eigenvector_dir) // '/' // trim(num_str) // '.dat'
-          open (iunit, file=trim(filename), status='replace', iostat=stat)
+          if (arg%is_binary_output) then
+            open(iunit, file=trim(filename), form="unformatted", access="sequential", &
+                 status='replace', iostat=stat)
+          else
+            open(iunit, file=trim(filename), status='replace', iostat=stat)
+          end if
           if (stat /= 0) then
             print *, 'iostat: ', stat
             call terminate('print_eigenvectors: cannot open ' // trim(filename), stat)
           end if
         end if
 
-        call print_vector(eigenpairs%blacs%Vectors, i, desc, print_prow, print_pcol, iunit)
+        call print_vector(eigenpairs%blacs%Vectors, i, desc, print_prow, print_pcol, iunit, arg%is_binary_output)
 
         if (my_proc_col == print_pcol .and. my_proc_row == print_prow) then
           close (iunit)
@@ -223,9 +228,10 @@ contains
   end subroutine print_eigenvectors
 
 
-  subroutine print_vector(A, j, desc_A, irprnt, icprnt, nout)
+  subroutine print_vector(A, j, desc_A, irprnt, icprnt, nout, is_binary)
     integer, intent(in) :: j, desc_A(desc_size), irprnt, icprnt, nout
     real(8), intent(in) :: A(:, :)
+    logical, intent(in) :: is_binary
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, own_proc_col
     integer :: m, mb, nb, block_num, local_j, i
     integer :: global_top, global_bot, local_top, local_bot
@@ -267,7 +273,11 @@ contains
     end if
     if (my_proc_row == irprnt .and. my_proc_col == icprnt) then
       do i = 1, m
-        write(nout, "(I8, ' ', I8, ' ', E26.16e3)") i, j, work(i)
+        if (is_binary) then
+          write(nout) i, j, work(i)
+        else
+          write(nout, "(I8, ' ', I8, ' ', E26.16e3)") i, j, work(i)
+        end if
       end do
     end if
   end subroutine print_vector

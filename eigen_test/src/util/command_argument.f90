@@ -25,6 +25,7 @@ module command_argument
     logical :: is_generalized_problem
     logical :: is_printing_grid_mapping = .false.
     logical :: is_dry_run = .false.
+    logical :: is_binary_output = .false.
     integer :: block_size = 0  ! Zero means default block size
     integer :: n_vec = -1  ! The default -1 means 'all the vectors'.
     ! The default 0 means 'do not check any vector'.
@@ -350,6 +351,8 @@ contains
           arg%is_dry_run = .true.
         case ('-print-grid-mapping')
           arg%is_printing_grid_mapping = .true.
+        case ('-binary')
+          arg%is_binary_output = .true.
         case default
           call print_help()
           call terminate('read_command_argument: unknown option' // &
