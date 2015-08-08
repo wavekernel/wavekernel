@@ -272,13 +272,13 @@ contains
       end if
     end if
     if (my_proc_row == irprnt .and. my_proc_col == icprnt) then
-      do i = 1, m
-        if (is_binary) then
-          write(nout) i, j, work(i)
-        else
-          write(nout, "(I8, ' ', I8, ' ', E26.16e3)") i, j, work(i)
-        end if
-      end do
+       if (is_binary) then
+          write(nout) work(1 : m)
+       else
+          do i = 1, m
+             write(nout, "(I8, ' ', I8, ' ', E26.16e3)") i, j, work(i)
+          end do
+       end if
     end if
   end subroutine print_vector
 end module matrix_io
