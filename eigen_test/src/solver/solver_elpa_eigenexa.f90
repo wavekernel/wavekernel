@@ -43,7 +43,7 @@ contains
 
     call mpi_comm_rank(mpi_comm_world, myid, mpierr)
     call blacs_gridinfo(proc%context, np_rows, np_cols, my_prow, my_pcol)
-    call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
+    ierr = get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
          mpi_comm_rows, mpi_comm_cols)
 
     max_block_size = min(n / np_rows, n / np_cols)
@@ -73,7 +73,7 @@ contains
     time_start_part = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
-    call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
+    call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, .true., success)
     if (.not. success) then
       call terminate('solver_main, general_elpa_eigenexa: cholesky_real failed', 1)
     end if
@@ -82,7 +82,7 @@ contains
     call add_event('solve_with_general_elpa_eigenexa:cholesky_real', time_end - time_start_part)
     time_start_part = time_end
 
-    call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
+    call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, .true., success)
     ! invert_trm_real always returns fail
     !if (.not. success) then
     !  if (myid == 0) then
@@ -183,7 +183,7 @@ contains
 
     call mpi_comm_rank(mpi_comm_world, myid, mpierr)
     call blacs_gridinfo(proc%context, np_rows, np_cols, my_prow, my_pcol)
-    call get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
+    ierr = get_elpa_row_col_comms(mpi_comm_world, my_prow, my_pcol, &
          mpi_comm_rows, mpi_comm_cols)
 
     max_block_size = min(n / np_rows, n / np_cols)
@@ -203,7 +203,7 @@ contains
     time_start_part = time_end
 
     ! Return of cholesky_real is stored in the upper triangle.
-    call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
+    call cholesky_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, .true., success)
     if (.not. success) then
       call terminate('solver_main, general_elpa_eigenk: cholesky_real failed', 1)
     end if
@@ -212,7 +212,7 @@ contains
     call add_event('solve_with_general_elpa_eigenk:cholesky_real', time_end - time_start_part)
     time_start_part = time_end
 
-    call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, success)
+    call invert_trm_real(n, matrix_B_dist, na_rows, block_size, mpi_comm_rows, mpi_comm_cols, .true., success)
     ! invert_trm_real always returns fail
     !if (.not. success) then
     !  if (myid == 0) then
