@@ -51,7 +51,7 @@ else
 	FCFLAGS_ELPA_EIGENEXA = $(FCFLAGS_INTERNAL) -Wno-unused-dummy-argument
 endif
 
-OBJS_UTIL_F77 = util/eigentest_pdlaprnt.o util/mmio.o
+OBJS_UTIL_F77 = util/mmio.o
 
 OBJS_UTIL = util/descriptor_parameters.o util/global_variables.o util/command_argument.o util/matrix_io.o util/distribute_matrix.o util/processes.o util/eigenpairs_types.o util/event_logger.o util/fson.o util/modules.o
 

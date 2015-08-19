@@ -15,7 +15,7 @@ contains
     double precision, intent(inout) :: A(:, :), B(:, :)
 
     integer :: info
-    double precision :: scale, work_pdlaprnt(desc_B(block_row_))
+    double precision :: scale
     double precision :: time_start, time_end
 
     time_start = mpi_wtime()
@@ -23,12 +23,8 @@ contains
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
     if (info /= 0) then
-      if (check_master()) print '("info(pdpotrf): ", i0)', info
-      if (info > 0) then
-        info = min(info, 10)
-        if (check_master()) print &
-             '("The leading minor that is not positive definite (up to order 10) is:")'
-        call eigentest_pdlaprnt(info, info, B, 1, 1, desc_B, 0, 0, '  B', 6, work_pdlaprnt)
+      if (check_master()) then
+        print '("info(pdpotrf): ", i0)', info
       end if
       call terminate('reduce_generalized: pdpotrf failed', info)
     end if
@@ -55,7 +51,7 @@ contains
 
     integer :: nprow, npcol, myrow, mycol, info
     integer :: nb, np0, nq0, lwork
-    double precision :: scale, work_pdlaprnt(desc_B(block_row_))
+    double precision :: scale
     double precision, allocatable :: work(:)
     double precision :: time_start, time_end
     integer :: numroc
@@ -65,12 +61,8 @@ contains
     ! B = LL', overwritten to B
     call pdpotrf('L', dim, B, 1, 1, desc_B, info)
     if (info /= 0) then
-      if (check_master()) print '("info(pdpotrf): ", i0)', info
-      if (info > 0) then
-        info = min(info, 10)
-        if (check_master()) print &
-             '("The leading minor that is not positive definite (up to order 10) is:")'
-        call eigentest_pdlaprnt(info, info, B, 1, 1, desc_B, 0, 0, '  B', 6, work_pdlaprnt)
+      if (check_master()) then
+        print '("info(pdpotrf): ", i0)', info
       end if
       call terminate('reduce_generalized_new: pdpotrf failed', info)
     end if
