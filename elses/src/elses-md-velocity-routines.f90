@@ -79,6 +79,10 @@ module M_md_velocity_routines
 !
     velocity_is_allocated = .true.
 !
+    if (present(k_e_component)) then
+      k_e_component(:)=0.0d0
+    endif  
+!
     if (allocated(velx) .eqv. .false.) velocity_is_allocated = .false.
     if (allocated(vely) .eqv. .false.) velocity_is_allocated = .false.
     if (allocated(velz) .eqv. .false.) velocity_is_allocated = .false.

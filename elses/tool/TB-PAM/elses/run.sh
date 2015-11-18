@@ -131,7 +131,8 @@ if [ ! $? == 0 ]; then
 fi
 
 # run elses main program
-$elses config.xml > /dev/null >& /dev/null
+#$elses config.xml > /dev/null >& /dev/null
+$elses config.xml > elses.log
 if [ ! $? == 0 ]; then
     echo "Error: failed in program $elses"
     exit 1
@@ -160,7 +161,7 @@ energy_homo_optimized=`grep HOMO $output_data_optimized | awk '{ print $2;}'`
 energy_total_optimized=`grep TOTAL $output_data_optimized | awk '{print $2}'`
 
 rm -f output_eigen_levels.txt Output.txt
-rm -f log-node* output_tdos.txt restart.xml molecule.xml
+#rm -f log-node* output_tdos.txt restart.xml molecule.xml
 
 #########################################
 ## calculation of some point enegies with some bonds/angles
@@ -247,7 +248,7 @@ if [ ! -r ../gaussian/$output_energy_eigen_conformation ]; then
     exit 1
 fi
 #echo -n "diff in eigen energies: "
-$elses_comdat $output_energy_eigen_conformation ../gaussian/$output_energy_eigen_conformation > $output_energy_difference
+$elses_comdat $output_energy_eigen_conformation ../gaussian/$output_energy_eigen_conformation ${nbands}  > $output_energy_difference
 if [ ! $? == 0 ]; then
     echo "Error: failed in program $elses_comdat"
     exit 1
@@ -258,7 +259,7 @@ if [ ! -r ../gaussian/$output_energy_total_conformation ]; then
     exit 1
 fi
 #echo -n "diff in total energies: "
-$elses_comdat $output_energy_total_conformation ../gaussian/$output_energy_total_conformation >>  $output_energy_difference
+$elses_comdat $output_energy_total_conformation ../gaussian/$output_energy_total_conformation 1 >>  $output_energy_difference
 if [ ! $? == 0 ]; then
     echo "Error: failed in program $elses_comdat"
     exit 1
@@ -281,20 +282,20 @@ if [ `echo $bonds_conformation | wc -w` -gt 1 ]; then
 
 	for i in `seq 1 $num_bands`; do
 	    if [ $i == "1" ]; then
-		echo " splot \"$output_energy_eigen_conformation\"             u 1:2:2+$i  w lp pt 1 ps 2 lt 1 t \"ELSES\""
-		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2:2+$i  w lp pt 2 ps 2 lt 2 t \"Gaussian\""
+		echo " splot \"$output_energy_eigen_conformation\"             u 1:2:2+$i  w lp pt 1 ps 2 lw 2 lt 1 t \"ELSES\""
+		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2:2+$i  w lp pt 2 ps 2 lw 2 lt 2 t \"Gaussian\""
 	    else
-		echo "replot \"$output_energy_eigen_conformation\"             u 1:2:2+$i  w lp pt 1 ps 2 lt 1 notitle"
-		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2:2+$i  w lp pt 2 ps 2 lt 2 notitle"
+		echo "replot \"$output_energy_eigen_conformation\"             u 1:2:2+$i  w lp pt 1 ps 2 lw 2 lt 1 notitle"
+		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2:2+$i  w lp pt 2 ps 2 lw 2 lt 2 notitle"
 	    fi
 	done >> $gnuplot_energy_eigen
 
 	echo -e \
 	    "\npause -1 \"hit return key\"" \
-	    "\n#set terminal post color eps \"Arial\"" \
-	    "\n#set output \"${gnuplot_energy_eigen%.gpl}.eps\"" \
-	    "\n#replot" \
-	    "\n#set ter x11\n" \
+	    "\nset terminal post color eps \"Arial\"" \
+	    "\nset output \"${gnuplot_energy_eigen%.gpl}.eps\"" \
+	    "\nreplot" \
+	    "\nset ter x11\n" \
 	    >> $gnuplot_energy_eigen
 
 	echo -e \
@@ -304,14 +305,14 @@ if [ `echo $bonds_conformation | wc -w` -gt 1 ]; then
 	    "\nset zlabel \"Eigen energy [a.u.]\"" \
 	    "\nset title  \"Total energies by ELSES and Gaussian\"" \
 	    "\n" \
-	    "\n splot \"$output_energy_total_conformation\"             u 1:2:3 w lp t \"ELSES\"" \
-	    "\nreplot \"../gaussian/$output_energy_total_conformation\" u 1:2:3 w lp t \"Gaussian\"" \
+	    "\n splot \"$output_energy_total_conformation\"             u 1:2:3 w lp ps 2 lw 2 t \"ELSES\"" \
+	    "\nreplot \"../gaussian/$output_energy_total_conformation\" u 1:2:3 w lp ps 2 lw 2 t \"Gaussian\"" \
 	    "\npause -1 \"hit return key\"" \
 	    "\n" \
-	    "\n#set terminal post color eps \"Arial\"" \
-	    "\n#set output \"${gnuplot_energy_total%.gpl}.eps\"" \
-	    "\n#replot" \
-	    "\n#set ter x11\n" \
+	    "\nset terminal post color eps \"Arial\"" \
+	    "\nset output \"${gnuplot_energy_total%.gpl}.eps\"" \
+	    "\nreplot" \
+	    "\nset ter x11\n" \
 	    > $gnuplot_energy_total
 
 #--------------
@@ -327,20 +328,20 @@ if [ `echo $bonds_conformation | wc -w` -gt 1 ]; then
 
 	for i in `seq 1 $num_bands`; do
 	    if [ $i == "1" ]; then
-		echo "  plot \"$output_energy_eigen_conformation\"             u 1:2+$i  w lp pt 1 ps 2 lt 1 t \"ELSES\""
-		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2+$i  w lp pt 2 ps 2 lt 2 t \"Gaussian\""
+		echo "  plot \"$output_energy_eigen_conformation\"             u 1:2+$i  w lp pt 1 ps 2 lw 2 lt 1 t \"ELSES\""
+		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2+$i  w lp pt 2 ps 2 lw 2 lt 2 t \"Gaussian\""
 	    else
-		echo "replot \"$output_energy_eigen_conformation\"             u 1:2+$i  w lp pt 1 ps 2 lt 1 notitle"
-		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2+$i  w lp pt 2 ps 2 lt 2 notitle"
+		echo "replot \"$output_energy_eigen_conformation\"             u 1:2+$i  w lp pt 1 ps 2 lw 2 lt 1 notitle"
+		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 1:2+$i  w lp pt 2 ps 2 lw 2 lt 2 notitle"
 	    fi
 	done >> $gnuplot_energy_eigen
 
 	echo -e \
 	    "\npause -1 \"hit return key\"" \
-	    "\n#set terminal post color eps \"Arial\"" \
-	    "\n#set output \"${gnuplot_energy_eigen%.gpl}.eps\"" \
-	    "\n#replot" \
-	    "\n#set ter x11\n" \
+	    "\nset terminal post color eps \"Arial\"" \
+	    "\nset output \"${gnuplot_energy_eigen%.gpl}.eps\"" \
+	    "\nreplot" \
+	    "\nset ter x11\n" \
 	    >> $gnuplot_energy_eigen
 
 	echo -e \
@@ -349,14 +350,14 @@ if [ `echo $bonds_conformation | wc -w` -gt 1 ]; then
 	    "\nset ylabel \"Eigen energy [a.u.]\"" \
 	    "\nset title  \"Total energies by ELSES and Gaussian\"" \
 	    "\n" \
-	    "\n  plot \"$output_energy_total_conformation\"             u 1:3 w lp t \"ELSES\"" \
-	    "\nreplot \"../gaussian/$output_energy_total_conformation\" u 1:3 w lp t \"Gaussian\"" \
+	    "\n  plot \"$output_energy_total_conformation\"             u 1:3 w lp ps 2 lw 2 t \"ELSES\"" \
+	    "\nreplot \"../gaussian/$output_energy_total_conformation\" u 1:3 w lp ps 2 lw 2 t \"Gaussian\"" \
 	    "\npause -1 \"hit return key\"" \
 	    "\n" \
-	    "\n#set terminal post color eps \"Arial\"" \
-	    "\n#set output \"${gnuplot_energy_total%.gpl}.eps\"" \
-	    "\n#replot" \
-	    "\n#set ter x11\n" \
+	    "\nset terminal post color eps \"Arial\"" \
+	    "\nset output \"${gnuplot_energy_total%.gpl}.eps\"" \
+	    "\nreplot" \
+	    "\nset ter x11\n" \
 	    > $gnuplot_energy_total
 #--------------
     fi
@@ -373,20 +374,20 @@ else
 
 	for i in `seq 1 $num_bands`; do
 	    if [ $i == "1" ]; then
-		echo "  plot \"$output_energy_eigen_conformation\"             u 2:2+$i  w lp pt 1 ps 2 lt 1 t \"ELSES\""
-		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 2:2+$i  w lp pt 2 ps 2 lt 2 t \"Gaussian\""
+		echo "  plot \"$output_energy_eigen_conformation\"             u 2:2+$i  w lp pt 1 ps 2 lw 2 lt 1 t \"ELSES\""
+		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 2:2+$i  w lp pt 2 ps 2 lw 2 lt 2 t \"Gaussian\""
 	    else
-		echo "replot \"$output_energy_eigen_conformation\"             u 2:2+$i  w lp pt 1 ps 2 lt 1 notitle"
-		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 2:2+$i  w lp pt 2 ps 2 lt 2 notitle"
+		echo "replot \"$output_energy_eigen_conformation\"             u 2:2+$i  w lp pt 1 ps 2 lw 2 lt 1 notitle"
+		echo "replot \"../gaussian/$output_energy_eigen_conformation\" u 2:2+$i  w lp pt 2 ps 2 lw 2 lt 2 notitle"
 	    fi
 	done >> $gnuplot_energy_eigen
 
 	echo -e \
 	    "\npause -1 \"hit return key\"" \
-	    "\n#set terminal post color eps \"Arial\"" \
-	    "\n#set output \"${gnuplot_energy_eigen%.gpl}.eps\"" \
-	    "\n#replot" \
-	    "\n#set ter x11\n" \
+	    "\nset terminal post color eps \"Arial\"" \
+	    "\nset output \"${gnuplot_energy_eigen%.gpl}.eps\"" \
+	    "\nreplot" \
+	    "\nset ter x11\n" \
 	    >> $gnuplot_energy_eigen
 
 	echo -e \
@@ -395,14 +396,14 @@ else
 	    "\nset ylabel \"Eigen energy [a.u.]\"" \
 	    "\nset title  \"Total energies by ELSES and Gaussian\"" \
 	    "\n" \
-	    "\n  plot \"$output_energy_total_conformation\"             u 2:3 w lp t \"ELSES\"" \
-	    "\nreplot \"../gaussian/$output_energy_total_conformation\" u 2:3 w lp t \"Gaussian\"" \
+	    "\n  plot \"$output_energy_total_conformation\"             u 2:3 w lp lw 2 ps 2 t \"ELSES\"" \
+	    "\nreplot \"../gaussian/$output_energy_total_conformation\" u 2:3 w lp lw 2 ps 2 t \"Gaussian\"" \
 	    "\npause -1 \"hit return key\"" \
 	    "\n" \
-	    "\n#set terminal post color eps \"Arial\"" \
-	    "\n#set output \"${gnuplot_energy_total%.gpl}.eps\"" \
-	    "\n#replot" \
-	    "\n#set ter x11\n" \
+	    "\nset terminal post color eps \"Arial\"" \
+	    "\nset output \"${gnuplot_energy_total%.gpl}.eps\"" \
+	    "\nreplot" \
+	    "\nset ter x11\n" \
 	    > $gnuplot_energy_total
 #--------------
     else
@@ -410,6 +411,6 @@ else
     fi
 fi
 
-rm -f output_eigen_levels.txt Output.txt molecule.xml log-node* output_tdos.txt
+#rm -f output_eigen_levels.txt Output.txt molecule.xml log-node* output_tdos.txt
 
 exit 0

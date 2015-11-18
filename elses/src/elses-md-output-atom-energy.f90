@@ -32,7 +32,7 @@ module M_output_atom_energy
     implicit none
     integer      :: i
     integer, parameter  :: ict4h=1
-    integer, parameter  :: number_of_items = 4
+    integer, parameter  :: number_of_items = 5
     real(kind=8) :: value_of_etb
     integer      :: jsv2, nss2, nval2, ja2, jsd1
     integer      :: jsv1, nss1, nval1, ja1, ierr, iplot
@@ -77,7 +77,7 @@ module M_output_atom_energy
       nss2=atm_element(jsv2)
       nval2=nval(nss2)
       call qm_calc_etb_atom(jsv2, atom_energy(jsv2,1))
-      call qm_calc_ecsc_atom(jsv2, atom_energy(jsv2,2))
+      call qm_calc_ecsc_atom(jsv2, atom_energy(jsv2,2),atom_energy(jsv2,5))
       call calc_e_rep_atom(jsv2, atom_energy(jsv2,3))
       call calc_kin_ene_atom(jsv2, atom_energy(jsv2,4))
     enddo  
@@ -94,7 +94,7 @@ module M_output_atom_energy
     do jsv2=1,noav
       nss2=atm_element(jsv2)
       write(unit_num,'(2i10,a,a2,a,i10, 4f20.10)') step_count, jsv2, ' ', trim(element_name(nss2)), & 
-&              ' ', njsd(jsv2,ict4h), atom_energy(jsv2,1:4)
+&              ' ', njsd(jsv2,ict4h), atom_energy(jsv2,1:5)
     enddo  
 !
     do i=1,number_of_items

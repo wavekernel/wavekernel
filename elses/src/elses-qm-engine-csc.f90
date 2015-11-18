@@ -29,7 +29,9 @@ module M_qm_engine_csc
 !
 !
 !    Module procedures
-     use M_config, only : config
+     use M_config,         only : config   ! (unchanged)
+     use M_qm_domain,      only : noav     ! (unchanged)
+     use M_lib_phys_const, only : ev4au    ! (unchanged)
      use M_qm_solver_geno_main, &
           only : qm_solver_geno_main, qm_solver_ortho_main
      use M_qm_domain, &
@@ -42,11 +44,12 @@ module M_qm_engine_csc
      use M_qm_geno_csc, &
           only : set_CSC_parameters_geno, set_hamiltonian_csc, &
           set_atm_force_csc
-     use M_qm_geno_output, only : qm_geno_output
+     use M_qm_geno_output, only : qm_geno_output, qm_calc_ecsc ! (routine)
 !    use M_qm_nrl, only : qm_nrl_set_ham, qm_nrl_set_force
 !    use M_qm_engine_nrl, only : qm_engine_nrl
 !
      use M_qm_domain,     only : csc_ite_converged, csc_dq_converged
+     use M_qm_geno_CSC_basic, only : gamma_csc_func_plot !(subroutine)
 !
      implicit none
      real(DOUBLE_PRECISION)              :: dq, dq_1, mix_r
@@ -54,13 +57,37 @@ module M_qm_engine_csc
      integer  :: k, ierr, i_csc_loop, n_csc_loop, mix_mode
      character(len=8) :: CSC_METHOD
 !         ----> history for dq and mix_r
-     real(DOUBLE_PRECISION)              :: mix_r0
+     real(DOUBLE_PRECISION)              :: mix_r0, mix_r_wrk
+     integer  :: lu, step_count
+     logical  :: plot_ecsc, plot_ecsc_atom ! Plot E_csc in the CSC calc. 
+     real(DOUBLE_PRECISION)              :: value_of_ecsc
+     real(DOUBLE_PRECISION), allocatable :: atom_csc_energy(:)
+!
+     lu = config%calc%distributed%log_unit
 !
      CSC_METHOD = config%calc%genoOption%CSC_method
      n_csc_loop = config%calc%genoOption%CSC_max_loop_count
      mix_mode   = config%calc%genoOption%CSC_mode_for_tuning_mixing_ratio
+     step_count = config%system%structure%mdstep
 !
-     write(*,'(a,i5)')'@@ qm_engine_csc : mode_for_tuning_mixing_ratio = ',mix_mode
+     plot_ecsc = .false.
+     plot_ecsc_atom = .false.
+!
+     if (n_csc_loop < 1) then
+       write(*,*)'ERROR(qm_engine_csc):n_csc_loop=',n_csc_loop
+       stop
+     endif
+!
+     if (n_csc_loop /= 0) then
+       if (i_verbose >= 5)  plot_ecsc      = .true.
+       if (i_verbose >= 7)  plot_ecsc_atom = .true.
+     endif
+!
+     if (step_count == 0) then
+       if (i_verbose >= 1) call gamma_csc_func_plot ! Plot gamma CSC function for demonstration
+     endif
+!
+     if (lu > 0) write(lu,'(a,i5)')'@@ qm_engine_csc : mode_for_tuning_mixing_ratio = ',mix_mode
 !
      allocate (dq_hist(n_csc_loop), stat=ierr)
      if (ierr /= 0) stop 'Abort:alloc. error'
@@ -95,7 +122,7 @@ module M_qm_engine_csc
         dq  = rms_delta_q()
         dq_hist(i_csc_loop)=dq
         if ( dq < config%calc%genoOption%CSC_charge_convergence ) then
-          write(*,'(a,i10,E13.6)') 'INFO:CSC loop is converged:loop num., dq=',i_csc_loop, dq
+          if (lu > 0) write(lu,'(a,i10,E13.6)') 'INFO:CSC loop is converged:loop num., dq=',i_csc_loop, dq
           csc_ite_converged = i_csc_loop
           csc_dq_converged  = dq
           exit
@@ -108,18 +135,31 @@ module M_qm_engine_csc
         if (mix_mode /= 0) then
            call tune_mix_ratio(dq_hist, mix_r_hist,i_csc_loop, mix_r,mix_mode)
            mix_r_hist(i_csc_loop)=mix_r
-           write(*,*)'mix_r_hist=', mix_r_hist(i_csc_loop)
+           if (lu > 0) write(lu,*)'mix_r_hist=', mix_r_hist(i_csc_loop)
         endif  
 !
         if (i_csc_loop == 1) then
           mix_r0=1.0d0
           call renew_charge(mix_r0)
+          mix_r_wrk=mix_r0
           ! renew e_num_on_basis, e_num_on_atom  (charge mixing)
-          if(i_verbose > 0) write(*,'("dq=",ES10.2,", mix_r=",ES10.2)') dq,mix_r0
         else
           call renew_charge(mix_r)
+          mix_r_wrk=mix_r
           ! renew e_num_on_basis, e_num_on_atom  (charge mixing)
-          if(i_verbose > 0) write(*,'("dq=",ES10.2,", mix_r=",ES10.2)') dq,mix_r
+        endif
+!
+       value_of_ecsc=0.0d0
+       if (plot_ecsc) then
+         call qm_calc_ecsc(value_of_ecsc,plot_ecsc_atom)
+         value_of_ecsc=value_of_ecsc/dble(noav)*ev4au
+       endif
+!
+        if (lu > 0) then
+          if(i_verbose > 0) then 
+            write(lu,'("INFO-CSC:step, csc_step, dq, mix_r, Ecsc[eV/atom] =",2I10,ES10.2,ES10.2,F30.20)') & 
+&                            step_count, i_csc_loop, dq, mix_r_wrk, value_of_ecsc
+          endif
         endif
 !
      end do
@@ -130,9 +170,9 @@ module M_qm_engine_csc
      deallocate (mix_r_hist, stat=ierr)
      if (ierr /= 0) stop 'Abort:dealloc. error'
 
-       if(i_verbose > 0 .and. n_csc_loop >0) write(*,'("mix_r=",ES10.2,", i_csc_loop=",I8)')&
-            mix_r, i_csc_loop
-            
+       if(i_verbose > 0 .and. n_csc_loop >0) then
+          if (lu > 0) write(lu,'("mix_r=",ES10.2,", i_csc_loop=",I8)') mix_r, i_csc_loop
+       endif
 
        if(i_csc_loop > n_csc_loop .and. n_csc_loop > 0) then
           stop "elses_qm_engine: !!!ERROR!!! charge did't converge"
@@ -163,6 +203,7 @@ module M_qm_engine_csc
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine tune_mix_ratio(dq_hist, mix_r_hist,i_csc_loop, mix_r_value,i_level)
 !
+     use M_config,         only : config   ! (unchanged)
      implicit none
      real(DOUBLE_PRECISION), intent(in)    :: dq_hist(:),mix_r_hist(:)
      integer,                intent(in)    :: i_csc_loop
@@ -172,15 +213,19 @@ module M_qm_engine_csc
      integer                :: ite_dq_min
      integer                :: ite, ite_same_mix_r
      integer                :: i_level
+     integer                :: lu
 !
+       lu = config%calc%distributed%log_unit
        dq_value    = dq_hist(i_csc_loop)
        dq_min      = minval(dq_hist(1:i_csc_loop))
        ite_dq_min  = minloc(dq_hist(1:i_csc_loop),1)
 !
        if (i_csc_loop == 1) return
 !
-       if (i_verbose >=1) then 
-         write(*,'(a,i10,2f20.10)')'@@ tune mix ratio:level, dq, dq_min=',i_level,dq_value, dq_min
+       if (lu > 0) then
+         if (i_verbose >=1) then 
+           write(lu,'(a,i10,2f20.10)')'@@ tune mix ratio:level, dq, dq_min=',i_level,dq_value, dq_min
+         endif
        endif
 !
        do ite=2, i_csc_loop
@@ -189,8 +234,10 @@ module M_qm_engine_csc
            return
          endif   
          dq_ratio=dq_hist(ite)/dq_hist(ite-1)
-         if (i_verbose >=1) then 
-           write(*,'(a,i10,2f20.10)')' ite, dq, dq_ratio=',ite, dq_hist(ite), dq_ratio
+         if (lu > 0) then
+           if (i_verbose >=1) then 
+             write(lu,'(a,i10,2f20.10)')' ite, dq, dq_ratio=',ite, dq_hist(ite), dq_ratio
+           endif
          endif  
          if (ite == 2) dq_ratio_min=dq_ratio 
          if (dq_ratio < dq_ratio_min) dq_ratio_min=dq_ratio 
@@ -199,7 +246,9 @@ module M_qm_engine_csc
        dq_ratio_min=min(1.0d0, dq_ratio_min)
 !
        if (i_verbose >=1) then 
-         write(*,*)' dq_ratio, dq_ratio_min*1.2=',dq_ratio, dq_ratio_min*1.2d0
+         if (lu > 0) then
+           write(lu,*)' dq_ratio, dq_ratio_min*1.2=',dq_ratio, dq_ratio_min*1.2d0
+         endif
        endif
 !
 !
@@ -213,8 +262,10 @@ module M_qm_engine_csc
        enddo
 !         ----> get ite_same_mix_r as the iteration number for the same mix_r value
 !
-       if (i_verbose >=1) then 
-         write(*,'(a,3i10)')'  ite, ite_dq_min, ite_same_mix_r =',i_csc_loop, ite_dq_min, ite_same_mix_r
+       if (lu > 0) then
+         if (i_verbose >=1) then 
+           write(lu,'(a,3i10)')'  ite, ite_dq_min, ite_same_mix_r =',i_csc_loop, ite_dq_min, ite_same_mix_r
+         endif
        endif  
 !
        if (ite_same_mix_r < 3) return
@@ -224,21 +275,27 @@ module M_qm_engine_csc
           case (1)
             if ((i_csc_loop >= ite_dq_min+3) .and. (dq_value > 0.9d0*dq_min)) then
               mix_r_value=mix_r_value/2.0d0
-              if (i_verbose >=1) then 
-                 write(*,*)'new_mix_r =',mix_r_value
+             if (lu > 0) then
+                if (i_verbose >=1) then 
+                  write(lu,*)'new_mix_r =',mix_r_value
+                endif
               endif  
             endif   
           case (2)
             if ((ite_same_mix_r >= 3) .and. ( dq_ratio > dq_ratio_min * 1.2d0 )) then 
               mix_r_value=mix_r_value/2.0d0
-              if (i_verbose >=1) then 
-                write(*,*)'new_mix_r (2) =',mix_r_value
-              endif  
+              if (lu > 0) then
+                if (i_verbose >=1) then 
+                  write(lu,*)'new_mix_r (2) =',mix_r_value
+                endif
+             endif  
             else
               if ((i_csc_loop >= ite_dq_min+3) .and. (dq_value > 0.9d0*dq_min)) then
                 mix_r_value=mix_r_value/2.0d0
-                if (i_verbose >=1) then 
-                  write(*,*)'new_mix_r (1) =',mix_r_value
+                if (lu > 0) then
+                  if (i_verbose >=1) then 
+                    write(lu,*)'new_mix_r (1) =',mix_r_value
+                  endif
                 endif  
               endif   
             endif   

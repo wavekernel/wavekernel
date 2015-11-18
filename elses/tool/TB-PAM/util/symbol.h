@@ -44,7 +44,7 @@ inline ElementSymbol::ElementSymbol( const char* symbol )
     index = X;
     return;
   }
-  
+
   switch( symbol[0] ){
   case 'A' : {
     if( false );

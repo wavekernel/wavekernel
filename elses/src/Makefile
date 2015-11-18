@@ -10,7 +10,8 @@ TOPDIR=..
 
 include $(TOPDIR)/Makefile.inc
 
-TARGET = elses-xml-selftest elses
+#TARGET = elses-xml-selftest elses
+TARGET = elses
 
 .PHONY: all
 all: $(TARGET)
@@ -52,7 +53,7 @@ OBJS-ELSES = \
 	elses-qm-geno.o elses-ini-load-common.o elses-ini-load-geno.o elses-io-ctrl-dos-plot.o elses-io-ctrl-plot-eigenstates.o \
 	elses-qm-vdW-parameters.o \
 	elses-qm-geno-Huckel-atom-parameters.o elses-xml-check-element-info.o \
-	elses-qm-geno-Huckel.o elses-qm-geno-csc.o  elses-qm-solver-eig-geno.o \
+	elses-qm-geno-Huckel.o elses-qm-geno-csc-basic.o elses-qm-geno-csc.o  elses-qm-solver-eig-geno.o \
 	elses-00-main.o elses-md-main.o elses-md-init.o elses-md-velocity-routines.o \
 	elses-qm-main.o elses-kr-main.o \
 	elses-kr-sub.o elses-kr-setkry.o  elses-hami-01.o \
@@ -92,9 +93,9 @@ OBJS-ELSES = \
 	elses-gid-initial.o elses-gid-basic-routines.o elses-gid-constraint.o elses-lib-read-w-comment.o elses-lib-read-w-split.o \
 	elses-ext-atom-info.o elses-ext-matrix-data.o elses-ext-test-quantum-dynamics.o
 
-elses-xml-selftest: elses-xml-selftest.o $(OBJS-XML)
-	$(F90)  $(LDFLAGS) elses-xml-selftest.o $(OBJS-XML) $(LIBS-XML) -o $@ 
-	$(XML_SELFTEST) selftest/config.xml || exit
+#elses-xml-selftest: elses-xml-selftest.o $(OBJS-XML)
+#	$(F90)  $(LDFLAGS) elses-xml-selftest.o $(OBJS-XML) $(LIBS-XML) -o $@ 
+#	$(XML_SELFTEST) selftest/config.xml || exit
 
 elses: $(OBJS-XML) $(OBJS-NRL) $(OBJS-ELSES)
 	$(F90) $(LDFLAGS) $(OBJS-XML) $(OBJS-NRL) $(OBJS-ELSES) $(LIBS-XML) $(LIBS-EXT) $(LIBS) -o $@

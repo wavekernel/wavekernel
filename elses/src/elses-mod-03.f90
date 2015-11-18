@@ -79,7 +79,7 @@ end module
 !c
       !! Copyright (C) ELSES. 2007-2015 all rights reserved
 subroutine elses_alloc_mat1(nvl_def,noas_def,noav_def,imode)
-  use M_config,        only : config !(unchanged)
+  use M_config,        only : config ! CHANGED : config%calc%limit%memory_allocated
   use elses_arr_dbij,  only : dbij
   use elses_arr_dbij2, only : dbij2
   use elses_arr_dhij,  only : dhij
@@ -139,10 +139,21 @@ subroutine elses_alloc_mat1(nvl_def,noas_def,noav_def,imode)
 !c
   if (lu >0) write(lu,*)'... total     : size (GB)=',dsum
 !c
-  if (ierr .ne. 0) then
-    write(*,*)'ERROR?(ALLOC_MOD2):too large matrix size?'
-    stop
-endif   
+   config%calc%limit%memory_allocated=config%calc%limit%memory_allocated+dsum
+   if (lu > 0) write(lu,'(a,f20.8)')'INFO-MEMORY:estimated size [GB]=', &
+&                               config%calc%limit%memory_allocated
+!
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!c  Check the memory size (optional)
+!
+   if ( config%calc%limit%memory > 0.0d0 ) then
+     if (config%calc%limit%memory_allocated > config%calc%limit%memory) then
+       write(*,'(a,f20.10)')'ERROR!:(allocated memory size) [GB] =', config%calc%limit%memory_allocated
+       write(*,'(a,f20.10)')'           (memory size limit) [GB] =', config%calc%limit%memory
+       stop
+     endif
+   endif
+!
 !c
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c     Allocation of dbij

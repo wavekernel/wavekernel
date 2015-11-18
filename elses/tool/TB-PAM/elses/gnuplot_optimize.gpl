@@ -72,9 +72,9 @@ unset y2label
 set ytics mirror
 #----------------------------------------------------------
 set ylabel "R.R. parameter [a.u.]"
-plot "optimize.log" u 13 w lp t "s orbital"
-replot "optimize.log" u 14 w lp t "p orbital"
-replot "optimize.log" u 15 w lp t "d orbital"
+plot "optimize.log" u 13 w lp lw 2 t "s orbital"
+replot "optimize.log" u 14 w lp lw 2 t "p orbital"
+replot "optimize.log" u 15 w lp lw 2 t "d orbital"
 
 pause -1 "Hit return key"
 
@@ -85,9 +85,9 @@ set output
 set terminal x11
 #----------------------------------------------------------
 set ylabel "Evaluation function [a.u.]"
-plot "optimize.log" u 16 w lp t "eval_f_tot"
-replot "optimize.log" u 17 w lp t "eval_f_ebd"
-replot "optimize.log" u 18 w lp t "eval_f_etot"
+plot "optimize.log" u 16 w lp lw 2 t "eval_f_tot"
+replot "optimize.log" u 17 w lp lw 2 t "eval_f_ebd"
+replot "optimize.log" u 18 w lp lw 2 t "eval_f_etot"
 
 pause -1 "Hit return key"
 

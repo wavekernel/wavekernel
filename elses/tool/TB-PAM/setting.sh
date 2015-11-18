@@ -1,6 +1,6 @@
 # ELSES and its related programs
-elses_top="$HOME/ELSES/elses-v0.03.08"
-elses="$elses_top/bin/elses -verbose=1"
+elses_top="$HOME/ELSES/elses-v0.04.04"
+elses="$elses_top/bin/elses -verbose=100"
 elses_optpar="../util/elses_optimize_param"
 elses_genmol="../util/elses_generate_molfile"
 elses_obtdat="../util/elses_obtain_data"

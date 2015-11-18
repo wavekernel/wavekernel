@@ -16,6 +16,7 @@ module M_qm_geno_output
    public qm_calc_etb_atom
    public qm_calc_ecsc_atom
    public qm_calc_ecsc
+   public qm_calc_ecsc_list
    public output_for_eigen_solver
 !
    contains
@@ -259,22 +260,38 @@ module M_qm_geno_output
 
   end subroutine qm_calc_etb
 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-  subroutine qm_calc_ecsc(value_of_ecsc)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+  subroutine qm_calc_ecsc(value_of_ecsc,plot_atom_energy)
     
-    use M_qm_domain, only: gamma_csc, noav, delta_e_num
+    use M_config, only : config !(unchanged)
+    use M_qm_domain, only : e_num_on_atom !(unchanged)
+    use M_lib_phys_const,    only : ev4au !(unchaged)
+!
+    implicit none
+    real(8), intent(out) :: value_of_ecsc
+    logical, intent(in), optional :: plot_atom_energy
+    integer :: jsv1,jsv2
+    real(8) :: value_of_ecsc_atm, value_of_ecsc_atm_onsite
+    integer :: lu
 
-    integer :: jsv1,jsv2,i_csc_loop
-    real(8) :: value_of_ecsc
-
+    lu = config%calc%distributed%log_unit
     value_of_ecsc = 0.0d0
-    
-    do jsv1=1,noav
-       do jsv2=1,noav
-       
-          value_of_ecsc = value_of_ecsc + 0.5*gamma_csc(jsv1,jsv2)*delta_e_num(jsv1)*delta_e_num(jsv2)
 
-       end do
+    do jsv1=1,noav
+      value_of_ecsc_atm=0.0d0
+      call qm_calc_ecsc_atom(jsv1, value_of_ecsc_atm,value_of_ecsc_atm_onsite)
+      value_of_ecsc = value_of_ecsc + value_of_ecsc_atm
+      if (present(plot_atom_energy)) then
+        if (plot_atom_energy) then 
+          if (lu > 0) then
+            write(lu,'(a,i10,3f20.10)')'atom index, charge, CSC energy, CSC onsite energy [eV] =',jsv1, &
+&              e_num_on_atom(jsv1), value_of_ecsc_atm*ev4au, value_of_ecsc_atm_onsite*ev4au
+          endif
+        endif
+      endif
     end do
     
   end subroutine qm_calc_ecsc
@@ -332,21 +349,22 @@ module M_qm_geno_output
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine qm_calc_ecsc_atom(atm_index, value_of_ecsc)
+  subroutine qm_calc_ecsc_atom(atm_index, value_of_ecsc, value_of_ecsc_onsite)
     
     use M_qm_domain, only: gamma_csc, noav, delta_e_num !(unchanged)
     use M_config, only : config !(unchanged)
 
     implicit none
     integer,  intent(in)   :: atm_index
-    real(8),  intent(out)  :: value_of_ecsc
+    real(8),  intent(out)  :: value_of_ecsc, value_of_ecsc_onsite
     integer :: jsv1,jsv2, imode
 
 
-    value_of_ecsc = 0.0d0
+    value_of_ecsc        = 0.0d0
+    value_of_ecsc_onsite = 0.0d0
 !
     imode=1
-    if (config%calc%genoOption%CSC_method == 'ELSTNER') imode=0
+!   if (config%calc%genoOption%CSC_method == 'ELSTNER') imode=0
     if (config%calc%genoOption%CSC_max_loop_count <= 0) imode=0
     if (imode == 0) return
 !
@@ -354,8 +372,46 @@ module M_qm_geno_output
     do jsv2=1,noav
       value_of_ecsc = value_of_ecsc + 0.5*gamma_csc(jsv1,jsv2)*delta_e_num(jsv1)*delta_e_num(jsv2)
     end do
-    
+!
+    jsv2=jsv1
+    value_of_ecsc_onsite=0.5*gamma_csc(jsv1,jsv2)*delta_e_num(jsv1)*delta_e_num(jsv2)
+!
   end subroutine qm_calc_ecsc_atom
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+  subroutine qm_calc_ecsc_list(ecsc_atom_list)
+!    
+    use M_qm_domain, only: noav
+
+    implicit none
+    real(8), intent(inout)   :: ecsc_atom_list(:,:)
+    integer :: jsv1
+    real(8) :: value_of_ecsc_atm, value_of_ecsc_atm_onsite
+!
+    if (size(ecsc_atom_list,1) /= noav) then
+      write(*,*)'ERROR(qm_calc_ecsc_list):size1=', size(ecsc_atom_list,1), noav
+      stop
+    endif
+!
+    if (size(ecsc_atom_list,2) /= 2) then
+      write(*,*)'ERROR(qm_calc_ecsc_list):size1=', size(ecsc_atom_list,2), noav
+      stop
+    endif
+!
+    do jsv1=1,noav
+      call qm_calc_ecsc_atom(jsv1, value_of_ecsc_atm, value_of_ecsc_atm_onsite)
+      ecsc_atom_list(jsv1,1)=value_of_ecsc_atm
+      ecsc_atom_list(jsv1,2)=value_of_ecsc_atm_onsite
+    enddo
+!    
+  end subroutine qm_calc_ecsc_list
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 end module M_qm_geno_output
 

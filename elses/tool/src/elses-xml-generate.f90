@@ -4,13 +4,13 @@
 !================================================================
 
 program elses_xml_generate
-  use M_lib_phys_const, only : angst
+! use M_lib_phys_const, only : angst
   use flib_dom
   use M_structure
 ! use elses_xml_misc
   use elses_xml_structure
   implicit none
-
+  real(8), parameter :: angst=0.529177d0
   type :: cluster_type
      type(structure_type)  :: structure
      character(len=16)     :: class
@@ -92,6 +92,8 @@ contains
       call set_split( argv3, n_split )
       write(*,*) 'The number of the splitted file=',n_split
     endif
+!
+    write(*,'(a)')'elses-xml-generate'
 !
     call generate_load( generate, filename_in )
     call generate_output_split( generate, filename_out, n_split )

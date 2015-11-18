@@ -21,8 +21,8 @@
     <CSC_charge_convergence>  1d-6 </CSC_charge_convergence>
     <CSC_charge_mixing_ratio> 0.1 </CSC_charge_mixing_ratio>
     <CSC_mode_for_tuning_mixing_ratio> 1 </CSC_mode_for_tuning_mixing_ratio>
-    <HML_small_delta> 0.13 </HML_small_delta>
-    <HML_kappa> 0.75 </HML_kappa>
+    <!-- <HML_small_delta> 0.13 </HML_small_delta> -->
+    <!-- <HML_kappa> 0.75 </HML_kappa> -->
   </genoOption>
   <optimization>
     <sd_ratio> 0.5 </sd_ratio>

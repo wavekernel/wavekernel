@@ -275,7 +275,8 @@ module M_config
 
   type :: limit_type
      real(8)             :: time
-     real(8)             :: memory
+     real(8)             :: memory            ! in GB
+     real(8)             :: memory_allocated  ! in GB
   end type limit_type
 
   type :: dynamics_type
@@ -509,8 +510,10 @@ contains
     implicit none
     type(limit_type)     :: limit
 
-    limit%time = -10.0d0 ! dummy value
-    limit%memory = 0
+    limit%time  = -10.0d0 ! dummy value
+    limit%memory = -1.0d0 ! dummy value
+
+    limit%memory_allocated = 0.0d0 ! initial value
 
     return
   end subroutine limit_default

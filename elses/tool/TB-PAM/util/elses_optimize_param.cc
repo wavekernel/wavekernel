@@ -51,10 +51,12 @@ struct Param {
       set = true;
     }
     else if( 2 == sscanf(value,"%lf %lf", &min, &max ) ){
+      init = (min+max)*0.5;
       set = true;
     }
     else if( 1 == sscanf(value,"%lf", &min ) ){
       max = min;
+      init = min;
       set = true;
     }
     else{
@@ -736,7 +738,8 @@ int init( vector<Parameter>& vP )
   {
     Parameter Pt;
     for( int d=0; d<DIM; d++ ){
-      Pt.p[d] = param[d].min;
+      Pt.p[d] = param[d].init;
+      //      printf("Pt.p[%d]: %f \n",d,Pt.p[d]);
     }
     Pt.evaluate();
     vP.push_back(Pt);
@@ -755,6 +758,7 @@ int init( vector<Parameter>& vP )
       else{
 	Pt.p[d] = param[d].max;
       }
+      //      printf("Pt.p[%d]: %f \n",d,Pt.p[d]);
     }
     Pt.evaluate();
     vP.push_back(Pt);

@@ -5,34 +5,34 @@
   <initial_charge> 0.00 </initial_charge>
 
   <principal_quantum_number>
-    2 3*2 5*3
+    2 3*2
   </principal_quantum_number>
 
   <initial_occupation>
-    2.00 3*1.33333333 5*0.0
+    2.00 3*1.33333333
   </initial_occupation>
 
   <initial_diagonal_elements>
-    -30.000000 3*-10.000000 5*-2.000000
+    -31.461618 3*-11.784457
   </initial_diagonal_elements>
 
-  <chemical_hardness> 10.000000 </chemical_hardness>
+  <chemical_hardness> 11.784457 </chemical_hardness>
 
   <zeta>
-    4.000000 3*2.000000 5*1.000000
+    4.976427 3*1.906781
   </zeta>
   <zeta2>
-    0.000000 3*0.000000 5*1.000000
+    0.000000 3*0.000000
   </zeta2>
 
   <c1>
-    0.000000 3*0.000000 5*0.149896
+    0.000000 3*0.000000
   </c1>
   <c2>
-    0.000000 3*0.000000 5*0.850104
+    0.000000 3*0.000000
   </c2>
 
   <repulsive_rescaling>
-    2.000000 3*2.000000 5*2.000000
+    1.942778 3*1.975740
   </repulsive_rescaling>
 </element>

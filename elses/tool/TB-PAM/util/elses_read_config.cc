@@ -115,6 +115,9 @@ int main( int argc, char* argv[] )
 	    }
 
 	    if( false );
+	    else if( getValue(buf,"nbands", value ) ){
+	      	      printf("nbands=\"%s\"\n", value );
+	    }
 	    else if( getValue(buf,"weight_eigen", value ) ){
 	      //	      printf("weight_eigen  = [%s]\n", value );
 	    }

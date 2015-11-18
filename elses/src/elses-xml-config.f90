@@ -2094,15 +2094,15 @@ contains
     implicit none
     type(limit_type), intent(out) :: limit
     type(fnode), pointer :: limit_node
-
     type(fnode), pointer :: node
     character(len=256)   :: value, unit
+    integer :: lu
+    
+    lu=config%calc%distributed%log_unit
 
     ! get <time> node
     node => getFirstElementByTagName(limit_node,"time")
-    if( .not. associated(node) ) then
-!      limit%time = -10 ! The default value in set in 'limit_defaut'.
-    else
+    if( associated(node) ) then
        unit  = getAttribute(node,"unit")
        if( unit == "" ) then
           unit = "second"
@@ -2114,35 +2114,45 @@ contains
        select case(unit)
        case("second","seconds","sec","s")
        case("minute","minutes","min","m")
-          limit%time = limit%time * 60
+          limit%time = limit%time * 60.0
        case("hour","hours","h")
           limit%time = limit%time * 60*60
        case("day","days","d")
           limit%time = limit%time * 60*60*24
        end select
+       if (lu > 0) write(lu,*) 'INFO-XML:Optional tag detected : (time limit)[sec]  =', &
+&                                         limit%time
+       if (lu > 0) write(lu,*) 'INFO-XML:Optional tag detected : (time limit)[min]  =', &
+&                                         limit%time/60.0d0
+       if (lu > 0) write(lu,*) 'INFO-XML:Optional tag detected : (time limit)[h  ]  =', &
+&                                         limit%time/60.0d0/60.0d0
     end if
 
     ! get <memory> node
     node => getFirstElementByTagName(limit_node,"memory")
-    if( .not. associated(node) ) then
-       limit%memory = 0
-    else
+    write(*,*)'read memory'
+    if (associated(node) ) then
        unit  = getAttribute(node,"unit")
-       if( unit == "" ) then
-          unit = "byte"
+       if ( unit == "" ) then
+          unit = "GB"
+       end if
+       if ( unit /= "GB" ) then
+         write(*,*)'ERROR!:Unknown unit in memory limit=',trim(unit)
+         stop
        end if
        value = getChildValue(node)
        read(unit=value,fmt=*) limit%memory
-       
-       select case(unit)
-       case("byte","bytes","B")
-       case("kbyte","kbytes","kB")
-          limit%memory = limit%memory * 1024
-       case("Mbyte","Mbytes","MB")
-          limit%memory = limit%memory * 1024*1024
-       case("Gbyte","Gbytes","GB")
-          limit%memory = limit%memory * 1024*1024*1024
-       end select
+       if (lu > 0) write(lu,'(a,f15.10)') 'INFO-XML:Optional tag detected : (memory limit)[GB] =', &
+&                                         limit%memory
+!      select case(unit)
+!      case("byte","bytes","B")
+!      case("kbyte","kbytes","kB")
+!         limit%memory = limit%memory * 1024
+!      case("Mbyte","Mbytes","MB")
+!         limit%memory = limit%memory * 1024*1024
+!      case("Gbyte","Gbytes","GB")
+!         limit%memory = limit%memory * 1024*1024*1024
+!      end select
     end if
 
     return
