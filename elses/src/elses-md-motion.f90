@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_md_motion
 !
@@ -466,7 +466,7 @@ module M_md_motion
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ Generate TX from TXP
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine md_update_tx
     use elses_mod_ctrl,     only : i_verbose
     use elses_mod_sim_cell, only : noa, i_pbc_x, i_pbc_y, i_pbc_z
@@ -518,7 +518,7 @@ module M_md_motion
 !  @@ Funtion to get the distance between two atoms 
 !         in a.u. 
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   function get_atom_dist(js1,js2) result(dd)
     use elses_mod_sim_cell,   only : i_pbc_x, i_pbc_y, i_pbc_z !(unchanged)
     use elses_mod_sim_cell,   only : noa, ax, ay, az           !(unchanged)

@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!
 ! module for TNrlPairMatrix
@@ -51,7 +51,7 @@ module MNrlPairMatrix
 
 contains
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetIdentity(iomatrix, isize)
     type(TNrlPairMatrix), intent(inout) :: iomatrix
     integer, intent(in) :: isize
@@ -70,7 +70,7 @@ contains
   ! Set size of TNrlPairMatrix
   ! Currently this routine only set two size.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetSizeOfPairMatrix(iomatrix, irow, icol)
     type(TNrlPairMatrix), intent(inout) :: iomatrix
     integer, intent(in) :: irow
@@ -84,7 +84,7 @@ contains
   ! Set size of TNrlPairForceMatrix
   ! Currently this routine only set two size.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetSizeOfPairForceMatrix(iomatrix, irow, icol)
     type(TNrlPairForceMatrix), intent(inout) :: iomatrix
     integer, intent(in) :: irow
@@ -94,7 +94,7 @@ contains
     iomatrix%col_count = icol
   end subroutine
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine WriteTo(imatrix, iunit)
     type(TNrlPairMatrix), intent(in) :: imatrix
     integer, intent(in) :: iunit

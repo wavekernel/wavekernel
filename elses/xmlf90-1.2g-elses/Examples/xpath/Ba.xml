@@ -3,7 +3,7 @@
 
   <job type="all-electron">
     <title>Ba all-electron calculation</title>
-    <symbol>Ba</symbol> 
+    <symbol>Ba</symbol>
     <!-- Optional elements
        <set-nuclear-charge value="56.1" />
        <charged-shell radius="2.0" charge="1.0" />

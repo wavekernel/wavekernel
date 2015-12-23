@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_md_booking
 !
@@ -13,7 +13,7 @@ module M_md_booking
 ! @@ Get the maximum size of booking list for a given radius
 !       (Non order-N routine)
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine get_max_size_of_booking_list(rcut,max_size)
     use elses_mod_ctrl,       only : i_verbose
     use elses_mod_noav,       only : noav
@@ -92,7 +92,7 @@ module M_md_booking
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Plot the booking list into the file 'Booking_info.txt'
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine plot_booking_list 
     use elses_mod_ctrl,       only : i_verbose
     use elses_mod_phys_const, only : angst

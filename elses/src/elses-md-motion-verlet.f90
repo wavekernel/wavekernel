@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_md_verlet
 !
@@ -29,7 +29,7 @@ module M_md_verlet
 !                         (for the last MD iteration)
 !           otherwise  : The posisions and velocites are updated
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine md_motion_verlet_velocity(i_switch)
 !
     use M_config,             only : config           !(unchanged)(only config%system%temperature)
@@ -226,7 +226,7 @@ module M_md_verlet
 !        when inose =1 --> canonical ensemble 
 !                    0 --> micro-canonical
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine md_motion_verlet_position
 !
     use M_config     !(unchanged)(only config%system%temperature)
@@ -383,7 +383,7 @@ module M_md_verlet
 !          using Newton-Raphson method
 !           partial compatible to Miyata's code
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine md_heatbath
 !
     use M_config,           only : config           !(unchanged)(only config%system%temperature)

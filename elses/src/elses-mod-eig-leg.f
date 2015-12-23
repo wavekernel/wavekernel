@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 c  @@@@@ elses-eig-leg @@@@@
 c  @@@@@ 2008/01/05 @@@@@
@@ -40,7 +40,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     Allocation of matrix and set n_base_eig_leg
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_eig_leg(neig0)
       use elses_mod_eig_leg, only : n_base_eig_leg
       use elses_arr_eig_leg, only : atmp, atmp2, eig2, idngl2, f_occ

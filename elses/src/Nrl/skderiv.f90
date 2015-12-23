@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module MSlaterKosterDerivative
   use MSlaterKosterTable
@@ -28,7 +28,7 @@ module MSlaterKosterDerivative
 
 contains
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine Swap(vector, x, y, z)
     type(TVector3d), intent(inout) :: vector
     integer, intent(in)    :: x, y, z
@@ -182,7 +182,7 @@ contains
     oresult%z =  3 * n * (-n**2 + 1) * bond%v(1)
   end function
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ConvertPDParameter(bond, v1, v2)
     type(TSKBond),    intent(in)  :: bond
     real(8), intent(out) :: v1, v2
@@ -368,7 +368,7 @@ contains
                      + 4 * (-n**2 + 1) * v2)
   end function
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ConvertDDParameter(bond, v1, v2)
     type(TSKBond),     intent(in) :: bond
     real(8) , intent(out) :: v1, v2
@@ -572,7 +572,7 @@ contains
     oresult%z = n * (-n**2 + 1) * (t * v1 + 2 * v2)
   end function
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SlaterKosterDerivative(ibond, lm1, lm2, l, m, n, deriv)
     type(TSKBond),     intent(in) :: ibond
     integer, intent(in) :: lm1, lm2

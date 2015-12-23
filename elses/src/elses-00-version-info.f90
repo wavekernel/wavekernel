@@ -1,12 +1,12 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 module M_00_v_info
 !
   implicit none
-  character(len=32), parameter :: version_info='ELSES version 0.05.03'
+  character(len=32), parameter :: version_info='ELSES version 0.06.00'
 !
   private
   public :: elses_00_version_info 

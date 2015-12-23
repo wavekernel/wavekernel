@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_io_dst_write_log
 !
@@ -19,7 +19,7 @@ module M_io_dst_write_log
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Set the variable log_unit
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine set_dst_write_log_file
 !
     use M_config,          only : config      !(unchanged) (only config%option%log_node_number, config%calc%distributed%log_unit)

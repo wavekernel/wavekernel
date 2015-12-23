@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_qm_nrl
 !
@@ -20,7 +20,7 @@ module M_qm_nrl
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ Read the parameters
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine qm_nrl_ini(rcut_ham)
     use M_config
     use param_ham_nrl,    only: rcut_ham_nrl
@@ -54,7 +54,7 @@ module M_qm_nrl
 !  @@ Initial Alloc.for LSES for NRL-leg case
 !        ----> allocation of dsij, dpij
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine qm_nrl_init_alloc
     use elses_mod_sim_cell, only : noa
     use elses_mod_noav,     only : noav,noao,noab,noas,noab0,nncut
@@ -116,7 +116,7 @@ module M_qm_nrl
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ Build Hamiltonian for 'NRL_LEG' case
 !
-   !! Copyright (C) ELSES. 2007-2015 all rights reserved
+   !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine qm_nrl_set_ham
 !
     use elses_mod_sel_sys,    only : c_system
@@ -183,7 +183,7 @@ module M_qm_nrl
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ Build Hamiltonian for 'NRL_LEG' case
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine qm_nrl_set_force
 !
     use elses_mod_sel_sys,    only : c_system
@@ -233,7 +233,7 @@ module M_qm_nrl
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ NRL extra: additional repulsive
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine qm_nrl_set_force_extra
 !
     use MNrlAdaptor, only : NrlBuildRepulsiveEnergy,  NrlAddRepulsiveForce

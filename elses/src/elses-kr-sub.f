@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-kr-sub.f @@@@@
 czzz  @@@@@ 2009/06/30 @@@@@
@@ -63,7 +63,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c @@ Set the parameters in PARAM_CTL_KR
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_param_ctl_kr
       use M_qm_domain, only : nval
       use elses_mod_phys_const, only : ev4au
@@ -153,7 +153,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c @@ Check the parameters in PARAM_CTL_KR
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_chk_param_ctl_kr
       use elses_mod_sim_cell, only : noa
       use elses_param_ctl_kr, only : noav_kr_def, noak_min_def, 
@@ -226,7 +226,7 @@ c              : Actual # atoms inside projection
 c                 ----> set in the main loop
 c
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_rcut_kry(imode)
       use elses_mod_phys_const, only : angst
       use elses_mod_ctrl,     only : i_verbose
@@ -533,7 +533,7 @@ c      OUTPUTs:
 c        jsv4jsk_str(1:noak,noav)
 c
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_jsv4jsk_str(imode)
       use elses_mod_phys_const, only : angst
 !     use elses_mod_sim_cell, only : noa, iperiodic, ax, ay, az
@@ -629,7 +629,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Check the Residual norm 
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_check_rn
       use elses_mod_tx,       only : jsei
       use elses_mod_md_dat,   only : itemd
@@ -761,7 +761,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Set the chemical potential
 c       The total enectron number is given by rNelec
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_kr_set_chempot
       use elses_mod_phys_const, only : ev4au
       use elses_mod_tx,         only : jsei
@@ -1040,7 +1040,7 @@ c
 c      NOTE: c_{n al} is re-calculated from the tridiagonal matrix.
 c
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_cal_rho
       use elses_mod_ctrl,    only : i_verbose
       use elses_mod_tx,      only : jsei
@@ -1234,7 +1234,7 @@ c      dbij_asym (J) = \sum_{I,a,b}
 c           | < Ia | rho^(Jb) | Jb > -  < Jb | rho^(Ia) | Ia > |^2
 c       J : js, ( not jsv )
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_sym_dbij
       use elses_mod_tx,       only : jsei
       use elses_mod_js4jsv,   only : js4jsv 
@@ -1470,7 +1470,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c   @@ TB energy
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_enetb(etbtmp)
       use elses_mod_ctrl,       only : i_verbose
       use elses_mod_sim_cell,   only : noa
@@ -1582,7 +1582,7 @@ c                : njsd(noav,0:nncut)
 c
 c         non-order-N calculation!!!
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_es_bkmat
       use elses_mod_ctrl,       only : i_verbose
       use elses_mod_sel_sys,    only : c_system, r_cut_book

@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !zzz  @@@@ elses-xml-03.f @@@@@
 !zzz  @@@@@ 2008/01/07 @@@@@
@@ -10,7 +10,7 @@
 !@@ Read the temperature (level-broadening) 
 !                parameter for elctron system
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_xml_load_elec_temperature
    use elses_xml_config
    use elses_mod_ctrl,       only : i_verbose

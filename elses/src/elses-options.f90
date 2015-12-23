@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !zzz  @@@@ elses-lib-get-arg.f90 @@@@@
 !zzz  @@@@@ 2008/12/06 @@@@@
@@ -11,7 +11,7 @@
 !1206: T.Hoshi; Copied from ELSES-GENO version (NT08G-129)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 module M_options
   use M_config
 contains

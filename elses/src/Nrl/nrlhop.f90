@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!
 ! A module for calculating off-site elements in NRL scheme
@@ -139,7 +139,7 @@ contains
   !!
   ! set cut-off length of bond 
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetBondCutOff(iodata, ir0, irc, idelta)
     type(TNrlHoppingData), intent(inout) :: iodata
     real(8),     intent(in)    :: ir0
@@ -211,7 +211,7 @@ contains
   !!
   ! Initializes TNrlHoppingMatrix object
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InitHoppingMatrix(iomatrix, il_count1, il_count2)
     type(TNrlHoppingMatrix), intent(inout)         :: iomatrix
     integer,      intent(in) :: il_count1, il_count2
@@ -227,7 +227,7 @@ contains
   !!
   ! Return hopping interaction
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetHopBond(ibond, ir, obond)
     type(TNrlHoppingBond), intent(in) :: ibond
     real(8), intent(in) :: ir
@@ -243,7 +243,7 @@ contains
   !!
   ! interface routine to calculate position derivative
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine PositionDerivative(ibond, ilm1, ilm2, ipair, oresult)
     type(TNrlHoppingBond), intent(in) :: ibond
     type(TNrlAtomPair), intent(in) :: ipair
@@ -262,7 +262,7 @@ contains
   !!
   ! return the derivative hopping interaction
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetHoppingDerivativeList(ibond, ilm1, ilm2, ir, obond)
     type(TNrlHoppingBond), intent(in) :: ibond
     integer, intent(in) :: ilm1, ilm2
@@ -280,7 +280,7 @@ contains
   !!
   ! Return the potential part of orbital force.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine PotentialDerivative(ibond, ilm1, ilm2, ipair, oresult)
     type(TNrlHoppingBond), intent(in) :: ibond
     type(TNrlAtomPair), intent(in) :: ipair
@@ -303,7 +303,7 @@ contains
   !!
   ! Finalizes TNrlHoppingMatrix object 
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReleaseHoppingMatrix(iomatrix)
     type(TNrlHoppingMatrix), intent(inout) :: iomatrix
 
@@ -314,7 +314,7 @@ contains
   !!
   ! return the minumum angular momentum between given two orbital
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetL(imatrix, iorbital1, iorbital2, ol1, ol2) 
     type(TNrlHoppingMatrix), intent(in)  :: imatrix
     integer,      intent(in)  :: iorbital1, iorbital2
@@ -354,7 +354,7 @@ contains
   !!
   ! Sets cut-off parameters for all the combination of orbials.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetCutOffFunction(iomatrix, ir0, irc, idelta)
     type(TNrlHoppingMatrix), intent(inout) :: iomatrix
     real(8),       intent(in)    :: ir0, irc, idelta
@@ -378,7 +378,7 @@ contains
   !!
   ! Initialize routine for TNrlHopBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InitHopBuilder(iohop)
     type(TNrlHopBuilder), intent(inout) :: iohop
 
@@ -388,7 +388,7 @@ contains
   !!
   ! Finalize routine for TNrlHopBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReleaseHopBuilder(iohop)
     type(TNrlHopBuilder), intent(inout) :: iohop
 
@@ -398,7 +398,7 @@ contains
   !!
   ! Allocation routine for TNrlHoppingMatrix
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AllocateHopBuilder(iohop, ispecies_count, iorbital_count)
     type(TNrlHopBuilder), intent(inout) :: iohop
     integer, intent(in) :: ispecies_count
@@ -424,7 +424,7 @@ contains
   ! Deallocation of main part of TNrlHopBuilder
   ! The consistensy in the object is remained.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine DeallocateHopBuilder(iohop)
     type(TNrlHopBuilder), intent(inout) :: iohop
 
@@ -446,7 +446,7 @@ contains
   !!
   ! Returns a hopping matrix of given atom combination.
   ! 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetMatrixOfAtomPair(iohop, ipair, iomatrix)
     type(TNrlHopBuilder), intent(inout) :: iohop
     type(TNrlAtomPair), intent(in) :: ipair
@@ -499,7 +499,7 @@ contains
   !!
   ! Calculates the derivative of hopping between two atom.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetDerivativeOfAtomPair(iobuilder, ipair, iomatrix)
     type(TNrlHopBuilder), intent(inout) :: iobuilder
     type(TNrlAtomPair), intent(in) :: ipair
@@ -532,7 +532,7 @@ contains
   !!
   ! Reads cut-off function
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadCutOffFunction(iohop, ifile)
     type(TNrlHoppingMatrix), intent(inout) :: iohop
     type(TFileIO), intent(in) :: ifile
@@ -560,7 +560,7 @@ contains
   !!
   ! Inverts hopping data in one line stream. e. g. V_pds
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InvertHoppingData(iodata)
     type(TNrlHoppingData), intent(inout) :: iodata
 
@@ -572,7 +572,7 @@ contains
   !!
   ! Reads header part of hopping energy
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadHopHeader(iunit, omode)
     integer, intent(in) :: iunit
     integer, intent(out) :: omode
@@ -598,7 +598,7 @@ contains
   !!
   ! Reads Hopping Data in one line stream. e. g. V_pds
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadHoppingData(iodata, ifile)
     type(TNrlHoppingData), intent(inout) :: iodata
     type(TFileIO),      intent(in)    :: ifile
@@ -632,7 +632,7 @@ contains
   !!
   ! Inverse sign of the bond
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InvertBond(iobond)
     type(TNrlHoppingBond), intent(inout) :: iobond
     integer :: i
@@ -645,7 +645,7 @@ contains
   !!
   ! Read Hopping Bond e.g. from sigma to pi of V_pd.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadHoppingBond(iobond, ifile, ilmin)
     type(TNrlHoppingBond), intent(inout) :: iobond
     type(TFileIO), intent(in) :: ifile
@@ -661,7 +661,7 @@ contains
   !!
   ! Read matrix data from stream of given file port
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadHoppingMatrix(iomatrix, ifile)
     type(TNrlHoppingMatrix), intent(inout) :: iomatrix
     type(TFileIO),        intent(in)    :: ifile
@@ -694,7 +694,7 @@ contains
   ! Prepares before reading file.
   ! Before calling ReadHopParameters, you must call this routine
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine PrepareHopParameters(iohop, ispecies_count, iorbital_count)
     type(TNrlHopBuilder), intent(inout) :: iohop
     integer, intent(in) :: ispecies_count
@@ -706,7 +706,7 @@ contains
   !!
   ! interface routine to read hopping parameters in NRL scheme.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadHopParameters(iohop, iunit)
     type(TNrlHopBuilder), intent(inout) :: iohop
     integer,       intent(in)    :: iunit
@@ -731,7 +731,7 @@ contains
     read(iunit, *)
   end subroutine
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AllocateHoppingMatrixXML(iohop, the_species_count, the_orbital_count)
     implicit none
     integer, intent(in) :: the_species_count
@@ -769,7 +769,7 @@ contains
 
   end subroutine AllocateHoppingMatrixXML
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine HoppingMatrixLoadXML(iohop, vnode,delta,cutoff,is,js)
     use flib_dom
     use elses_xml_misc

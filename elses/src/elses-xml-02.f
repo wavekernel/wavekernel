@@ -1,13 +1,13 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Sepecify the visualization tool
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_xml_vis
       use M_config
       implicit none
@@ -25,7 +25,7 @@
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !@@ Read the temperature
 !
-!      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+!      !! Copyright (C) ELSES. 2007-2016 all rights reserved
 !     subroutine elses_xml_load_temperature
 !     use M_config
 !     use elses_mod_phys_const, only : ev2kel, ev4au
@@ -54,7 +54,7 @@
 !
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_xml_load_ctrl
       use M_config
 !
@@ -78,7 +78,7 @@
 !
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_xml_save_txp
       use M_config
 !     use elses_mod_sel_sys, only : c_system, r_cut_book
@@ -187,7 +187,7 @@
 c @@ Allocate and set various parameters for compatibility
 c         input : noa, nos, nvl
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_init_compat2
       use elses_mod_sim_cell, only : noa, nos
       use elses_mod_tx,       only : jsei
@@ -360,7 +360,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Mass setting : from awt(nos) to amm(noa)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_mass2
       use elses_mod_phys_const, only : au_mass
       use elses_mod_tx,         only : jsei

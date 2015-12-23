@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_md_velocity_routines
 !
@@ -22,7 +22,7 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ Set zero velocity for fixed atoms (NOT USED, NOW)
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine set_zero_velocity_for_fixed_atoms
     use elses_mod_sim_cell,   only : noa              !(unchanged)
     use elses_mod_vel,        only : velx, vely, velz !(CHANGED)
@@ -58,7 +58,7 @@ module M_md_velocity_routines
 !  @@ Calculation of kinetic energy of atom
 !      Output : kinetic_energy [au]
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_kinetic_energy(kinetic_energy, k_e_component)
 !
     use elses_mod_md_dat, only : itemd, dtmd          !(unchanged)
@@ -138,7 +138,7 @@ module M_md_velocity_routines
 !  @@ Calculation of kinetic energy for each atom
 !      Output : kinetic_energy [au]
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_kin_ene_atom(jsv, kinetic_energy, k_e_component)
 !
     use elses_mod_md_dat,     only : dtmd      !(unchanged)
@@ -200,7 +200,7 @@ module M_md_velocity_routines
 !  @@ Calculation of total momemtum
 !      Output : total_momemtum(3)
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_total_momentum(total_momentum)
 !
 !   use elses_mod_phys_const, only : ev4au,ev2kel     !(unchanged)
@@ -238,7 +238,7 @@ module M_md_velocity_routines
 !  @@ Calculation of total momemtum as absolute value
 !      Output : total_momemtum(3)
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_total_momentum_abs(total_momentum)
 !
 !   use elses_mod_phys_const, only : ev4au,ev2kel     !(unchanged)
@@ -275,7 +275,7 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ Adjustment of the velocity so that (total momemtum) = 0
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine adjust_velocity
 !
     use elses_mod_sim_cell,   only : noa, ax, ay, az   !(unchanged)
@@ -352,7 +352,7 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Check anc calculate the initial velocity
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_initial_velocity
 !
 !      NOTE:Input parameters: 
@@ -535,7 +535,7 @@ module M_md_velocity_routines
 !          written by Hiroaki OHTANI; modified by T.Hoshi
 !          ONLY FOR FREE ATOMS
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine set_velocity_from_maxwell
 !
 !     NOTE:Input parameters: 
@@ -644,7 +644,7 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ Allocate the velocity
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine allocate_velocity
 !
     use M_qm_domain,          only : i_verbose !(unchanged)

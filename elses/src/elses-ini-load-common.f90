@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_ini_load_common
 !
@@ -15,7 +15,7 @@ module M_ini_load_common
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !@@ Read the infomation from the argument and the configuration file.
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine load_xml_config
 !
    use M_config
@@ -169,7 +169,7 @@ module M_ini_load_common
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !@@ Initial load
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ini_load_common
 !
 !   Module variables used: unchanged 
@@ -385,7 +385,7 @@ module M_ini_load_common
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Set strcuture data
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine set_structure_data
     use M_config
     use elses_mod_ctrl,     only : i_verbose           !(unchanged)

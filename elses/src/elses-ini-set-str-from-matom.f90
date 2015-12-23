@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_ini_load_matom
 !
@@ -14,7 +14,7 @@ module M_ini_load_matom
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Set strcuture data
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine set_structure_data_from_matom
 !
     use M_config !(unchanged)

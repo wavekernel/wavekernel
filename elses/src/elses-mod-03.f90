@@ -1,5 +1,5 @@
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c  @@ Select system (for Hamiltonian)
@@ -77,7 +77,7 @@ end module
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c     Allocation of DBJI, DBIJ2, DHIJ
 !c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_alloc_mat1(nvl_def,noas_def,noav_def,imode)
   use M_config,        only : config ! CHANGED : config%calc%limit%memory_allocated
   use elses_arr_dbij,  only : dbij
@@ -197,7 +197,7 @@ end
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c     Allocation of nval
 !c
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_alloc_nval(nos_def,imode)
   use elses_mod_orb1, only : nval
   implicit none
@@ -220,7 +220,7 @@ end
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c  @@ Allocation of j2js,j2ja,js2j,dbx,dby,dbz,idngl
 !c
-     !! Copyright (C) ELSES. 2007-2015 all rights reserved
+     !! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_alloc_mat2(noa_def,n_tot_base_def,nvl_def,imode)
   use elses_mod_orb2, only : j2js,j2ja,js2j,n_tot_base,dbx,dby,dbz,idngl
 !c
@@ -285,7 +285,7 @@ end
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c  @@ Allocation of dfij
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_alloc_dfij(nvl_def, noas_def, noav_def,imode)
   use M_config,        only : config !(unchanged)
   use elses_arr_dfij, only : dfij
@@ -333,7 +333,7 @@ end
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c  @@ Allocation of r_base
 !c
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_alloc_r_base
   use M_config,         only : config !(unchanged)
   use elses_mod_orb1,   only : nvl

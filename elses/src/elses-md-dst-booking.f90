@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_md_dst_booking
 !
@@ -29,7 +29,7 @@ module M_md_dst_booking
 !       
 !         non-order-N calculation (temporaly) !!!
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
    subroutine set_len_bk_list_dst(cutoff_radius)
 !
      use M_qm_dst_proj_cell,   only  : len_dst_atm_list, dst_atm_list !(unchanged)
@@ -130,7 +130,7 @@ module M_md_dst_booking
 !       
 !         non-order-N calculation (temporaly) !!!
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
    subroutine set_bk_list_dst(cutoff_radius,alloc_size)
 !
      use M_qm_dst_proj_cell,   only  : len_dst_atm_list, dst_atm_list !(unchanged)
@@ -223,7 +223,7 @@ module M_md_dst_booking
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !  @@ Deallocate the array in the module variable
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
    subroutine dealloc_bk_list_dst
 !
      implicit none

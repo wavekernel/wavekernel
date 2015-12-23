@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2014 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 program band_calc
   use diag

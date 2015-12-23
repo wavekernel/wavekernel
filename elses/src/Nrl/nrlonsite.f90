@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!
 ! This module treats the onsite element in NRL scheme.
@@ -141,7 +141,7 @@ contains
   !!
   ! Initialize routine for TOnSiteDeisity
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InitOnSiteDensity(iodensity)
     type(TNrlOnSiteDensity), intent(inout) :: iodensity
 
@@ -156,7 +156,7 @@ contains
   ! Finalize routine for TNrlOnSiteDensity
   ! Currently, this is only a dummy routine.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReleaseOnSiteDensity(iodensity)
     type(TNrlOnSiteDensity), intent(inout) :: iodensity
   end subroutine
@@ -212,7 +212,7 @@ contains
   !!
   ! Read parameters for on-site energy
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadOnSiteEnergyParams(ioparams, ifile)
     type(TNrlOnSiteEnergyParams), intent(inout) :: ioparams
     type(TFileParam),     intent(in)    :: ifile
@@ -252,7 +252,7 @@ contains
   !!
   ! Set Identity to on-site energy
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetOnSiteEnergyParamsIdentity(ioparams)
     type(TNrlOnSiteEnergyParams), intent(inout) :: ioparams
 
@@ -265,7 +265,7 @@ contains
   !!
   ! Initialize routine for TNrlOnSiteEnergy
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InitOnSiteEnergy(ionsite, iorbital_count)
     type(TNrlOnSiteEnergy), intent(inout) :: ionsite
     integer,     intent(in)    :: iorbital_count
@@ -281,7 +281,7 @@ contains
   !!
   ! Finalize routine for TNrlOnSiteEnergy
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReleaseOnSiteEnergy(ionsite)
     type(TNrlOnSiteEnergy) :: ionsite
 
@@ -339,7 +339,7 @@ contains
   !!
   ! Initialize routine for TNrlOnSiteBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InitOnSiteBuilder(ioonsite)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
 
@@ -352,7 +352,7 @@ contains
   !!
   ! Finalize routine for TNrlOnSiteBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReleaseOnSiteBuilder(ioonsite)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
 
@@ -362,7 +362,7 @@ contains
   !!
   ! Deallocates memory for parameters in TNrlOnSiteBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine DeallocateOnSiteBuilder(ioonsite)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
     integer :: i, j
@@ -385,7 +385,7 @@ contains
   !!
   ! Memory allocation routine for TNrlOnSiteBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AllocateOnSiteBuilder(ioonsite, ispecies_count, iorbital_count)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
     integer, intent(in) :: ispecies_count
@@ -442,7 +442,7 @@ contains
   !!
   ! Get on-site term of a given atom to Hamiltonian matrix. 
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetOnSiteOfAtom(ioonsite, iatom_index, iomatrix, oerr)
     use MNrlVariables, only: jsei, noav 
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
@@ -495,7 +495,7 @@ contains
   ! Return d H_ii / d R_i
   !   i: atom1
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetOnSiteDerivativeOnSite(ioonsite, ipair, iomatrix)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
     type(TNrlAtomPair), intent(in) :: ipair
@@ -552,7 +552,7 @@ contains
   !   i: atom1
   !   j: atom2
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine GetOnSiteDerivative(ioonsite, ipair, iomatrix)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
     type(TNrlAtomPair), intent(in) :: ipair
@@ -607,7 +607,7 @@ contains
   !!
   ! Reads header part of on-site energy
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadOnSiteHeader(iunit, omode)
     integer, intent(in) :: iunit
     integer, intent(out) :: omode
@@ -639,7 +639,7 @@ contains
   !!
   ! Read density for on-site energy
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadOnSiteDensity(ioonsite, ifile)
     type(TNrlOnSiteDensity), intent(inout) :: ioonsite
     type(TFileParam),     intent(in)    :: ifile
@@ -672,7 +672,7 @@ contains
   !!
   ! Read onsite energy shift parameters.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadOnSiteEnergy(ioonsite, ifile)
     type(TNrlOnSiteEnergy), intent(inout) :: ioonsite
     type(TFileParam),     intent(in)    :: ifile
@@ -687,7 +687,7 @@ contains
   !!
   ! Make onsite energy shift parameters 1.0.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetOnSiteEnergyIdentity(ioonsite)
     type(TNrlOnSiteEnergy), intent(inout) :: ioonsite
 
@@ -702,7 +702,7 @@ contains
   ! Prepares TNrlOnSiteBuilder object for reading file.
   ! Before calling ReadOnSiteParameters, you must call this routine.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine PrepareForRead(ioonsite, ispecies_count, iorbital_count)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
     integer, intent(in) :: ispecies_count
@@ -716,7 +716,7 @@ contains
   ! file port.
   ! Before calling this routine, you must call PrepareForRead
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadFromUnit(ioonsite, iunit)  
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
     integer,                 intent(in)    :: iunit
@@ -749,7 +749,7 @@ contains
   !!
   ! Interface routine to set identity parameter to onsite.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetIdentity(ioonsite)
     type(TNrlOnSiteBuilder), intent(inout) :: ioonsite
     integer :: i
@@ -761,7 +761,7 @@ contains
     end do
   end subroutine
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AllocateOnsiteXML(ioonsite, the_orbital_count, the_species_count)
     implicit none
     integer, intent(in) :: the_species_count
@@ -815,7 +815,7 @@ contains
     return
   end subroutine AllocateOnsiteXML
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine OnsiteSetXML(ioonsite, lambda, cutoff, delta, is,js)
     implicit none
     integer, intent(in) :: is, js
@@ -831,7 +831,7 @@ contains
     return
   end subroutine OnsiteSetXML
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine OnsiteLoadXML(ioonsite,vnode,the_orbital_count,the_species_count,is)
     use flib_dom
     use elses_xml_misc
@@ -892,7 +892,7 @@ contains
     return
   end subroutine OnsiteLoadXML
   
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine OnsiteSetIdentityXML(ioonsite, the_orbital_count, the_species_count, is)
     implicit none
     integer, intent(in) :: is 

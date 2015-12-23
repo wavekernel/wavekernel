@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !czzz  @@@@ elses-mod-nrl.f @@@@@
 !czzz  @@@@@ 2007/03/26 @@@@@
@@ -30,7 +30,7 @@
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c     Allocation of DPIJ, DSIJ
 !c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_dsij_dpij(nvl_def,noas_def,noav_def,imode)
       use M_config,        only : config ! CHANGED : config%calc%limit%memory_allocated
       use elses_arr_dsij,  only : dsij

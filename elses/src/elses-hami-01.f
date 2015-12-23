@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-hami-01.f @@@@@
 czzz  @@@@@ 2009/05/08 @@@@@
@@ -65,7 +65,7 @@ c              =3 only for (pp sigma)
 c              =4 only for (pp pi)
 c              =5 for all but (pp pi)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_hami_01(i_partial)
 c
       use elses_mod_ctrl,    only : i_verbose
@@ -547,7 +547,7 @@ c  @@ Rest part in order-N cost
 c     Note that the length unit is Angstrom, not a.u., in this routine.
 c 
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_rest_01
       use elses_mod_ctrl,    only : i_verbose
       use elses_mod_sel_sys, only : c_system
@@ -1119,7 +1119,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_qm_force_01
 c   
       use elses_mod_ctrl,     only : i_verbose
@@ -1759,7 +1759,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     @@ Construction of  the DHIJ, DFIJ matrix
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_hami_01_new
 c
       use elses_mod_sel_sys, only : c_system

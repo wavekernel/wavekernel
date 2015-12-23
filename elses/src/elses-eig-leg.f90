@@ -1,13 +1,13 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Set the matrix ATMP, ATMP2
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_eig_leg_atmp
       use elses_mod_eig_leg, only : n_base_eig_leg
       use elses_arr_eig_leg, only : atmp, atmp2, idngl2
@@ -184,7 +184,7 @@
 !       NEIG   : # of basis 
 !
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_seteig3(NKEIG,rNelec,imode)
       use MNRLAdaptor
       use elses_mod_phys_const, only : ev4au
@@ -437,7 +437,7 @@
 !    * Be careful for the fact that 
 !          the matrice A and B is not preserved on exit.
 !   
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_eig_mateig(imode)
 !
       use M_io_dst_write_log,  only : log_unit
@@ -672,7 +672,7 @@
 !
 !       NOTE: eig2(1:n) is assumed to be sorted.
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_eig_chem_pot
       use M_qm_domain,         only : i_verbose    !(unchanged)  
       use M_io_dst_write_log,  only : log_unit
@@ -882,7 +882,7 @@
 !
 !            ATMP(i,k) is used as eigen states
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_eig_set_dens_mat
 !
       use elses_mod_ctrl,     only : i_verbose

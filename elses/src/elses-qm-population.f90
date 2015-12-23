@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 
 module M_qm_population
@@ -20,7 +20,7 @@ module M_qm_population
 !
 contains
 !!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine initial_guess_for_charge
 !
     use M_config  !(unchanged : config%system%structure%vatom(:)%population_guess)

@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 
 module M_element
@@ -32,7 +32,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine element_print( element )
     implicit none
     type(element_type) :: element
@@ -48,7 +48,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! print <classic> data
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine classic_print( classic )
     implicit none
     type(classic_type) :: classic
@@ -62,7 +62,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! print <quantum> data
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine quantum_print( quantum )
     implicit none
     type(quantum_type) :: quantum
@@ -160,7 +160,7 @@ module M_structure
 
 contains
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine heatbath_default( heatbath )
     implicit none
     type(heatbath_type), intent(out) :: heatbath
@@ -173,7 +173,7 @@ contains
   end subroutine heatbath_default
 
   ! print <structure> data
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine structure_print( structure )
     implicit none
     type(structure_type) :: structure
@@ -194,7 +194,7 @@ contains
 
 
   ! print <unitcell> data
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine unitcell_print( unitcell )
     implicit none
     type(unitcell_type) :: unitcell
@@ -208,7 +208,7 @@ contains
   end subroutine unitcell_print
 
   ! print <atom> data
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine atom_print( atom )
     implicit none
     type(atom_type) :: atom
@@ -476,7 +476,7 @@ module M_config
 contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine option_default( option )
     implicit none
     type(option_type)    :: option
@@ -490,7 +490,7 @@ contains
   end subroutine option_default
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_default( calc )
     implicit none
     type(calc_type)      :: calc
@@ -505,7 +505,7 @@ contains
   end subroutine calc_default
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine limit_default( limit )
     implicit none
     type(limit_type)     :: limit
@@ -519,7 +519,7 @@ contains
   end subroutine limit_default
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine dynamics_default( dynamics )
     implicit none
     type(dynamics_type)  :: dynamics
@@ -532,7 +532,7 @@ contains
   end subroutine dynamics_default
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine snapshot_default( snapshot )
     implicit none
     type(snapshot_type)  :: snapshot
@@ -543,7 +543,7 @@ contains
   end subroutine snapshot_default
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine solver_default( solver )
     implicit none
     type(solver_type)    :: solver
@@ -562,7 +562,7 @@ contains
   end subroutine solver_default
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine cell_change_default( cell_change )
     implicit none
     type(cell_change_type)    :: cell_change
@@ -573,7 +573,7 @@ contains
   end subroutine cell_change_default
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine output_default( output )
     implicit none
     type(output_type)    :: output
@@ -610,7 +610,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine config_print( config )
     implicit none
     type(config_type)    :: config
@@ -626,7 +626,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine system_print( system )
     implicit none
     type(system_type)    :: system
@@ -647,7 +647,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine target_print( target )
     implicit none
     type(target_type)    :: target
@@ -691,7 +691,7 @@ contains
     return
   end subroutine target_print
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_print( calc )
     implicit none
     type(calc_type)      :: calc
@@ -703,7 +703,7 @@ contains
     return
   end subroutine calc_print
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine limit_print( limit )
     implicit none
     type(limit_type)     :: limit
@@ -714,7 +714,7 @@ contains
     return
   end subroutine limit_print
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine dynamics_print( dynamics )
     implicit none
     type(dynamics_type)  :: dynamics
@@ -726,7 +726,7 @@ contains
     return
   end subroutine dynamics_print
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine solver_print( solver )
     implicit none
     type(solver_type)    :: solver
@@ -738,7 +738,7 @@ contains
     return
   end subroutine solver_print
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine output_print( output )
     implicit none
     type(output_type)    :: output
@@ -750,7 +750,7 @@ contains
     return
   end subroutine output_print
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine file_print( file )
     implicit none
     type(file_type)      :: file
@@ -816,7 +816,7 @@ contains
     return
   end function target_match
     
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine target_overwrite( target, atom )
     implicit none
     type(target_type), intent(in)  :: target

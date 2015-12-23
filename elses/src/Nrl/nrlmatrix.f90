@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!
 ! Director of Hopping and on-site builder module.
@@ -64,7 +64,7 @@ contains
   !!
   ! Initializes TNrlMatrixBuilder object.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InitMatrixBuilder(io_builder)
     type(TNrlMatrixBuilder), intent(inout) :: io_builder
 
@@ -78,7 +78,7 @@ contains
   !!
   ! Finalizes TNrlMatrixBuilder object.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReleaseMatrixBuilder(io_builder)
     type(TNrlMatrixBuilder), intent(inout) :: io_builder
 
@@ -92,7 +92,7 @@ contains
   !!
   ! Adds local matrix element to global matrix.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AddPairMatrix(io_global_matrix, i_pair, i_matrix)
     real(8) :: io_global_matrix(:,:,:,:)
     type(TNrlAtomPair), intent(in) :: i_pair
@@ -111,7 +111,7 @@ contains
   !!
   ! Makes a Hamiltonian matrix from tight-binding parameters.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine BuildHamiltonianMatrix(io_builder, io_global_matrix, o_err) 
     use MNrlVariables, only: noav
     type(TNrlMatrixBuilder), intent(inout) :: io_builder
@@ -143,7 +143,7 @@ contains
   !!
   ! Makes a overlap matrix from tight-binding parameters.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine BuildOverlapMatrix(io_builder, io_global_matrix, o_err) 
     use MNrlVariables, only: noav
     use MNrlSystem
@@ -176,7 +176,7 @@ contains
   ! Calculates sum (B_jj (d H_jj)/(d r_i))  and adds to force.
   ! i, j are the indexes of atom.
   !           
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AddDerivativeToOnSiteForce(i_density_matrix, i_deriv, &
       i_pair, io_force)
     real(8), intent(in) :: i_density_matrix(:,:,:,:)
@@ -212,7 +212,7 @@ contains
   ! Calculates sum (B_ij d(H_ij)/d(r_i)) and adds to force.
   ! i, j are the indexes of atom.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AddDerivativeToOffSiteForce(i_density_matrix, i_deriv, &
       i_pair, io_force)
     real(8), intent(in) :: i_density_matrix(:,:,:,:)
@@ -246,7 +246,7 @@ contains
   !!
   ! Calculates Hamiltonian part.in the force on an atom.
   !     
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine BuildHamiltonianForceOnAtom(io_builder, i_density_matrix, &
                        i_atom, o_force, o_err)
     type(TNrlMatrixBuilder), intent(inout) :: io_builder
@@ -289,7 +289,7 @@ contains
   !     f_n: occupation   
   !     e_n: eigen energy value.
   !     
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine BuildOverlapForceOnAtom(io_builder, i_density_matrix, &
                        i_atom, o_force, o_err)
     type(TNrlMatrixBuilder), intent(inout) :: io_builder

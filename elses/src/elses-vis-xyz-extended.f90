@@ -1,13 +1,13 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !zzz  @@@@ elses-vis-exteded.f90 @@@@@
 !zzz  @@@@@ 2008/01/03 @@@@@
 !ccc2008cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !0103T.Hoshi: Prepared (NT07E-122p29)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_vis_xyz_extended(i_extended)
 !    Store the structure data in XYZ format with bond analysis
 !        ----> 'structure-bond-data.txt'

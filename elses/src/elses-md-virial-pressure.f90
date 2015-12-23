@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_md_virial_pressure
 !
@@ -16,7 +16,7 @@ module M_md_virial_pressure
 !  @@ Plot pressure by the virial theorem
 !      into the main output file
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine plot_virial_pressure
 !
     use M_config,         only : config       ! (unchanged)
@@ -70,7 +70,7 @@ module M_md_virial_pressure
 !  @@ Calculation of pressure by the virial theorem
 !      Output : pressure_value [au] 
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_virial_pressure(pressure_value, pressure_component)
 !
 !

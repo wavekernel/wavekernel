@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-qm-main.f @@@@@
 czzz  @@@@@ 2008/07/23 @@@@@
@@ -45,7 +45,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Main routine for 'rest' part of energy function
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_es_rest
       use elses_mod_sel_sys, only : c_system
       implicit none
@@ -82,7 +82,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Main routine for buliling hamiltonian
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_hami
       use elses_mod_md_dat,     only : itemd !(unchaged)
       use elses_mod_sel_sys,    only : c_system !(unchaged) 
@@ -142,7 +142,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Main routine for force calculation
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_qm_force
       use elses_mod_sel_sys, only : c_system
       use elses_mod_ctrl,       only : i_verbose

@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!
 ! Module for calculating LDOS in a scheme with overlap matrix.
@@ -93,7 +93,7 @@ contains
   !!
   ! Initialize procedure for TNrlLDos
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDInitLDos(io_ldos)
     type(TNrlLDos), intent(inout) :: io_ldos
     io_ldos%count = 0
@@ -107,7 +107,7 @@ contains
   !!
   ! Finalize procedure for TNrlLDos
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDReleaseLDos(io_ldos)
     type(TNrlLDos), intent(inout) :: io_ldos
     call DeallocateLDosRange(io_ldos)
@@ -116,7 +116,7 @@ contains
   !!
   ! Release memory for TNrlLDos
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine DeallocateLDosRange(io_ldos)
     type(TNrlLDos), intent(inout) :: io_ldos
     if(associated(io_ldos%nos)) deallocate(io_ldos%nos)
@@ -126,7 +126,7 @@ contains
   !!
   ! Set LDOS parameter
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SetLDosRange(io_ldos, i_emin, i_emax, i_count, o_err)
     type(TNrlLDos), intent(inout) :: io_ldos
     real(8), intent(in) :: i_emin, i_emax
@@ -157,7 +157,7 @@ contains
   !!
   ! Constructs DOS value by differentiate NOS.numerically.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ConstructDosFromNos(io_ldos)
     type(TNrlLDos), intent(inout) :: io_ldos
     integer :: count, e_pos
@@ -177,7 +177,7 @@ contains
   !!
   ! Write LDOS component in the indicated file.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDWriteTo(i_ldos, i_unit)
     type(TNrlLDos), intent(in) :: i_ldos
     integer, intent(in) :: i_unit
@@ -195,7 +195,7 @@ contains
   !!
   ! Initialize procedure for TNrlLDosCalculator
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDInitLDosCalculator(io_calculator)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
 
@@ -212,7 +212,7 @@ contains
   !!
   ! Finalize procedure for TTNrlLDosCalculator
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDReleaseLDosCalculator(io_calculator)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
     call DeallocateLDosCalculator(io_calculator)
@@ -221,7 +221,7 @@ contains
   !!
   ! Release memory for TNrlLDosCalculator
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine DeallocateLDosCalculator(io_calculator)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
     if(associated(io_calculator%orthogonal)) &
@@ -233,7 +233,7 @@ contains
   !!
   ! Sets sigma of weight calculation
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDSetSigma(io_calculator, i_sigma)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
     real(8), intent(in) :: i_sigma
@@ -244,7 +244,7 @@ contains
   !!
   ! Set working matrices
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDAssociateMatrices(io_calculator, i_eigen, i_energies, &
       i_overlap, i_dimension, o_err)
     type(TNrlLdosCalculator), intent(inout) :: io_calculator
@@ -281,7 +281,7 @@ contains
   !  Calculates S^(1/2)
   !    where S is a overlap matrix
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine SqrtMatrix(io_calculator, o_err)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
     integer, intent(out) :: o_err
@@ -334,7 +334,7 @@ contains
   !  Before calling this procedure, you must set S^(1/2) by calling
   !  FactorizeByCholesky.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine MultiplyMatrix(io_calculator)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
     integer :: i, dim
@@ -350,7 +350,7 @@ contains
   !!
   ! Converts basis from non-orthogonal to orthogonal
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ConvertBasisAsOrthogonal(io_calculator, o_err)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
     integer, intent(out) :: o_err
@@ -365,7 +365,7 @@ contains
   !!
   ! Create the row list which has a weight for integration.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ConstructRowList(io_row_list, i_weights, i_dimension)
     integer, intent(inout) :: io_row_list(:)
     real(8), intent(in) :: i_weights(:)
@@ -386,7 +386,7 @@ contains
   ! Calculate local density of states.
   ! After calculating LDOS, associated working matrix becomes undefined.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDGetLDos(io_calculator, i_emin, i_emax, i_count, &
       i_weights, io_ldos, o_err)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
@@ -457,7 +457,7 @@ contains
   ! Calculate local density of states.
   ! After calculating LDOS, associated working matrix becomes undefined.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDGetPartialDos(io_calculator, i_emin, i_emax, i_count, &
       i_weights, io_ldos, o_err)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator
@@ -530,7 +530,7 @@ contains
   ! After calculating LDOS, associated working matrix becomes undefined.
   ! This procedure is non-orthogonal basis based.
   ! 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine LDGetCohp(io_calculator, i_emin, i_emax, i_count, &
       i_hamiltonian, i_weights1, i_weights2, io_ldos, o_err)
     type(TNrlLDosCalculator), intent(inout) :: io_calculator

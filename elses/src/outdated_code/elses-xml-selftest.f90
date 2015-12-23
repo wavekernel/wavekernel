@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 program elses_xml_selftest
   use elses_xml_config
@@ -12,7 +12,7 @@ program elses_xml_selftest
 contains
 
   ! the main function of this program
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine main
     use m_dom_debug, only : dom_debug
     use M_options

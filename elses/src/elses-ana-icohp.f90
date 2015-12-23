@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !czzz  @@@@ elses-ana-cohp.f90 @@@@@
 !czzz  @@@@@ 2008/01/02 @@@@@
@@ -25,7 +25,7 @@
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_ana_icohp(imode,d_cri,fname,n_bond)
    use elses_mod_ctrl,     only : i_verbose
    use elses_mod_phys_const, only : angst, ev4au
@@ -189,7 +189,7 @@ end subroutine elses_ana_icohp
 !       imode = 1 : allocation
 !       imode = 2 : deallocation
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_alloc_dhij_cohp(imode)
    use elses_mod_ctrl,      only : i_verbose
    use elses_arr_dhij_cohp, only : dhij_cohp

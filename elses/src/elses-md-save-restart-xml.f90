@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 
 module M_save_restart_xml
@@ -291,7 +291,7 @@ contains
     return
   end subroutine save_restart_xml_main
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine unitcell_save( fd, unitcell )
     use M_structure,   only : unitcell_type !(type)
     implicit none
@@ -309,7 +309,7 @@ contains
     return
   end subroutine unitcell_save
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine heatbath_save( fd, heatbath )
     use M_structure,   only : heatbath_type !(type)
     implicit none
@@ -327,7 +327,7 @@ contains
     return
   end subroutine heatbath_save
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine atom_save( fd, atom, unitcell, population_set, population_guess_set, & 
 &                       population, population_guess, atom_id)
     use M_structure,   only : atom_type, unitcell_type !(type)

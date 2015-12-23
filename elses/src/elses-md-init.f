@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-md-init.f @@@@@
 czzz  @@@@@ 2009/08/02 @@@@@
@@ -75,7 +75,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Initial Alloc.for LSES 
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_init_alloc2b
       use elses_mod_sim_cell, only : noa
       use elses_mod_noav,     only : noav,noao,noab,noas,noab0,nncut
@@ -150,7 +150,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Setting JS4JSV and JSV4JS
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_js4jsv
       use elses_mod_sim_cell, only : noa
       use elses_mod_noav,     only : noav
@@ -193,7 +193,7 @@ c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Set the total electron number : val_elec_tot
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_val_elec_tot
       use elses_mod_ctrl,     only : i_verbose
       use elses_mod_val_elec, only : val_elec_atm, val_elec_tot

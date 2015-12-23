@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-mod-01.f @@@@@
 czzz  @@@@@ 2008/08/22 @@@@@
@@ -215,7 +215,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     Allocation of atom mass : AMM(1:NOA_DEF)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_amm(noa_def)
       use elses_mod_mass, only : amm
       implicit none
@@ -235,7 +235,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     Allocation of atom mass : AWT(1:NOS_DEF)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_awt(nos_def)
       use elses_mod_mass, only : awt
       implicit none
@@ -257,7 +257,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     Allocation of val_elec_atm(1:NOS_DEF)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_val_elec(nos_def)
       use elses_mod_val_elec, only : val_elec_atm, val_elec_tot
       implicit none
@@ -285,7 +285,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     Allocation of elem_name(1:NOS_DEF)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_elem_name(nos_def)
       use elses_mod_elem_name, only : elem_name
       implicit none

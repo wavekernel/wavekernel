@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-mod4.f @@@@@
 czzz  @@@@@ 2009/06/27 @@@@@
@@ -71,7 +71,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c @@@ Initial allocation or final deallocation 
 c            for the Krylov subspace
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_kry_glo(imode)
       use elses_param_ctl_kr, only : noav_kr_def, nrec_kr_def,
      +              nval_kr_def
@@ -247,7 +247,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c @@@ Initial allocation or final deallocation 
 c            for the Krylov subspace
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_kry_rKnstr(imode)
       use elses_mod_ctrl,     only : i_verbose
       use elses_param_ctl_kr, only : noav_kr_def, nrec_kr_def,
@@ -289,7 +289,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c @@@ Allocation or deallocation of jsv4jsk_str
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_jsv4jsk_str(imode)
       use elses_param_ctl_kr,only : noav_kr_def
       use elses_arr_kry_glo, only : jsv4jsk_str

@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-kr-setkry.f @@@@@
 czzz  @@@@@ 2007/06/07 @@@@@
@@ -18,7 +18,7 @@ c
 c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_kry(imode,iselect)
       use elses_mod_phys_const, only : ev4au
 c     use elses_mod_sim_cell,   only : iperiodic, ax, ay, az

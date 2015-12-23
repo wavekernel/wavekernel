@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-kr-main.f @@@@@
 czzz  @@@@@ 2007/08/12 @@@@@
@@ -12,7 +12,7 @@ c
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Main routine for LSES-KR
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_kr_main
       use elses_mod_md_dat,   only : itemd
       use elses_param_ctl_kr, only : iKnstr !(CHANGED!)

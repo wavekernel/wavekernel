@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Note from 2007/07
@@ -55,7 +55,7 @@ contains
   ! and each species i.e., noav and jsei(:) in order to calculate
   ! the number of valence electrons.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlReadTBParameters(ifile_name, rNelec)
     use MNrlVariables, only: awt, noav, amm, aumass, jsei
     use MNrlIO
@@ -138,7 +138,7 @@ contains
   ! by some procedures and set tight-binding parameters 
   ! by NrlReadTBParameters.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlBuildMatrices(dhij, dsij)
     real(8), intent(inout) :: dhij(:,:,:,:), dsij(:,:,:,:)
     integer :: the_err
@@ -165,7 +165,7 @@ contains
   ! @param foi force on ion. Note that xyz index is latter one, 
   !            that is, foi(index of atom, x-y-z). 
   ! 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlBuildForces(foi, dbij, dpij)
     use MNrlVariables, only: noav
     real(8), intent(inout) :: foi(:,:)
@@ -206,7 +206,7 @@ contains
   ! Calculate and output LDOS from given eigenwavefunction, eigenenergy, 
   ! and overlap matrix.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlWriteLocalDos(i_unit, io_eigen, io_energies, io_overlap, &
       i_dimension, i_emin, i_emax, i_count, i_sigma, i_weights, o_err)
     integer, intent(in) :: i_unit
@@ -248,7 +248,7 @@ contains
   ! Calculate and output LDOS from given eigenwavefunction, eigenenergy, 
   ! and overlap matrix.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlWritePartialDos(i_unit, io_eigen, io_energies, io_overlap, &
       i_dimension, i_emin, i_emax, i_count, i_sigma, i_weights, o_err)
     integer, intent(in) :: i_unit
@@ -291,7 +291,7 @@ contains
   ! Calculate and output LDOS from given eigenwavefunction, eigenenergy, 
   ! and overlap matrix.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlWriteCohp(i_unit, io_eigen, io_energies, io_hamiltonian, &
       io_overlap, i_dimension, i_emin, i_emax, i_count, &
       i_sigma, i_weights1, i_weights2, o_err)
@@ -337,7 +337,7 @@ contains
   !!
   ! Adaptor procedure for calculating repulsive energy.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine BuildRepulsiveEnergy(ecc)
     use MNrlVariables, only: noav
     real(8), intent(out) :: ecc
@@ -361,7 +361,7 @@ contains
   !!
   ! Adaptor procedure for calculating repulsive energy.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine AddRepulsiveForce(foi)
     use MNrlVariables, only: noav
     real(8), intent(out) :: foi(:,:)

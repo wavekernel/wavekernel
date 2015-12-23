@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!
 ! module for NRL atom loop 
@@ -83,7 +83,7 @@ contains
   !!
   ! Initialize routine for TNRLAtomIterator
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlInitAtomIterator(io_atom_iterator)
     type(TNrlAtomIterator), intent(inout) :: io_atom_iterator
     io_atom_iterator%atom1 = 0
@@ -98,7 +98,7 @@ contains
   !!
   ! Finalize routine for TNRLAtomIterator
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlReleaseAtomIterator(io_atom_iterator)
     type(TNrlAtomIterator), intent(inout) :: io_atom_iterator
     nullify(io_atom_iterator%species)
@@ -112,7 +112,7 @@ contains
   !!
   ! Resets the counter of loop
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine NrlResetAtomIterator(io_atom_iterator, atom1)
     use MNrlVariables, only: js4jsv, jsv4jsd, njsd, jsv4jsd, jsei, nval
     type(TNrlAtomIterator), intent(inout) :: io_atom_iterator
@@ -131,7 +131,7 @@ contains
   !!
   ! Update information of atomic pair such as distance
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine UPdateDistance(io_atom_iterator, io_pair)
 !   use MNrlVariables, only: iperiodic, tx, ty, tz, ax, ay, az
     use MNrlVariables, only: i_pbc_x, i_pbc_y, i_pbc_z, tx, ty, tz, ax, ay, az
@@ -218,7 +218,7 @@ contains
   !!
   ! Increments atom loop count.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine Increment(io_atom_iterator)
     type(TNrlAtomIterator), intent(inout), target :: io_atom_iterator
     integer, pointer :: atom2

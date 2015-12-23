@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Note from 200705
@@ -47,7 +47,7 @@ contains
   !!
   ! Read tight-binding parameter file header and set file reading mode.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadHeaderLine(iunit)
     integer, intent(in) :: iunit
     integer :: the_stat
@@ -77,7 +77,7 @@ contains
   !!
   ! Reads the number of atomic species. Usually, this is one.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadSpeciesCount(iunit, ocount)
     integer, intent(in) :: iunit
     integer, intent(out) :: ocount
@@ -104,7 +104,7 @@ contains
   ! Checks the orbital information is assumed one.
   ! Now only supported mode is "spd 11"
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadBasicInfo(iunit, ol_count, ovalence, omass)
     integer, intent(in) :: iunit
     integer, intent(out) :: ol_count
@@ -150,7 +150,7 @@ contains
   !!
   ! Reads and checks the cut-off length.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadGlobalCutOff(io_builder, iunit)
     type(TNrlMatrixBuilder), intent(inout) :: io_builder
     integer, intent(in) :: iunit
@@ -177,7 +177,7 @@ contains
   ! @param ovalence the number of valence electron in each atomic species
   ! @param omass    the mass of each atomic species   
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadHeader(iunit, ospecies_count, &
                         oorbital_count, ovalence, omass) 
     integer, intent(in) :: iunit
@@ -238,7 +238,7 @@ contains
   !!
   ! Reads on-site, hopping, intra-atom correction parameters.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadTBParametersFromUnit(iobuilder, iunit, oelec_count, awt)
     type(TNrlMatrixBuilder), intent(inout) :: iobuilder
     integer, intent(in) :: iunit
@@ -291,7 +291,7 @@ contains
     if(associated(the_orbital_count)) deallocate(the_orbital_count)
   end subroutine
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReadTBParametersFromXML(dnode, iobuilder, filename, oelec_count, awt)
     implicit none
     type(fnode), target      :: dnode

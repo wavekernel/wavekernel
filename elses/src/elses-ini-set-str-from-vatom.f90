@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_ini_load_vatom
 !
@@ -15,7 +15,7 @@ module M_ini_load_vatom
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Set atm_position from (tx,ty,tz)
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine set_atm_position_from_tx
 !
     use M_config !(unchanged)
@@ -86,7 +86,7 @@ module M_ini_load_vatom
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Set strcuture data
 !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine set_structure_data_from_vatom
 !
     use M_config !(unchanged)

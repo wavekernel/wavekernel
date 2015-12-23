@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !zzz  @@@@ elses-ana-plot-hami.f @@@@@
 !zzz  @@@@@ 2008/03/31 @@@@@
@@ -11,7 +11,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Plot the hamiltonian into file
 !
-!! Copyright (C) ELSES. 2007-2015 all rights reserved
+!! Copyright (C) ELSES. 2007-2016 all rights reserved
 subroutine elses_plot_hami
    use elses_mod_tx,         only : jsei
    use elses_mod_js4jsv,     only : js4jsv 

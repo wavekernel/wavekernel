@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_qm_domain
 !  geno w.g history
@@ -347,7 +347,7 @@ module M_qm_domain
 !
 !         non-order-N calculation (temporaly) !!!
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
    subroutine make_booking_list
 !
     use M_config,           only : config !(unchanged)
@@ -652,7 +652,7 @@ end subroutine qm_domain_ini_compat
 !
 !         non-order-N calculation (temporaly) !!!
 !
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
    subroutine get_length_of_list(cutoff_radius,length_of_list)
 !
      use M_config,           only : config !(unchanged)

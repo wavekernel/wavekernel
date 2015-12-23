@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 !!
 ! Module for repulsive term.
@@ -52,7 +52,7 @@ contains
   !!
   ! Initialize procedure for TNrlRepulsiveBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine InitRepulsiveBuilder(io_builder)
     type(TNrlRepulsiveBuilder), intent(inout) :: io_builder
     write(*,*)' InitRepulsiveBuilder'
@@ -65,7 +65,7 @@ contains
   !!
   ! Finalize procedure for TNrlRepulsiveBuilder
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine ReleaseRepulsiveBuilder(io_builder)
     type(TNrlRepulsiveBuilder), intent(inout) :: io_builder
 
@@ -117,7 +117,7 @@ contains
   !!
   ! Calculates repulsive energy of system.
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine BuildRepulsiveEnergyOnAtom(io_builder, i_atom, o_energy, o_err)
     type(TNrlRepulsiveBuilder), intent(inout) :: io_builder
     integer, intent(in) :: i_atom
@@ -140,7 +140,7 @@ contains
   !!
   ! Calculates repulsive force on atom
   !
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine BuildRepulsiveForceOnAtom(io_builder, i_atom, o_force, o_err)
     type(TNrlRepulsiveBuilder), intent(inout) :: io_builder
     integer, intent(in) :: i_atom

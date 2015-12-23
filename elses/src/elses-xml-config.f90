@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 
 module elses_xml_element
@@ -21,7 +21,7 @@ module elses_xml_element
   public :: getElements, element_load
 
 contains
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine getElements( size, data )
     integer :: size
     type(element_type),pointer,dimension(:) :: data
@@ -81,7 +81,7 @@ contains
 
 
   ! parse <element> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine element_load( element, filename, name, type )
     implicit none
     type(element_type),pointer   :: element
@@ -256,7 +256,7 @@ contains
   end subroutine element_load
 
   ! parse <classic> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine classic_load( classic, classic_node )
     implicit none
     type(classic_type), intent(out) :: classic
@@ -292,7 +292,7 @@ contains
   end subroutine classic_load
 
   ! parse <quantum> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine quantum_load( quantum, quantum_node )
     implicit none
     type(quantum_type), intent(out) :: quantum
@@ -403,7 +403,7 @@ module elses_xml_structure
 contains
 
   ! load structure data from XYZ
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine structure_loadXYZ( structure, filename, cell_info )
   !! NOTE(T.Hoshi, 2010May) 
   !!    : This routine is called ONLY from tool/src/elses-xml-generate.f90
@@ -522,7 +522,7 @@ contains
 
 
   ! save structure data in XYZ
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine structure_saveXYZ( structure, filename, append )
     implicit none
     type(structure_type), intent(in) :: structure
@@ -559,7 +559,7 @@ contains
   end subroutine structure_saveXYZ
 
   ! parse <structure> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine structure_load( structure, filename )
     implicit none
     type(structure_type), intent(out) :: structure
@@ -652,7 +652,7 @@ contains
     return
   end subroutine structure_load
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine structure_element_load( structure, element_node )
     implicit none
     type(structure_type), intent(out) :: structure
@@ -697,7 +697,7 @@ contains
 
 
   ! parse <heatbath> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine heatbath_load( heatbath, heatbath_node )
     implicit none
     type(heatbath_type), intent(out) :: heatbath
@@ -756,7 +756,7 @@ contains
   end subroutine heatbath_load
 
   ! parse <unitcell> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine unitcell_load( unitcell, unitcell_node )
     implicit none
     type(unitcell_type), intent(out) :: unitcell
@@ -856,7 +856,7 @@ contains
   end subroutine unitcell_load
 
   ! parse <atom> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine atom_load( atom, atom_node, unitcell )
     implicit none
     type(atom_type), intent(out) :: atom
@@ -1009,7 +1009,7 @@ contains
   end subroutine atom_load
 
   ! save structure data in a file
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine structure_save( structure, filename, append )
     implicit none
     type(structure_type), intent(in) :: structure
@@ -1046,7 +1046,7 @@ contains
     return
   end subroutine structure_save
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine unitcell_save( fd, unitcell )
     implicit none
     integer, intent(in) :: fd
@@ -1063,7 +1063,7 @@ contains
     return
   end subroutine unitcell_save
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine heatbath_save( fd, heatbath )
     implicit none
     integer, intent(in) :: fd
@@ -1080,7 +1080,7 @@ contains
     return
   end subroutine heatbath_save
 
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine atom_save( fd, atom, unitcell )
     implicit none
     integer, intent(in) :: fd
@@ -1140,7 +1140,7 @@ module elses_xml_config
 contains
 
   ! parse <config> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine config_load( config, filename )
     implicit none
     type(config_type), intent(out) :: config
@@ -1246,7 +1246,7 @@ contains
 
 
   ! parse <system> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine system_load( system, system_node, elses_xml_version )
     use M_sax_parser,      only : struc_load_sax
     implicit none
@@ -1514,7 +1514,7 @@ contains
   end subroutine system_load
 
   ! parse <target> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine target_load( target, target_node )
     implicit none
     type(target_type), intent(out) :: target
@@ -1667,7 +1667,7 @@ contains
 
 
   ! parse <calc> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine calc_load( calc, calc_node )
     implicit none
     type(calc_type), intent(out) :: calc
@@ -1887,7 +1887,7 @@ contains
 
 
   ! parse <optimization> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine optimization_load( optimization, optimization_node )
     implicit none
     type(optimization_type), intent(out) :: optimization
@@ -1954,7 +1954,7 @@ contains
   end subroutine optimization_load
 
   ! parse <genoOption> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine genoOption_load( genoOption, genoOption_node )
     implicit none
     type(genoOption_type), intent(out) :: genoOption
@@ -2089,7 +2089,7 @@ contains
   end subroutine genoOption_load
 
   ! parse <limit> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine limit_load( limit, limit_node )
     implicit none
     type(limit_type), intent(out) :: limit
@@ -2159,7 +2159,7 @@ contains
   end subroutine limit_load
 
   ! parse <dynamics> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine dynamics_load( dynamics, dynamics_node )
     implicit none
     type(dynamics_type), intent(out) :: dynamics
@@ -2209,7 +2209,7 @@ contains
 
 
   ! parse <solver> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine solver_load( solver, solver_node )
     implicit none
     type(solver_type), intent(out) :: solver
@@ -2401,7 +2401,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! parse <distributed> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine distributed_load( distributed, distributed_node )
     implicit none
     type(distributed_type), intent(out) :: distributed
@@ -2528,7 +2528,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! parse <snapshot> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine snapshot_load( snapshot, snapshot_node )
     implicit none
     type(snapshot_type), intent(out) :: snapshot
@@ -2564,7 +2564,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! parse <cell_change> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine cell_change_load( cell_change, cell_change_node )
     implicit none
     type(cell_change_type), intent(out) :: cell_change
@@ -2619,7 +2619,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! parse <calc_check> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine load_calc_check( calc_check, calc_check_node )
     implicit none
     type(calc_check_type), intent(out) :: calc_check
@@ -2716,7 +2716,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! parse <output> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine output_load( output, output_node )
     implicit none
     type(output_type), intent(out) :: output
@@ -2857,7 +2857,7 @@ contains
   end subroutine output_load
 
   ! parse <file> node
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine file_load( file, file_node )
     implicit none
     type(file_type), intent(out) :: file
@@ -2943,7 +2943,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine file_load_matrices(mode, file_node)
     use M_config,   only  : config
     implicit none
@@ -3114,7 +3114,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !! Copyright (C) ELSES. 2007-2015 all rights reserved
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine file_load_eigen_level(file_node)
     use M_config,   only  : config
     implicit none

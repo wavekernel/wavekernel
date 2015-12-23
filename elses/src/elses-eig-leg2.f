@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 c  @@@@@ elses-eig-leg2 @@@@@
 c  @@@@@ 2008/08/22 @@@@@
@@ -23,7 +23,7 @@ c0822T.Hoshi; Unused module variable 'fb' is deleted (NT08E127p13)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c  @@ Main routine for eigen-state solver (standard eigen value eq.)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_eig_main(imode,i_eig_main_init)
 c
       use elses_mod_ctrl,       only : i_verbose
@@ -167,7 +167,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c @@ Set the matrix ATMP, ATMP2
 c          for standard eigen value problem
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_set_eig_leg_atmp2
       use elses_mod_eig_leg, only : n_base_eig_leg
       use elses_arr_eig_leg, only : atmp, atmp2, idngl2

@@ -1,6 +1,6 @@
 !================================================================
 ! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2015 all rights reserved
+! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 czzz  @@@@ elses-mod-02.f @@@@@
 czzz  @@@@@ 2008/01/08 @@@@@
@@ -70,7 +70,7 @@ c             njsd(noav,0:nncut)
 c
 c          enea(noa,2)
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_atm
      +       (noa_def,noav_def,noao_def,nncut_def,imode)
 c
@@ -134,7 +134,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     Allocation of INTF
 c
 c
-      !! Copyright (C) ELSES. 2007-2015 all rights reserved
+      !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_alloc_intf(noa_def, imode)
 c
       use elses_mod_multi, only : intf
