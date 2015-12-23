@@ -31,6 +31,13 @@ OBJS-XML = $(SRCDIR)/elses-xml-config.o $(SRCDIR)/elses-config.o\
 # Dummy setting for LIBS-EXT 
 LIBS-EXT = 
 
+##  for GNU Fortran compiler (gfortran)
+FC = gfortran
+FFLAGS = -O2 -fopenmp
+#FFLAGS = -O0 -fopenmp -g
+LDFLAGS =  -fopenmp
+LIBS = -L/usr/lib64 -llapack -lblas
+
 ##  for Intel Fortran compiler (ifort)
 #FC = ifort
 #FFLAGS = -O -openmp 
@@ -52,12 +59,6 @@ LIBS-EXT =
 #LDFLAGS =
 #LIBS = -llapack -lblas
 #LIBS =  -L /opt/acml3.6.0/gnu64/lib -lacml -lacml_mv -lg2c
-
-##  for GNU Fortran compiler (gfortran)
-FC = gfortran
-FFLAGS = -O2 -fopenmp
-LDFLAGS = -fopenmp
-LIBS = -L/usr/lib64 -llapack -lblas
 
 ##  for GNU Fortran compiler (gfortran on MacOS-X with Xcode)
 #FC = gfortran

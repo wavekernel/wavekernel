@@ -1882,6 +1882,20 @@ contains
          & 'INFO-XML:Optional tag: constraint_w_group'
     endif
 
+    ! get <wave_packet> node
+    work_node1 => getFirstElementByTagName(calc_node,"wave_packet")
+    calc%wave_packet%set = .false. ! default setting
+    calc%wave_packet%mode = "off"  ! default setting
+    if ( associated(work_node1) ) then
+      calc%wave_packet%set =.true.
+      if (getAttribute(work_node1,"mode") == "on") calc%wave_packet%mode ="on"
+      if (getAttribute(work_node1,"mode") == "on") calc%wave_packet%mode ="on"
+    endif
+    if ( calc%wave_packet%set ) then
+       if (log_unit > 0) write(log_unit,'(a,a)') & 
+         & 'INFO-XML:Optional tag: wave_packet; mode = ',trim(calc%wave_packet%mode)
+    endif
+
     return
   end subroutine calc_load
 

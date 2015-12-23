@@ -393,6 +393,11 @@ module M_config
      real(kind(1d0))       :: cutoff_rest_non_vdW
   end type interation_range_type
 
+  type :: wave_packet_type
+     logical               :: set
+     character(len=20)     :: mode 
+  end type wave_packet_type
+
   type :: calc_type
      character(len=20)   :: mode        ! "dynamics", "optimization" and so on
      type(optimization_type) :: optimization
@@ -404,6 +409,7 @@ module M_config
      type(snapshot_type)      :: snapshot
      type(cell_change_type)   :: cell_change
      type(calc_check_type)    :: calc_check
+     type(wave_packet_type)   :: wave_packet
      character(len=20)        :: calc_force_mode 
      logical                  :: use_integer_elec_num
      logical                  :: calc_virial_pressure

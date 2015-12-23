@@ -208,22 +208,16 @@ module M_md_main
 !
      if (mpi_is_active) then
        if ((nprocs > 1) .and. (.not. dst_calculation)) then
-         write(*,*) 'ERROR:Non-DST calcuation with nprocs > 1 : nprocs=', nprocs
-         stop 
+         write(*,*) 'WARNING:Non-DST calcuation with nprocs > 1 : nprocs=', nprocs
        endif   
      endif   
 !
      call get_elapse_wall_clock_time(time_wrk)
      time_wrk_previous=time_wrk
 !
-!    if ( ( dst_calculation ) .and. ( mpi_is_active ) )  then
      if ( dst_calculation ) then
        if (root_node) write(*,*)'INFO:Distributed calculation mode'
-       if (scheme_mode == 'eigen_mpi') then 
-          call elses_qm_engine  
-        else
-          call qm_engine_dst
-        endif   
+       call qm_engine_dst
      else
        if (root_node) write(*,*)'INFO:NON-distributed calculation mode'
        call elses_qm_engine  
