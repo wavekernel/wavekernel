@@ -1,5 +1,5 @@
 !================================================================
-! ELSES version 0.05
+! ELSES version 0.06
 ! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 subroutine elses_vis_rasmol(step_count, snapname_header)

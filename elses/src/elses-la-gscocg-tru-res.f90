@@ -1,5 +1,5 @@
 !================================================================
-! ELSES version 0.05
+! ELSES version 0.06
 ! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_la_gscocg_tru_res

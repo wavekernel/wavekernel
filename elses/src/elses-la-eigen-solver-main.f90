@@ -1,5 +1,5 @@
 !================================================================
-! ELSES version 0.05
+! ELSES version 0.06
 ! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 module M_eig_solver_center   ! DUMMY routines
@@ -30,8 +30,12 @@ module M_eig_solver_center   ! DUMMY routines
   subroutine eig_solver_center(imode, log_unit, SEP_solver, GS_transformation, blocksize, level_low_high, &
 &                mat_a, eig_levels, mat_b)
 !
-!  use mpi
-!  use M_config, only : config
+   use elses_mod_md_dat, only : final_iteration
+   use M_config, only : config
+   use M_lib_mpi_wrapper
+!  use wp_setting_m
+!  use wp_main_aux_m
+   use M_wavepacket  ! For testing wavepacket_main_ext().
    implicit none
 
    integer, intent(in) :: imode

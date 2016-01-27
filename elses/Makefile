@@ -1,12 +1,12 @@
 #================================================================
-# ELSES version 0.05
+# ELSES version 0.06
 # Copyright (C) ELSES. 2007-2015 all rights reserved
 #================================================================
 #
 # Makefile for ELSES
 #
 
-VERSION=0.06.00
+VERSION=0.06.01
 
 include Makefile.inc
 

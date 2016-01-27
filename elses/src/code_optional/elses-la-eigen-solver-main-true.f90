@@ -1,13 +1,13 @@
 !================================================================
-! ELSES version 0.05
-! Copyright (C) ELSES. 2007-2016 all rights reserved
+! ELSES version 0.06
+! Copyright (C) ELSES. 2007-2015 all rights reserved
 !================================================================
 module M_eig_solver_center
   !
   use M_qm_domain, only : i_verbose, DOUBLE_PRECISION !(unchanged)
   use eigen_test
   implicit none
-  include 'mpif.h'
+  !include 'mpif.h'
   !
   private
   public :: eig_solver_center
@@ -32,7 +32,12 @@ contains
 &                blocksize_in, level_low_high_in, mat_a, eig_levels, mat_b)
     !
     use mpi
+    use elses_mod_md_dat, only : final_iteration
     use M_config, only : config
+    use M_lib_mpi_wrapper
+    use wp_setting_m
+    use wp_main_aux_m
+    use M_wavepacket  ! For testing wavepacket_main_ext().
     implicit none
 
     integer,          intent(in) :: imode
@@ -53,10 +58,28 @@ contains
     integer                                          :: level_low_high(2)
     integer                                          :: mat_size
     integer                                          :: context
-    integer                                          :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
+    integer                                          :: n_procs_row, n_procs_col, my_proc_row, my_proc_col, ierr
     type(process) :: proc
     type(sparse_mat) :: matrix_A, matrix_B
     type(eigenpairs_types_union) :: eigenpairs
+    logical :: is_first_call_of_wavepacket = .true.  ! Switch initialization and main loop of wavepacket calculation.
+    logical :: is_wavepacket_end = .false.  ! Avoid calling finalization twice.
+    type(wp_setting_t), save :: setting
+    type(wp_state_t), save :: state
+
+    if (config%calc%wave_packet%mode == 'on' .and. .not. is_wavepacket_end) then
+      if (is_first_call_of_wavepacket) then
+        call wavepacket_init(setting, state)
+        is_first_call_of_wavepacket = .false.  ! wavepacket_init is called only once.
+      else
+        call wavepacket_replace_matrix(setting, state)  ! Update result of MD step.
+        call wavepacket_main(setting, state)  ! Compute wavepacket dynamics while atoms are fixed.
+      end if
+      if (final_iteration .or. setting%delta_t * (state%i + 1) >= setting%limit_t) then
+        call output_fson_and_destroy(setting, state%output, state%filenames_split, state%states, state%wtime_total)
+        is_wavepacket_end = .true.  ! output_fson_and_destroy is called only once.
+      end if
+    end if
 !
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

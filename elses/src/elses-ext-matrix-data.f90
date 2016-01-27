@@ -7,22 +7,24 @@ module M_ext_matrix_data
 !
   type :: sparce_matrix_data_real_type
      integer                      :: matrix_size
-     integer                      :: num_of_non_zero_elements 
+     integer                      :: num_of_non_zero_elements
      integer,         allocatable :: element_index(:,:)
      real(DOUBLE_PRECISION), allocatable :: element_data(:)
   end type sparce_matrix_data_real_type
 !
-  type(sparce_matrix_data_real_type) :: matrix_data(2) 
+  type(sparce_matrix_data_real_type) :: matrix_data(2)
 !            matrix_data(1) : H
 !            matrix_data(2) : S
 !
   private
 !
+  public sparce_matrix_data_real_type
+  public matrix_data
   public set_matrix_data
   public plot_matrix_data
 !
   contains
-!  
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @ test routine for quantum dynamics
 !
@@ -30,7 +32,7 @@ module M_ext_matrix_data
 !
     if (i_verbose >= 1) then
       write(*,*)'@@ test_for_quantum_dynamics'
-    endif 
+    endif
 !
     call set_matrix_data
     call plot_matrix_data
@@ -48,7 +50,7 @@ module M_ext_matrix_data
 !
 !   use elses_mod_file_io, only : vacant_unit !(function)
     use M_qm_domain ,  only : dhij, dsij, atm_element, nval, &
-&                             jsv4jsd, njsd, noav, atm_element !(unchanged) 
+&                             jsv4jsd, njsd, noav, atm_element !(unchanged)
 !
     implicit none
 !
@@ -76,10 +78,10 @@ module M_ext_matrix_data
 !
     if (i_verbose >= 1) then
       write(*,*)'@@ set_matrix_data'
-    endif 
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Trivial Checking 
+! Trivial Checking
 !
     if (.not. allocated(dhij)) then
       write(*,*)'ERROR(set_matrix_data):dhij is not allocated'
@@ -127,27 +129,27 @@ module M_ext_matrix_data
              if ( dabs(data_values(2)) < min_value ) cycle
              if ( trim(format_mode) == "sym" ) then
                if (jj1 < jj2) cycle
-             endif   
+             endif
              jj=jj+1
              if (prc_index == 2) then
                call set_matrix_data_element(jj, jj1, jj2, data_values)
              endif
-          enddo  
-        enddo  
-       enddo  
-     enddo  
-     if (prc_index == 1) then 
+          enddo
+        enddo
+       enddo
+     enddo
+     if (prc_index == 1) then
        num_of_non_zero=jj
        call allocate_matrix_data(mat_size, num_of_non_zero)
      endif
    enddo
 !
   end subroutine set_matrix_data
-!  
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! @ Allocate matrix data array 
+! @ Allocate matrix data array
 !
   subroutine allocate_matrix_data(m,nnz)
     implicit none
@@ -179,7 +181,7 @@ module M_ext_matrix_data
     integer                            :: m, nnz, ierr
     logical,  parameter                :: debug_mode = .true.
 !
-    if (debug_mode) then 
+    if (debug_mode) then
      do mat_kind=1,2
        m   = matrix_data(mat_kind)%matrix_size
        nnz = matrix_data(mat_kind)%num_of_non_zero_elements
@@ -240,4 +242,3 @@ module M_ext_matrix_data
   end subroutine plot_matrix_data
 !
 end module M_ext_matrix_data
-

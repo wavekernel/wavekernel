@@ -1,5 +1,5 @@
 !================================================================
-! ELSES version 0.05
+! ELSES version 0.06
 ! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 
@@ -318,7 +318,7 @@ module M_config
   end type solver_type
 
   type :: optimization_type
-     character(len=20)   :: scheme      ! 
+     character(len=20)   :: scheme      !
      integer             :: max_num_iter! maximum number of iterations
      real(kind(1d0))     :: sd_ratio    ! for "SD" type calculation
      character(len=20)   :: convergence_mode ! "off", "none(=off)",  "energy_per_atom", "force_per_atom"
@@ -345,7 +345,7 @@ module M_config
 
   type :: cell_change_type
      logical             :: set
-     character(len=20)   :: scheme      ! 
+     character(len=20)   :: scheme      !
      integer             :: max_num_iter! maximum number of iterations
      character(len=64)   :: filename
   end type cell_change_type
@@ -369,7 +369,7 @@ module M_config
 
   type :: micro_cell_type
      logical :: set
-     character(len=20)   :: mode   ! "one_cell", "default" or "inactive" 
+     character(len=20)   :: mode   ! "one_cell", "default" or "inactive"
      integer :: cell_number(3)
      integer :: search_range(3)
   end type micro_cell_type
@@ -380,9 +380,9 @@ module M_config
      logical               :: global_ham_mat
      type(micro_cell_type) :: micro_cell_booking
      logical               :: mpi_is_active
-     integer               :: myrank   
-     integer               :: nprocs   
-     integer               :: log_unit 
+     integer               :: myrank
+     integer               :: nprocs
+     integer               :: log_unit
      logical               :: root_node
      logical               :: use_mpi_barrier
   end type distributed_type
@@ -395,7 +395,18 @@ module M_config
 
   type :: wave_packet_type
      logical               :: set
-     character(len=20)     :: mode 
+     character(len=20)     :: mode
+     real(kind(1d0))       :: delta_t
+     real(kind(1d0))       :: limit_t
+     real(kind(1d0))       :: replace_t
+     real(kind(1d0))       :: charge_factor
+     integer               :: alpha_delta_index
+     integer               :: fst_filter
+     integer               :: end_filter
+     character(len=1024)   :: output_filename
+     character(len=1024)   :: h1_type
+     character(len=1024)   :: init_type
+     character(len=1024)   :: filter_mode
   end type wave_packet_type
 
   type :: calc_type
@@ -410,7 +421,7 @@ module M_config
      type(cell_change_type)   :: cell_change
      type(calc_check_type)    :: calc_check
      type(wave_packet_type)   :: wave_packet
-     character(len=20)        :: calc_force_mode 
+     character(len=20)        :: calc_force_mode
      logical                  :: use_integer_elec_num
      logical                  :: calc_virial_pressure
      logical                  :: use_group_id
@@ -427,7 +438,7 @@ module M_config
      character(len=8)    :: method
      integer             :: interval
      character(len=8)    :: append_mode
-     logical             :: first_write 
+     logical             :: first_write
      character(len=8)    :: cell_info  ! for xyz-formatted position file
      logical             :: split
      integer             :: number_of_split_files
@@ -441,7 +452,7 @@ module M_config
      character(len=64)   :: format
      integer             :: interval
      character(len=8)    :: unit  ! "a.u." or "eV"
-     logical             :: first_write 
+     logical             :: first_write
   end type file_matrix_type
 
   type :: output_type
@@ -461,7 +472,7 @@ module M_config
 
   type :: option_type
      character(len=256)  :: filename
-     integer             :: verbose       ! Old variable 
+     integer             :: verbose       ! Old variable
      integer             :: verbose_level ! New variable (8. Feb. 2015)
      integer             :: debug
      character(len=16)   :: functionality
@@ -562,8 +573,8 @@ contains
     solver%inner_cg_loop%max_iteration = 100
     solver%inner_cg_loop%convergence_eps = -8
     solver%flexible_cutoff%set = .false.
-    solver%flexible_cutoff%flexible_cutoff_01 = -1.0d0 
-    solver%flexible_cutoff%flexible_cutoff_02 = -1.0d0 
+    solver%flexible_cutoff%flexible_cutoff_01 = -1.0d0
+    solver%flexible_cutoff%flexible_cutoff_02 = -1.0d0
     return
   end subroutine solver_default
 
@@ -821,7 +832,7 @@ contains
 
     return
   end function target_match
-    
+
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine target_overwrite( target, atom )
     implicit none

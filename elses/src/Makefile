@@ -34,7 +34,7 @@ OBJS-XML = \
 	elses-lib-dst-info.o  elses-lib-wall-clock-time.o \
 	elses-xml-config.o elses-xml-misc.o elses-options.o elses-config.o elses-lib-mpi-wrapper-compile.o \
 	elses-lib-quad-precision.o \
-	elses-xml-sax-counter.o elses-xml-sax-handler.o  elses-xml-sax-parser.o elses-xml-compat-check.o 
+	elses-xml-sax-counter.o elses-xml-sax-handler.o  elses-xml-sax-parser.o elses-xml-compat-check.o
 
 OBJS-NRL = \
 	Nrl/nrlvar.o Nrl/nrladapt.o Nrl/nrlsystem.o Nrl/nrlpair.o \
@@ -80,6 +80,7 @@ OBJS-ELSES = \
 	elses-qm-dst-micro-mat.o elses-md-get-distance.o elses-qm-charge-from-weight-dst.o \
 	elses-la-matvec-routines-dstm.o elses-qm-partial-trace-dstm.o  elses-la-gkrylov-main-dstm.o \
 	elses-qm-output-matrices.o elses-qm-output-levels.o elses-la-eigen-solver.o \
+	elses-qm-wavepacket-main.o \
 	elses-md-make-bk-list-w-cell.o elses-md-dst-get-atom-range.o elses-qm-geno-rest-dstm.o \
 	elses-md-dst-update-cell-booking.o elses-qm-dstm-ini-setting.o \
 	elses-qm-alloc-charge.o elses-qm-projection-list-dstm.o elses-io-read-xyz-file.o \
@@ -94,7 +95,7 @@ OBJS-ELSES = \
 	elses-ext-atom-info.o elses-ext-matrix-data.o elses-ext-test-quantum-dynamics.o
 
 #elses-xml-selftest: elses-xml-selftest.o $(OBJS-XML)
-#	$(F90)  $(LDFLAGS) elses-xml-selftest.o $(OBJS-XML) $(LIBS-XML) -o $@ 
+#	$(F90)  $(LDFLAGS) elses-xml-selftest.o $(OBJS-XML) $(LIBS-XML) -o $@
 #	$(XML_SELFTEST) selftest/config.xml || exit
 
 elses: $(OBJS-XML) $(OBJS-NRL) $(OBJS-ELSES)
@@ -118,4 +119,3 @@ ctree:
      fortspec -d HTML *.{f,f90} Nrl/*.{f,f90} $$xmlfiles
 
 include Makefile.dep
-

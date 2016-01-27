@@ -1,5 +1,5 @@
 !================================================================
-! ELSES version 0.05
+! ELSES version 0.06
 ! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
 
@@ -30,7 +30,7 @@ contains
     size = DB%size
     data => DB%data
 
-    return 
+    return
   end subroutine getElements
 
   function DB_find( filename ) result(datum)
@@ -143,7 +143,7 @@ contains
 
        case("C.xml")
           element%name = "C"
-          
+
           element%classic%mass = 12.01 * XML_TO_AU("amu")
           element%classic%charge = 4.00
           element%quantum%type = "Xu.1992"
@@ -151,27 +151,27 @@ contains
           element%quantum%interaction_radius =  2.60 * XML_TO_AU("angstrom")
           element%quantum%DNAL0 = 2.00
           element%quantum%RNN0  = 1.53632900
-          
+
           element%quantum%DHAL(1) = -5.000
           element%quantum%DHAL(2) =  4.700
           element%quantum%DHAL(3) =  5.500
           element%quantum%DHAL(4) = -1.550
-          
+
           element%quantum%DNAL(1) =  6.500
           element%quantum%DNAL(2) =  6.500
           element%quantum%DNAL(3) =  6.500
           element%quantum%DNAL(4) =  6.500
-          
+
           element%quantum%RCAL(1) =  2.180
           element%quantum%RCAL(2) =  2.180
           element%quantum%RCAL(3) =  2.180
           element%quantum%RCAL(4) =  2.180
-          
+
           element%quantum%restpart = 0.00
-          
+
        case("Si.xml")
           element%name = "Si"
-          
+
           element%classic%mass = 28.0855 * XML_TO_AU("amu")
           element%classic%charge = 4.00
           element%quantum%type = "Kwon.1994"
@@ -179,24 +179,24 @@ contains
           element%quantum%interaction_radius =  4.16 * XML_TO_AU("angstrom")
           element%quantum%DNAL0 = 2.00
           element%quantum%RNN0  = 2.360352
-          
+
           element%quantum%DHAL(1) = -2.038
           element%quantum%DHAL(2) =  1.745
           element%quantum%DHAL(3) =  2.750
           element%quantum%DHAL(4) = -1.075
-          
+
           element%quantum%DNAL(1) =  9.500
           element%quantum%DNAL(2) =  8.500
           element%quantum%DNAL(3) =  7.500
           element%quantum%DNAL(4) =  7.500
-          
+
           element%quantum%RCAL(1) =  3.400
           element%quantum%RCAL(2) =  3.550
           element%quantum%RCAL(3) =  3.700
           element%quantum%RCAL(4) =  3.700
-          
+
           element%quantum%restpart = 0.00
-          
+
        case default
           write(*,*) "Sorry! not supported element ", filename
           stop
@@ -208,7 +208,7 @@ contains
        stop
 
 !!$ We disabled this function until we decide to read data from files
-!!$ 
+!!$
 !!$    inquire( file=filename, exist=ex )
 !!$    if( .not. ex ) then
 !!$       write(*,'(a,a)') '# Error!: element_load : can not open file ', trim(filename)
@@ -225,7 +225,7 @@ contains
 !!$    if( .not. associated(element_node) ) then
 !!$       call XML_error("<element> not found")
 !!$    endif
-!!$    
+!!$
 !!$    ! get name attribute
 !!$    value = getAttribute(element_node,"name")
 !!$    if( value == "" ) then
@@ -405,7 +405,7 @@ contains
   ! load structure data from XYZ
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine structure_loadXYZ( structure, filename, cell_info )
-  !! NOTE(T.Hoshi, 2010May) 
+  !! NOTE(T.Hoshi, 2010May)
   !!    : This routine is called ONLY from tool/src/elses-xml-generate.f90
     implicit none
     type(structure_type), intent(out) :: structure
@@ -426,7 +426,7 @@ contains
 !
     inquire( file=filename, exist=ex )
     if( .not. ex ) then
-       write(*,'(a,a)') '# Error!: structure_load : can not open file ', trim(filename) 
+       write(*,'(a,a)') '# Error!: structure_load : can not open file ', trim(filename)
        stop
     end if
     open(fd,file=filename)
@@ -436,7 +436,7 @@ contains
       write(*,*)'ABORT: File read error; (structure_loadXYZ)'
       write(*,*)'first line=', trim(chara_wrk)
       stop
-    endif   
+    endif
 !
 !   write(*,*)'first line =',trim(chara_wrk)
 !   write(*,*)'len_trim    =',len_trim(chara_wrk)
@@ -445,41 +445,41 @@ contains
     if (ierr == 0) then
        if (present(cell_info)) then
 !        write(*,*) 'INFO:cell info appears in the XYZ file and will be set in the XML file'
-!        write(*,*) 'INFO:cell info [A]  =', cell_info_wrk(1:3) 
+!        write(*,*) 'INFO:cell info [A]  =', cell_info_wrk(1:3)
          cell_info(1:3)=cell_info_wrk(1:3)*XML_TO_AU("angstrom") ! cell info in au
-!        write(*,*) 'INFO:cell info [au] =', cell_info(1:3) 
+!        write(*,*) 'INFO:cell info [au] =', cell_info(1:3)
        else
          write(*,*) 'INFO:cell info appears in the XYZ file but is ignored.'
-       endif   
-    else   
+       endif
+    else
 !     write(*,*) 'INFO:no cell info appears in XYZ file'
       read(chara_wrk,*,iostat=ierr) structure%natom
       if (ierr /= 0) then
-        write(*,'(a,a)') 'File name : ', trim(filename) 
+        write(*,'(a,a)') 'File name : ', trim(filename)
         write(*,*)'ABORT: File read error; (structure_loadXYZ)'
         write(*,*)'  for structure%natom'
         stop
-      endif   
-    endif   
+      endif
+    endif
 !
     allocate( structure%vatom(structure%natom) )
 
     read(fd,*,iostat=ierr) structure%name
     if (ierr /= 0) then
-      write(*,'(a,a)') 'File name : ', trim(filename) 
+      write(*,'(a,a)') 'File name : ', trim(filename)
       write(*,*)'ABORT: File read error; (structure_loadXYZ)'
       write(*,*)'  for structure%name'
       stop
-    endif   
+    endif
 
     structure%mdstep = 0
-    structure%unitcell%vectorA(1) = XML_TO_AU("angstrom") ! dummy value 
+    structure%unitcell%vectorA(1) = XML_TO_AU("angstrom") ! dummy value
     structure%unitcell%vectorA(2) = 0.d0                  ! dummy value
     structure%unitcell%vectorA(3) = 0.d0                  ! dummy value
     structure%unitcell%vectorB(1) = 0.d0                  ! dummy value
     structure%unitcell%vectorB(2) = XML_TO_AU("angstrom") ! dummy value
     structure%unitcell%vectorB(3) = 0.d0                  ! dummy value
-    structure%unitcell%vectorC(1) = 0.d0                  ! dummy value 
+    structure%unitcell%vectorC(1) = 0.d0                  ! dummy value
     structure%unitcell%vectorC(2) = 0.d0                  ! dummy value
     structure%unitcell%vectorC(3) = XML_TO_AU("angstrom") ! dummy value
     structure%unitcell%set = .true.
@@ -493,7 +493,7 @@ contains
        atom%position = &
             + atom%position(1) * structure%unitcell%vectorA &
             + atom%position(2) * structure%unitcell%vectorB &
-            + atom%position(3) * structure%unitcell%vectorC 
+            + atom%position(3) * structure%unitcell%vectorC
 
        atom%class = ""
        atom%motion = "free"
@@ -507,14 +507,14 @@ contains
     end do
 
 !100 continue
-   
+
     close(fd)
-    
+
     return
 200 continue ! error_block
 
     call XML_error("something wrong in the XYZ-formated file")
-    
+
     close(fd)
     stop
 
@@ -583,7 +583,7 @@ contains
 
     inquire( file=filename, exist=ex )
     if( .not. ex ) then
-       write(*,'(a,a)') '# Error!: structure_load : can not open file ', trim(filename) 
+       write(*,'(a,a)') '# Error!: structure_load : can not open file ', trim(filename)
        stop
     end if
 
@@ -635,10 +635,10 @@ contains
     vatom_node => getElementsByTagName(structure_node,"atom")
     structure%natom = getLength(vatom_node)
     if( structure%natom == 0 ) then
-      if (log_unit > 0) then 
+      if (log_unit > 0) then
         write(log_unit,'(a)') 'INFO-XML-WARN:<atom> tag is not found in the structure XML file'
         write(log_unit,'(a)') 'INFO-XML-WARN:structure%vatom(structure%natom) is not allcoated'
-      endif  
+      endif
     else
       if (log_unit > 0) write(log_unit,'(a)')'INFO-XML:allocate structure%vatom(structure%natom) at structure_load'
       allocate( structure%vatom(structure%natom) )
@@ -674,12 +674,12 @@ contains
        if( name == structure%vatom(j)%name .or. name == '') then
           if( filename == '' ) then
              ! Following comments are added by SY Jul 16, 2009.
-            if (log_unit > 0) then 
+            if (log_unit > 0) then
               write(log_unit,'(a)') '"filename" is required in "element_load",&
                  & even if it is not used actually.'
               write(log_unit,'(a)') 'Therefore, now we assume that "atom name"&
                  & gives "filename".'
-            endif  
+            endif
             call element_load( structure%vatom(j)%element, &
                   trim(structure%vatom(j)%name) // ".xml" , name, model )
              ! name, model added by SY Nov28, 2008
@@ -780,12 +780,12 @@ contains
        if (ierr /= 0) then
          write(*,*)'ERROR in the input XML file:<unitcell><myLength>'
          stop
-       endif    
+       endif
        unit = getAttribute(node, "unit")
        if ( unit /= "" ) then
           unitcell%myLength = unitcell%myLength &
                * XML_TO_AU(unit)
-          if (log_unit > 0)  write(log_unit,'(a,f10.5)') & 
+          if (log_unit > 0)  write(log_unit,'(a,f10.5)') &
 &                   'INFO-XML:Optional tag detected : mylength [au] =',unitcell%myLength
        end if
     else
@@ -806,7 +806,7 @@ contains
     if (ierr /= 0) then
       write(*,*)'ERROR in the input XML file:<unitcell><vector>'
       stop
-    endif    
+    endif
     select case(unit)
     case("")
        unit = "a.u."
@@ -824,7 +824,7 @@ contains
     if (ierr /= 0) then
       write(*,*)'ERROR in the input XML file:<unitcell><vector>'
       stop
-    endif    
+    endif
     select case(unit)
     case("")
        unit = "a.u."
@@ -842,7 +842,7 @@ contains
     if (ierr /= 0) then
       write(*,*)'ERROR in the input XML file:<unitcell><vector>'
       stop
-    endif    
+    endif
     select case(unit)
     case("")
        unit = "a.u."
@@ -930,7 +930,7 @@ contains
 !      atom%position = &
 !           + atom%position(1) * unitcell%vectorA &
 !           + atom%position(2) * unitcell%vectorB &
-!           + atom%position(3) * unitcell%vectorC 
+!           + atom%position(3) * unitcell%vectorC
     else
        atom%position = atom%position * XML_TO_AU(unit)
     end if
@@ -1277,7 +1277,7 @@ contains
     node => getFirstElementByTagName(system_node,"split_input_file")
     if( .not. associated(node) ) then
       node => getFirstElementByTagName(system_node,"splitted_input_file")
-    endif  
+    endif
     if( .not. associated(node) ) then
       system%structure%split%set                = .false.
       system%structure%split%file_index         = -1 ! dummy value
@@ -1292,17 +1292,17 @@ contains
       if (system%structure%split%number_of_files == 0) system%structure%split%set = .false.
     endif
     if (system%structure%split%set) then
-      if (log_unit >  0) write(log_unit,'(a,i10)')'INFO-XML-SPLIT: Optional attribute detected : number_of_files =', & 
+      if (log_unit >  0) write(log_unit,'(a,i10)')'INFO-XML-SPLIT: Optional attribute detected : number_of_files =', &
 &                              system%structure%split%number_of_files
     endif
-!   
+!
     ! get <temperature> node
     node => getFirstElementByTagName(system_node,"temperature")
     if( .not. associated(node) ) then
 !      call XML_error("<temperature> not found")
        if (log_unit >  0) write(log_unit,'(a)')'INFO-XML-WARNING : NO tag detected : temperature'
        system%temperature = -1.0d0 ! dummy value
-    else   
+    else
        unit  = getAttribute(node,"unit")
        if( unit=="" ) then
           unit="kelvin"
@@ -1326,7 +1326,7 @@ contains
       system%structure%use_matom = .false.
       system%structure%use_vatom = .true.
     endif
-!   
+!
     ! get <cluster> node
     node => getFirstElementByTagName(system_node,"cluster")
     if( .not. associated(node) ) then
@@ -1335,26 +1335,26 @@ contains
        ! get number_of_atoms attribute
        value = getAttribute(node,"number_of_atoms")
        if( value == "" ) then
-         system%structure%natom = 0  ! dummy value 
+         system%structure%natom = 0  ! dummy value
        else
          read(unit=value,fmt=*) system%structure%natom
-         if (log_unit >  0) write(log_unit, '(a,i10)') 'INFO-XML: Optional attribute detected : number_of_atom =', & 
+         if (log_unit >  0) write(log_unit, '(a,i10)') 'INFO-XML: Optional attribute detected : number_of_atom =', &
 &                              system%structure%natom
-       endif   
+       endif
        ! get parser attribute
        value = getAttribute(node,"parser")
        if (( value == "SAX" ) .or. ( value == "sax" )) then
          system%structure%parser='sax'
        else
          system%structure%parser='dom'
-       endif   
+       endif
        if (log_unit >  0) write(log_unit, '(a,a)')'INFO-XML:XML parser= ', trim(system%structure%parser)
        if (system%structure%parser == 'dom') then
-         if (log_unit >  0) then 
+         if (log_unit >  0) then
            write(log_unit, '(a,a)')'WARNING:DOM PARSER is used for reading the input XML file.'
            write(log_unit, '(a,a)')'WARNING:DOM PARSER may be impractical for large systems, such as 100,000-atom systems.'
          endif
-       endif  
+       endif
 !
        ! get tag_dump attribute
        value = getAttribute(node,"tag_dump")
@@ -1363,17 +1363,17 @@ contains
          if (log_unit >  0) write(log_unit, '(a)')'INFO-XML: Optional attribute detected : tag_dump'
        else
          system%structure%tag_dump= .false.
-       endif   
+       endif
        ! get read_mode attribute
        value = getAttribute(node,"read_mode")
        if ( value == "" ) then
          system%structure%read_mode= "default"
        else
-         value=trim(value) 
+         value=trim(value)
          read(unit=value,fmt=*) system%structure%read_mode
          if (log_unit >  0) write(log_unit, '(a,a)')'INFO-XML: Optional attribute detected : read_mode=', &
 &                           system%structure%read_mode
-       endif   
+       endif
 !
        ! get structure attribute
        call get_system_clock_time_loc(time_wrk)
@@ -1389,7 +1389,7 @@ contains
             do i = 1, system%structure%nelement
               call structure_element_load( system%structure, item(velement_node,i-1) )
             end do
-          endif  
+          endif
        end if
        call get_system_clock_time_loc(time_wrk)
        call measure_clock_time_period_loc(time_wrk, time_wrk_prev, time_period)
@@ -1400,7 +1400,7 @@ contains
        value = getAttribute(node,"cutoff_radius")
        if( value /= "" ) then
           read(unit=value,fmt=*) system%cutoff_radius
-          if (log_unit >  0) write(log_unit, '(a,f10.5)')'INFO-XML:Optional tag detected : cutoff_radius [au] =', & 
+          if (log_unit >  0) write(log_unit, '(a,f10.5)')'INFO-XML:Optional tag detected : cutoff_radius [au] =', &
 &                              system%cutoff_radius
        else
           system%cutoff_radius=huge(0d0) ! default value of the cutoff radius is huge(0d0)
@@ -1414,8 +1414,8 @@ contains
       allocate (config%system%structure%velement(system%structure%nelement), stat=ierr )
       if (ierr /= 0) then
         write(*,*) 'Alloc error. velement'
-        stop 
-      endif   
+        stop
+      endif
       do i = 1, system%structure%nelement
         name = getAttribute(item(velement_node,i-1), "name")
         filename = getAttribute(item(velement_node,i-1), "filename")
@@ -1425,26 +1425,26 @@ contains
           stop
         else
           system%structure%velement(i)%name=name
-        endif   
+        endif
         if (filename == '') then
           write(*,*) 'ERROR(minnsing element filename)'
           stop
         else
           system%structure%velement(i)%filename=filename
-        endif   
+        endif
         if (model == '') then
           write(*,*) 'ERROR(minnsing element model)'
           stop
         else
           system%structure%velement(i)%quantum%type=model
-        endif   
-      enddo   
-    endif  
+        endif
+      enddo
+    endif
 !
     ! get <boundary> node
     node => getFirstElementByTagName(system_node,"boundary")
     if( .not. associated(node) ) then
-       if (elses_xml_version+1.0d-6 > 5.01d0) then 
+       if (elses_xml_version+1.0d-6 > 5.01d0) then
          if (log_unit >  0) write(log_unit, '(a)') 'ERROR in config XML file: boundary tag missing'
          write(*,*) 'ERROR in config XML file: boundary tag missing'
          stop
@@ -1481,24 +1481,24 @@ contains
     node => getFirstElementByTagName(system_node,"heatbath_mass")
     if ( associated(node) ) then
       value = getAttribute(node,"mode")
-      if (log_unit >  0) then 
+      if (log_unit >  0) then
         write(log_unit, '(a,a)') 'INFO-XML:Optional tag detected : heatbath mass mode=',trim(value)
-      endif       
+      endif
       if (trim(value) /= "off") then
         node_wrk => getFirstElementByTagName(node,"mass_per_atom")
         if ( associated(node_wrk) ) then
           unit  = getAttribute(node_wrk,"unit")
-          if( unit /= "" ) unit="a.u." 
+          if( unit /= "" ) unit="a.u."
           endif
           value = getChildValue(node_wrk)
           read(unit=value,fmt=*) system%structure%heatbath%massperatom
           system%structure%heatbath%massperatom = system%structure%heatbath%massperatom * XML_TO_AU(unit)
-          if (log_unit >  0) then 
+          if (log_unit >  0) then
            write(log_unit, '(a,f10.5)') 'INFO-XML:Optional tag detected : heatbath mass per atom [au]=', &
 &             system%structure%heatbath%massperatom
            write(log_unit, '(a)') 'INFO-XML:The tag of heatbath mass per atom in the structure XML file IS IGNORED'
         endif
-      endif  
+      endif
     endif
 
     ! get <target> nodes
@@ -1713,7 +1713,7 @@ contains
             call optimization_load( calc%optimization, optimization_node )
        ! return  ! In optimization mode, there are no more tags in this layer.
     case ("dynamics")
-       calc%mode = "dynamics" 
+       calc%mode = "dynamics"
     case ("conversion", "file conversion", "file_conversion")
        calc%mode = "conversion"
     case ("snapshot", "snapshots", "given_snapshot", "given_snapshots")
@@ -1722,7 +1722,7 @@ contains
        calc%mode = "cell_change_only"
     case ("matrix_generation")
        calc%mode = "matrix_generation"
-! S.Y Sep 21, 2013 two cases "calc%mode = 'matrix_generation'" and "calc%mode = 'write_Hamiltonian'" 
+! S.Y Sep 21, 2013 two cases "calc%mode = 'matrix_generation'" and "calc%mode = 'write_Hamiltonian'"
 !      should be merged into single case. But before merging, compatibility check should be done.
 !      related file : elses-qm-engine.f90
     case ("write_Hamiltonian")
@@ -1810,37 +1810,37 @@ contains
     if ( associated(calc_force_node) ) then
       value = getAttribute(calc_force_node,"mode")
       if ( value == "off" ) then
-        calc%calc_force_mode="off" 
+        calc%calc_force_mode="off"
       end if
-      if (log_unit > 0) write(log_unit,'(a,a)') & 
+      if (log_unit > 0) write(log_unit,'(a,a)') &
         & 'INFO-XML:Optional tag: calc_force : mode=', trim(calc%calc_force_mode)
     end if
 
     ! get <use_integer_elec_num> node
     calc_integer_elec_num_node => getFirstElementByTagName(calc_node,"use_integer_elec_num")
     if ( associated(calc_integer_elec_num_node) ) then
-      calc%use_integer_elec_num =.true. 
-      if (getAttribute(calc_integer_elec_num_node,"mode") == "off") calc%use_integer_elec_num =.false. 
+      calc%use_integer_elec_num =.true.
+      if (getAttribute(calc_integer_elec_num_node,"mode") == "off") calc%use_integer_elec_num =.false.
     else
-      calc%use_integer_elec_num =.false. 
-    endif    
+      calc%use_integer_elec_num =.false.
+    endif
     if (calc%use_integer_elec_num) then
-      if (log_unit > 0) write(log_unit,'(a,a)') & 
+      if (log_unit > 0) write(log_unit,'(a,a)') &
         & 'INFO-XML:Optional tag: calc%use_integer_elec_num'
-    endif   
+    endif
 
     ! get <calc_virial_pressure> node
     calc_virial_pressure_node => getFirstElementByTagName(calc_node,"calc_virial_pressure")
     if ( associated(calc_virial_pressure_node) ) then
-      calc%calc_virial_pressure =.true. 
-      if (getAttribute(calc_virial_pressure_node,"mode") == "off") calc%calc_virial_pressure =.false. 
+      calc%calc_virial_pressure =.true.
+      if (getAttribute(calc_virial_pressure_node,"mode") == "off") calc%calc_virial_pressure =.false.
     else
-      calc%calc_virial_pressure =.false. 
-    endif    
+      calc%calc_virial_pressure =.false.
+    endif
     if (calc%calc_virial_pressure) then
-      if (log_unit > 0) write(log_unit,'(a,a)') & 
+      if (log_unit > 0) write(log_unit,'(a,a)') &
         & 'INFO-XML:Optional tag: calc%calc_virial_pressure'
-    endif   
+    endif
 
     ! get <interaction_range> node
     calc%interaction_range%cutoff_rest_cellmax = .false. ! default value
@@ -1852,11 +1852,11 @@ contains
       if ( associated(work_node1) ) then
         if (getAttribute(work_node1,"mode") == "cell_max") then
           calc%interaction_range%cutoff_rest_cellmax = .true.
-          if (log_unit > 0) write(log_unit,'(a,a)') & 
-            & 'INFO-XML:Optional tag: calc%interaction_range%cutoff_rest = cell_max mode' 
-        endif  
-      endif   
-    endif   
+          if (log_unit > 0) write(log_unit,'(a,a)') &
+            & 'INFO-XML:Optional tag: calc%interaction_range%cutoff_rest = cell_max mode'
+        endif
+      endif
+    endif
 
     ! get <use_group_id> node
     group_id_node => getFirstElementByTagName(calc_node,"use_group_id")
@@ -1866,7 +1866,7 @@ contains
       if (getAttribute(group_id_node,"mode") == "off") calc%use_group_id =.false.
     endif
     if ( calc%use_group_id ) then
-       if (log_unit > 0) write(log_unit,'(a)') & 
+       if (log_unit > 0) write(log_unit,'(a)') &
          & 'INFO-XML:Optional tag: use_group_id'
     endif
 
@@ -1878,7 +1878,7 @@ contains
       if (getAttribute(work_node1,"mode") == "off") calc%constraint_w_group =.false.
     endif
     if ( calc%constraint_w_group ) then
-       if (log_unit > 0) write(log_unit,'(a)') & 
+       if (log_unit > 0) write(log_unit,'(a)') &
          & 'INFO-XML:Optional tag: constraint_w_group'
     endif
 
@@ -1889,10 +1889,93 @@ contains
     if ( associated(work_node1) ) then
       calc%wave_packet%set =.true.
       if (getAttribute(work_node1,"mode") == "on") calc%wave_packet%mode ="on"
-      if (getAttribute(work_node1,"mode") == "on") calc%wave_packet%mode ="on"
+      ! get <delta_t> node (required)
+      work_node2 => getFirstElementByTagName(work_node1,"delta_t")
+      if( associated(work_node2) ) then
+        value = getChildValue(work_node2)
+        read(unit=value,fmt=*) calc%wave_packet%delta_t
+      else
+        call XML_error("<delta_t> not found for wave_packet node")
+      end if
+      ! get <limit_t> node (required)
+      work_node2 => getFirstElementByTagName(work_node1,"limit_t")
+      if( associated(work_node2) ) then
+        value = getChildValue(work_node2)
+        read(unit=value,fmt=*) calc%wave_packet%limit_t
+      else
+        call XML_error("<limit_t> not found for wave_packet node")
+      end if
+      ! get <replace_t> node (required)
+      work_node2 => getFirstElementByTagName(work_node1,"replace_t")
+      if( associated(work_node2) ) then
+        value = getChildValue(work_node2)
+        read(unit=value,fmt=*) calc%wave_packet%replace_t
+      else
+        call XML_error("<replace_t> not found for wave_packet node")
+      end if
+      ! get <charge_factor> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"charge_factor")
+      if( associated(work_node2) ) then
+        value = getChildValue(work_node2)
+        read(unit=value,fmt=*) calc%wave_packet%charge_factor
+      else
+        calc%wave_packet%charge_factor = -1d0  ! dummy value (valid charge_factor must be positive)
+      end if
+      ! get <alpha_delta_index> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"alpha_delta_index")
+      if( associated(work_node2) ) then
+        value = getChildValue(work_node2)
+        read(unit=value,fmt=*) calc%wave_packet%alpha_delta_index
+      else
+        calc%wave_packet%alpha_delta_index = -1  ! dummy value
+      end if
+      ! get <fst_filter> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"fst_filter")
+      if( associated(work_node2) ) then
+        value = getChildValue(work_node2)
+        read(unit=value,fmt=*) calc%wave_packet%fst_filter
+      else
+        calc%wave_packet%fst_filter = -1  ! dummy value
+      end if
+      ! get <end_filter> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"end_filter")
+      if( associated(work_node2) ) then
+        value = getChildValue(work_node2)
+        read(unit=value,fmt=*) calc%wave_packet%end_filter
+      else
+        calc%wave_packet%end_filter = -1  ! dummy value
+      end if
+      ! get <output_filename> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"output_filename")
+      if( associated(work_node2) ) then
+        calc%wave_packet%output_filename = trim(getChildValue(work_node2))
+      else
+        calc%wave_packet%output_filename = ""  ! dummy value
+      end if
+      ! get <h1_type> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"h1_type")
+      if( associated(work_node2) ) then
+        calc%wave_packet%h1_type = trim(getChildValue(work_node2))
+      else
+        calc%wave_packet%h1_type = ""  ! dummy value
+      end if
+      ! get <init_type> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"init_type")
+      if( associated(work_node2) ) then
+        calc%wave_packet%init_type = trim(getChildValue(work_node2))
+      else
+        calc%wave_packet%init_type = ""  ! dummy value
+      end if
+      ! get <filter_mode> node (optional)
+      work_node2 => getFirstElementByTagName(work_node1,"filter_mode")
+      if( associated(work_node2) ) then
+        calc%wave_packet%filter_mode = trim(getChildValue(work_node2))
+      else
+        calc%wave_packet%filter_mode = ""  ! dummy value
+      end if
     endif
     if ( calc%wave_packet%set ) then
-       if (log_unit > 0) write(log_unit,'(a,a)') & 
+       if (log_unit > 0) write(log_unit,'(a,a)') &
          & 'INFO-XML:Optional tag: wave_packet; mode = ',trim(calc%wave_packet%mode)
     endif
 
@@ -1907,7 +1990,7 @@ contains
     type(optimization_type), intent(out) :: optimization
     type(fnode), pointer                 :: optimization_node
     !
-    type(fnode), pointer :: node        ! temporal 
+    type(fnode), pointer :: node        ! temporal
     character(len=256)   :: value, unit
     integer              :: i_verbose, log_unit
     real(8)              :: unit_conv
@@ -1917,7 +2000,7 @@ contains
     i_verbose=config%option%verbose
     log_unit=config%calc%distributed%log_unit
 
-    ! get scheme attribute 
+    ! get scheme attribute
     value = getAttribute(optimization_node,"scheme")
     if( value == "" ) then
        optimization%scheme = "steepest_descent"
@@ -1939,11 +2022,11 @@ contains
       value = getAttribute(node,"mode")
       if ( value /= "" ) then
         read(unit=value,fmt=*) optimization%convergence_mode
-        if (log_unit > 0) write(log_unit,'(a,a)') & 
+        if (log_unit > 0) write(log_unit,'(a,a)') &
           & 'INFO-XML:Optional tag: optimization%convergence_mode=', optimization%convergence_mode
         unit  = getAttribute(node,"unit")
         if( unit == "" ) then
-          unit_conv=1.0d0 
+          unit_conv=1.0d0
         else
           unit_conv=XML_TO_AU(unit)
         endif
@@ -1952,18 +2035,18 @@ contains
         select case(trim(optimization%convergence_mode))
           case ("energy_per_atom")
             optimization%energy_convergence =  value_real*unit_conv
-            if (log_unit > 0) write(log_unit,'(a,f30.20)') & 
+            if (log_unit > 0) write(log_unit,'(a,f30.20)') &
                 & 'INFO-XML:Optional tag: optimization%convergence_energy [au] =', optimization%energy_convergence
           case ("force_per_atom")
             optimization%force_convergence  =  value_real*unit_conv
-            if (log_unit > 0) write(log_unit,'(a,f30.20)') & 
+            if (log_unit > 0) write(log_unit,'(a,f30.20)') &
                 & 'INFO-XML:Optional tag: optimization%convergence_force [au]  =', optimization%force_convergence
           case ("off", "none")
           case default
             write(*,*)'ERROR:optimization%convergence_mode=',trim(optimization%convergence_mode)
             stop
         end select
-      endif   
+      endif
     end if
   end subroutine optimization_load
 
@@ -1972,7 +2055,7 @@ contains
   subroutine genoOption_load( genoOption, genoOption_node )
     implicit none
     type(genoOption_type), intent(out) :: genoOption
-    type(fnode), pointer :: genoOption_node 
+    type(fnode), pointer :: genoOption_node
     !
     type(fnode), pointer :: node
     type(fnode), pointer :: node_wrk
@@ -2044,12 +2127,12 @@ contains
           value = getChildValue(node)
           read(unit=value,fmt=*) genoOption%HML_kappa
        end if
-       if (log_unit > 0) then 
+       if (log_unit > 0) then
          write(log_unit,'("INFO-XML:genoOption_load: genoOption%HML_small_delta=",ES14.7)') &
            & genoOption%HML_small_delta
          write(log_unit,'("INFO-XML:genoOption_load: genoOption%HML_kappa      =",ES14.7)') &
            & genoOption%HML_kappa
-       endif  
+       endif
     end if
 
     node => getFirstElementByTagName(genoOption_node,"CSC_charge_mixing_ratio")
@@ -2062,7 +2145,7 @@ contains
     if( associated(node) ) then
        value = getChildValue(node)
        read(unit=value,fmt=*) genoOption%CSC_mode_for_tuning_mixing_ratio
-       if (log_unit > 0) write(log_unit,'(a,i10)') & 
+       if (log_unit > 0) write(log_unit,'(a,i10)') &
 &               'INFO-XML: Optional tag detected : CSC_mode_for_tuning_mixing_ratio =', &
 &                              genoOption%CSC_mode_for_tuning_mixing_ratio
     end if
@@ -2074,9 +2157,9 @@ contains
       if (getAttribute(node,"mode") == "off") genoOption%set_S_as_I = .false.
       if ( genoOption%set_S_as_I ) then
         if (log_unit > 0) write(log_unit,*)'INFO-XML: optional tag: set_S_as_I =', genoOption%set_S_as_I
-      endif   
+      endif
     endif
-!   
+!
     ! get <van_der_Waals> node
     genoOption%vanDerWaals        =  .false.
     genoOption%vanDerWaals_lambda = - 1.0d0 ! dummy value
@@ -2096,7 +2179,7 @@ contains
           if (trim(value) /= "") then
             if (trim(chara_mode) /= "default") read(unit=value,fmt=*) genoOption%vanDerWaals_lambda
             if (log_unit > 0) write(log_unit,*)'INFO-XML: optional tag: vdW_lambda =', genoOption%vanDerWaals_lambda
-          endif   
+          endif
        endif
     endif
 
@@ -2111,7 +2194,7 @@ contains
     type(fnode), pointer :: node
     character(len=256)   :: value, unit
     integer :: lu
-    
+
     lu=config%calc%distributed%log_unit
 
     ! get <time> node
@@ -2303,7 +2386,7 @@ contains
            'INFO-XML:Optional tag : eigen_mpi%level_highest =', solver%eigen_mpi%level_highest
         endif
       end if
-    endif  
+    endif
 !
     ! get <projection> node
     node => getFirstElementByTagName(solver_node,"projection")
@@ -2312,7 +2395,7 @@ contains
     else
        value = getChildValue(node)
        read(unit=value,fmt=*) solver%projection
-       if (log_unit > 0) write(log_unit,'(a,i10)')'INFO-XML:Optional tag detected : solver projection = ', & 
+       if (log_unit > 0) write(log_unit,'(a,i10)')'INFO-XML:Optional tag detected : solver projection = ', &
 &                                                     solver%projection
     end if
 
@@ -2323,7 +2406,7 @@ contains
     else
        value = getChildValue(node)
        read(unit=value,fmt=*) solver%dimension
-       if (log_unit > 0) write(log_unit,'(a,i10)')'INFO-XML:Optional tag detected : solver dimension = ', & 
+       if (log_unit > 0) write(log_unit,'(a,i10)')'INFO-XML:Optional tag detected : solver dimension = ', &
 &                                                     solver%dimension
     end if
 
@@ -2345,7 +2428,7 @@ contains
       if( associated(node_tmp) ) then
         value = getChildValue(node_tmp)
        read(unit=value,fmt=*) solver%inner_cg_loop%max_iteration
-       if (log_unit > 0) write(log_unit,'(a,i10)') & 
+       if (log_unit > 0) write(log_unit,'(a,i10)') &
 &               'INFO-XML:Optional tag detected : solver inner_cg_loop max_iteration   = ', &
 &                             solver%inner_cg_loop%max_iteration
       endif
@@ -2353,7 +2436,7 @@ contains
       if( associated(node_tmp) ) then
         value = getChildValue(node_tmp)
        read(unit=value,fmt=*) solver%inner_cg_loop%convergence_eps
-       if (log_unit > 0) write(log_unit,'(a,f10.5)') & 
+       if (log_unit > 0) write(log_unit,'(a,f10.5)') &
 &                  'INFO-XML:Optional tag detected : solver inner_cg_loop convergence_eps = ', &
 &                             solver%inner_cg_loop%convergence_eps
       endif
@@ -2366,7 +2449,7 @@ contains
     else
        value = getChildValue(node)
        read(unit=value,fmt=*) solver%mArnoldi_q
-       if (log_unit > 0) write(log_unit,'(a,i10)') & 
+       if (log_unit > 0) write(log_unit,'(a,i10)') &
 &                   'INFO-XML:Optional tag detected : solver mArnoldi_q = ', solver%mArnoldi_q
     end if
 
@@ -2375,8 +2458,8 @@ contains
     if( associated(node) ) then
        value = getChildValue(node)
        read(unit=value,fmt=*) solver%mode_for_suggest_projection
-       if (log_unit > 0) write(log_unit,'(a,a)') & 
-&                   'INFO-XML:Optional tag detected : solver mode_for_suggest_projection = ', & 
+       if (log_unit > 0) write(log_unit,'(a,a)') &
+&                   'INFO-XML:Optional tag detected : solver mode_for_suggest_projection = ', &
 &                                                          trim(solver%mode_for_suggest_projection)
     end if
 
@@ -2385,26 +2468,26 @@ contains
     if (associated(node) ) then
       value = getAttribute(node,"mode")
       if( value /= "on" ) then
-        solver%flexible_cutoff%set = .false. 
-      else   
-        solver%flexible_cutoff%set = .true. 
-        if (log_unit > 0) write(log_unit,'(a,f10.5)') & 
+        solver%flexible_cutoff%set = .false.
+      else
+        solver%flexible_cutoff%set = .true.
+        if (log_unit > 0) write(log_unit,'(a,f10.5)') &
 &                 'INFO-XML:Optional tag detected : solver%flexible_cutoff'
         node_tmp => getFirstElementByTagName(node,"flexible_cutoff_01")
         if( associated(node_tmp) ) then
           value = getChildValue(node_tmp)
           read(unit=value,fmt=*) solver%flexible_cutoff%flexible_cutoff_01
-          if (log_unit > 0) write(log_unit,'(a,f10.5)') & 
+          if (log_unit > 0) write(log_unit,'(a,f10.5)') &
 &                   'INFO-XML:Optional tag detected : solver%flexible_cutoff%flexible_cutoff_01  = ', &
 &                             solver%flexible_cutoff%flexible_cutoff_01
           node_tmp2 => getFirstElementByTagName(node,"flexible_cutoff_02")
           if( associated(node_tmp2) ) then
             value = getChildValue(node_tmp2)
             read(unit=value,fmt=*) solver%flexible_cutoff%flexible_cutoff_02
-            if (log_unit > 0) write(log_unit,'(a,f10.5)') & 
+            if (log_unit > 0) write(log_unit,'(a,f10.5)') &
 &                       'INFO-XML:Optional tag detected : solver%flexible_cutoff%flexible_cutoff_02  = ', &
 &                               solver%flexible_cutoff%flexible_cutoff_02
-          endif   
+          endif
         endif
       endif
     end if
@@ -2466,11 +2549,11 @@ contains
        if ( value == "on" ) then
          distributed%use_mpi_barrier = .true.
          if (log_unit > 0) write(log_unit,'(a)') 'INFO-XML:Optional tag detected : use_mpi_barrier is on'
-       endif  
+       endif
        if ( value == "off" ) then
          distributed%use_mpi_barrier = .false.
          if (log_unit > 0) write(log_unit,'(a)') 'INFO-XML:Optional tag detected : use_mpi_barrier is off'
-       endif  
+       endif
     end if
 !
     ! get <micro_cell_booking> node  ! default values are set in 'distributed_default'
@@ -2481,58 +2564,58 @@ contains
 !
       value = getAttribute(node,"mode")
       if( value /= "" ) then
-        distributed%micro_cell_booking%mode = value 
-        if (log_unit > 0) write(log_unit,'(a,a16)')'INFO-XML:Optional tag:micro_cell_booking%mode=', & 
+        distributed%micro_cell_booking%mode = value
+        if (log_unit > 0) write(log_unit,'(a,a16)')'INFO-XML:Optional tag:micro_cell_booking%mode=', &
 &                                                  distributed%micro_cell_booking%mode
-      endif  
+      endif
 !
       node_wrk1 => getFirstElementByTagName(node, "cell_number_x")
       if (associated(node_wrk1)) then
         value = getChildValue(node_wrk1)
         read(unit=value,fmt=*) distributed%micro_cell_booking%cell_number(1)
-        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional :micro_cell_booking%cell_number_x=', & 
+        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional :micro_cell_booking%cell_number_x=', &
 &                                                  distributed%micro_cell_booking%cell_number(1)
-      endif  
+      endif
 !
       node_wrk1 => getFirstElementByTagName(node, "cell_number_y")
       if (associated(node_wrk1)) then
         value = getChildValue(node_wrk1)
         read(unit=value,fmt=*) distributed%micro_cell_booking%cell_number(2)
-        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%cell_number_y=', & 
+        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%cell_number_y=', &
 &                                                  distributed%micro_cell_booking%cell_number(2)
-      endif  
+      endif
 !
       node_wrk1 => getFirstElementByTagName(node, "cell_number_z")
       if (associated(node_wrk1)) then
         value = getChildValue(node_wrk1)
         read(unit=value,fmt=*) distributed%micro_cell_booking%cell_number(3)
-        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optionaltag:micro_cell_booking%cell_number_z=', & 
+        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optionaltag:micro_cell_booking%cell_number_z=', &
 &                                                  distributed%micro_cell_booking%cell_number(3)
-      endif  
+      endif
 !
       node_wrk1 => getFirstElementByTagName(node, "search_range_x")
       if (associated(node_wrk1)) then
         value = getChildValue(node_wrk1)
         read(unit=value,fmt=*) distributed%micro_cell_booking%search_range(1)
-        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%search_range_x=', & 
+        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%search_range_x=', &
 &                                                  distributed%micro_cell_booking%search_range(1)
-      endif  
+      endif
 !
       node_wrk1 => getFirstElementByTagName(node, "search_range_y")
       if (associated(node_wrk1)) then
         value = getChildValue(node_wrk1)
         read(unit=value,fmt=*) distributed%micro_cell_booking%search_range(2)
-        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%search_range_y=', & 
+        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%search_range_y=', &
 &                                                  distributed%micro_cell_booking%search_range(2)
-      endif  
+      endif
 !
       node_wrk1 => getFirstElementByTagName(node, "search_range_z")
       if (associated(node_wrk1)) then
         value = getChildValue(node_wrk1)
         read(unit=value,fmt=*) distributed%micro_cell_booking%search_range(3)
-        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%search_range_z=', & 
+        if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:micro_cell_booking%search_range_z=', &
 &                                                  distributed%micro_cell_booking%search_range(3)
-      endif  
+      endif
 !
     endif
 !
@@ -2554,23 +2637,23 @@ contains
     log_unit=config%calc%distributed%log_unit
 !
     value = getAttribute(snapshot_node,"initial")
-    if( value /= "" ) then 
-      read(unit=value,fmt=*) snapshot%initial  ! default value is set in snapshot_default 
+    if( value /= "" ) then
+      read(unit=value,fmt=*) snapshot%initial  ! default value is set in snapshot_default
       if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:snapshot%initial =', snapshot%initial
     endif
-!  
+!
     value = getAttribute(snapshot_node,"number")
-    if( value /= "" ) then 
-      read(unit=value,fmt=*) snapshot%number   ! default value is set in snapshot_default 
+    if( value /= "" ) then
+      read(unit=value,fmt=*) snapshot%number   ! default value is set in snapshot_default
       if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:snapshot%final   =', snapshot%number
     endif
-!  
+!
     value = getAttribute(snapshot_node,"interval")
     if( value /= "" ) then
-      read(unit=value,fmt=*) snapshot%interval ! default value is set in snapshot_default 
+      read(unit=value,fmt=*) snapshot%interval ! default value is set in snapshot_default
       if (log_unit > 0) write(log_unit,'(a,i5)')'INFO-XML:Optional tag:snapshot%interval=', snapshot%interval
     endif
-!  
+!
     return
   end subroutine snapshot_load
 !
@@ -2592,7 +2675,7 @@ contains
 !   if (log_unit > 0) write(log_unit,*) 'cell_change_load start'
 !
     value = getAttribute(cell_change_node,"mode")
-    if( value == "off" ) then 
+    if( value == "off" ) then
       cell_change%set = .false.
       return
     else
@@ -2601,14 +2684,14 @@ contains
     endif
 !
     value = getAttribute(cell_change_node,"scheme")
-    if( value /= "" ) then 
-      read(unit=value,fmt=*) cell_change%scheme  ! default value is set in cell_change_default 
+    if( value /= "" ) then
+      read(unit=value,fmt=*) cell_change%scheme  ! default value is set in cell_change_default
       if (log_unit > 0) write(log_unit,*) 'INFO-XML:Optional tag:cell_change%scheme =', cell_change%scheme
     endif
-!  
+!
     value = getAttribute(cell_change_node,"filename")
-    if( value /= "" ) then 
-      read(unit=value,fmt=*) cell_change%filename  ! default value is set in cell_change_default 
+    if( value /= "" ) then
+      read(unit=value,fmt=*) cell_change%filename  ! default value is set in cell_change_default
       if (log_unit > 0) write(log_unit,'(a,a)')'INFO-XML:Optional tag:cell_change%filename =', cell_change%filename
     endif
 !
@@ -2616,10 +2699,10 @@ contains
     if( associated(node) ) then
        value =  getChildValue(node)
        read(unit=value,fmt=*) cell_change%max_num_iter
-      if (log_unit > 0) write(log_unit,'(a,i5)') & 
+      if (log_unit > 0) write(log_unit,'(a,i5)') &
 &               'INFO-XML:Optional tag:cell_change%max_num_iter =', cell_change%max_num_iter
     else
-      if (log_unit > 0) write(log_unit,'(a)') & 
+      if (log_unit > 0) write(log_unit,'(a)') &
 &               'INFO-XML:No tag for cell_change%max_num_iter. '
        cell_change%max_num_iter = -1 ! dummy value
     end if
@@ -2647,7 +2730,7 @@ contains
 !
     log_unit=config%calc%distributed%log_unit
 !
-    warning_level_default = 0.5d0 * XML_TO_AU("angstrom") 
+    warning_level_default = 0.5d0 * XML_TO_AU("angstrom")
     abort_level_default   = 0.1d0 * XML_TO_AU("angstrom")
 !
 !   calc_check%set = .false.
@@ -2660,21 +2743,21 @@ contains
     calc_check%short_atom_pair_distance%warning_level = warning_level_default
     calc_check%short_atom_pair_distance%abort_level   = abort_level_default ! dummmy value
 !
-    if (.not. associated(calc_check_node)) then 
-      if (log_unit > 0) write(log_unit,'(a,2f20.10)')  & 
+    if (.not. associated(calc_check_node)) then
+      if (log_unit > 0) write(log_unit,'(a,2f20.10)')  &
 &           'INFO:Default setting:short_atom_pair_distance:warning_level [a.u.], [A] =', &
 &             calc_check%short_atom_pair_distance%warning_level,  &
 &             calc_check%short_atom_pair_distance%warning_level/XML_TO_AU("angstrom")
-      if (log_unit > 0) write(log_unit,'(a,2f20.10)')  & 
+      if (log_unit > 0) write(log_unit,'(a,2f20.10)')  &
 &           'INFO:Default setting:short_atom_pair_distance:abort_level [a.u.], [A] =', &
 &             calc_check%short_atom_pair_distance%abort_level,  &
 &             calc_check%short_atom_pair_distance%abort_level/XML_TO_AU("angstrom")
 
       return
-    endif   
+    endif
 !
     value = getAttribute(calc_check_node,"mode")
-    if ( value == "off" ) then 
+    if ( value == "off" ) then
       calc_check%set = .false.
       if (log_unit > 0) write(log_unit,'(a)') 'INFO-XML:Optional tag:calc_check : MODE=OFF'
       return
@@ -2686,7 +2769,7 @@ contains
     node_wrk1 => getFirstElementByTagName(calc_check_node, "short_atom_pair_distance")
     if (associated(node_wrk1)) then
       value = getAttribute(node_wrk1,"mode")
-      if ( value == "off" ) then 
+      if ( value == "off" ) then
         calc_check%short_atom_pair_distance%set = .false.
         return
       else
@@ -2701,11 +2784,11 @@ contains
          unit  = getAttribute(node_tmp,"unit")
          if( unit == "" ) unit = "a.u."
          calc_check%short_atom_pair_distance%warning_level = value_real * XML_TO_AU(unit)
-         if (log_unit > 0) write(log_unit,'(a,2f20.10)')  & 
+         if (log_unit > 0) write(log_unit,'(a,2f20.10)')  &
 &           'INFO-XML:Optional tag:calc_check:short_atom_pair_distance:warning_level [a.u.], [A] =', &
 &             calc_check%short_atom_pair_distance%warning_level,  &
 &             calc_check%short_atom_pair_distance%warning_level/XML_TO_AU("angstrom")
-      endif   
+      endif
       node_tmp  => getFirstElementByTagName(node_wrk1,"abort_level")
       if( associated(node_tmp) ) then
          value =  getChildValue(node_tmp)
@@ -2713,13 +2796,13 @@ contains
          unit  = getAttribute(node_tmp,"unit")
          if( unit == "" ) unit = "a.u."
          calc_check%short_atom_pair_distance%abort_level = value_real * XML_TO_AU(unit)
-         if (log_unit > 0) write(log_unit,'(a,2f20.10)')  & 
+         if (log_unit > 0) write(log_unit,'(a,2f20.10)')  &
 &           'INFO-XML:Optional tag:calc_check:short_atom_pair_distance:abort_level [a.u.],[A]    =', &
 &             calc_check%short_atom_pair_distance%abort_level,  &
 &             calc_check%short_atom_pair_distance%abort_level/XML_TO_AU("angstrom")
-      endif   
+      endif
 !
-    endif   
+    endif
 !
 !   stop 'stop manually'
 !
@@ -2747,22 +2830,22 @@ contains
     output%main%set      = .false.
     output%main%filename = "Output.txt"
     if ( associated(node) ) then
-      value       = getAttribute(node,"filename") 
-      value_mode  = getAttribute(node,"mode") 
+      value       = getAttribute(node,"filename")
+      value_mode  = getAttribute(node,"mode")
       if ( trim(value_mode) /= "default_name" ) then
         if ( trim(value) /= "" ) then
           output%main%filename = trim(value)
           output%main%set      = .true.
-          if (log_unit>0) write(log_unit,'(a,a)') & 
+          if (log_unit>0) write(log_unit,'(a,a)') &
             &     'INFO-XML:Optional tag detected : output%main; filename=', &
             &     trim(output%main%filename)
-        endif   
+        endif
       endif
     end if
 
     ! get <restart> node
     node => getFirstElementByTagName(output_node,"restart")
-    output%restart%first_write = .true. 
+    output%restart%first_write = .true.
     output%restart%append_mode = "off"
     if( .not. associated(node) ) then
        output%restart%set = .true.
@@ -2850,7 +2933,7 @@ contains
     else
       call file_load_matrices( "hamiltonian", node )
     endif
-   
+
     ! get <matrix_overlap> node
     node => getFirstElementByTagName(output_node,"matrix_overlap")
     if ( .not. associated(node) ) then
@@ -2890,16 +2973,16 @@ contains
     ! get filename attribute
     value=getAttribute(file_node,"filename")
     file%filename=adjustL(value)
-    
+
     ! get history attribute
     value=getAttribute(file_node,"history")
     file%history = adjustL(value)
     if( file%history == "" ) file%history = "last"
-    
+
     ! get format attribute
     value=getAttribute(file_node,"format")
     file%format = adjustL(value)
-    
+
     ! get interval attribute
     value = getAttribute(file_node,"interval")
     if( value /= "" ) then
@@ -2948,7 +3031,7 @@ contains
     else
       file%atom_id_is_added = .false.
     endif
-   
+
     file%set = .true.
 
     return
@@ -2974,16 +3057,16 @@ contains
 !   write(*,*)'@@ file_load_matrices'
 !
     select case (mode)
-      case("hamiltonian") 
+      case("hamiltonian")
         mode_for_H = .true.
-      case("overlap") 
+      case("overlap")
         mode_for_H = .false.
       case default
-        write(*,*) 'ERROR:file_load_matrices' 
+        write(*,*) 'ERROR:file_load_matrices'
         stop
-    end select    
+    end select
 !
-    if (mode_for_H) then  
+    if (mode_for_H) then
       config%output%matrix_hamiltonian%set      = .false.
       config%output%matrix_hamiltonian%filename = ""
       config%output%matrix_hamiltonian%mode     = "last"
@@ -2997,25 +3080,25 @@ contains
       config%output%matrix_overlap%format       = "MatrixMarket_sym"
       config%output%matrix_overlap%unit         = "a.u."
       config%output%matrix_overlap%interval     = 0
-    endif   
+    endif
 !
     if ( .not. present(file_node) ) then
       if (log_unit>0) write(log_unit,*)'.... skipped : file_load_matrices '
-      return 
-    endif  
+      return
+    endif
 !
-    if (mode_for_H) then  
+    if (mode_for_H) then
       config%output%matrix_hamiltonian%set = .true.
     else
       config%output%matrix_overlap%set     = .true.
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     value=getAttribute(file_node,"filename")
     value=trim(adjustL(value))
     if (value /= "") then
-      if (mode_for_H) then  
+      if (mode_for_H) then
         config%output%matrix_hamiltonian%filename = trim(value)
         if (log_unit>0) write(log_unit,'(a,a)') &
            &   'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%filename=',trim(value)
@@ -3023,29 +3106,29 @@ contains
         config%output%matrix_overlap%filename     = trim(value)
         if (log_unit>0) write(log_unit,'(a,a)') &
            &   'INFO-XML:An optional tag is found:config%output%matrix_overlap%filename=',trim(value)
-      endif   
+      endif
     else
       write(*,*)'Stop:file_load_matrices:no filename'
       stop
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     value=getAttribute(file_node,"mode")
     value=trim(adjustL(value))
     select case(value)
-      case ("off") 
-        return 
-      case ("", "on","last","default") 
+      case ("off")
+        return
+      case ("", "on","last","default")
         value="last"
-      case ("periodic")  
+      case ("periodic")
         value="periodic"
       case default
         write(*,*)'Stop:file_load_matrices:invalid mode'
         stop
-    end select   
+    end select
 !
-    if (mode_for_H) then  
+    if (mode_for_H) then
       config%output%matrix_hamiltonian%mode = trim(value)
       if (log_unit>0) write(log_unit,'(a,a)') &
          & 'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%mode=',trim(value)
@@ -3053,23 +3136,23 @@ contains
       config%output%matrix_overlap%mode     = trim(value)
       if (log_unit>0) write(log_unit,'(a,a)') &
          & 'INFO-XML:An optional tag is found:config%output%overlap%mode=', trim(value)
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     value=getAttribute(file_node,"format")
     value=trim(adjustL(value))
     select case(value)
-      case ("default", "MatrixMarket", "MatrixMarket_symmetric", "MatrixMarket_sym") 
+      case ("default", "MatrixMarket", "MatrixMarket_symmetric", "MatrixMarket_sym")
         value="MatrixMarket_sym"
-      case ("MatrixMarket_general", "MatrixMarket_gen") 
+      case ("MatrixMarket_general", "MatrixMarket_gen")
         value="MatrixMarket_gen"
       case default
         write(*,*)'Stop:file_load_matrices:invalid format'
         stop
-    end select   
+    end select
 !
-    if (mode_for_H) then  
+    if (mode_for_H) then
       config%output%matrix_hamiltonian%format = trim(value)
       if (log_unit>0) write(log_unit,'(a,a)') &
         &  'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%format=', trim(value)
@@ -3077,7 +3160,7 @@ contains
       config%output%matrix_overlap%format     = trim(value)
       if (log_unit>0) write(log_unit,'(a,a)') &
         &  'INFO-XML:An optional tag is found:config%output%matrix_overlap%format=', trim(value)
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3085,7 +3168,7 @@ contains
     value=trim(adjustL(value))
     if (value /= "") then
       read(unit=value,fmt=*) value_int
-      if (mode_for_H) then  
+      if (mode_for_H) then
         config%output%matrix_hamiltonian%interval = value_int
         if (log_unit>0) write(log_unit,'(a,i10)') &
           &  'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%interval =', value_int
@@ -3093,7 +3176,7 @@ contains
         config%output%matrix_overlap%interval     = value_int
         if (log_unit>0) write(log_unit,'(a,i10)') &
           &  'INFO-XML:An optional tag is found:config%output%matrix_overlap%interval     =', value_int
-      endif   
+      endif
     endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3102,14 +3185,14 @@ contains
     value=trim(adjustL(value))
     if (value /= "") then
       select case(value)
-        case ("au", "a.u.") 
+        case ("au", "a.u.")
           value="a.u."
         case default
           write(*,*)'Stop:file_load_matrices:invalid unit:', trim(adjustL(value))
           stop
-      end select   
+      end select
 !
-      if (mode_for_H) then  
+      if (mode_for_H) then
         config%output%matrix_hamiltonian%unit = trim(adjustL(value))
         if (log_unit>0) write(log_unit,'(a,a10)') &
           &  'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%unit =', trim(adjustL(value))
@@ -3117,7 +3200,7 @@ contains
         config%output%matrix_overlap%unit     = trim(adjustL(value))
         if (log_unit>0) write(log_unit,'(a,a10)') &
           &  'INFO-XML:An optional tag is found:config%output%matrix_overlap%unit     =', trim(adjustL(value))
-      endif   
+      endif
 
     endif
 !
@@ -3151,8 +3234,8 @@ contains
 !
     if ( .not. present(file_node) ) then
       if (log_unit > 0) write(log_unit,*)'.... skipped : file_load_eigen_level '
-      return 
-    endif  
+      return
+    endif
 !
     config%output%eigen_level%set = .true.
 !
@@ -3162,31 +3245,31 @@ contains
     value=trim(adjustL(value))
     if (value /= "") then
       config%output%eigen_level%filename = trim(value)
-      if (log_unit > 0) write(log_unit,'(a,a)') & 
+      if (log_unit > 0) write(log_unit,'(a,a)') &
         &    'INFO-XML:An optional tag is found:config%output%eigen_level%filename=',trim(value)
     else
       write(*,*)'Stop:file_load_eigen_level:no filename'
       stop
-    endif   
+    endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     value=getAttribute(file_node,"mode")
     value=trim(adjustL(value))
     select case(value)
-      case ("off") 
-        return 
-      case ("", "on","last","default") 
+      case ("off")
+        return
+      case ("", "on","last","default")
         value="last"
-      case ("periodic")  
+      case ("periodic")
         value="periodic"
       case default
         write(*,*)'Stop:file_load_eigen_level:invalid mode'
         stop
-    end select   
+    end select
 !
     config%output%eigen_level%mode = trim(value)
-    if (log_unit > 0) write(log_unit,'(a,a)') & 
+    if (log_unit > 0) write(log_unit,'(a,a)') &
       &       'INFO-XML:An optional tag is found:config%output%eigen_level%mode=',trim(value)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3195,14 +3278,14 @@ contains
     value=trim(adjustL(value))
     select case(value)
       case ("a.u.")
-      case ("eV") 
+      case ("eV")
       case default
         write(*,*)'Stop:file_load_eigen_level:invalid unit'
         stop
-    end select   
+    end select
 !
     config%output%eigen_level%unit = trim(value)
-    if (log_unit > 0) write(log_unit,'(a,a)') & 
+    if (log_unit > 0) write(log_unit,'(a,a)') &
       &      'INFO-XML:An optional tag is found:config%output%eigen_level%unit=', trim(value)
 !
 !
@@ -3211,16 +3294,16 @@ contains
     value=getAttribute(file_node,"format")
     value=trim(adjustL(value))
     select case(value)
-      case ("default", "full") 
+      case ("default", "full")
         value="full"
-      case ("level_only") 
+      case ("level_only")
       case default
         write(*,*)'Stop:file_eigen_level:invalid format'
         stop
-    end select   
+    end select
 !
     config%output%eigen_level%format = trim(value)
-    if (log_unit > 0) write(log_unit,'(a,a)') & 
+    if (log_unit > 0) write(log_unit,'(a,a)') &
       &      'INFO-XML:An optional tag is found:config%output%eigen_level%format=', trim(value)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3228,7 +3311,7 @@ contains
     value = getAttribute(file_node,"interval")
     if( value /= "" ) then
        read(unit=value,fmt=*) config%output%eigen_level%interval
-       if (log_unit > 0) write(log_unit,'(a,i10)') & 
+       if (log_unit > 0) write(log_unit,'(a,i10)') &
       &      'INFO-XML:An optional tag is found:config%output%eigen_level%interval=', config%output%eigen_level%interval
     end if
 !
@@ -3240,7 +3323,7 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine measure_clock_time_period_loc(time_present, time_previous, time_period)
-!      ----> Measure the clock-time period 
+!      ----> Measure the clock-time period
 !             with the correction for the possible reset of the system clock
 !
      implicit none
@@ -3253,7 +3336,7 @@ contains
      if (time_period < 0) then
        call system_clock(count, rate, max)
        time_period = time_period + dble(max)/dble(rate)
-     endif   
+     endif
 !
    end subroutine measure_clock_time_period_loc
 !
