@@ -22,7 +22,7 @@ module M_wavepacket
     complex(kind(0d0)), allocatable :: full_vecs_local(:, :), filtered_vecs_local(:, :)
     real(8), allocatable :: atom_coordinates(:, :)
     character, allocatable :: atom_elements(:)
-    type(fson_value), pointer :: output, states, filenames_split
+    type(fson_value), pointer :: output, states, split_files_metadata
     ! Distributed matrices.
     type(wp_local_matrix_t), allocatable :: Y_local(:)  ! Not ScaLAPACK-like manner.
     complex(kind(0d0)), allocatable :: H(:, :), S(:, :), Y(:, :), S_inv_sqrt(:, :)  ! m x m
@@ -160,9 +160,9 @@ contains
       setting%h1_type = trim(config%calc%wave_packet%h1_type)
     end if
     if (config%calc%wave_packet%charge_factor < 0d0) then  ! Set default value.
-      setting%charge_factor = 0d0
+      setting%charge_factor_common = 0d0
     else
-      setting%charge_factor = config%calc%wave_packet%charge_factor
+      setting%charge_factor_common = config%calc%wave_packet%charge_factor
     end if
 
     if (trim(config%calc%wave_packet%init_type) == '') then  ! Set default value.
@@ -252,7 +252,7 @@ contains
     call prepare_json(state%dim, state%num_atoms, setting, state%proc, &
          state%absolute_filter_error, state%relative_filter_error, &
          state%filtered_vecs_desc, state%filtered_vecs, state%filtered_vecs_local, &
-         state%output, state%states, state%filenames_split)
+         state%output, state%states, state%split_files_metadata)
     call add_timer_event('main', 'prepare_json', state%wtime)
 
     if (check_master()) then
@@ -319,6 +319,14 @@ contains
          state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy, &
          state%absolute_filter_error, state%relative_filter_error)
     state%input_step = state%input_step + 1
+
+    ! re-save state after matrix replacement.
+    call save_state(state%dim, state%num_atoms, setting, state%i, state%t, &
+         state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy, &
+         state%charge_coordinate_mean, state%charge_coordinate_msd, &
+         state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
+         state%full_vecs_local, state%filtered_vecs_local, &
+         state%split_files_metadata, state%total_state_count, state%input_step, .true., state%states)
   end subroutine wavepacket_replace_matrix
 
 
@@ -345,7 +353,7 @@ contains
              state%charge_coordinate_mean, state%charge_coordinate_msd, &
              state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
              state%full_vecs_local, state%filtered_vecs_local, &
-             state%filenames_split, state%total_state_count, state%input_step, state%states)
+             state%split_files_metadata, state%total_state_count, state%input_step, .false., state%states)
         call add_timer_event('main', 'save_state', state%wtime)
       end if
 
@@ -366,12 +374,12 @@ contains
            state%Y_filtered_desc, state%Y_filtered, state%Y_local, &
            state%H_desc, state%H_multistep1, &
            state%H1_desc, state%H1, state%H1_base, state%H1_multistep, state%H1_multistep1, state%H1_multistep2,  &
-           state%A_desc, state%A, &
+           state%S_desc, state%S, state%A_desc, state%A, &
            state%filtered_vecs_desc, state%filtered_vecs, &
            state%full_vecs_desc, state%full_vecs)
 
       call step_forward_post_process(state%dim, setting, state%t, &
-           state%num_atoms, state%atom_indices, state%atom_coordinates, &
+           state%num_atoms, state%atom_indices, state%atom_coordinates, state%atom_elements, &
            state%H_desc, state%H, state%S_desc, state%S, state%Y_filtered_desc, state%Y_filtered, &
            state%H1_desc, state%H1, &
            state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
