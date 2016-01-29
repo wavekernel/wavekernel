@@ -34,6 +34,7 @@ contains
     use mpi
     use elses_mod_md_dat, only : final_iteration
     use M_config, only : config
+    use M_ext_matrix_data
     use M_lib_mpi_wrapper
     use wp_setting_m
     use wp_main_aux_m
@@ -66,6 +67,17 @@ contains
     logical :: is_wavepacket_end = .false.  ! Avoid calling finalization twice.
     type(wp_setting_t), save :: setting
     type(wp_state_t), save :: state
+    integer :: i
+
+    do i = 1, 2
+      if (allocated(matrix_data(i)%element_index)) then
+        deallocate(matrix_data(i)%element_index)
+      end if
+      if (allocated(matrix_data(i)%element_data)) then
+        deallocate(matrix_data(i)%element_data)
+      end if
+    end do
+    call set_matrix_data
 
     if (config%calc%wave_packet%mode == 'on' .and. .not. is_wavepacket_end) then
       if (is_first_call_of_wavepacket) then
@@ -73,8 +85,8 @@ contains
         is_first_call_of_wavepacket = .false.  ! wavepacket_init is called only once.
       else
         call wavepacket_replace_matrix(setting, state)  ! Update result of MD step.
-        call wavepacket_main(setting, state)  ! Compute wavepacket dynamics while atoms are fixed.
       end if
+      call wavepacket_main(setting, state)  ! Compute wavepacket dynamics while atoms are fixed.
       if (final_iteration .or. setting%delta_t * (state%i + 1) >= setting%limit_t) then
         call output_fson_and_destroy(setting, state%output, state%split_files_metadata, state%states, state%wtime_total)
         is_wavepacket_end = .true.  ! output_fson_and_destroy is called only once.

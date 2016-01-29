@@ -127,7 +127,6 @@ contains
 
     call init_timers(state%wtime_total, state%wtime)
 
-    call set_matrix_data
     state%dim = matrix_data(1)%matrix_size
 
     ! Required settings.
@@ -159,10 +158,11 @@ contains
     else
       setting%h1_type = trim(config%calc%wave_packet%h1_type)
     end if
-    if (config%calc%wave_packet%charge_factor < 0d0) then  ! Set default value.
+
+    if (config%calc%wave_packet%charge_factor_common < 0d0) then  ! Set default value.
       setting%charge_factor_common = 0d0
     else
-      setting%charge_factor_common = config%calc%wave_packet%charge_factor
+      setting%charge_factor_common = config%calc%wave_packet%charge_factor_common
     end if
 
     if (trim(config%calc%wave_packet%init_type) == '') then  ! Set default value.
@@ -270,7 +270,7 @@ contains
       state%t = 0d0
       setting%restart_t = 0d0  ! For simulation time report.
       state%total_state_count = 0
-      state%input_step = 0  ! Valid only in multiple step input mode.
+      state%input_step = 1  ! Valid only in multiple step input mode.
     end if
     state%print_count = 1
   end subroutine wavepacket_init
@@ -359,13 +359,21 @@ contains
 
       ! Exit loop before vain computation.
       if (setting%delta_t * (state%i + 1) >= setting%limit_t) then
+        write (0, '(A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+             '] wavepacket_main: next step simulation time ', setting%delta_t * (state%i + 1), &
+             ' a.u., finish wavepacket calculation'
         exit
       end if
 
       ! Exit loop if matrix replacement occurs in the next step.
       if (setting%is_multistep_input_mode .and. &
-           setting%multistep_input_read_interval * state%input_step - setting%delta_t <= state%t  .and. &
-           state%t < setting%multistep_input_read_interval * state%input_step) then
+           setting%multistep_input_read_interval * state%input_step <= state%t  .and. &
+           state%t - setting%delta_t < setting%multistep_input_read_interval * state%input_step) then
+         write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+              '] wavepacket_main: current step simulation time ', setting%delta_t * state%i, &
+              ', next matrix replacement occurs at ', &
+              setting%multistep_input_read_interval * state%input_step, &
+              ', pause wavepacket calculation'
         exit
       end if
 
