@@ -11,11 +11,11 @@ module solver_lapack
 contains
 
   subroutine eigen_solver_lapack(mat, eigenpairs)
-   use matrix_io, only : sparse_mat
+   use matrix_io, only : eigenkernel_sparse_matrix
    use distribute_matrix, only : convert_sparse_matrix_to_dense
    use eigenpairs_types, only : eigenpairs_types_union
 
-   type(sparse_mat), target, intent(in) :: mat
+   type(eigenkernel_sparse_matrix), target, intent(in) :: mat
    type(eigenpairs_types_union), intent(out) :: eigenpairs
 
    integer :: n, lda, lwork, info

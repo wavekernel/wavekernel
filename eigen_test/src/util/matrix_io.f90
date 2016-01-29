@@ -8,21 +8,21 @@ module matrix_io
   use processes, only : check_master, terminate
   implicit none
 
-  type sparse_mat
+  type eigenkernel_sparse_matrix
     integer :: size, num_non_zeros
     double precision, allocatable :: value(:)
     integer, allocatable :: suffix(:, :)
-  end type sparse_mat
+  end type eigenkernel_sparse_matrix
 
   private
-  public :: read_matrix_file, print_matrix, sparse_mat, print_eigenvectors
+  public :: read_matrix_file, print_matrix, eigenkernel_sparse_matrix, print_eigenvectors
 
 contains
 
   subroutine read_matrix_file(filename, info, matrix, ierr)
     character(*), intent(in) :: filename
     type(matrix_info), intent(in) :: info
-    type(sparse_mat), intent(out) :: matrix
+    type(eigenkernel_sparse_matrix), intent(out) :: matrix
     integer, intent(out) :: ierr
 
     double precision :: time_start, time_start_part, time_end

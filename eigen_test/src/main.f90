@@ -9,14 +9,14 @@ program eigen_test
   use solver_main, only : eigen_solver
   use command_argument, only : argument, required_memory, &
        read_command_argument, validate_argument, print_command_argument, fson_setting_add
-  use matrix_io, only : sparse_mat, read_matrix_file, print_eigenvectors
+  use matrix_io, only : eigenkernel_sparse_matrix, read_matrix_file, print_eigenvectors
   use processes, only : get_num_procs, check_master
   use eigenpairs_types, only : eigenpairs_types_union
   use verifier, only : eval_residual_norm, eval_orthogonality
   implicit none
 
   type(argument) :: arg
-  type(sparse_mat) :: matrix_A, matrix_B
+  type(eigenkernel_sparse_matrix) :: matrix_A, matrix_B
   type(eigenpairs_types_union) :: eigenpairs
   double precision :: A_norm, rn_ave, rn_max, orthogonality
   double precision, allocatable :: ipratios(:)

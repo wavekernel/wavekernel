@@ -2,7 +2,7 @@ module solver_main
   use mpi
   use descriptor_parameters
   use command_argument, only : argument
-  use matrix_io, only : sparse_mat
+  use matrix_io, only : eigenkernel_sparse_matrix
   use distribute_matrix, only : setup_distributed_matrix, &
        gather_matrix, distribute_global_sparse_matrix
   use eigenpairs_types, only: eigenpairs_types_union, eigenpairs_blacs
@@ -30,8 +30,8 @@ contains
     use solver_elpa_eigenexa
 
     type(argument) :: arg
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
     type(process), intent(out) :: proc
 

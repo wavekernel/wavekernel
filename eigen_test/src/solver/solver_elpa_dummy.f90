@@ -2,7 +2,7 @@ module solver_elpa
   use distribute_matrix, only : process
   use descriptor_parameters
   use eigenpairs_types, only : eigenpairs_types_union
-  use matrix_io, only : sparse_mat
+  use matrix_io, only : eigenkernel_sparse_matrix
   use processes, only : check_master, terminate
 
   implicit none
@@ -14,8 +14,8 @@ contains
   subroutine solve_with_general_elpa_scalapack(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     call terminate('solver_elpa: ELPA is not supported in this build', 1)
@@ -25,8 +25,8 @@ contains
   subroutine solve_with_general_elpa1(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     call terminate('solver_elpa: ELPA is not supported in this build', 1)
@@ -36,8 +36,8 @@ contains
   subroutine solve_with_general_elpa2(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     call terminate('solver_elpa: ELPA is not supported in this build', 1)

@@ -4,7 +4,7 @@ module distribute_matrix
   use descriptor_parameters
   use event_logger_m, only : add_event
   use global_variables, only : g_block_size
-  use matrix_io, only : sparse_mat
+  use matrix_io, only : eigenkernel_sparse_matrix
   use processes, only : check_master, process, layout_procs, terminate
   implicit none
 
@@ -20,7 +20,7 @@ contains
     real(8), intent(in) :: V(:, :)
     integer, intent(in) :: V_desc(desc_size)
     real(8), intent(out) :: ipratios(V_desc(cols_))
-    type(sparse_mat), intent(in), optional :: S_sparse
+    type(eigenkernel_sparse_matrix), intent(in), optional :: S_sparse
 
     integer :: i, j, n_procs_row, n_procs_col, my_proc_row, my_proc_col
     real(8) :: elem, sum_power4(V_desc(cols_)), sum_power2(V_desc(cols_))
@@ -148,9 +148,9 @@ contains
 
 
   subroutine convert_sparse_matrix_to_dense(mat_in, mat)
-    use matrix_io, only : sparse_mat
+    use matrix_io, only : eigenkernel_sparse_matrix
 
-    type(sparse_mat), intent(in) :: mat_in
+    type(eigenkernel_sparse_matrix), intent(in) :: mat_in
     double precision, intent(out), allocatable :: mat(:,:)
 
     integer :: k, i, j, n, ierr
@@ -307,7 +307,7 @@ contains
 
 
   subroutine distribute_global_sparse_matrix(mat_in, desc, mat)
-    type(sparse_mat), intent(in) :: mat_in
+    type(eigenkernel_sparse_matrix), intent(in) :: mat_in
     integer, intent(in) :: desc(desc_size)
     double precision, intent(out) :: mat(:,:)
 
@@ -389,7 +389,7 @@ contains
   subroutine bcast_sparse_matrix(root, mat_info, mat)
     integer, intent(in) :: root
     type(matrix_info), intent(inout) :: mat_info
-    type(sparse_mat), intent(inout) :: mat
+    type(eigenkernel_sparse_matrix), intent(inout) :: mat
 
     integer :: my_rank, ierr
     double precision :: time_start, time_start_part, time_end

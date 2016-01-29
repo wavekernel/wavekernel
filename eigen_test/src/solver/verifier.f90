@@ -8,7 +8,7 @@ module verifier
        eigenpairs_blacs
   use event_logger_m, only : add_event
   use global_variables, only : g_block_size
-  use matrix_io, only : sparse_mat
+  use matrix_io, only : eigenkernel_sparse_matrix
   use processes, only : process, terminate
   implicit none
 
@@ -20,8 +20,8 @@ contains
   subroutine eval_residual_norm_local(arg, matrix_A, eigenpairs, &
        A_norm, res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(in) :: eigenpairs
 
     double precision, intent(out) :: A_norm, res_norm_ave, res_norm_max
@@ -75,9 +75,9 @@ contains
   subroutine eval_residual_norm_blacs(arg, matrix_A, eigenpairs, &
        A_norm, res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
-    type(sparse_mat), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
     type(eigenpairs_blacs), intent(inout) :: eigenpairs
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     ! residual norm average, max
     double precision, intent(out) :: A_norm, res_norm_ave, res_norm_max
 
@@ -207,8 +207,8 @@ contains
   subroutine eval_residual_norm(arg, matrix_A, eigenpairs, &
        A_norm, res_norm_ave, res_norm_max, matrix_B)
     type(argument), intent(in) :: arg
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     type(eigenpairs_types_union), intent(inout) :: eigenpairs
     ! residual norm average, max
     double precision, intent(out) :: A_norm, res_norm_ave, res_norm_max
@@ -233,7 +233,7 @@ contains
   subroutine eval_orthogonality_blacs(index1, index2, eigenpairs, orthogonality, matrix_B)
     integer, intent(in) :: index1, index2
     type(eigenpairs_blacs), intent(in) :: eigenpairs
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     double precision, intent(out) :: orthogonality
 
     type(process) :: proc
@@ -333,7 +333,7 @@ contains
   subroutine eval_orthogonality(arg, eigenpairs, orthogonality, matrix_B)
     type(argument), intent(in) :: arg
     type(eigenpairs_types_union), intent(in) :: eigenpairs
-    type(sparse_mat), intent(in), optional :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in), optional :: matrix_B
     double precision, intent(out) :: orthogonality
 
     if (eigenpairs%type_number == 2) then

@@ -7,7 +7,7 @@ module solver_eigenexa
   use event_logger_m, only : add_event
   use generalized_to_standard, only : reduce_generalized, &
        reduce_generalized_new, recovery_generalized
-  use matrix_io, only : sparse_mat
+  use matrix_io, only : eigenkernel_sparse_matrix
   use processes, only : check_master, terminate, process
 
   implicit none
@@ -208,8 +208,8 @@ contains
   subroutine solve_with_general_scalapack_eigenexa(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in) :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: desc_A(desc_size), desc_B(desc_size), desc_A_re(desc_size)
@@ -285,8 +285,8 @@ contains
   subroutine solve_with_general_scalapack_eigenk(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in) :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: desc_A(desc_size), desc_B(desc_size), desc_A_re(desc_size), ierr
@@ -361,8 +361,8 @@ contains
   subroutine solve_with_general_scalapacknew_eigenk(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in) :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     integer :: desc_A(desc_size), desc_B(desc_size), desc_A_re(desc_size), ierr

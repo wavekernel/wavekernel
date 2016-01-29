@@ -1,7 +1,7 @@
 module solver_eigenexa
   use distribute_matrix, only : desc_size
   use processes, only : process, terminate
-  use matrix_io, only : sparse_mat
+  use matrix_io, only : eigenkernel_sparse_matrix
   use eigenpairs_types, only : eigenpairs_types_union
 
   implicit none
@@ -46,8 +46,8 @@ contains
   subroutine solve_with_general_scalapack_eigenexa(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in) :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     call terminate('solve_with_general_scalapack_eigenexa: EigenExa is not supported in this build', 1)
@@ -57,8 +57,8 @@ contains
   subroutine solve_with_general_scalapack_eigenk(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in) :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     call terminate('solve_with_general_scalapack_eigenk: EigenExa is not supported in this build', 1)
@@ -68,8 +68,8 @@ contains
   subroutine solve_with_general_scalapacknew_eigenk(n, proc, matrix_A, eigenpairs, matrix_B)
     integer, intent(in) :: n
     type(process), intent(in) :: proc
-    type(sparse_mat), intent(in) :: matrix_A
-    type(sparse_mat), intent(in) :: matrix_B
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_A
+    type(eigenkernel_sparse_matrix), intent(in) :: matrix_B
     type(eigenpairs_types_union), intent(out) :: eigenpairs
 
     call terminate('solve_with_general_scalapacknew_eigenk: EigenExa is not supported in this build', 1)
