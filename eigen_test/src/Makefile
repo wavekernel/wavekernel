@@ -20,7 +20,7 @@ OBJS_MAIN = main.o
 OBJS_SOLVER = solver/solver_main.o solver/solver_lapack.o solver/solver_scalapack_all.o solver/solver_scalapack_select.o solver/verifier.o solver/generalized_to_standard.o
 
 OBJS_EIGENEXA = solver/solver_eigenexa.o
-ifeq ($(Use_EigenExa), 1)
+ifeq ($(WITH_EIGENEXA), 1)
 	SRCS_EIGENEXA = solver/solver_eigenexa.f90
 	FCFLAGS_EIGENEXA = $(FCFLAGS_INTERNAL) $(CPPFLAG) $(EIGENEXA_WITH_TIMER_FLAG)
 else
@@ -29,7 +29,7 @@ else
 endif
 
 OBJS_ELPA = solver/solver_elpa.o
-ifeq ($(Use_ELPA), 1)
+ifeq ($(WITH_ELPA), 1)
 	SRCS_ELPA = solver/solver_elpa.f90
 	FCFLAGS_ELPA = $(FCFLAGS_INTERNAL)
 else
@@ -38,8 +38,8 @@ else
 endif
 
 OBJS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa.o
-ifeq ($(Use_ELPA), 1)
-	ifeq ($(Use_EigenExa), 1)
+ifeq ($(WITH_ELPA), 1)
+	ifeq ($(WITH_EIGENEXA), 1)
 		SRCS_ELPA_EIGENEXA = solver/solver_elpa_eigenexa.f90
 		FCFLAGS_ELPA_EIGENEXA = $(FCFLAGS_INTERNAL)
 	else
