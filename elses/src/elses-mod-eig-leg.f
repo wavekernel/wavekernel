@@ -63,7 +63,7 @@ c
 c
       dsum=0.0d0
 c
-      allocate (atmp(neig0,neig0),stat=ierr)
+c      allocate (atmp(neig0,neig0),stat=ierr)  ! Change_for_sparse_matrix_passing
       if( ierr .ne. 0) then
         write(6,*)'allocation error!(MAT_ALLOC):ierr=',ierr
         stop
@@ -72,7 +72,7 @@ c
       ddd1=dble(nddd1)/1.0d9
       dsum=dsum+ddd1
 c
-      allocate (atmp2(neig0,neig0),stat=ierr)
+c      allocate (atmp2(neig0,neig0),stat=ierr)  ! Change_for_sparse_matrix_passing
       if( ierr .ne. 0) then
         write(6,*)'allocation error!(MAT_ALLOC):ierr=',ierr
         stop

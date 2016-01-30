@@ -70,7 +70,7 @@ module M_qm_solver_eig_geno
 !  Generalized eigen value problem 
 !     with matrix size of n = n_tot_base
 !
-     call copy_to_full_matrices
+!     call copy_to_full_matrices  ! Change_for_sparse_matrix_passing
 !      --> Copy the Hamiltonian and overlap matrices
 !              into full-matrix arraies (atmp, atmp2)
 !        INPUT : dhij, dsij 
@@ -297,7 +297,7 @@ module M_qm_solver_eig_geno
 !  Set eigen states compatible to the legecy code of 'elses_eig_mateig' 
 !
   subroutine eig_mateig_wrapper(imode)
-    use elses_arr_eig_leg,      only : mat_a=>atmp, mat_b=>atmp2, eig_levels=>eig2 ! CHANGED
+    use elses_arr_eig_leg,      only : eig_levels=>eig2 ! CHANGED  ! Change_for_sparse_matrix_passing
     use M_eig_solver_center, only : eig_solver_center ! routine
     use M_config,          only : config !(unchanged)                                                                        
     implicit none
@@ -307,6 +307,7 @@ module M_qm_solver_eig_geno
     integer            :: blocksize_wrk
     integer            :: level_low_high(2)
     integer            :: log_unit_wrk
+    real(DOUBLE_PRECISION), allocatable :: eig_vectors(:, :)  ! Change_for_sparse_matrix_passing
 !
     log_unit_wrk=config%calc%distributed%log_unit
     SEP_solver_wrk=trim(config%calc%solver%eigen_mpi%SEP_solver)
@@ -317,10 +318,10 @@ module M_qm_solver_eig_geno
     imode=2
 !   solver_scheme_wrk='scalapack'
     call eig_solver_center(imode, log_unit_wrk, trim(SEP_solver_wrk), & 
-&           trim(GS_transformation_wrk), blocksize_wrk, level_low_high, mat_a, eig_levels, mat_b)
+&           trim(GS_transformation_wrk), blocksize_wrk, level_low_high, eig_levels, eig_vectors)  ! Change_for_sparse_matrix_passing
 !
 !   write(*,*)'@@ eig_mateig_wrapper'
-!   stop 'stop manually'
+!    stop 'stop manually'
 !
   end subroutine eig_mateig_wrapper
 !
