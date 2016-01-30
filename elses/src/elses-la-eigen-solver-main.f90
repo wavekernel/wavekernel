@@ -28,7 +28,7 @@ module M_eig_solver_center   ! DUMMY routines
 !                      output : not preserved
 !
   subroutine eig_solver_center(imode, log_unit, SEP_solver, GS_transformation, blocksize, level_low_high, &
-&                mat_a, eig_levels, mat_b)
+&                eig_levels, eig_vectors)
 !
    use elses_mod_md_dat, only : final_iteration
    use M_config, only : config
@@ -44,9 +44,8 @@ module M_eig_solver_center   ! DUMMY routines
    integer,                intent(in)               :: blocksize
    integer,                intent(in)               :: level_low_high(2)
    integer,                intent(in)               :: log_unit
-   real(DOUBLE_PRECISION), intent(inout)            :: mat_a(:,:)
    real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
-   real(DOUBLE_PRECISION), intent(inout), optional  :: mat_b(:,:)
+   real(DOUBLE_PRECISION), intent(inout), optional  :: eig_vectors(:,:)
 !
    write(*,*)'@@ eig_solver_center : dummy routine'
 !

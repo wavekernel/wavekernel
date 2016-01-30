@@ -38,7 +38,7 @@ module M_md_motion
 !
      if (i_verbose >= 1) then
        if (log_unit > 0) write(log_unit,'("@@ elses_md_motion_ini_set: mode = ",A)') config%calc%mode
-     endif
+     endif  
      !
      select case(trim(motion_type))
      case ("dynamics")
@@ -69,14 +69,14 @@ module M_md_motion
          stop
        endif
        if (sd_ratio_local <= 1.0d-10 ) then
-         if (log_unit > 0) then
+         if (log_unit > 0) then 
            write(log_unit,*)'Warning(elses_md_motion_ini_set): sd_ratio =',sd_ratio_local
          endif
 !        write(*,*)' Invalid value: this value should be positive'
 !        stop
        endif
        if (i_verbose >= 1 ) then
-         if (log_unit > 0) then
+         if (log_unit > 0) then 
            write(log_unit,*)'Maximum iteration number in optimization mode=',itemdmx
          endif
        endif
@@ -111,17 +111,17 @@ module M_md_motion
 !
      motion_type=trim(config%calc%mode)
 !
-     if (motion_type == "dynamics") then
-       if (i_verbose >= 1) then
+     if (motion_type == "dynamics") then 
+       if (i_verbose >= 1) then 
          if (log_unit > 0)  write(log_unit,*)'@@ elses_ini_set_velocity'
        endif
        call calc_initial_velocity
-     else
-       if (i_verbose >= 1) then
+     else  
+       if (i_verbose >= 1) then 
          if (log_unit > 0) write(log_unit,*)'@@ elses_ini_set_velocity....is skipped'
        endif
-     endif
-!
+     endif  
+!   
 !
 !    select case(motion_type)
 !    case ("dynamics")
@@ -137,7 +137,7 @@ module M_md_motion
 !    case default
 !      stop "elses_md_motion: unknown motion_type"
 !    end select
-!
+!       
    end subroutine elses_ini_set_velocity
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -180,12 +180,12 @@ module M_md_motion
         !       --> Atom motion by Newton eq.
      case ("optimization")
         if (i_verbose >= 1) then
-          if (log_unit > 0) then
+          if (log_unit > 0) then 
             write(log_unit,'("     config%calc%optimization%scheme = ",A)')      config%calc%optimization%scheme
             write(log_unit,'("                            sd_ratio =",ES21.14)') config%calc%optimization%sd_ratio
             write(log_unit,'("                        max_num_iter =",I8)')      config%calc%optimization%max_num_iter
           endif
-        endif
+        endif  
         call steepest_descent(config%calc%optimization%sd_ratio)
           !       --> Atom motion by steepest descent
      case ("snapshot")
@@ -208,7 +208,7 @@ module M_md_motion
      if (config%system%structure%use_vatom) then
        call update_population_guess
 !       ---> update config%system%structure%vatom(:)%population_guess for the next CSC loop
-     endif
+     endif  
 !
      if (mpi_time_check) then
        call mpi_wrapper_barrier_time(time_check)
@@ -241,7 +241,7 @@ module M_md_motion
    end subroutine elses_md_motion
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Check the convergence in the optimization mode
+! Check the convergence in the optimization mode 
 !
   subroutine optimization_check(converged)
 !
@@ -257,7 +257,7 @@ module M_md_motion
     integer  js, js_max, ierr
     real(8)  ddave, ddmax, ddd, ddd1, ddd2, ddd3
     real(8)  da1, da2, da3, ddrr1, ddrr2, ddrr3
-    real(8)  ddsum, ddsumx, ddsumy, ddsumz
+    real(8)  ddsum, ddsumx, ddsumy, ddsumz 
     real(8)  sd_ratio
 !
 !
@@ -265,17 +265,17 @@ module M_md_motion
 !
     if (i_verbose >= 1) then
       if (log_unit>0) write(log_unit,*)'@@ optimization_check'
-    endif
+    endif  
 !
     if (trim(config%calc%mode) /= 'optimization') then
       if (log_unit>0) write(log_unit,*)'    ..is skipped'
       return
-    endif
+    endif   
 !
     if (.not. allocated(iflag)) then
-      write(*,*) 'ERROR(optimization_check):not allocated:iflag'
+      write(*,*) 'ERROR(optimization_check):not allocated:iflag' 
       stop
-    endif
+    endif   
 !
     sd_ratio = config%calc%optimization%sd_ratio
 !
@@ -297,15 +297,15 @@ module M_md_motion
      if (ddd > ddmax) then
        ddmax=ddd
        js_max=js
-     endif
+     endif   
     enddo
     ddave=dabs(ddave/dble(noa))
     ddmax=dabs(ddmax)
     if (i_verbose >= 1) then
       if (log_unit>0) write(log_unit,"('force_ave,max=',I10,2F30.20,I10)")itemd,ddave,ddmax,js_max
-    endif
+    endif  
 !
-!
+!   
     da1=sd_ratio
     da2=sd_ratio
     da3=sd_ratio
@@ -322,18 +322,18 @@ module M_md_motion
        ddsumx=ddsumx+foi(js,1)*ddrr1
        ddsumy=ddsumy+foi(js,2)*ddrr2
        ddsumz=ddsumz+foi(js,3)*ddrr3
-     endif
-    enddo
+     endif  
+    enddo   
 !
     ddsum=ddsumx+ddsumy+ddsumz
 !
     if (.not. allocated(sd_energy_diff)) then
-      allocate(sd_energy_diff(4), stat=ierr)
+      allocate(sd_energy_diff(4), stat=ierr) 
       if (ierr /= 0) then
-        write(*,*)'Alloc. ERROR(optimization_check)'
+        write(*,*)'Alloc. ERROR(optimization_check)' 
         stop
-      endif
-    endif
+      endif   
+    endif   
 !
     sd_energy_diff(1)=ddsum
     sd_energy_diff(2)=ddsumx
@@ -341,35 +341,35 @@ module M_md_motion
     sd_energy_diff(4)=ddsumz
 !
     if (i_verbose >= 1) then
-      if (log_unit>0) then
+      if (log_unit>0) then 
         write(log_unit,'(a,i10,f30.20)') '  SD energy difference (tot) [au] =',  itemd, ddsum
         write(log_unit,'(a,i10,f30.20)') '  SD energy difference ( x ) [au] =',  itemd, ddsumx
         write(log_unit,'(a,i10,f30.20)') '  SD energy difference ( y ) [au] =',  itemd, ddsumy
         write(log_unit,'(a,i10,f30.20)') '  SD energy difference ( z ) [au] =',  itemd, ddsumz
-        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (tot) [eV] =', &
+        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (tot) [eV] =', & 
                         & itemd, ddsum/dble(noa)*ev4au
-        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (x)   [eV] =', &
+        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (x)   [eV] =', & 
                         & itemd, ddsumx/dble(noa)*ev4au
-        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (y)   [eV] =', &
+        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (y)   [eV] =', & 
                         & itemd, ddsumy/dble(noa)*ev4au
-        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (z)   [eV] =', &
+        write(log_unit,'(a,i10,f30.20)') '  SD energy difference per atom (z)   [eV] =', & 
                         & itemd, ddsumz/dble(noa)*ev4au
-      endif
-    endif
+      endif  
+    endif  
 !
     if (trim(config%calc%optimization%convergence_mode) == 'energy_per_atom') then
       if (config%calc%optimization%energy_convergence < 0.0d0) then
-        if (log_unit > 0) write(log_unit,*) &
+        if (log_unit > 0) write(log_unit,*) & 
              &  'ERROR(optimization_check) energy_convergence=',config%calc%optimization%energy_convergence
         stop
-      endif
+      endif   
       if (config%calc%optimization%energy_convergence > dabs(ddsum)/dble(noa)) then
         converged = .true.
-        if (log_unit > 0) write(log_unit,*) &
+        if (log_unit > 0) write(log_unit,*) & 
              &  'INFO:optimization_check: converged:criteria, energy difference [eV]=', &
              &   config%calc%optimization%energy_convergence*ev4au, dabs(ddsum)/dble(noa)*ev4au
-      endif
-    endif
+      endif   
+    endif   
 !
   end subroutine optimization_check
 !
@@ -402,18 +402,18 @@ module M_md_motion
     da0=sd_ratio
     if (i_verbose >= 1) then
       if (log_unit >0) write(log_unit,*)'@@ Steepest Descent Method:Ratio=',da0
-    endif
+    endif  
 !
     if (.not. allocated(iflag)) then
-      write(*,*) 'ERROR(steepest_descent):not allocated:iflag'
+      write(*,*) 'ERROR(steepest_descent):not allocated:iflag' 
       stop
-    endif
+    endif   
 !
     if (sd_ratio < -1.0d-10) then
       update_atom_position = .false.
       if (i_verbose >= 1) then
         if (log_unit>0) write(log_unit,*)'INFO:The atom positions are not updated (sd_ratio < 0)'
-      endif
+      endif  
     else
       update_atom_position = .true.
     endif
@@ -433,7 +433,7 @@ module M_md_motion
      if (ddd > ddmax) then
        ddmax=ddd
        js_max=js
-     endif
+     endif   
     enddo
     ddave=dabs(ddave/dble(noa))
     ddmax=dabs(ddmax)
@@ -456,16 +456,16 @@ module M_md_motion
        endif
        ddsum=ddsum+foi(js,1)*ddrr1 &
 &                 +foi(js,2)*ddrr2 &
-&                 +foi(js,3)*ddrr3
-     endif
+&                 +foi(js,3)*ddrr3 
+     endif  
 !    if (i_verbose >= 1) then
 !      write(44,"('SD: dx,dy,dz=',2I10,3F20.10)")itemd,js,ddrr1,ddrr2,ddrr3
-!    endif
-    enddo
+!    endif  
+    enddo   
 !
     if (i_verbose >= 1) then
       if (log_unit > 0) write(log_unit,*)'  SD: Energy Difference [au] =', ddsum
-    endif
+    endif  
 !
     call elses_gene_tx
 !
@@ -487,7 +487,7 @@ module M_md_motion
 !
     if (i_verbose >= 1) then
       if (log_unit >0) write(log_unit,*) '@@ GENETX:NOA,I_PBC_X=',noa,i_pbc_x, i_pbc_y, i_pbc_z
-    endif
+    endif  
 !
     do ioa=1,noa
 !
@@ -495,10 +495,10 @@ module M_md_motion
         tx(ioa)=txp(ioa)-dble(int(txp(ioa)))
         if(tx(ioa).lt.0.d0) then
           tx(ioa)=tx(ioa)+1.d0
-        endif
+        endif    
       else
         tx(ioa)=txp(ioa)
-      endif
+      endif   
 !
       if (i_pbc_y == 1) then
         ty(ioa)=typ(ioa)-dble(int(typ(ioa)))
@@ -507,7 +507,7 @@ module M_md_motion
         endif
       else
         ty(ioa)=typ(ioa)
-      endif
+      endif   
 !
       if (i_pbc_z == 1) then
         tz(ioa)=tzp(ioa)-dble(int(tzp(ioa)))
@@ -516,7 +516,7 @@ module M_md_motion
         endif
       else
        tz(ioa)=tzp(ioa)
-      endif
+      endif   
 !
     enddo
 !
@@ -527,8 +527,8 @@ module M_md_motion
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  @@ Funtion to get the distance between two atoms
-!         in a.u.
+!  @@ Funtion to get the distance between two atoms 
+!         in a.u. 
 !
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
   function get_atom_dist(js1,js2) result(dd)
@@ -548,7 +548,7 @@ module M_md_motion
        write(*,*)'js1, js2,noa=',js1,js2,noa
        stop
     endif
-!
+!   
     dxc=tx(js2)-tx(js1)
     dyc=ty(js2)-ty(js1)
     dzc=tz(js2)-tz(js1)
@@ -585,7 +585,7 @@ module M_md_motion
       type(atom_type), pointer :: atom
 !     integer :: ntlimit, noak_min_tmp, nrecl_tmp
       real(8) :: r_hb_mass_per_atom
-!
+!    
 !     config%system%structure%mdstep = itemdorg+itemd-1
 
       r_hb_mass_per_atom=1.0d0/amq/dble(noa)
@@ -627,29 +627,29 @@ module M_md_motion
            else if( iflag(j) == 0 ) then
               atom%motion = "fix"
            end if
-         endif
-!
+         endif  
+!         
          if ( allocated(velx) ) then
            atom%velocity(1) = velx(j)*(ax/dtmd)
-         else
+         else  
            atom%velocity(1) = 0.0d0
-         endif
+         endif   
 !
          if ( allocated(vely) ) then
            atom%velocity(2) = vely(j)*(ay/dtmd)
-         else
+         else  
            atom%velocity(2) = 0.0d0
-         endif
+         endif   
 !
          if ( allocated(velz) ) then
            atom%velocity(3) = velz(j)*(az/dtmd)
-         else
+         else  
            atom%velocity(3) = 0.0d0
-         endif
+         endif   
 !
          if (allocated(foi)) then
            atom%force(:) = foi(j,:)
-         endif
+         endif  
 !
       end do
 !
