@@ -1692,6 +1692,7 @@ contains
     type(fnode), pointer :: interaction_range_node
     type(fnode), pointer :: work_node1
     type(fnode), pointer :: work_node2
+    type(fnode), pointer :: work_node3
     type(fnode), pointer :: group_id_node
 !
     integer              :: log_unit
@@ -1889,6 +1890,8 @@ contains
     if ( associated(work_node1) ) then
       calc%wave_packet%set =.true.
       if (getAttribute(work_node1,"mode") == "on") calc%wave_packet%mode ="on"
+
+      ! get nodes for time config
       ! get <delta_t> node (required)
       work_node2 => getFirstElementByTagName(work_node1,"delta_t")
       if( associated(work_node2) ) then
@@ -1913,72 +1916,202 @@ contains
       else
         call XML_error("<replace_t> not found for wave_packet node")
       end if
-      ! get <charge_factor> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"charge_factor")
-      if( associated(work_node2) ) then
-        value = getChildValue(work_node2)
-        read(unit=value,fmt=*) calc%wave_packet%charge_factor
-      else
-        calc%wave_packet%charge_factor = -1d0  ! dummy value (valid charge_factor must be positive)
-      end if
-      ! get <alpha_delta_index> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"alpha_delta_index")
-      if( associated(work_node2) ) then
-        value = getChildValue(work_node2)
-        read(unit=value,fmt=*) calc%wave_packet%alpha_delta_index
-      else
-        calc%wave_packet%alpha_delta_index = -1  ! dummy value
-      end if
-      ! get <fst_filter> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"fst_filter")
-      if( associated(work_node2) ) then
-        value = getChildValue(work_node2)
-        read(unit=value,fmt=*) calc%wave_packet%fst_filter
-      else
-        calc%wave_packet%fst_filter = -1  ! dummy value
-      end if
-      ! get <end_filter> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"end_filter")
-      if( associated(work_node2) ) then
-        value = getChildValue(work_node2)
-        read(unit=value,fmt=*) calc%wave_packet%end_filter
-      else
-        calc%wave_packet%end_filter = -1  ! dummy value
-      end if
-      ! get <output_filename> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"output_filename")
-      if( associated(work_node2) ) then
-        calc%wave_packet%output_filename = trim(getChildValue(work_node2))
-      else
-        calc%wave_packet%output_filename = ""  ! dummy value
-      end if
-      ! get <h1_type> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"h1_type")
-      if( associated(work_node2) ) then
-        calc%wave_packet%h1_type = trim(getChildValue(work_node2))
-      else
-        calc%wave_packet%h1_type = ""  ! dummy value
-      end if
-      ! get <init_type> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"init_type")
-      if( associated(work_node2) ) then
-        calc%wave_packet%init_type = trim(getChildValue(work_node2))
-      else
-        calc%wave_packet%init_type = ""  ! dummy value
-      end if
-      ! get <filter_mode> node (optional)
-      work_node2 => getFirstElementByTagName(work_node1,"filter_mode")
-      if( associated(work_node2) ) then
-        calc%wave_packet%filter_mode = trim(getChildValue(work_node2))
-      else
-        calc%wave_packet%filter_mode = ""  ! dummy value
-      end if
-    endif
-    if ( calc%wave_packet%set ) then
-       if (log_unit > 0) write(log_unit,'(a,a)') &
-         & 'INFO-XML:Optional tag: wave_packet; mode = ',trim(calc%wave_packet%mode)
-    endif
 
+      ! get nodes for perturbation (H1) config
+      calc%wave_packet%h1_type = ""  ! default setting
+      calc%wave_packet%charge_factor_common = -1d0  ! dummy value
+      calc%wave_packet%charge_factor_H = -1d0  ! dummy value
+      calc%wave_packet%charge_factor_C = -1d0  ! dummy value
+      calc%wave_packet%temperature = -1d0  ! dummy value
+      calc%wave_packet%perturb_interval = -1d0  ! dummy value
+      work_node2 => getFirstElementByTagName(work_node1,"perturbation")
+      if ( associated(work_node2) ) then
+        calc%wave_packet%h1_type = getAttribute(work_node2,"type")
+        ! get <charge_factor_common> node
+        work_node3 => getFirstElementByTagName(work_node1,"charge_factor_common")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%charge_factor_common
+        end if
+        ! get <charge_factor_H> node
+        work_node3 => getFirstElementByTagName(work_node2,"charge_factor_H")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%charge_factor_H
+        end if
+        ! get <charge_factor_C> node
+        work_node3 => getFirstElementByTagName(work_node2,"charge_factor_C")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%charge_factor_C
+        end if
+        ! get <temperature> node
+        work_node3 => getFirstElementByTagName(work_node2,"temperature")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%temperature
+        end if
+        ! get <perturb_interval> node
+        work_node3 => getFirstElementByTagName(work_node2,"perturb_interval")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%perturb_interval
+        end if
+      end if
+
+      ! get nodes for filter config
+      calc%wave_packet%filter_mode = ""  ! default setting
+      calc%wave_packet%fst_filter = -1  ! dummy value
+      calc%wave_packet%end_filter = -1  ! dummy value
+      calc%wave_packet%filter_group_filename = ""  ! dummy value
+      calc%wave_packet%num_group_filter_from_homo = -1  ! dummy value
+      work_node2 => getFirstElementByTagName(work_node1,"filter")
+      if ( associated(work_node2) ) then
+        calc%wave_packet%filter_mode = getAttribute(work_node2,"type")
+        ! get <fst_filter> node
+        work_node3 => getFirstElementByTagName(work_node2,"fst_filter")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%fst_filter
+        end if
+        ! get <end_filter> node
+        work_node3 => getFirstElementByTagName(work_node2,"end_filter")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%end_filter
+        end if
+        ! get <filter_group_filename> node
+        work_node3 => getFirstElementByTagName(work_node2,"filter_group_filename")
+        if( associated(work_node3) ) then
+          calc%wave_packet%filter_group_filename = trim(getChildValue(work_node3))
+        end if
+        ! get <num_group_filter_from_homo> node
+        work_node3 => getFirstElementByTagName(work_node2,"num_group_filter_from_homo")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%num_group_filter_from_homo
+        end if
+      end if      
+
+      ! get nodes for initializatin config
+      calc%wave_packet%init_type = ""  ! default setting
+      calc%wave_packet%alpha_delta_index = -1  ! dummy value
+      calc%wave_packet%phase_factor_coef = 0d0  ! default setting
+      calc%wave_packet%to_multiply_phase_factor = .false.  ! default setting
+      work_node2 => getFirstElementByTagName(work_node1,"initialization")
+      if ( associated(work_node2) ) then
+        calc%wave_packet%init_type = getAttribute(work_node2,"type")
+        ! get <alpha_delta_index> node
+        work_node3 => getFirstElementByTagName(work_node2,"alpha_delta_index")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%alpha_delta_index
+        end if
+        ! get <phase_factor_coef> node (optional)
+        work_node3 => getFirstElementByTagName(work_node2,"phase_factor_coef")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%phase_factor_coef
+          calc%wave_packet%to_multiply_phase_factor = .true.
+        end if
+        ! get <localize_potential_depth> node 
+        work_node3 => getFirstElementByTagName(work_node2,"localize_potential_depth")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%localize_potential_depth
+        end if        
+        ! get <alpha_delta_min_x> node
+        work_node2 => getFirstElementByTagName(work_node1,"alpha_delta_min_x")
+        if( associated(work_node2) ) then
+          value = getChildValue(work_node2)
+          read(unit=value,fmt=*) calc%wave_packet%alpha_delta_min_x
+        end if
+        ! get <alpha_delta_max_x> node
+        work_node2 => getFirstElementByTagName(work_node1,"alpha_delta_max_x")
+        if( associated(work_node2) ) then
+          value = getChildValue(work_node2)
+          read(unit=value,fmt=*) calc%wave_packet%alpha_delta_max_x
+        end if
+        ! get <localize_start> node
+        work_node2 => getFirstElementByTagName(work_node1,"localize_start")
+        if( associated(work_node2) ) then
+          value = getChildValue(work_node2)
+          read(unit=value,fmt=*) calc%wave_packet%localize_start
+        end if
+        ! get <localize_end> node
+        work_node2 => getFirstElementByTagName(work_node1,"localize_end")
+        if( associated(work_node2) ) then
+          value = getChildValue(work_node2)
+          read(unit=value,fmt=*) calc%wave_packet%localize_end
+        end if
+      end if
+
+      ! get nodes for time evolution config
+      calc%wave_packet%time_evolution_mode = ""  ! default setting
+      work_node2 => getFirstElementByTagName(work_node1,"time_evolution")
+      if ( associated(work_node2) ) then
+        calc%wave_packet%time_evolution_mode = getAttribute(work_node2,"type")
+      end if
+
+      ! get nodes for message config
+      calc%wave_packet%amplitude_print_threshold = -1d0  ! dummy value
+      calc%wave_packet%amplitude_print_interval = -1d0  ! dummy value
+      work_node2 => getFirstElementByTagName(work_node1,"message")
+      if ( associated(work_node2) ) then
+        ! get <amplitude_print_threshold> node
+        work_node3 => getFirstElementByTagName(work_node2,"amplitude_print_threshold")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%amplitude_print_threshold
+        end if
+        ! get <amplitude_print_interval> node
+        work_node3 => getFirstElementByTagName(work_node2,"amplitude_print_interval")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%amplitude_print_interval
+        end if
+      end if
+
+      ! get nodes for output config
+      calc%wave_packet%output_filename = ""  ! default setting
+      calc%wave_packet%is_binary_output_mode = .false.  ! default setting
+      calc%wave_packet%is_output_split = .false.  ! default setting
+      calc%wave_packet%output_interval = -1  ! dummy value
+      calc%wave_packet%num_steps_per_output_split = -1  ! dummy value
+      work_node2 => getFirstElementByTagName(work_node1,"output")
+      if ( associated(work_node2) ) then
+        calc%wave_packet%is_binary_output_mode = (getAttribute(work_node2,"format") == "binary")
+        calc%wave_packet%is_output_split = (getAttribute(work_node2,"split") == "on")
+        ! get <filename> node
+        work_node3 => getFirstElementByTagName(work_node2,"filename")
+        if( associated(work_node3) ) then
+          calc%wave_packet%output_filename = trim(getChildValue(work_node3))
+        end if        
+        ! get <output_interval> node
+        work_node3 => getFirstElementByTagName(work_node2,"output_interval")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%output_interval
+        end if
+        ! get <num_steps_per_output_split> node
+        work_node3 => getFirstElementByTagName(work_node2,"num_steps_per_output_split")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%num_steps_per_output_split
+        end if
+      end if
+
+      ! get nodes for overlap matrix config
+      calc%wave_packet%is_overlap_ignored = .false.  ! default setting
+      work_node2 => getFirstElementByTagName(work_node1,"overlap")
+      if ( associated(work_node2) ) then
+        calc%wave_packet%is_overlap_ignored = (getAttribute(work_node2,"ignored") == "on")
+      end if
+    endif  ! end of <wave_packet> node
+    if ( calc%wave_packet%set ) then
+      if (log_unit > 0) write(log_unit,'(a,a)') &
+           & 'INFO-XML:Optional tag: wave_packet; mode = ',trim(calc%wave_packet%mode)
+    endif
     return
   end subroutine calc_load
 

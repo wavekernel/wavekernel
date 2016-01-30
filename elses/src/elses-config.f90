@@ -399,14 +399,40 @@ module M_config
      real(kind(1d0))       :: delta_t
      real(kind(1d0))       :: limit_t
      real(kind(1d0))       :: replace_t
-     real(kind(1d0))       :: charge_factor
+     real(kind(1d0))       :: charge_factor_common
+     real(kind(1d0))       :: charge_factor_H
+     real(kind(1d0))       :: charge_factor_C
+     real(kind(1d0))       :: phase_factor_coef
+     real(kind(1d0))       :: localize_potential_depth
+     real(kind(1d0))       :: temperature
+     real(kind(1d0))       :: alpha_delta_min_x
+     real(kind(1d0))       :: alpha_delta_max_x
+     real(kind(1d0))       :: perturb_interval
+     real(kind(1d0))       :: amplitude_print_threshold
+     real(kind(1d0))       :: amplitude_print_interval
      integer               :: alpha_delta_index
      integer               :: fst_filter
      integer               :: end_filter
+     integer               :: num_steps_per_output_split
+     integer               :: num_group_filter_from_homo
+     integer               :: localize_start
+     integer               :: localize_end
+     integer               :: output_interval
      character(len=1024)   :: output_filename
      character(len=1024)   :: h1_type
+     character(len=1024)   :: time_evolution_mode
      character(len=1024)   :: init_type
      character(len=1024)   :: filter_mode
+     character(len=1024)   :: filter_group_filename
+     logical               :: to_multiply_phase_factor
+     logical               :: is_output_split
+     logical               :: is_overlap_ignored
+     logical               :: is_binary_output_mode
+     ! Restrictions for setting in ELSES with wavepacket.
+     ! - Restarting is not supported.
+     ! - Reduction mode is not supported.
+     ! - Multistep input and group id are always enabled.
+     ! - Reading eigenpairs or initial values are not supported.
   end type wave_packet_type
 
   type :: calc_type
