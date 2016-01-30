@@ -33,11 +33,22 @@ module M_qm_solver_eig_geno
      real(8) :: elapse_time, elapse_time_bak
      integer lu
 !    integer neig0, nval_max
+     logical :: legacy_workflow ! with full matrix 
 !
      lu=config%calc%distributed%log_unit
 !
+     if (trim(config%calc%solver%scheme) == 'eigen_mpi') then
+       legacy_workflow = .false.
+     else
+       legacy_workflow = .true.
+     endif
+!
      if (i_verbose >= 1) then
-       if (lu > 0) write(lu,"(a)") '@@ qm_solver_eig_geno'
+       if (legacy_workflow) then
+         if (lu > 0) write(lu,"(a)") '@@ qm_solver_eig_geno:legacy_workflow'
+       else
+         if (lu > 0) write(lu,"(a)") '@@ qm_solver_eig_geno:Non_legecy_workflow'
+       endif
      endif   
 !
      if (i_verbose >= 1) then
@@ -46,42 +57,46 @@ module M_qm_solver_eig_geno
      endif   
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!  Allocate matrices if not. 
+!  Set full matrices  (ONLY FOR legacy workflow)
 !
-     i_init=0
-     if (allocated(atmp) .eqv. .false.) i_init=1
+     if (legacy_workflow) then
 !
-     if (i_init == 1) then
+       i_init=0
+       if (allocated(atmp) .eqv. .false.) i_init=1
+!
+       if (i_init == 1) then
 !      if (i_verbose >= 1) then
 !        write(*,*)' n_tot_base=',n_tot_base
 !      endif   
-       call elses_alloc_eig_leg(n_tot_base)
+         call elses_alloc_eig_leg(n_tot_base)
 !         ----> allocations of working matrices 
 !               in eigen-state solvers
-     endif  
+       endif  
 !
-     if (i_verbose >= 1) then
-       call get_system_clock_time(elapse_time)
-       if (lu > 0) write(lu,"(a,f20.10)") ' TIME:qm_solver_eig_geno:initial alloc=',elapse_time-elapse_time_bak
-       elapse_time_bak=elapse_time
-     endif   
+       if (i_verbose >= 1) then
+         call get_system_clock_time(elapse_time)
+         if (lu > 0) write(lu,"(a,f20.10)") ' TIME:qm_solver_eig_geno:initial alloc=',elapse_time-elapse_time_bak
+         elapse_time_bak=elapse_time
+       endif   
 !
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!  Generalized eigen value problem 
-!     with matrix size of n = n_tot_base
-!
-     call copy_to_full_matrices
+       call copy_to_full_matrices
 !      --> Copy the Hamiltonian and overlap matrices
 !              into full-matrix arraies (atmp, atmp2)
 !        INPUT : dhij, dsij 
 !        OUTPUT: atmp (n,n)  (Hamiltonian, as full matrix)
 !        OUTPUT: atmp2(n,n)  (Overlap,     as full matrix)
 !
-     if (i_verbose >= 1) then
-       call get_system_clock_time(elapse_time)
-       if (lu > 0) write(lu,"(a,f20.10)") ' TIME:qm_solver_eig_geno:copy_to_full =',elapse_time-elapse_time_bak
-       elapse_time_bak=elapse_time
-     endif   
+       if (i_verbose >= 1) then
+         call get_system_clock_time(elapse_time)
+         if (lu > 0) write(lu,"(a,f20.10)") ' TIME:qm_solver_eig_geno:copy_to_full =',elapse_time-elapse_time_bak
+         elapse_time_bak=elapse_time
+       endif   
+!
+     endif
+!
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!  Generalized eigen value problem 
+!     with matrix size of n = n_tot_base
 !
      call set_eigen_states
 !      --> Set the eigen states 
@@ -297,7 +312,8 @@ module M_qm_solver_eig_geno
 !  Set eigen states compatible to the legecy code of 'elses_eig_mateig' 
 !
   subroutine eig_mateig_wrapper(imode)
-    use elses_arr_eig_leg,      only : mat_a=>atmp, mat_b=>atmp2, eig_levels=>eig2 ! CHANGED
+!   use elses_arr_eig_leg,      only : mat_a=>atmp, mat_b=>atmp2, eig_levels=>eig2 ! CHANGED
+    use elses_arr_eig_leg,      only : atmp, eig_levels=>eig2 ! CHANGED
     use M_eig_solver_center, only : eig_solver_center ! routine
     use M_config,          only : config !(unchanged)                                                                        
     implicit none
@@ -307,6 +323,10 @@ module M_qm_solver_eig_geno
     integer            :: blocksize_wrk
     integer            :: level_low_high(2)
     integer            :: log_unit_wrk
+    real(DOUBLE_PRECISION), allocatable :: eig_vectors(:, :)  ! Change_for_sparse_matrix_passing
+    integer            :: vec_size, ierr
+!
+    vec_size=size(eig_levels,1)
 !
     log_unit_wrk=config%calc%distributed%log_unit
     SEP_solver_wrk=trim(config%calc%solver%eigen_mpi%SEP_solver)
@@ -317,7 +337,31 @@ module M_qm_solver_eig_geno
     imode=2
 !   solver_scheme_wrk='scalapack'
     call eig_solver_center(imode, log_unit_wrk, trim(SEP_solver_wrk), & 
-&           trim(GS_transformation_wrk), blocksize_wrk, level_low_high, mat_a, eig_levels, mat_b)
+&           trim(GS_transformation_wrk), blocksize_wrk, level_low_high, eig_levels, eig_vectors)
+!    call eig_solver_center(imode, log_unit_wrk, trim(SEP_solver_wrk), & 
+!&           trim(GS_transformation_wrk), blocksize_wrk, level_low_high, mat_a, eig_levels, mat_b)
+!
+!
+    if ((level_low_high(1) == 1) .and. (level_low_high(2) == vec_size )) then
+      if (.not. allocated(atmp)) then 
+        allocate(atmp(vec_size, vec_size),stat=ierr) 
+        if (ierr /= 0) then
+          stop 'Alloc error. atmp2 (eig_mateig_wrapper)' 
+        endif
+      endif
+      ierr=0
+      if (size(atmp,1) /= size(eig_vectors,1)) ierr=1
+      if (size(atmp,2) /= size(eig_vectors,2)) ierr=1
+      if (ierr /= 0) then
+         write(*,*) 'ERROR:imcompatible matrix size (eig_mateig_wrapper)'
+         write(*,*) ' size(atmp2,1)=', size(atmp,1)
+         write(*,*) ' size(atmp2,2)=', size(atmp,2)
+         write(*,*) ' size(eig_vectors,1)=', size(eig_vectors,1)
+         write(*,*) ' size(eig_vectors,2)=', size(eig_vectors,2)
+         stop
+      endif
+      atmp(:,:)=eig_vectors(:,:)
+    endif
 !
 !   write(*,*)'@@ eig_mateig_wrapper'
 !   stop 'stop manually'
@@ -396,6 +440,11 @@ module M_qm_solver_eig_geno
             :: atmp6, atmp7, atmp8, atmp9
     real(DOUBLE_PRECISION) :: w0,w1,w2,w3
     real(DOUBLE_PRECISION) :: EPSILON=1d-14
+!
+    if (.not. allocated(atmp)) then
+      write(*,*) 'ERROR(set_density_matrix):atmp is not allocated'
+      stop
+    endif
 !
 !ccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Local parameter setting
