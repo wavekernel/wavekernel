@@ -1891,30 +1891,32 @@ contains
       calc%wave_packet%set =.true.
       if (getAttribute(work_node1,"mode") == "on") calc%wave_packet%mode ="on"
 
-      ! get nodes for time config
-      ! get <delta_t> node (required)
-      work_node2 => getFirstElementByTagName(work_node1,"delta_t")
-      if( associated(work_node2) ) then
-        value = getChildValue(work_node2)
-        read(unit=value,fmt=*) calc%wave_packet%delta_t
-      else
-        call XML_error("<delta_t> not found for wave_packet node")
-      end if
-      ! get <limit_t> node (required)
-      work_node2 => getFirstElementByTagName(work_node1,"limit_t")
-      if( associated(work_node2) ) then
-        value = getChildValue(work_node2)
-        read(unit=value,fmt=*) calc%wave_packet%limit_t
-      else
-        call XML_error("<limit_t> not found for wave_packet node")
-      end if
-      ! get <replace_t> node (required)
-      work_node2 => getFirstElementByTagName(work_node1,"replace_t")
-      if( associated(work_node2) ) then
-        value = getChildValue(work_node2)
-        read(unit=value,fmt=*) calc%wave_packet%replace_t
-      else
-        call XML_error("<replace_t> not found for wave_packet node")
+      if (calc%wave_packet%mode == "on") then
+        ! get nodes for time config
+        ! get <delta_t> node (required)
+        work_node2 => getFirstElementByTagName(work_node1,"delta_t")
+        if( associated(work_node2) ) then
+          value = getChildValue(work_node2)
+          read(unit=value,fmt=*) calc%wave_packet%delta_t
+        else
+          call XML_error("<delta_t> not found for wave_packet node")
+        end if
+        ! get <limit_t> node (required)
+        work_node2 => getFirstElementByTagName(work_node1,"limit_t")
+        if( associated(work_node2) ) then
+          value = getChildValue(work_node2)
+          read(unit=value,fmt=*) calc%wave_packet%limit_t
+        else
+          call XML_error("<limit_t> not found for wave_packet node")
+        end if
+        ! get <replace_t> node (required)
+        work_node2 => getFirstElementByTagName(work_node1,"replace_t")
+        if( associated(work_node2) ) then
+          value = getChildValue(work_node2)
+          read(unit=value,fmt=*) calc%wave_packet%replace_t
+        else
+          call XML_error("<replace_t> not found for wave_packet node")
+        end if
       end if
 
       ! get nodes for perturbation (H1) config
