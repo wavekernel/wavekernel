@@ -119,52 +119,52 @@ contains
   end subroutine convert_sparse_matrix_data_real_type_to_wp_sparse
 
 
-  subroutine wavepacket_init(setting, state)
-    type(wp_setting_t), intent(inout) :: setting
-    type(wp_state_t), intent(inout) :: state
-    type(sparse_mat) :: H_sparse, S_sparse, H_multistep_sparse, S_multistep_sparse
-    integer :: ierr
-
-    call init_timers(state%wtime_total, state%wtime)
-
-    state%dim = matrix_data(1)%matrix_size
-
+  subroutine copy_settings_from_elses_config_xml(setting)
+    type(wp_setting_t), intent(out) :: setting
+    
     ! Required settings.
     setting%delta_t = config%calc%wave_packet%delta_t
     setting%limit_t = config%calc%wave_packet%limit_t
     setting%multistep_input_read_interval = config%calc%wave_packet%replace_t
 
     ! Optional settings.
-    if (config%calc%wave_packet%fst_filter <= 0) then  ! Set default value.
-      setting%fst_filter = 1
-    else
-      setting%fst_filter = config%calc%wave_packet%fst_filter
-    end if
-
-    if (config%calc%wave_packet%end_filter <= 0) then  ! Set default value.
-      setting%num_filter = min(state%dim / 2, state%dim - setting%fst_filter + 1)
-    else
-      setting%num_filter = config%calc%wave_packet%end_filter - setting%fst_filter + 1
-    end if
-
-    if (trim(config%calc%wave_packet%output_filename) == '') then  ! Set default value.
-      setting%output_filename = 'out.json'
-    else
-      setting%output_filename = trim(config%calc%wave_packet%output_filename)
-    end if
-
+    ! Copy perturbation (H1) settings.
     if (trim(config%calc%wave_packet%h1_type) == '') then  ! Set default value.
       setting%h1_type = 'zero'
     else
       setting%h1_type = trim(config%calc%wave_packet%h1_type)
     end if
-
     if (config%calc%wave_packet%charge_factor_common < 0d0) then  ! Set default value.
       setting%charge_factor_common = 0d0
     else
       setting%charge_factor_common = config%calc%wave_packet%charge_factor_common
     end if
+    if (config%calc%wave_packet%charge_factor_H >= 0d0) then
+      setting%charge_factor_H = config%calc%wave_packet%charge_factor_H
+    end if
+    if (config%calc%wave_packet%charge_factor_C >= 0d0) then
+      setting%charge_factor_C = config%calc%wave_packet%charge_factor_C
+    end if
+    setting%temperature = config%calc%wave_packet%temperature
+    setting%perturb_interval = config%calc%wave_packet%perturb_interval
 
+    ! Copy filtering settings.
+    if (config%calc%wave_packet%filter_mode == '') then  ! Set default value.
+      setting%filter_mode = 'all'
+    else
+      setting%filter_mode = config%calc%wave_packet%filter_mode
+    end if
+    if (config%calc%wave_packet%fst_filter > 0) then
+      setting%fst_filter = config%calc%wave_packet%fst_filter
+    end if
+    if (config%calc%wave_packet%end_filter > 0) then
+      setting%num_filter = config%calc%wave_packet%end_filter - setting%fst_filter + 1
+    end if
+    setting%filter_group_filename = config%calc%wave_packet%filter_group_filename
+    if (trim(setting%filter_mode) == 'group') then
+      setting%num_filter = config%calc%wave_packet%num_group_filter_from_homo
+    end if
+    ! Copy initializatin settings.
     if (trim(config%calc%wave_packet%init_type) == '') then  ! Set default value.
       setting%init_type = 'alpha_delta'
     else
@@ -175,20 +175,62 @@ contains
     else
       setting%alpha_delta_index = config%calc%wave_packet%alpha_delta_index
     end if
-
-    if (trim(config%calc%wave_packet%filter_mode) == '') then  ! Set default value.
-      setting%filter_mode = 'all'
+    setting%to_multiply_phase_factor = config%calc%wave_packet%to_multiply_phase_factor
+    setting%phase_factor_coef = config%calc%wave_packet%phase_factor_coef
+    setting%localize_potential_depth = config%calc%wave_packet%localize_potential_depth
+    setting%alpha_delta_min_x = config%calc%wave_packet%alpha_delta_min_x
+    setting%alpha_delta_max_x = config%calc%wave_packet%alpha_delta_max_x
+    setting%localize_start = config%calc%wave_packet%localize_start
+    setting%localize_end = config%calc%wave_packet%localize_end
+    ! Copy time evolution settings.
+    if (trim(config%calc%wave_packet%time_evolution_mode) == '') then  ! Set default value.
+      setting%time_evolution_mode = 'crank_nicolson'
     else
-      setting%filter_mode = trim(config%calc%wave_packet%filter_mode)
+      setting%time_evolution_mode = trim(config%calc%wave_packet%time_evolution_mode)
     end if
+    ! Copy message settings.
+    if (config%calc%wave_packet%amplitude_print_threshold >= 0d0) then
+      setting%amplitude_print_threshold = config%calc%wave_packet%amplitude_print_threshold
+    end if    
+    if (config%calc%wave_packet%amplitude_print_interval >= 0d0) then
+      setting%amplitude_print_interval = config%calc%wave_packet%amplitude_print_interval
+    end if    
 
-    call print_setting(setting)
-
+    if (trim(config%calc%wave_packet%output_filename) == '') then  ! Set default value.
+      setting%output_filename = 'out.json'
+    else
+      setting%output_filename = trim(config%calc%wave_packet%output_filename)
+    end if
+    setting%is_binary_output_mode = config%calc%wave_packet%is_binary_output_mode
+    setting%is_output_split = config%calc%wave_packet%is_output_split
+    if (config%calc%wave_packet%output_interval > 0) then
+      setting%output_interval = config%calc%wave_packet%output_interval
+    end if    
+    if (config%calc%wave_packet%num_steps_per_output_split > 0) then
+      setting%num_steps_per_output_split = config%calc%wave_packet%num_steps_per_output_split
+    end if    
+    ! Copy overlap matrix settings.
+    setting%is_overlap_ignored = config%calc%wave_packet%is_overlap_ignored
     ! Settings that automatically determined when called from ELSES.
     setting%is_atom_indices_enabled = .true.
     setting%is_group_id_used = num_groups > 0 .and. allocated(num_group_mem) .and. allocated(group_mem)
     setting%is_multistep_input_mode = .true.
     setting%to_replace_basis = .true.
+  end subroutine copy_settings_from_elses_config_xml
+
+
+  subroutine wavepacket_init(setting, state)
+    type(wp_setting_t), intent(inout) :: setting
+    type(wp_state_t), intent(inout) :: state
+    type(sparse_mat) :: H_sparse, S_sparse, H_multistep_sparse, S_multistep_sparse
+    integer :: ierr
+
+    call init_timers(state%wtime_total, state%wtime)
+
+    state%dim = matrix_data(1)%matrix_size
+    call copy_settings_from_elses_config_xml(setting)
+    call print_setting(setting)
+    call fill_filtering_setting(state%dim, num_groups, setting)
 
     call setup_distributed_matrices(state%dim, setting, state%proc, &
          state%H_desc, state%H, state%S_desc, state%S, state%Y_desc, state%Y, &
