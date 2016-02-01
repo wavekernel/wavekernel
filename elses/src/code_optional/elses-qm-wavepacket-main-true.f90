@@ -232,6 +232,7 @@ contains
     state%dim = matrix_data(1)%matrix_size
     call copy_settings_from_elses_config_xml(setting)
     call fill_filtering_setting(state%dim, num_groups, setting)
+    call verify_setting(state%dim, setting)
     call print_setting(setting)
 
     call setup_distributed_matrices(state%dim, setting, state%proc, &
