@@ -24,9 +24,10 @@ module M_qm_solver_eig_geno
    subroutine qm_solver_eig_geno
 !
      use M_config,     only : config !(unchanged )
-     use elses_mod_orb2,     only : n_tot_base
-     use elses_arr_eig_leg,  only : atmp, eig2
+     use elses_mod_orb2,     only : n_tot_base !(unchanged)
+     use elses_arr_eig_leg,  only : atmp       !(CHANGED)
      use  M_wall_clock_time, only : get_system_clock_time
+     use elses_mod_eig_leg,  only : n_base_eig_leg !(CHANGED)
 !
      implicit none
      integer i_init
@@ -55,6 +56,8 @@ module M_qm_solver_eig_geno
        call get_system_clock_time(elapse_time)
        elapse_time_bak=elapse_time
      endif   
+!
+     n_base_eig_leg=n_tot_base
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !  Set full matrices  (ONLY FOR legacy workflow)
@@ -280,7 +283,7 @@ module M_qm_solver_eig_geno
 !    based on 'elses_seteig3'
 !
   subroutine set_eigen_states
-    use elses_arr_eig_leg,      only : eig2 ! CHANGED
+!
 !   use elses_arr_eig_leg, only:atmp,atmp2,atmp3,atmpo
 !
     use M_config,          only : config !(unchanged)                                                                                                                implicit none

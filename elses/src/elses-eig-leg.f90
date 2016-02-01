@@ -5,178 +5,6 @@
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! @@ Set the matrix ATMP, ATMP2
-!
-      !! Copyright (C) ELSES. 2007-2016 all rights reserved
-      subroutine elses_set_eig_leg_atmp
-      use elses_mod_eig_leg, only : n_base_eig_leg
-      use elses_arr_eig_leg, only : atmp, atmp2, idngl2
-      use elses_mod_orb2,  only : j2js,j2ja,js2j,n_tot_base,idngl
-!
-!     use elses_mod_sim_cell, only : noa,nos,iperiodic,ax,ay,az
-      use elses_mod_tx,       only : jsei
-      use elses_mod_noav,     only : noav
-      use elses_mod_js4jsv,   only : js4jsv, jsv4js
-      use elses_arr_dhij,     only : dhij
-      use elses_arr_dsij,     only : dsij
-      use elses_arr_dpij,     only : dpij
-      use elses_mod_jsv4jsd,  only : jsv4jsd,njsd
-      use elses_mod_orb1,     only : nvl, nval
-      use elses_mod_multi,    only : ict4h
-! 
-      implicit none
-      integer :: neig0
-      integer :: nn, i, j, isum, jsv, js, ja, jg, iii, jsv2
-      integer :: njsd2, nss2, nval2, jsd1, jsv1, js1, nss1
-      integer :: js2, nval1, ja2, ja1, ig, jj 
-!     integer :: IDNGL2(NEIG0)
-      real(8) :: time2, tb2, dbigd, dsijd, atmpd
-      real(8) :: eta
-      integer :: ierr
-!
-      NEIG0=n_base_eig_leg
-      write(6,*)'@@LSES_SET_EIG_LEG_ATMP'
-!
-!
-      if (n_tot_base .ne. n_base_eig_leg) then
-        write(6,*)'ERROR!(LSES_SET_EIG_LEG_ATMP)'
-        write(6,*)'  n_tot_base=',n_tot_base
-        write(6,*)'  n_base_eig_leg=',n_base_eig_leg
-        stop
-      endif
-!
-      eta=5.0
-      WRITE(6,*)'    NEIG0, ETA=',neig0, eta
-!
-      if (.not. allocated(dsij)) then
-        write(6,*)'ERROR(SETMAT2):DSIJ is not allocated!!'
-        stop
-      else
-        write(6,*)'...DSIJ is already allocated. OK!'
-      endif   
-!
-      if (.not. allocated(dpij)) then
-        write(6,*)'ERROR(SETMAT2):DPIJ is not allocated!!'
-        stop
-      else
-        write(6,*)'...DPIJ is already allocated. OK!'
-      endif   
-!
-      if (.not. allocated(idngl)) then
-        write(6,*)'Info:IDNGL is not allocated.'
-        write(6,*)'     and will be allocated here'
-        allocate (idngl(neig0),stat=ierr)
-        if (ierr .ne. 0) then
-          write(*,*)'alloc. error!(idngl):ierr=',ierr
-          stop
-        endif   
-      else
-        write(6,*)'Info:IDNGL is already allocated.'
-      endif   
-!
-      CALL TCLOCK(TIME2)
-      TB2=TIME2
-!
-      ATMP(:,:)=0.0D0
-      ATMP2(:,:)=0.0D0
-!
-!
-        DO 20 I=1,NEIG0
-           ATMP(I,I)=10.0D0*ETA
-   20   CONTINUE
-!
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! @@ Mark the terminated dangling bonds
-!            IDNGL2 = 1 : dangling bond
-!                   = 0 : not dangling bond
-!
-      DO 31 J=1,NEIG0
-        IDNGL2(J)=0
-   31 CONTINUE
-!
-      ISUM=0
-      DO 32 JSV=1,NOAV
-        JS=JS4JSV(JSV)
-      DO 32 JA=1,NVL
-        JG=JS2J(JA,JS)
-        J=JA+(JSV-1)*NVL
-        IF (J .GT. NEIG0) THEN
-          WRITE(6,*)'ERROR!(SETEIG:32):J,JSV,JA=',J,JSV,JA
-          STOP
-        ENDIF
-        III=IDNGL(JG)
-        IDNGL2(J)=III
-        IF (III .NE. 0) THEN
-          ISUM=ISUM+1
-!         WRITE(6,*)'DANGLING=',J,III
-        ENDIF
-   32 CONTINUE
-      WRITE(6,*)'TOTAL DANGLING=',ISUM
-!
-!     STOP
-!      
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!  @@ Setting the matrix to be diagonalized.
-!
-      DO 100 JSV2=1,NOAV
-         JS2=JS4JSV(JSV2)
-!        NJSD2=NJSD(JSV2,ICT4L)
-         NJSD2=NJSD(JSV2,ICT4H)
-         NSS2=JSEI(JS2)
-         NVAL2=NVAL(NSS2)
-       DO 100 JSD1=1,NJSD2
-         JSV1=JSV4JSD(JSD1,JSV2)
-         JS1=JS4JSV(JSV1)
-         NSS1=JSEI(JS1)
-         NVAL1=NVAL(NSS1)
-        DO 100 JA2=1,NVAL2
-          JG=JS2J(JA2,JS2)
-          J=JA2+(JSV2-1)*NVL
-          IF ((J .LE. 0) .OR. (J .GT. NEIG0)) THEN
-            WRITE(6,*)'ERROR!(SETEIG1:100):J,NEIG0=',J,NEIG0
-            STOP
-          ENDIF
-        DO 100 JA1=1,NVAL1
-          IG=JS2J(JA1,JS1)
-          I=JA1+(JSV1-1)*NVL
-          IF ((J .LE. 0) .OR. (J .GT. NEIG0)) THEN
-            WRITE(6,*)'ERROR!(SETEIG1:100):J,NEIG0=',J,NEIG0
-            STOP
-          ENDIF
-          DBIGD=DHIJ(JA1,JA2,JSD1,JSV2)
-!            ---> H + 2 eta rho_{PT}
-          DSIJD=DSIJ(JA1,JA2,JSD1,JSV2)
-!            ---> Overlap
-          ATMP(I,J)=DBIGD
-          ATMP2(I,J)=DSIJD
-  100 CONTINUE
-!
-      CALL TCLOCK(TIME2)
-      WRITE(6,*)'@@@ SETEIG TIME1=',TIME2-TB2
-      TB2=TIME2
-!
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!
-      DO 33 JSV=1,NOAV
-        JS=JS4JSV(JSV)
-      DO 33 JA=1,NVL
-        JG=JS2J(JA,JS)
-        J=JA+(JSV-1)*NVL
-        JJ=IDNGL2(J)
-        ATMPD=ATMP(J,J)
-        IF (JJ .EQ. 1) ATMPD=10.0D0*ETA
-        ATMP(J,J)=ATMPD
-!       WRITE(6,*)'J,ATMP',J,JS,ATMP(J,J)
-   33 CONTINUE
-!        ---> correction for dangling bond
-!
- 9999 CONTINUE
-      write(6,*)'.. ended w/o error :LSES_SET_EIG_LEG_ATMP'
-!
-      END
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! @@ Eigen-state solver 
 !       NKEIG  : Highest occpued level
 !       rNelec : Electron number
@@ -419,7 +247,7 @@
 !
  9999 CONTINUE
 !
-      END
+      end subroutine elses_seteig3
 !
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
@@ -660,7 +488,9 @@
           write(6,'("Eigenvalues of overlap matrix:")')
           write(6,'(8ES10.3)') EIG_WRK
         end subroutine CalculateEivenvaluesOfOverlap
-      END
+
+      end subroutine elses_eig_mateig
+!
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -675,14 +505,13 @@
       !! Copyright (C) ELSES. 2007-2016 all rights reserved
       subroutine elses_eig_chem_pot
       use M_qm_domain,         only : i_verbose    !(unchanged)  
-      use M_io_dst_write_log,  only : log_unit
-      use elses_mod_phys_const, only : ev4au
-      use  elses_mod_md_dat,    only : itemd
-!     use elses_mod_eig_leg, only:n_base_eig_leg, fb, tot_elec_eig_leg
-      use elses_mod_eig_leg, only:n_base_eig_leg, tot_elec_eig_leg
-      use elses_arr_eig_leg, only:eig2, f_occ
-!     use elses_arr_eig_leg, only:atmp,atmp2,atmp3,atmpo,eig2
-      use elses_mod_elec_cond,  only : temp_for_electron
+      use M_io_dst_write_log,  only : log_unit !(unchanged)
+      use elses_mod_phys_const, only : ev4au !(parameter)
+      use  elses_mod_md_dat,    only : itemd !(unchanged)
+      use elses_mod_eig_leg, only:tot_elec_eig_leg !(unchanged)
+      use elses_arr_eig_leg, only:eig2  !(unchanged)
+      use elses_arr_eig_leg, only:f_occ !(CHANGED)
+      use elses_mod_elec_cond,  only : temp_for_electron !(unchanged)
       use M_qm_domain,  only : chemical_potential !(CHANGED)
       implicit none
 !
@@ -1238,7 +1067,7 @@
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
  9999 continue
 !
-      END
+      end subroutine elses_eig_set_dens_mat
 !      
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
