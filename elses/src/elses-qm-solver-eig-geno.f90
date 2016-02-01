@@ -25,7 +25,7 @@ module M_qm_solver_eig_geno
 !
      use M_config,     only : config !(unchanged )
      use elses_mod_orb2,     only : n_tot_base
-     use elses_arr_eig_leg,  only : atmp
+     use elses_arr_eig_leg,  only : atmp, eig2
      use  M_wall_clock_time, only : get_system_clock_time
 !
      implicit none
@@ -280,7 +280,7 @@ module M_qm_solver_eig_geno
 !    based on 'elses_seteig3'
 !
   subroutine set_eigen_states
-!
+    use elses_arr_eig_leg,      only : eig2 ! CHANGED
 !   use elses_arr_eig_leg, only:atmp,atmp2,atmp3,atmpo
 !
     use M_config,          only : config !(unchanged)                                                                                                                implicit none
@@ -313,6 +313,7 @@ module M_qm_solver_eig_geno
 !
   subroutine eig_mateig_wrapper(imode)
 !   use elses_arr_eig_leg,      only : mat_a=>atmp, mat_b=>atmp2, eig_levels=>eig2 ! CHANGED
+    use elses_mod_orb2,     only : n_tot_base
     use elses_arr_eig_leg,      only : atmp, eig_levels=>eig2 ! CHANGED
     use M_eig_solver_center, only : eig_solver_center ! routine
     use M_config,          only : config !(unchanged)                                                                        
@@ -325,6 +326,11 @@ module M_qm_solver_eig_geno
     integer            :: log_unit_wrk
     real(DOUBLE_PRECISION), allocatable :: eig_vectors(:, :)  ! Change_for_sparse_matrix_passing
     integer            :: vec_size, ierr
+
+    if (allocated(eig_levels)) then
+      deallocate(eig_levels)
+    end if    
+    allocate(eig_levels(n_tot_base))    
 !
     vec_size=size(eig_levels,1)
 !

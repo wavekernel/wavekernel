@@ -688,6 +688,7 @@
 !
       integer :: ifddist
       integer n, jj
+      integer ierr
 !
       integer ipe,npe
       integer omp_get_thread_num
@@ -704,7 +705,8 @@
       integer level_homo, level_lumo
 !
       nloopmax=1000
-      n=n_base_eig_leg
+!     n=n_base_eig_leg
+      n=size(eig2,1)
       IFDDIST=-1
       rNelec=tot_elec_eig_leg
       err_cri=1.0d-12 ! original err_cri=1.0d-15
@@ -713,7 +715,7 @@
 !
       if (i_verbose >= 1) then
         if (log_unit >0) then 
-          write(log_unit,*)'@@LSES_EIG_CHEM_POT:N=',n
+          write(log_unit,*)'@@ELSES_EIG_CHEM_POT:N=',n
           write(log_unit,*)'   rNelec =',rNelec
           write(log_unit,*)'   err_cri=',err_cri
         endif  
@@ -721,6 +723,24 @@
 !
       CALL TCLOCK(TIME2)
       TB2=TIME2
+!
+      if ( n < level_homo ) then
+        write(*,*) 'ERROR(elses_eig_chem_pot):n=',n
+        stop
+      endif
+!
+      if (.not. allocated(f_occ)) then
+        allocate(f_occ(n), stat=ierr) 
+        if (ierr /= 0) then
+          write(*,*) 'Alloc. ERROR(elses_eig_chem_pot):f_occ'
+          stop
+        endif
+      else
+        if (size(f_occ,1) /= n) then
+          write(*,*) 'ERROR(elses_eig_chem_pot):size(f_occ,1)=', size(f_occ,1)
+          stop
+        endif
+      endif
 !
 !     if (fb .le. 1.0d-10) then
 !       write(6,*) 'zero temperature !'
