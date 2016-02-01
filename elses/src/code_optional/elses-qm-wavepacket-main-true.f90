@@ -154,10 +154,12 @@ contains
     else
       setting%filter_mode = config%calc%wave_packet%filter_mode
     end if
-    if (config%calc%wave_packet%fst_filter > 0) then
+    if (config%calc%wave_packet%fst_filter <= 0 .or. config%calc%wave_packet%end_filter <= 0) then
+      ! Set default value.
+      ! If fst_filter == 0, fill_filtering_setting will work.
+      setting%fst_filter = 0
+    else
       setting%fst_filter = config%calc%wave_packet%fst_filter
-    end if
-    if (config%calc%wave_packet%end_filter > 0) then
       setting%num_filter = config%calc%wave_packet%end_filter - setting%fst_filter + 1
     end if
     setting%filter_group_filename = config%calc%wave_packet%filter_group_filename
