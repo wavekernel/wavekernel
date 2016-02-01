@@ -121,7 +121,7 @@ contains
 
   subroutine copy_settings_from_elses_config_xml(setting)
     type(wp_setting_t), intent(out) :: setting
-    
+
     ! Required settings.
     setting%delta_t = config%calc%wave_packet%delta_t
     setting%limit_t = config%calc%wave_packet%limit_t
@@ -191,10 +191,10 @@ contains
     ! Copy message settings.
     if (config%calc%wave_packet%amplitude_print_threshold >= 0d0) then
       setting%amplitude_print_threshold = config%calc%wave_packet%amplitude_print_threshold
-    end if    
+    end if
     if (config%calc%wave_packet%amplitude_print_interval >= 0d0) then
       setting%amplitude_print_interval = config%calc%wave_packet%amplitude_print_interval
-    end if    
+    end if
 
     if (trim(config%calc%wave_packet%output_filename) == '') then  ! Set default value.
       setting%output_filename = 'out.json'
@@ -205,10 +205,10 @@ contains
     setting%is_output_split = config%calc%wave_packet%is_output_split
     if (config%calc%wave_packet%output_interval > 0) then
       setting%output_interval = config%calc%wave_packet%output_interval
-    end if    
+    end if
     if (config%calc%wave_packet%num_steps_per_output_split > 0) then
       setting%num_steps_per_output_split = config%calc%wave_packet%num_steps_per_output_split
-    end if    
+    end if
     ! Copy overlap matrix settings.
     setting%is_overlap_ignored = config%calc%wave_packet%is_overlap_ignored
     ! Settings that automatically determined when called from ELSES.
