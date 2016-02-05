@@ -71,7 +71,11 @@ contains
       atom_coordinates(1, i) = config%system%structure%vatom(i)%position(1)
       atom_coordinates(2, i) = config%system%structure%vatom(i)%position(2)
       atom_coordinates(3, i) = config%system%structure%vatom(i)%position(3)
-      atom_elements(i) = config%system%structure%vatom(i)%element%name
+      if (associated(config%system%structure%vatom(i)%element)) then
+         atom_elements(i) = config%system%structure%vatom(i)%element%name
+      else
+         atom_elements(i) = config%system%structure%vatom(i)%name
+      end if
       if (atom_elements(i) == 'H') then
         atom_valence = 1
       else if (atom_elements(i) == 'C') then
