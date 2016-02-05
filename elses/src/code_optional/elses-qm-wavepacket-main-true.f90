@@ -328,6 +328,8 @@ contains
     type(wp_state_t), intent(inout) :: state
     type(sparse_mat) :: H_sparse, S_sparse, H_multistep_sparse, S_multistep_sparse
 
+    call add_timer_event('main', 'outside_wavepacket_before_replace_matrix', state%wtime)
+
     if (check_master()) then
       write (0, '(A, F16.6, A, I0, A, F16.6)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
            '] read next input step ', state%input_step + 1, ' at simulation time ', state%t
@@ -335,6 +337,8 @@ contains
     ! The step to be read is 'input_step + 1', not 'input_step + 2' because XYZ information is not interpolated.
     call read_atom_indices_and_coordinates_from_ELSES_config(state%dim, &
          state%num_atoms, state%atom_indices, state%atom_coordinates, state%atom_elements)
+    call add_timer_event('main', 'read_atom_indices_and_coordinates_from_ELSES_config', state%wtime)
+
     if (setting%to_replace_basis) then
       ! step = input_step + 1 (call set_sample_matrices(dim, setting, input_step + 1, H_sparse, S_sparse))
       call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(1), H_sparse)
@@ -346,6 +350,7 @@ contains
     else
       stop 'basis replace mode must be used when called from ELSES'
     end if
+    call add_timer_event('main', 'convert_sparse_matrix_data_real_type_to_wp_sparse', state%wtime)
 
     call set_aux_matrices_for_multistep(state%dim, state%num_atoms, setting, state%proc, state%filter_group_id, state%t, &
          state%atom_indices, state%atom_coordinates, state%atom_elements, &
@@ -363,6 +368,8 @@ contains
          state%charge_coordinate_mean, state%charge_coordinate_msd, &
          state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy, &
          state%absolute_filter_error, state%relative_filter_error)
+    call add_timer_event('main', 'set_aux_matrices_for_multistep', state%wtime)
+
     state%input_step = state%input_step + 1
 
     ! re-save state after matrix replacement.
@@ -372,6 +379,7 @@ contains
          state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
          state%full_vecs_local, state%filtered_vecs_local, &
          state%split_files_metadata, state%total_state_count, state%input_step, .true., state%states)
+    call add_timer_event('main', 'save_state', state%wtime)
   end subroutine wavepacket_replace_matrix
 
 
@@ -379,6 +387,8 @@ contains
     type(wp_setting_t), intent(in) :: setting
     type(wp_state_t), intent(inout) :: state
     integer :: ierr
+
+    call add_timer_event('main', 'outside_wavepacket_before_main', state%wtime)
 
     do
       ! Print progress report.
@@ -430,6 +440,7 @@ contains
            state%S_desc, state%S, state%A_desc, state%A, &
            state%filtered_vecs_desc, state%filtered_vecs, &
            state%full_vecs_desc, state%full_vecs)
+      call add_timer_event('main', 'make_matrix_step_forward', state%wtime)
 
       call step_forward_post_process(state%dim, setting, state%t, &
            state%num_atoms, state%atom_indices, state%atom_coordinates, state%atom_elements, &
@@ -438,6 +449,7 @@ contains
            state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
            state%charge_coordinate_mean, state%charge_coordinate_msd, &
            state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy)
+      call add_timer_event('main', 'step_forward_post_process', state%wtime)
 
       state%i = state%i + 1
       state%t = setting%delta_t * state%i
