@@ -142,7 +142,7 @@ module M_ini_load_vatom
       end do
 !
       if (jsei(j) == 0) then
-         write(*,*)'ERROR:j,jsei(j)=',j,jsei(j)
+         write(*,*)'ERROR(set_structure_data_from_vatom):j,jsei(j)=',j,jsei(j)
          write(*,*) '#ELSES: Stop by error:'
          write(*,*) '#This may be due to mismatch'
          write(*,*) '#  between the configuration XML file'

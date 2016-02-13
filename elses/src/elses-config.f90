@@ -348,6 +348,7 @@ module M_config
      character(len=20)   :: scheme      !
      integer             :: max_num_iter! maximum number of iterations
      character(len=64)   :: filename
+     real(kind(1d0))     :: cell_sizes_in_xml_file(3) ! [unit:au]
   end type cell_change_type
 
   type :: genoOption_type
@@ -447,7 +448,7 @@ module M_config
      type(cell_change_type)   :: cell_change
      type(calc_check_type)    :: calc_check
      type(wave_packet_type)   :: wave_packet
-     character(len=20)        :: calc_force_mode
+     character(len=20)        :: calc_force_mode  ! = 'on' or 'off'
      logical                  :: use_integer_elec_num
      logical                  :: calc_virial_pressure
      logical                  :: use_group_id
@@ -612,6 +613,7 @@ contains
     cell_change%set          = .false.
     cell_change%max_num_iter = 0
     cell_change%filename     = ""
+    cell_change%cell_sizes_in_xml_file(1:3) = - 1.0d0 ! dummy values
     return
   end subroutine cell_change_default
 
