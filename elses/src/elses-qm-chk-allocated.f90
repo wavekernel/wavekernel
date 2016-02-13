@@ -55,6 +55,8 @@ module M_qm_chk_allocated
      if (iv <= 0) return
 !
      write(lu,*)'@@ chk_allocated_dst (check allocate status)'
+     write(lu,*)'INFO:use_matom                           =', config%system%structure%use_matom
+     write(lu,*)'INFO:calc_force_mode                     =', trim(config%calc%calc_force_mode)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Variables in elses-mod-01.f

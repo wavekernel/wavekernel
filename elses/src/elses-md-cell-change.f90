@@ -61,9 +61,21 @@ module M_md_cell_change
     character(len=10240)   :: chara_read_line
     real(DOUBLE_PRECISION) :: unit_value
 !
+    logical                :: called_first
+!
 
     kinetic_energy     = 0.0d0
     kinetic_energy_old = 0.0d0
+!
+    called_first = .false.
+    if (config%calc%cell_change%cell_sizes_in_xml_file(1) < 0.0d0) called_first = .true.
+    if (config%calc%cell_change%cell_sizes_in_xml_file(2) < 0.0d0) called_first = .true.
+    if (config%calc%cell_change%cell_sizes_in_xml_file(3) < 0.0d0) called_first = .true.
+    if (called_first) then
+      config%calc%cell_change%cell_sizes_in_xml_file(1)=config%system%structure%unitcell%vectorA(1)
+      config%calc%cell_change%cell_sizes_in_xml_file(2)=config%system%structure%unitcell%vectorB(2)
+      config%calc%cell_change%cell_sizes_in_xml_file(3)=config%system%structure%unitcell%vectorC(3)
+    endif
 !
     rescale_cutoff=.false.
     if (c_system == 'geno')    rescale_cutoff= .true.
@@ -143,44 +155,60 @@ module M_md_cell_change
 !
     read(iunit,'(a)') chara_read_line
 !
-!   write(*,*)'read line = ', trim(chara_read_line)
-    read(chara_read_line,*,iostat=ierr) cell_size_ref(1:3), chara_unit_wrk
-!
-    if (ierr == 0) then
-      select case(trim(adjustl(chara_unit_wrk))) 
-        case ('angst', 'Angst', 'angstrom', 'Angstrom', 'A')
-          chara_unit='angst'
-        case ('au', 'a.u.')
-          chara_unit='au'
-        case default
-          write(*,*)'ERROR(cell size reading):unit name = ', trim(chara_unit_wrk)
-          stop
-      end select
-    else
-      chara_unit='au'
-      read(chara_read_line,*,iostat=ierr) cell_size_ref(1:3)
-      if (ierr /=0) then
-        write(*,*)'ERROR(cell size reading)'
-        write(*,*)'line = ', trim(chara_read_line)
-        stop
-      endif
-    endif
-!
-    if (trim(chara_unit) == 'angst') then 
-      unit_value=angst
-    else
+    if (index(chara_read_line, 'default') > 0) then
+      cell_size_ref(1:3)=config%calc%cell_change%cell_sizes_in_xml_file(1:3)
       unit_value=1.0d0
+      if (i_verbose >= 1) then
+        if (log_unit > 0) then 
+          write(log_unit,*) 'INFO:cell_size_ref(default): set by those in the structure XML file'
+        endif
+      endif
+    else
+      read(chara_read_line,*,iostat=ierr) cell_size_ref(1:3), chara_unit_wrk
+!
+      if (ierr == 0) then
+        select case(trim(adjustl(chara_unit_wrk))) 
+          case ('angst', 'Angst', 'angstrom', 'Angstrom', 'A')
+            chara_unit='angst'
+          case ('au', 'a.u.')
+            chara_unit='au'
+          case default
+            write(*,*)'ERROR(cell size reading):unit name = ', trim(chara_unit_wrk)
+            stop
+        end select
+      else
+        chara_unit='au'
+        read(chara_read_line,*,iostat=ierr) cell_size_ref(1:3)
+        if (ierr /=0) then
+          write(*,*)'ERROR(cell size reading)'
+          write(*,*)'line = ', trim(chara_read_line)
+          stop
+        endif
+      endif
+!
+      if (trim(chara_unit) == 'angst') then 
+        unit_value=angst
+      else
+        unit_value=1.0d0
+      endif
+      cell_size_ref(:)=cell_size_ref(:)/unit_value
+!
+      if (i_verbose >= 1) then
+        if (log_unit > 0) then 
+          write(log_unit,*) '  cell_size_ref: unit in the file = ', trim(chara_unit)
+        endif
+       endif
+!
     endif
-    cell_size_ref(:)=cell_size_ref(:)/unit_value
 !
     if (i_verbose >= 1) then
       if (log_unit > 0) then 
-        write(log_unit,*) '  cell_size_ref: unit in the file = ', trim(chara_unit)
         write(log_unit,*) '  cell_size_ref x (au)=',cell_size_ref(1)
         write(log_unit,*) '  cell_size_ref y (au)=',cell_size_ref(2)
         write(log_unit,*) '  cell_size_ref z (au)=',cell_size_ref(3)
       endif  
     endif  
+!
 !
     do j=1,3
       if (dabs(cell_size_ref(j)) < 1.0d1) then

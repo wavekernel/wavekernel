@@ -192,10 +192,19 @@ module M_ini_load_common
 !
      if (i_verbose >=1) then
        if (log_unit > 0) then
-         write(log_unit,'(a)')'@@ ini_load_common_alloc'
+         write(log_unit,'(a)')'@@ ini_load_common'
        endif
      endif   
 !
+     if (config%system%structure%use_matom) then
+       config%calc%calc_force_mode='off'
+       if (i_verbose >=1) then
+         if (log_unit > 0) then
+           write(log_unit,'(a,a)')'INFO(use_matom):calc_force_mode is set to ', trim(config%calc%calc_force_mode)
+         endif
+       endif
+     endif
+
      call load_element_alloc
 !       ---> Allocate   : nval(nos), elem_name(nos),
 !                         awt(nos), val_elec_atm(nos)
