@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<generate name="generate-xml-general-20160215">
+  <boundary mode="on" x="periodic" y="periodic" z="periodic" />  
+  <atom_id_is_added mode="on" />
+  <heatbath>
+   <massperatom unit="a.u.">  25.0d0</massperatom>
+  </heatbath>
+</generate>
