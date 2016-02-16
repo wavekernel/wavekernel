@@ -63,49 +63,43 @@ contains
     type(generate_type) :: generate
     character(64) :: filename_in
     character(64) :: filename_out
+    character(64) :: filename_xyz
     integer       :: iargc  
     character(64) :: argv3
     integer       :: ierr
     integer       :: n_split
-    
-    ierr=1
-    if ( iargc() == 2 ) ierr=0
-    if ( iargc() == 3 ) ierr=0
+!    
+    call get_info_from_command_argument(filename_xyz, filename_in, filename_out, n_split, ierr)
 !
-    if ( ierr == 1 ) then
+    if ( ierr /= 0 ) then
       write(*,'(a)') "# Usage of this utility program (1) for single output file"
       write(*,'(a)') "#   elses-xml-generate input_generate.xml output_structures.xml"
       write(*,'(a)') "# Usage of this utility program (2) for splitted output file"
       write(*,'(a)') "#   elses-xml-generate input_generate.xml output_structures.xml -split=XX"
       write(*,'(a)') "#   where XX is the number of the splitted files" 
+      write(*,'(a)') "# Usage of this utility program (3) "
+      write(*,'(a)') "#   elses-xml-generate -xyz_file=input_xyz.xyz -setting_file=input_generate.xml "
+      write(*,'(a)') "#                        -output_file=output_structures.xml -split=XX"
+      write(*,'(a)') "#   where XX is the number of the splitted files" 
       stop
     end if
-    
-    call getarg(1,filename_in)
-    call getarg(2,filename_out)
-
-    n_split=0   ! default (non-split) setting
-!
-    if ( iargc() == 3 ) then
-      call getarg(3, argv3)
-!     write(*,*) 'argv3=',trim(argv3)
-      call set_split( argv3, n_split )
-      write(*,*) 'The number of the splitted file=',n_split
-    endif  
 !    
-    write(*,'(a)')'elses-xml-generate'
+    write(*,'(a)')'@@@ elses-xml-generate'
 !
-    call generate_load( generate, filename_in )
+    call generate_load( generate, filename_in, filename_xyz )
     call generate_output_split( generate, filename_out, n_split )
+!
+    write(*,'(a)')'.... elses-xml-generate ends without error'
 !
   end subroutine main
 
 
   ! parse <generate> node
-  subroutine generate_load( generate, filename )
+  subroutine generate_load( generate, filename, filename_xyz )
     implicit none
     type(generate_type), intent(out) :: generate
     character(len=*),intent(in)   :: filename
+    character(len=*),intent(in)   :: filename_xyz
     character(len=256) :: cwd ! current working dir name for backup
     character(len=256) :: nwd ! current working dir name of config.xml
 
@@ -130,7 +124,8 @@ contains
     logical        :: cell_info_in_xyz_file
     real(8)        :: cell_info(3)
 !
-    cell_info(1:3) = -1.0d0 ! dummy value
+    cell_info(1:3)   = -1.0d0 ! dummy value
+    name_of_xyz_file = ''   ! dummy value
 !
 !   write(*,*)'INFO:subroutine generate_load'
 !
@@ -161,27 +156,31 @@ contains
       stop
     endif
     generate%name = value
-
+!
+    if ( len_trim(filename_xyz) /= 0) then 
+       name_of_xyz_file = trim(filename_xyz)
+       write(*,'(a,a)')'INFO:XYZ file name=',trim(name_of_xyz_file)
+    endif
+!
     ! get <cluster> nodes for multiple tags
     !    (only for the compatibility to the older code
     vcluster_node => getElementsByTagName(generate_node,"cluster")
     generate%ncluster = getLength(vcluster_node)
     if( generate%ncluster == 0 ) then
-      write(*,*)"ERROR:<cluster> not found"
-      stop
+      write(*,*)"INFO:<cluster> not found in the setting XML file"
     endif
     if ( generate%ncluster > 1  ) then
       write(*,*)'ERROR:ncluster =', generate%ncluster 
     endif   
-
+!
     ! get <cluster> nodes for single tag
     cluster_node => getFirstElementByTagName(generate_node,"cluster")
-    if ( .not. associated(cluster_node) ) then
-      write(*,'(a)')'ERROR:No <cluster> tag in the XML file' 
-      stop
+    if ( len_trim(filename_xyz) == 0) then 
+      if ( associated(cluster_node) ) then
+       name_of_xyz_file = getAttribute(cluster_node,"structure")
+       write(*,'(a,a)')'INFO:XYZ file name=',trim(name_of_xyz_file)
+      endif
     endif
-    name_of_xyz_file = getAttribute(cluster_node,"structure")
-    write(*,'(a,a)')'INFO:XYZ file name=',trim(name_of_xyz_file)
     cell_info_in_xyz_file = .false. ! dummy value
     call get_info_from_xyz_file(name_of_xyz_file, cell_info_in_xyz_file)
 
@@ -203,7 +202,7 @@ contains
       structure_info%cell_size_angst(3)=generate%unitcell%vectorC(3)*angst
     else  
       write(*,'(a)')'INFO:No <unitcell> tag was found in the XML file' 
-      write(*,'(a)')'INFO:The data in the XMY file will be used for the unit cell info, if exist.' 
+      write(*,'(a)')'INFO:The data in the XYZ file will be used for the unit cell info, if exist.' 
     endif
 !
     ! get <boundary> node
@@ -759,6 +758,12 @@ contains
    real(8)              :: data_wrk(3)   ! work array
 !
    write(*,*)'INFO:get_basic_info: filename=',trim(filename)
+!
+   if (len_trim(filename) == 0) then
+     write(*,*) 'ERROR(get_info_from_xyz_file): No XYZ filename '
+     stop
+   endif
+!
    open(fd,file=filename,status='old')
 !
    structure_info%total_number_of_atoms = -1     ! dummy value
@@ -804,5 +809,100 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine get_info_from_command_argument(filename_xyz, filename_setting, filename_output, n_split, ierr_result)
+   implicit none
+    character(len=*), intent(out) :: filename_xyz, filename_setting, filename_output
+    integer,          intent(out) :: n_split
+    integer,          intent(out) :: ierr_result
+    integer             :: iargc  
+    character(len=1024) :: arg, chara_header, chara_wrk
+    integer             :: i, len_arg, len_header, ierr
+    logical             :: debug=.false.
+
+!    
+    n_split=0             ! default (non-split) setting
+    filename_xyz     =''  ! dummy value
+    filename_setting =''  ! dummy value
+    filename_output  =''  ! dummy value
+    ierr_result      = 0  ! dummy value
+!
+    write(*,'(a)')'@@@ get_info_from_command_argument'
+!
+    ierr=1
+    if ( iargc() == 2 ) ierr=0
+    if ( iargc() == 3 ) ierr=0
+    if ( iargc() == 4 ) ierr=0
+!
+    if (ierr /=0) then 
+     ierr_result=ierr
+     return
+    endif
+!
+    do i=1, iargc()
+      call getarg(i, arg)
+      len_arg=len_trim(arg)
+!
+      chara_header='-xyz_file='
+      if (index(arg, trim(chara_header)) > 0) then
+        len_header=len_trim(chara_header)
+        chara_wrk=trim(arg(len_header+1:len_arg))
+        if (debug) write(*,*)' INFO:command argument : ', i, trim(chara_wrk)
+        read(chara_wrk, *, iostat=ierr)  filename_xyz
+        if (ierr /= 0) stop 'ERROR (get_command_argument) : filename_xyz'
+        cycle
+      endif
+!
+      chara_header='-setting_file='
+      if (index(arg, trim(chara_header)) > 0) then
+        len_header=len_trim(chara_header)
+        chara_wrk=trim(arg(len_header+1:len_arg))
+        if (debug) write(*,*)' INFO:command argument : ', i, trim(chara_wrk)
+        read(chara_wrk, *, iostat=ierr)  filename_setting
+        if (ierr /= 0) stop 'ERROR (get_command_argument) : filename_xyz'
+        cycle
+      endif
+!
+      chara_header='-output_file='
+      if (index(arg, trim(chara_header)) > 0) then
+        len_header=len_trim(chara_header)
+        chara_wrk=trim(arg(len_header+1:len_arg))
+        if (debug) write(*,*)' INFO:command argument : ', i, trim(chara_wrk)
+        read(chara_wrk, *, iostat=ierr)  filename_output
+        if (ierr /= 0) stop 'ERROR (get_command_argument) : filename_xyz'
+        cycle
+      endif
+!
+      chara_header='-split='
+      if (index(arg, trim(chara_header)) > 0) then
+        len_header=len_trim(chara_header)
+        chara_wrk=trim(arg(len_header+1:len_arg))
+        if (debug) write(*,*)' INFO:command argument : ', i, trim(chara_wrk)
+        read(chara_wrk, *, iostat=ierr)  n_split
+        if (ierr /= 0) stop 'ERROR (get_command_argument) : filename_xyz'
+        cycle
+      endif
+!
+      if (len_trim(filename_setting) == 0) then 
+        filename_setting=trim(arg)
+        cycle
+      endif
+!
+      if (len_trim(filename_output)  == 0) then 
+        filename_output=trim(arg)
+        cycle
+      endif
+!
+    enddo
+!
+    write(*,*)'INFO:filename of the xyz file     =', trim(filename_xyz)
+    write(*,*)'INFO:filename of the setting file =', trim(filename_setting)
+    write(*,*)'INFO:filename of the output  file =', trim(filename_output)
+    if (n_split > 0) then
+      write(*,*)'INFO: the number of split files   =', n_split
+    else
+      write(*,*)'INFO: the single (non-split) file will be generated'
+    endif
+!    
+  end subroutine get_info_from_command_argument
 !
 end program elses_xml_generate
