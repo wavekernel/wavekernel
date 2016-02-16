@@ -66,10 +66,16 @@ contains
     logical :: is_wavepacket_end = .false.  ! Avoid calling finalization twice.
     type(wp_setting_t), save :: setting
     type(wp_state_t), save :: state
-    integer :: i
+    integer :: i, j
+    real(DOUBLE_PRECISION) :: wtime_start, wtime_end
+    type(fson_value), pointer :: output
+    
 
     call mpi_barrier(mpi_comm_world, ierr)
     g_mpi_wtime_init = mpi_wtime()
+    wtime_start = g_mpi_wtime_init
+    output => fson_value_create()
+    output%value_type = TYPE_OBJECT
 
     do i = 1, 2
       if (allocated(matrix_data(i)%element_index)) then
@@ -94,6 +100,10 @@ contains
         is_wavepacket_end = .true.  ! output_fson_and_destroy is called only once.
       end if
     end if
+
+    wtime_end = mpi_wtime()
+    call add_event('main:wavepacket', wtime_end - wtime_start)
+    wtime_start = wtime_end
 !
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -196,6 +206,24 @@ contains
     case default
       stop 'ERROR(eig_solver_center): Unknown solver'
     end select
+
+    if (check_master()) then
+       open(30, file="eigenvalues.dat", position='append')
+       do j = 1, mat_size
+          write (30, '(I8, " ", E26.16e3)') j, eig_levels(j)
+       enddo
+       close(30)
+    end if
+
+    wtime_end = mpi_wtime()
+    call add_event('main:total', wtime_end - wtime_start)
+
+    if (check_master()) then
+       call fson_events_add(output)
+       open(31, file="out_times.json", status='unknown', position='append')
+       call fson_print(31, output)
+       close(31)
+    end if
 
     if (log_unit >0) then
       write(log_unit,*)'eig_solver_center finished'
