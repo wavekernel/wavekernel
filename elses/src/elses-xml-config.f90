@@ -1213,7 +1213,8 @@ contains
     ! get <system> node
     system_node => getFirstElementByTagName(config_node,"system")
     if( .not. associated(system_node) ) then
-       call XML_error("<system> not found")
+       write(*,'(a)') 'ERROR:<system> tag is not found in the configration XML file'
+       stop
     else
        call system_load( config%system, system_node, config%elses_xml_version )
     end if
@@ -1221,7 +1222,8 @@ contains
     ! get <calc> node
     calc_node => getFirstElementByTagName(config_node,"calc")
     if( .not. associated(calc_node) ) then
-       call calc_default( config%calc )
+       write(*,'(a)') 'ERROR:<calc> tag is not found in the configration XML file'
+       stop
     else
        call calc_default( config%calc )
        call calc_load( config%calc, calc_node )
@@ -1230,7 +1232,8 @@ contains
     ! get <output> node
     output_node => getFirstElementByTagName(config_node,"output")
     if( .not. associated(output_node) ) then
-       call output_default( config%output )
+       write(*,'(a)') 'ERROR:<output> tag is not found in the configration XML file'
+       stop
     else
        call output_default( config%output )
        call output_load( config%output, output_node )
