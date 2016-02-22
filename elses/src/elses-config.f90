@@ -33,50 +33,50 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine element_print( element )
-    implicit none
-    type(element_type) :: element
-
-    write(*,*) "element%name = ", element%name
-
-    call classic_print( element%classic )
-    call quantum_print( element%quantum )
-
-    return
-  end subroutine element_print
+! subroutine element_print( element )
+!   implicit none
+!   type(element_type) :: element
+!
+!   write(*,*) "element%name = ", element%name
+!
+!   call classic_print( element%classic )
+!   call quantum_print( element%quantum )
+!
+!   return
+! end subroutine element_print
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! print <classic> data
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine classic_print( classic )
-    implicit none
-    type(classic_type) :: classic
-
-    write(*,*) "classic%mass = ",   classic%mass
-    write(*,*) "classic%charge = ", classic%charge
-
-    return
-  end subroutine classic_print
+! subroutine classic_print( classic )
+!   implicit none
+!   type(classic_type) :: classic
+!
+!   write(*,*) "classic%mass = ",   classic%mass
+!   write(*,*) "classic%charge = ", classic%charge
+!
+!   return
+! end subroutine classic_print
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! print <quantum> data
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine quantum_print( quantum )
-    implicit none
-    type(quantum_type) :: quantum
-
-    write(*,*) "quantum%orbital=",  quantum%orbital
-    write(*,*) "quantum%DNAL0=",    quantum%DNAL0
-    write(*,*) "quantum%RNN0=",     quantum%RNN0
-    write(*,*) "quantum%DHAL=",     quantum%DHAL(1:4)
-    write(*,*) "quantum%DNAL=",     quantum%DNAL(1:4)
-    write(*,*) "quantum%RCAL=",     quantum%RCAL(1:4)
-    write(*,*) "quantum%restpart=", quantum%restpart
-
-    return
-  end subroutine quantum_print
+! subroutine quantum_print( quantum )
+!   implicit none
+!   type(quantum_type) :: quantum
+!
+!   write(*,*) "quantum%orbital=",  quantum%orbital
+!   write(*,*) "quantum%DNAL0=",    quantum%DNAL0
+!   write(*,*) "quantum%RNN0=",     quantum%RNN0
+!   write(*,*) "quantum%DHAL=",     quantum%DHAL(1:4)
+!   write(*,*) "quantum%DNAL=",     quantum%DNAL(1:4)
+!   write(*,*) "quantum%RCAL=",     quantum%RCAL(1:4)
+!   write(*,*) "quantum%restpart=", quantum%restpart
+!
+!   return
+! end subroutine quantum_print
 end module M_element
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -174,54 +174,53 @@ contains
 
   ! print <structure> data
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine structure_print( structure )
-    implicit none
-    type(structure_type) :: structure
-    integer :: j
-
-    write(*,*) "name   = ", structure%name
-    write(*,*) "mdstep = ", structure%mdstep
-
-    call unitcell_print( structure%unitcell )
-
-    do j=1, structure%natom
-       write(*,*) "atom array index = ", j
-       call atom_print( structure%vatom(j) )
-    end do
-
-    return
-  end subroutine structure_print
+! subroutine structure_print( structure )
+!   implicit none
+!   type(structure_type) :: structure
+!   integer :: j
+!
+!   write(*,*) "name   = ", structure%name
+!   write(*,*) "mdstep = ", structure%mdstep
+!
+!   call unitcell_print( structure%unitcell )
+!
+!   do j=1, structure%natom
+!      write(*,*) "atom array index = ", j
+!      call atom_print( structure%vatom(j) )
+!   end do
+!
+!   return
+! end subroutine structure_print
 
 
   ! print <unitcell> data
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine unitcell_print( unitcell )
-    implicit none
-    type(unitcell_type) :: unitcell
-
-    write(*,*) "unitcell%vectorA = ", unitcell%vectorA(1:3)
-    write(*,*) "unitcell%vectorB = ", unitcell%vectorB(1:3)
-    write(*,*) "unitcell%vectorC = ", unitcell%vectorC(1:3)
-    write(*,*) "unitcell%myLength =", unitcell%myLength
-
-    return
-  end subroutine unitcell_print
-
+! subroutine unitcell_print( unitcell )
+!   implicit none
+!   type(unitcell_type) :: unitcell
+!
+!   write(*,*) "unitcell%vectorA = ", unitcell%vectorA(1:3)
+!   write(*,*) "unitcell%vectorB = ", unitcell%vectorB(1:3)
+!   write(*,*) "unitcell%vectorC = ", unitcell%vectorC(1:3)
+!   write(*,*) "unitcell%myLength =", unitcell%myLength
+!
+!   return
+! end subroutine unitcell_print
+!
   ! print <atom> data
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine atom_print( atom )
-    implicit none
-    type(atom_type) :: atom
-
-    if( associated(atom%element) ) call element_print( atom%element )
-    write(*,*) "atom%position = ", atom%position(1:3)
-    write(*,*) "atom%velocity = ", atom%velocity(1:3)
-    write(*,*) "atom%class    = ", atom%class
-    write(*,*) "atom%motion   = ", atom%motion
-
-    return
-  end subroutine atom_print
-
+! subroutine atom_print( atom )
+!   implicit none
+!   type(atom_type) :: atom
+!   if( associated(atom%element) ) call element_print( atom%element )
+!   write(*,*) "atom%position = ", atom%position(1:3)
+!   write(*,*) "atom%velocity = ", atom%velocity(1:3)
+!   write(*,*) "atom%class    = ", atom%class
+!   write(*,*) "atom%motion   = ", atom%motion
+!
+!   return
+! end subroutine atom_print
+!
 end module M_structure
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -656,237 +655,237 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine config_print( config )
-    implicit none
-    type(config_type)    :: config
-
-    write(*,*) "config%name = ", config%name
-
-    call system_print( config%system )
-    call calc_print( config%calc )
-    call output_print( config%output )
-
-    return
-  end subroutine config_print
+! subroutine config_print( config )
+!   implicit none
+!   type(config_type)    :: config
+!
+!   write(*,*) "config%name = ", config%name
+!
+!   call system_print( config%system )
+!   call calc_print( config%calc )
+!   call output_print( config%output )
+!
+!   return
+! end subroutine config_print
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine system_print( system )
-    implicit none
-    type(system_type)    :: system
-    integer              :: i
-
-    write(*,*) "system%temperature = ", system%temperature
-
-    call structure_print( system%structure )
-
-    write(*,*) "system%ntarget = ", system%ntarget
-
-    do i=1, system%ntarget
-       call target_print( system%vtarget(i) )
-    end do
-
-    return
-  end subroutine system_print
+! subroutine system_print( system )
+!   implicit none
+!   type(system_type)    :: system
+!   integer              :: i
+!
+!   write(*,*) "system%temperature = ", system%temperature
+!
+!   call structure_print( system%structure )
+!
+!   write(*,*) "system%ntarget = ", system%ntarget
+!
+!   do i=1, system%ntarget
+!      call target_print( system%vtarget(i) )
+!   end do
+!
+!   return
+! end subroutine system_print
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine target_print( target )
-    implicit none
-    type(target_type)    :: target
-
-    if( target%class_set ) then
-       write(*,*) "target%class = ", target%class
-    end if
-    if( target%xrange_set ) then
-       write(*,*) "target%xrange = ", target%xrange(1:2)
-    end if
-    if( target%yrange_set ) then
-       write(*,*) "target%yrange = ", target%yrange(1:2)
-    end if
-    if( target%zrange_set ) then
-       write(*,*) "target%zrange = ", target%zrange(1:2)
-    end if
-    if( target%trange_set ) then
-       write(*,*) "target%trange = ", target%trange(1:2)
-    end if
-
-    if( target%temperature_set ) then
-       write(*,*) "target%temperature = ", target%temperature
-    end if
-
-    if( target%mass_set ) then
-       write(*,*) "target%mass = ", target%mass
-    end if
-
-    if( target%position_set ) then
-       write(*,*) "target%position = ", target%position(1:3)
-    end if
-
-    if( target%velocity_set ) then
-       write(*,*) "target%velocity = ", target%velocity(1:3)
-    end if
-
-    if( target%motion_set ) then
-       write(*,*) "target%motion = ", target%motion
-    end if
-
-    return
-  end subroutine target_print
+! subroutine target_print( target )
+!   implicit none
+!   type(target_type)    :: target
+!
+!   if( target%class_set ) then
+!      write(*,*) "target%class = ", target%class
+!   end if
+!   if( target%xrange_set ) then
+!      write(*,*) "target%xrange = ", target%xrange(1:2)
+!   end if
+!   if( target%yrange_set ) then
+!      write(*,*) "target%yrange = ", target%yrange(1:2)
+!   end if
+!   if( target%zrange_set ) then
+!      write(*,*) "target%zrange = ", target%zrange(1:2)
+!   end if
+!   if( target%trange_set ) then
+!      write(*,*) "target%trange = ", target%trange(1:2)
+!   end if
+!
+!   if( target%temperature_set ) then
+!      write(*,*) "target%temperature = ", target%temperature
+!   end if
+!
+!   if( target%mass_set ) then
+!      write(*,*) "target%mass = ", target%mass
+!   end if
+!
+!   if( target%position_set ) then
+!      write(*,*) "target%position = ", target%position(1:3)
+!   end if
+!
+!   if( target%velocity_set ) then
+!      write(*,*) "target%velocity = ", target%velocity(1:3)
+!   end if
+!
+!   if( target%motion_set ) then
+!      write(*,*) "target%motion = ", target%motion
+!   end if
+!
+!   return
+! end subroutine target_print
+!
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
+! subroutine calc_print( calc )
+!   implicit none
+!   type(calc_type)      :: calc
+!
+!   call limit_print( calc%limit )
+!   call dynamics_print( calc%dynamics )
+!   call solver_print( calc%solver )
+!
+!   return
+! end subroutine calc_print
+!
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
+! subroutine limit_print( limit )
+!   implicit none
+!   type(limit_type)     :: limit
+!
+!   write(*,*) "limit%time   = ", limit%time
+!   write(*,*) "limit%memory = ", limit%memory
+!
+!   return
+! end subroutine limit_print
 
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine calc_print( calc )
-    implicit none
-    type(calc_type)      :: calc
-
-    call limit_print( calc%limit )
-    call dynamics_print( calc%dynamics )
-    call solver_print( calc%solver )
-
-    return
-  end subroutine calc_print
-
-  !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine limit_print( limit )
-    implicit none
-    type(limit_type)     :: limit
-
-    write(*,*) "limit%time   = ", limit%time
-    write(*,*) "limit%memory = ", limit%memory
-
-    return
-  end subroutine limit_print
+! subroutine dynamics_print( dynamics )
+!   implicit none
+!   type(dynamics_type)  :: dynamics
+!
+!   write(*,*) "dynamics%scheme = ", trim(dynamics%scheme)
+!   write(*,*) "dynamics%delta = ", dynamics%delta
+!   write(*,*) "dynamics%total = ", dynamics%total
+!
+!   return
+! end subroutine dynamics_print
 
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine dynamics_print( dynamics )
-    implicit none
-    type(dynamics_type)  :: dynamics
-
-    write(*,*) "dynamics%scheme = ", trim(dynamics%scheme)
-    write(*,*) "dynamics%delta = ", dynamics%delta
-    write(*,*) "dynamics%total = ", dynamics%total
-
-    return
-  end subroutine dynamics_print
-
-  !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine solver_print( solver )
-    implicit none
-    type(solver_type)    :: solver
-
-    write(*,*) "solver%scheme = ", trim(solver%scheme)
-    write(*,*) "solver%projection = ", solver%projection
-    write(*,*) "solver%dimension  = ", solver%dimension
-
-    return
-  end subroutine solver_print
+! subroutine solver_print( solver )
+!   implicit none
+!   type(solver_type)    :: solver
+!
+!   write(*,*) "solver%scheme = ", trim(solver%scheme)
+!   write(*,*) "solver%projection = ", solver%projection
+!   write(*,*) "solver%dimension  = ", solver%dimension
+!
+!   return
+! end subroutine solver_print
 
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine output_print( output )
-    implicit none
-    type(output_type)    :: output
-
-    call file_print( output%restart )
-    call file_print( output%position )
-    call file_print( output%density_of_states )
-
-    return
-  end subroutine output_print
-
+! subroutine output_print( output )
+!   implicit none
+!   type(output_type)    :: output
+!
+!   call file_print( output%restart )
+!   call file_print( output%position )
+!   call file_print( output%density_of_states )
+!
+!   return
+! end subroutine output_print
+!
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine file_print( file )
-    implicit none
-    type(file_type)      :: file
-
-    if( .not. file%set ) return
-
-    write(*,*) "file%filename = ", trim(file%filename)
-    write(*,*) "file%history  = ", file%history
-    write(*,*) "file%format   = ", file%format
-    write(*,*) "file%interval = ", file%interval
-
-    return
-  end subroutine file_print
-
-  function target_match( target, atom ) result(match)
-    implicit none
-    type(target_type), intent(in) :: target
-    type(atom_type),   intent(in) :: atom
-
-    logical              :: match
-
-    match = .false.
-
-    if( target%class_set ) then
-       if( target%class == atom%class ) then
-          match = .true.
-       else
-          match = .false.
-          return
-       end if
-    end if
-
-    if( target%xrange_set ) then
-       if( target%xrange(1) <= atom%position(1) .and. &
-            atom%position(1) <= target%xrange(2) ) then
-          match = .true.
-       else
-          match = .false.
-          return
-       end if
-    end if
-
-    if( target%yrange_set ) then
-       if( target%yrange(1) <= atom%position(2) .and. &
-            atom%position(2) <= target%yrange(2) ) then
-          match = .true.
-       else
-          match = .false.
-          return
-       end if
-    end if
-
-    if( target%zrange_set ) then
-       if( target%zrange(1) <= atom%position(3) .and. &
-            atom%position(3) <= target%zrange(2) ) then
-          match = .true.
-       else
-          match = .false.
-          return
-       end if
-    end if
-
-    return
-  end function target_match
-
+! subroutine file_print( file )
+!   implicit none
+!   type(file_type)      :: file
+!
+!   if( .not. file%set ) return
+!
+!   write(*,*) "file%filename = ", trim(file%filename)
+!   write(*,*) "file%history  = ", file%history
+!   write(*,*) "file%format   = ", file%format
+!   write(*,*) "file%interval = ", file%interval
+!
+!   return
+! end subroutine file_print
+!
+! function target_match( target, atom ) result(match)
+!   implicit none
+!   type(target_type), intent(in) :: target
+!   type(atom_type),   intent(in) :: atom
+!
+!   logical              :: match
+!
+!   match = .false.
+!
+!   if( target%class_set ) then
+!      if( target%class == atom%class ) then
+!         match = .true.
+!      else
+!         match = .false.
+!         return
+!      end if
+!   end if
+!
+!   if( target%xrange_set ) then
+!      if( target%xrange(1) <= atom%position(1) .and. &
+!           atom%position(1) <= target%xrange(2) ) then
+!         match = .true.
+!      else
+!         match = .false.
+!         return
+!      end if
+!   end if
+!
+!   if( target%yrange_set ) then
+!      if( target%yrange(1) <= atom%position(2) .and. &
+!           atom%position(2) <= target%yrange(2) ) then
+!         match = .true.
+!      else
+!         match = .false.
+!         return
+!      end if
+!   end if
+!
+!   if( target%zrange_set ) then
+!      if( target%zrange(1) <= atom%position(3) .and. &
+!           atom%position(3) <= target%zrange(2) ) then
+!         match = .true.
+!      else
+!         match = .false.
+!         return
+!      end if
+!   end if
+!
+!   return
+! end function target_match
+!
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine target_overwrite( target, atom )
-    implicit none
-    type(target_type), intent(in)  :: target
-    type(atom_type),   intent(out) :: atom
-
-    if( target%temperature_set ) then
+! subroutine target_overwrite( target, atom )
+!   implicit none
+!   type(target_type), intent(in)  :: target
+!   type(atom_type),   intent(out) :: atom
+!
+!   if( target%temperature_set ) then
 !       atom%temperature = target%temperature
-    end if
-
-    if( target%mass_set ) then
+!   end if
+!
+!   if( target%mass_set ) then
 !       atom%mass = target%mass
-    end if
-
-    if( target%position_set ) then
-       atom%position = target%position
-    end if
-
-    if( target%velocity_set ) then
-       atom%velocity = target%velocity
-    end if
-
-    if( target%motion_set ) then
-       atom%motion = target%motion
-    end if
-
-    return
-  end subroutine target_overwrite
+!   end if
+!
+!   if( target%position_set ) then
+!      atom%position = target%position
+!   end if
+!
+!   if( target%velocity_set ) then
+!      atom%velocity = target%velocity
+!   end if
+!
+!   if( target%motion_set ) then
+!      atom%motion = target%motion
+!   end if
+!
+!   return
+! end subroutine target_overwrite
 end module M_config
