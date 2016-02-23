@@ -213,6 +213,10 @@ contains
     end if
     ! Copy overlap matrix settings.
     setting%is_overlap_ignored = config%calc%wave_packet%is_overlap_ignored
+    ! Copy re-initializatin method setting.
+    if (trim(config%calc%wave_packet%re_initialize_method) /= '') then
+      setting%re_initialize_method = config%calc%wave_packet%re_initialize_method
+    end if
     ! Settings that automatically determined when called from ELSES.
     setting%is_atom_indices_enabled = .true.
     setting%is_group_id_used = num_groups > 0 .and. allocated(num_group_mem) .and. allocated(group_mem)

@@ -2051,6 +2051,13 @@ contains
         end if
       end if
 
+      ! get nodes for re-initialization after matrix replacement config
+      calc%wave_packet%re_initialize_method = ""  ! default setting
+      work_node2 => getFirstElementByTagName(work_node1,"re_initialize")
+      if ( associated(work_node2) ) then
+        calc%wave_packet%re_initialize_method = getAttribute(work_node2,"type")
+      end if
+
       ! get nodes for time evolution config
       calc%wave_packet%time_evolution_mode = ""  ! default setting
       work_node2 => getFirstElementByTagName(work_node1,"time_evolution")

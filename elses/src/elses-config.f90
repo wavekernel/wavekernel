@@ -424,6 +424,7 @@ module M_config
      character(len=1024)   :: init_type
      character(len=1024)   :: filter_mode
      character(len=1024)   :: filter_group_filename
+     character(len=1024)   :: re_initialize_method
      logical               :: to_multiply_phase_factor
      logical               :: is_output_split
      logical               :: is_overlap_ignored
