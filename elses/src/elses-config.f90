@@ -27,7 +27,7 @@ module M_element
      type(classic_type) :: classic
      type(quantum_type) :: quantum
   end type element_type
-contains
+!contains
   ! print <element> data
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
