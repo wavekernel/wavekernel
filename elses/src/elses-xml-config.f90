@@ -2083,7 +2083,7 @@ contains
       calc%wave_packet%is_output_split = .false.  ! default setting
       calc%wave_packet%output_interval = -1  ! dummy value
       calc%wave_packet%num_steps_per_output_split = -1  ! dummy value
-      work_node2 => getFirstElementByTagName(work_node1,"output")
+      work_node2 => getFirstElementByTagName(work_node1,"wave_packet_output")
       if ( associated(work_node2) ) then
         calc%wave_packet%is_binary_output_mode = (getAttribute(work_node2,"format") == "binary")
         calc%wave_packet%is_output_split = (getAttribute(work_node2,"split") == "on")
