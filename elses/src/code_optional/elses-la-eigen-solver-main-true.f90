@@ -207,14 +207,6 @@ contains
       stop 'ERROR(eig_solver_center): Unknown solver'
     end select
 
-    if (check_master()) then
-       open(30, file="eigenvalues.dat", position='append')
-       do j = 1, mat_size
-          write (30, '(I8, " ", E26.16e3)') j, eig_levels(j)
-       enddo
-       close(30)
-    end if
-
     wtime_end = mpi_wtime()
     call add_event('main:total', wtime_end - wtime_start)
 
