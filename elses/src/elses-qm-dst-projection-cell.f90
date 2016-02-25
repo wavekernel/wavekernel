@@ -5,7 +5,7 @@
 module M_qm_dst_proj_cell
 !
   use M_qm_domain, only : i_verbose, DOUBLE_PRECISION      !(unchanged)
-  use M_io_dst_write_log, only : log_unit                  !(unchanged)
+  use M_io_dst_write_log, only : lu => log_unit                  !(unchanged)
   use M_wall_clock_time, only : get_system_clock_time      !(routine)
   use M_md_dst,          only : set_dst_final              !(routines)
   implicit none
@@ -87,7 +87,7 @@ module M_qm_dst_proj_cell
    character(len=32) :: suggestion_mode
 !
    if (i_verbose >= 0) then 
-     write(*,*)'@@ set_dst_atm_list'
+     if (lu>0) write(lu,*)'@@ set_dst_atm_list'
    endif  
 !
    if ((nprocs < 1) .or. (nprocs > 1000000)) then
@@ -112,7 +112,7 @@ module M_qm_dst_proj_cell
 !  atm_index_ini=myrank*noav/nprocs+1
 !  atm_index_fin=(myrank+1)*noav/nprocs
    call dst_get_atm_index_range(atm_index_ini,atm_index_fin)
-   if (log_unit >0) write(log_unit,'(a,3i10)')'INFO-MPI: procs, ini, fin=',myrank, atm_index_ini, atm_index_fin
+   if (lu >0) write(lu,'(a,3i10)')'INFO-MPI: procs, ini, fin=',myrank, atm_index_ini, atm_index_fin
 !
    jj=0
    do atm_index=atm_index_ini, atm_index_fin
@@ -126,7 +126,7 @@ module M_qm_dst_proj_cell
    endif
 !
    len_dst_atm_list(2)=len_dst_atm_list(1) ! dummy setting for compatibility
-   if (log_unit >0) write(log_unit,'(a,i10)')'INFO-MPI: len_dst_atm_list(1)=',len_dst_atm_list(1)
+   if (lu >0) write(lu,'(a,i10)')'INFO-MPI: len_dst_atm_list(1)=',len_dst_atm_list(1)
 !
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -209,9 +209,9 @@ module M_qm_dst_proj_cell
 !    write(*,*) 'INFO:suggested projecion radius: value(au) =', proj_radius_suggested 
 !  endif  
 !
-   if (log_unit >0) then
-     write(log_unit,*) 'INFO:suggested projecion radius:      mode =',trim(suggestion_mode)
-     write(log_unit,*) 'INFO:suggested projecion radius: value(au) =', proj_radius_suggested 
+   if (lu >0) then
+     write(lu,*) 'INFO:suggested projecion radius:      mode =',trim(suggestion_mode)
+     write(lu,*) 'INFO:suggested projecion radius: value(au) =', proj_radius_suggested 
    endif   
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -235,7 +235,9 @@ module M_qm_dst_proj_cell
        stop
      endif
      if (i_verbose >= 1) then 
-       if (atm_index < 10) write(*,'(a,3i10)')'  atm_index, ntry, num_atom_list =',atm_index, ntry, num_atom_list
+       if (atm_index < 10) then 
+         if (lu>0) write(lu,'(a,3i10)')'  atm_index, ntry, num_atom_list =',atm_index, ntry, num_atom_list
+       endif
      endif  
      rcut_kry_dst(dst_atm_index)=proj_radius
      noak_dst(dst_atm_index)=num_atom_list
@@ -245,12 +247,12 @@ module M_qm_dst_proj_cell
 !
    call get_system_clock_time(time_wrk)
 !  write(*,'(a,f20.5)')'TIME:qm_solver_gkrylov_dst:dst_atm_list(main) =',time_wrk-time_wrk_previous
-   if (log_unit > 0) write(log_unit,'(a,f20.5)')'TIME:qm_solver_gkrylov_dst:dst_atm_list(main) =', & 
+   if (lu > 0) write(lu,'(a,f20.5)')'TIME:qm_solver_gkrylov_dst:dst_atm_list(main) =', & 
 &                         time_wrk-time_wrk_previous
    time_wrk_previous=time_wrk
 !
    if (.not. second_booking) then 
-     if (log_unit >0)  write(log_unit,*)'.... scond booking is skipped'
+     if (lu >0)  write(lu,*)'.... scond booking is skipped'
 !    stop 'Stop manually'
      return
    endif
@@ -313,7 +315,7 @@ module M_qm_dst_proj_cell
      endif
    enddo   
    len_dst_atm_list(2)=jj
-   if (log_unit >0) write(log_unit,'(a,i10)')'INFO-MPI: len_dst_atm_list(2)=',len_dst_atm_list(2)
+   if (lu >0) write(lu,'(a,i10)')'INFO-MPI: len_dst_atm_list(2)=',len_dst_atm_list(2)
 !
    dst_atm_list_rev(:)=0
    do dst_atm_index=1,len_dst_atm_list(2)
@@ -337,7 +339,7 @@ module M_qm_dst_proj_cell
    if (ierr /= 0) stop 'ERROR in dealloc. of booked_for_projection'
 !
    if (i_verbose >= 0) then 
-     write(*,*)' ... ended (set_dst_atm_lst)'
+     if (lu>0) write(lu,*)' ... ended (set_dst_atm_lst)'
    endif  
 !
   end subroutine set_dst_atm_list

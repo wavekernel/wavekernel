@@ -26,7 +26,8 @@ module M_qm_solver_gkrylov_dst
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   subroutine qm_solver_gkrylov_dst(scheme_mode)
 !
-    use M_config,           only : config !(unchaged, except config%calc%solver%mode_for_large_memory, config%calc%calc_force_mode)
+    use M_config,           only : config !(unchaged
+!                                         !  except config%calc%solver%mode_for_large_memory, config%calc%calc_force_mode)
     use elses_mod_orb2,     only : js2j ! (unchanged)
     use M_qm_domain,        only : i_verbose, noav, atm_element, nval, &
 &                                    total_electron_number, chemical_potential ! (unchanged)
@@ -197,17 +198,23 @@ module M_qm_solver_gkrylov_dst
 !
     if (config%calc%solver%mode_for_large_memory == 1) then
       config%calc%solver%mode_for_large_memory=0
-      if (i_verbose >= 0) write(*,*)'Warning:Now mode_for_large_memory is forced to be zero in DST calculation'
+      if (i_verbose >= 0) then 
+       if (lu>0) write(lu,*)'Warning:Now mode_for_large_memory is forced to be zero in DST calculation'
+      endif
     endif
 !
     if (n_csc_loop == 0) then
       calc_rest_part = .true.
       calc_charge = .false.
-      if (i_verbose >= 0) write(*,*)'INFO:Tentatively, the calc_charge is off in DST, non-CSC workflow'
+      if (i_verbose >= 0) then 
+        if (lu>0) write(lu,*)'INFO:Tentatively, the calc_charge is off in DST, non-CSC workflow'
+      endif
     else
       calc_rest_part = .false.
       calc_charge = .true.
-      if (i_verbose >= 0) write(*,*)'INFO:calc_rest_part=',calc_rest_part
+      if (i_verbose >= 0) then
+        if (lu>0) write(lu,*)'INFO:calc_rest_part=',calc_rest_part
+      endif
     endif
 !
     if (v_level  >= 1) then 
@@ -289,7 +296,7 @@ module M_qm_solver_gkrylov_dst
       if (ierr /= 0) stop 'Abort:ERROR in alloc (kr_dim_dst)'
       kr_dim_dst(:,:)=kr_dim_max_input
       if (i_verbose >=1) then
-        write(*,'(a,f20.10)')'INFO:Alloc. of kr_dim_dst           : size [GB]  =', & 
+        if (lu>0) write(lu,'(a,f20.10)')'INFO:Alloc. of kr_dim_dst           : size [GB]  =', & 
 &                                4.0d0*dble(maxval(nval))*dble(len_dst_atm_list(1))/1.0d9
       endif  
     endif
@@ -298,7 +305,7 @@ module M_qm_solver_gkrylov_dst
     if (ierr /= 0) stop 'Abort:ERROR in alloc (wt_kr_dst)'
     wt_kr_dst(:,:,:)=0.0d0
     if (i_verbose >=1) then
-      write(*,'(a,f20.10)')'INFO:Alloc. of wt_kr_dst              : size [GB]  =', & 
+      if (lu>0) write(lu,'(a,f20.10)')'INFO:Alloc. of wt_kr_dst              : size [GB]  =', & 
 &                                8.0d0*dble(kr_dim_max_input)*dble(maxval(nval))*dble(len_dst_atm_list(1))/1.0d9
     endif  
 !
@@ -306,7 +313,7 @@ module M_qm_solver_gkrylov_dst
     if (ierr /= 0) stop 'Abort:ERROR in alloc (wt_kr_dst)'
     eig_kr_dst(:,:,:)=0.0d0
     if (i_verbose >=1) then
-      write(*,'(a,f20.10)')'INFO:Alloc. of eig_kr_dst             : size [GB]  =', & 
+      if (lu>0) write(lu,'(a,f20.10)')'INFO:Alloc. of eig_kr_dst             : size [GB]  =', & 
 &                                8.0d0*dble(kr_dim_max_input)*dble(maxval(nval))*dble(len_dst_atm_list(1))/1.0d9
     endif  
 !
@@ -319,7 +326,7 @@ module M_qm_solver_gkrylov_dst
     if (ierr /= 0) stop 'Abort:ERROR in alloc (atm_energy_dst)'
     atm_energy_dst(:,:)=0.0d0
     if (i_verbose >=1) then
-      write(*,'(a,f20.10)')'INFO:Alloc. of atm_energy_dst         : size [GB]  =', & 
+      if (lu>0) write(lu,'(a,f20.10)')'INFO:Alloc. of atm_energy_dst         : size [GB]  =', & 
 &                                8.0d0*3.0d0*dble(len_dst_atm_list(1))/1.0d9
     endif  
 
@@ -342,7 +349,9 @@ module M_qm_solver_gkrylov_dst
     number_of_omp_threads=1
 !$omp parallel default(shared) 
 !$  number_of_omp_threads=omp_get_num_threads()
-    if (i_verbose >= 1) write(*,*)'number_of_omp_threads=',number_of_omp_threads
+    if (i_verbose >= 1) then 
+      if (lu>0) write(lu,*)'number_of_omp_threads=',number_of_omp_threads
+    endif
 !$omp end parallel
 !
     if (trim(config%calc%calc_force_mode) /= "off") then 
@@ -441,22 +450,27 @@ module M_qm_solver_gkrylov_dst
 !
         call proj_get_mat_size_dst(dst_atm_index, mat_size, num_atom_proj)
         if (i_show >= 1) then
-          write(*,*)'atm_index     =',atm_index
-          write(*,*)'mat_size      =',mat_size
-          write(*,*)'num_atom_proj =',num_atom_proj
+          if (lu>0) then
+            write(lu,*)'atm_index     =',atm_index
+            write(lu,*)'mat_size      =',mat_size
+            write(lu,*)'num_atom_proj =',num_atom_proj
+          endif
         endif  
         nss2=atm_element(atm_index)
         nval2=nval(nss2)
 !
         if (i_show >= 1) then
-          write(*,*)'nss2          =',nss2
-          write(*,*)'nval2         =',nval2
+          if (lu>0) then
+            write(lu,*)'nss2          =',nss2
+            write(lu,*)'nval2         =',nval2
+          endif
         endif  
 !
         allocate (jsv4jsk(num_atom_proj),stat=ierr)
         if (ierr /= 0) stop 'Abort:ERROR in alloc (jsv4jsk)'
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of jsv4jsk           : size [GB]  =', 4.0d0*dble(num_atom_proj)/1.0d9
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of jsv4jsk           : size [GB]  =', &
+&                                          4.0d0*dble(num_atom_proj)/1.0d9
         endif   
 !
 !       allocate (jsk4jsv(noav),stat=ierr)
@@ -465,19 +479,22 @@ module M_qm_solver_gkrylov_dst
         allocate (jjkset(num_atom_proj),stat=ierr)
         if (ierr /= 0) stop 'Abort:ERROR in alloc (jjkset)'
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of jjkset            : size [GB]  =', 4.0d0*dble(num_atom_proj)/1.0d9
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of jjkset            : size [GB]  =', &
+&                                          4.0d0*dble(num_atom_proj)/1.0d9
         endif   
 !
         allocate (b(mat_size),stat=ierr)
         if (ierr /= 0) stop 'Abort:ERROR in alloc (b)'
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of b                 : size [GB]  =', 8.0d0*dble(mat_size)/1.0d9
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of b                 : size [GB]  =', & 
+&                                          8.0d0*dble(mat_size)/1.0d9
         endif   
 !
         allocate (s_inv_e_j_wrk(mat_size),stat=ierr)
         if (ierr /= 0) stop 'Abort:ERROR in alloc (s_inv_e_j_wrk)'
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of s_inv_ej          : size [GB]  =', 8.0d0*dble(mat_size)/1.0d9
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of s_inv_ej          : size [GB]  =', & 
+&                                          8.0d0*dble(mat_size)/1.0d9
         endif   
 !
         call proj_get_list_dst(dst_atm_index, jsv4jsk, jjkset)
@@ -489,21 +506,21 @@ module M_qm_solver_gkrylov_dst
         allocate (booking_list_dstm(size_for_int_atoms, num_atom_proj),stat=ierr)
         if( ierr /= 0) stop 'ERROR in alloc (booking_list_dstm)'
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of booking_list_dstm : size [GB]  =', & 
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of booking_list_dstm : size [GB]  =', & 
 &                              4.0d0*dble(size_for_int_atoms)*dble(num_atom_proj)/1.0d9
         endif   
 !
         allocate (booking_list_rev1_dstm(num_atom_proj),stat=ierr)
         if( ierr /= 0) stop 'ERROR in alloc (booking_list_rev1_dstm)'
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of booking_list_dstm : size [GB]  =', & 
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of booking_list_dstm : size [GB]  =', & 
 &                              4.0d0*dble(num_atom_proj)/1.0d9
         endif   
 !
         allocate (booking_list_dstm_len(num_atom_proj),stat=ierr)
         if( ierr /= 0) stop 'ERROR in alloc (booking_list_dstm_len)'
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of booking_list_dstm_len : size [GB]  =', & 
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of booking_list_dstm_len : size [GB]  =', & 
 &                              4.0d0*dble(num_atom_proj)/1.0d9
         endif   
 !
@@ -511,7 +528,7 @@ module M_qm_solver_gkrylov_dst
         if (ierr /= 0) stop 'Abort:ERROR in alloc (ham_tb0_dstm)'
         memory_size=memory_size+8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of ham_tb0_dstm          : size [GB]  =', & 
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of ham_tb0_dstm          : size [GB]  =', & 
 &                            8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)/1.0d9
         endif   
 !
@@ -519,7 +536,7 @@ module M_qm_solver_gkrylov_dst
         if (ierr /= 0) stop 'Abort:ERROR in alloc (ham_tot_dstm)'
         memory_size=memory_size+8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of ham_tot_dstm          : size [GB]  =', & 
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of ham_tot_dstm          : size [GB]  =', & 
 &                            8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)/1.0d9
         endif   
 !
@@ -527,7 +544,7 @@ module M_qm_solver_gkrylov_dst
         if (ierr /= 0) stop 'Abort:ERROR in alloc (d_ham_tot_dstm)'
         memory_size=memory_size+8.0d0*3.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of ham_tb0_dstm          : size [GB]  =', & 
+          if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of ham_tb0_dstm          : size [GB]  =', & 
 &                            8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)/1.0d9
         endif   
 !
@@ -536,7 +553,7 @@ module M_qm_solver_gkrylov_dst
           if (ierr /= 0) stop 'Abort:ERROR in alloc (overlap_dstm)'
           memory_size=memory_size+8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)
           if (i_show >= 1) then
-            write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of overlap_dstm          : size [GB]  =', & 
+            if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of overlap_dstm          : size [GB]  =', & 
 &                            8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)/1.0d9
           endif   
 !
@@ -544,13 +561,13 @@ module M_qm_solver_gkrylov_dst
           if (ierr /= 0) stop 'Abort:ERROR in alloc (d_overlap_dstm)'
           memory_size=memory_size+8.0d0*3.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)
           if (i_show >= 1) then
-            write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of d_overlap_dstm        : size [GB]  =', & 
+            if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of d_overlap_dstm        : size [GB]  =', & 
 &                      3.0d0*8.0d0*dble(nval_max)*dble(nval_max)*dble(size_for_int_atoms)*dble(num_atom_proj)/1.0d9
           endif   
         endif  
 !
         if (i_show >= 1) then
-          write(*,'(a,f20.10)')'memory_size [GB]   =', memory_size/1.0d9
+          if (lu>0) write(lu,'(a,f20.10)')'memory_size [GB]   =', memory_size/1.0d9
         endif  
 !
         call set_ham_tb0_and_overlap_dstm(atm_index, jsv4jsk, num_atom_proj, &
@@ -610,14 +627,14 @@ module M_qm_solver_gkrylov_dst
           allocate (atm_tb0_force_dstm(3,num_atom_proj), stat=ierr)
           if (ierr /= 0) stop 'Abort:ERROR in alloc (atm_tb0_force_dstm)'
           if (i_show >= 1) then
-            write(*,'(a,f20.10)')'INFO(in OMP loop):Alloc. of atm_tb0_force_dstm    : size [GB]  =', & 
+            if (lu>0) write(lu,'(a,f20.10)')'INFO(in OMP loop):Alloc. of atm_tb0_force_dstm    : size [GB]  =', & 
 &                        3.0d0*8.0d0*dble(num_atom_proj)/1.0d9
           endif   
         endif  
 !
         do orb_index=1,nval2
           if (i_show >= 1) then
-            write(*,*)"atom=",atm_index,"orbit=",orb_index 
+            if (lu>0) write(lu,*)"atom=",atm_index,"orbit=",orb_index 
           endif  
 !         j_src=js2j(orb_index,atm_index)
           b(:)=0.0d0
@@ -656,20 +673,26 @@ module M_qm_solver_gkrylov_dst
              call calc_partial_trace_dstm(atm_index, dst_atm_index, orb_index, m_int, & 
 &                   dm_wrk(:,1), ham_tb0_dstm, local_energy_on_basis(orb_index,1), & 
 &                        jsv4jsk, booking_list_dstm, booking_list_dstm_len, jjkset)
-             if (i_show >=1) write(*,*)'local energy on basis 1=',local_energy_on_basis(orb_index,1)
+             if (i_show >=1) then 
+               if (lu>0) write(lu,*)'local energy on basis 1=',local_energy_on_basis(orb_index,1)
+             endif
 !
              if (calc_atm_energy_by_2nd_def) then
                call calc_partial_trace_dstm(atm_index, dst_atm_index, orb_index, m_int, & 
 &                   dm_wrk(:,2), overlap_dstm, local_energy_on_basis(orb_index,2), & 
 &                        jsv4jsk, booking_list_dstm, booking_list_dstm_len, jjkset)
-               if (i_show >=1) write(*,*)'local energy on basis 2=',local_energy_on_basis(orb_index,2)
+               if (i_show >=1) then 
+                 if (lu>0) write(lu,*)'local energy on basis 2=',local_energy_on_basis(orb_index,2)
+               endif
              endif  
 !
              if (calc_cohp) then
                call calc_cohp_dstm(atm_index, dst_atm_index, orb_index, m_int, & 
 &                   dm_wrk(:,1), ham_tb0_dstm, local_energy_on_basis(orb_index,1), & 
 &                        jsv4jsk, booking_list_dstm, booking_list_dstm_len, jjkset)
-               if (i_show >=1) write(*,*)'local energy on basis 3=',local_energy_on_basis(orb_index,1)
+               if (i_show >=1) then 
+                  if (lu>0) write(lu,*)'local energy on basis 3=',local_energy_on_basis(orb_index,1)
+               endif
              endif  
 !
              if (allocated(atm_tb0_force_dstm)) then
@@ -829,8 +852,10 @@ module M_qm_solver_gkrylov_dst
       etb=ene_tmp
       ecc=ene_tmp_rep
       if (i_verbose >=0) then
-        write(*,*)'ETB0 (from atm_energy_dstm)=',etb
-        write(*,*)'Erest(from atm_energy_dstm)=',ecc
+        if (lu>0) then
+          write(lu,*)'ETB0 (from atm_energy_dstm)=',etb
+          write(lu,*)'Erest(from atm_energy_dstm)=',ecc
+        endif
       endif  
 !
     endif
@@ -871,7 +896,7 @@ module M_qm_solver_gkrylov_dst
       if (i_verbose >= 1) then
         if (allocated(atm_force_tb0)) then
           do atm_index=1,min(noav,11)
-            write(*,'(a,i10,3f20.10)')'tb0 force=',atm_index, atm_force_tb0(1:3,atm_index)
+            if (lu>0) write(lu,'(a,i10,3f20.10)')'tb0 force=',atm_index, atm_force_tb0(1:3,atm_index)
           enddo
         endif  
       endif
@@ -883,7 +908,9 @@ module M_qm_solver_gkrylov_dst
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     if (prc_index == 1) then ! (calculation of chemical potential)
-      if (i_verbose > 1) write(*,*)'Nelec=',Nelec
+      if (i_verbose > 1) then 
+        if (lu>0) write(lu,*)'Nelec=',Nelec
+      endif
       if ( dabs( total_electron_number - Nelec) >= 1.0d-10 ) then
          write(*,*)'ERROR in Nelec : Nelec=',Nelec, total_electron_number
          stop
@@ -1007,6 +1034,7 @@ module M_qm_solver_gkrylov_dst
   subroutine set_chemical_potential_dst(Nelec, dst_atm_list, len_dst_atm_list, & 
 &                                       kr_dim_dst, wt_kr_dst, eig_kr_dst, xmu)
 !
+    use M_config,            only : config !(unchaged)
     use M_lib_phys_const,    only : ev4au !(unchaged)
     use M_md_dst,            only : myrank, nprocs !(unchanged)
     use M_qm_domain,         only : i_verbose, noav, atm_element, nval, & 
@@ -1035,9 +1063,12 @@ module M_qm_solver_gkrylov_dst
     integer :: iloop, nloopmax, irec
     real(8) :: xmu0, N_elec_tmp
     real(8) :: xmumn, xmumx, rRd, rEd, x, xexp, err
+    integer :: lu
+!
+    lu= config%calc%distributed%log_unit
 !
     if (i_verbose >= 1) then
-      write(*,*)'@@ set_chemical_potential'
+      if (lu>0) write(lu,*)'@@ set_chemical_potential'
     endif
 !  
     nloopmax=100
@@ -1046,27 +1077,31 @@ module M_qm_solver_gkrylov_dst
     xbeta=1.0d0/xtemp
 !
     if (i_verbose >= 1) then
-      write(*,*)'xtemp [au,eV]=',xtemp,xtemp*ev4au
+      if (lu>0) write(lu,*)'xtemp [au,eV]=',xtemp,xtemp*ev4au
     endif  
 !
     max_energy(1)=maxval(eig_kr_dst)
     min_energy(1)=minval(eig_kr_dst)
 !
-    if (i_verbose >=1) write(*,'(a,i10,2f30.20)')'myrank, max,min (loc)=',myrank, max_energy(1), min_energy(1)
+    if (i_verbose >=1) then 
+      if (lu>0) write(lu,'(a,i10,2f30.20)')'myrank, max,min (loc)=',myrank, max_energy(1), min_energy(1)
+    endif
 !
     call mpi_wrapper_allreduce_minmax_r1(max_energy,'max')
     call mpi_wrapper_allreduce_minmax_r1(min_energy,'min')
 !
-    if (i_verbose >=1) write(*,'(a,i10,2f30.20)')'myrank, max,min (glo)=',myrank, max_energy(1), min_energy(1)
+    if (i_verbose >=1) then 
+      if (lu>0) write(lu,'(a,i10,2f30.20)')'myrank, max,min (glo)=',myrank, max_energy(1), min_energy(1)
+    endif
 !
     ddemin=min_energy(1)
     ddemax=max_energy(1)
 !
     if (i_verbose >= 1) then
-      write(6,*)' ddemin [au,eV]=',ddemin,ddemin*ev4au
-      write(6,*)' ddemax [au,eV]=',ddemax,ddemax*ev4au
+      if (lu>0) write(lu,*)' ddemin [au,eV]=',ddemin,ddemin*ev4au
+      if (lu>0) write(lu,*)' ddemax [au,eV]=',ddemax,ddemax*ev4au
       if (dabs(ddemin-ddemax) .lt. 1.0d-10) then
-        write(6,*)'ERROR!:SET_KRY_CHEM_POT'
+        write(*,*)'ERROR!:SET_KRY_CHEM_POT'
         stop
       endif
     endif   
@@ -1122,7 +1157,9 @@ module M_qm_solver_gkrylov_dst
         call mpi_wrapper_allreduce_r0(N_elec_tmp)
 !
         err=(Nelec-N_elec_tmp)/Nelec
-        if (i_verbose >=1) write(6,*)'Bisec.',iloop,xmu0,err
+        if (i_verbose >=1) then 
+          if (lu>0) write(lu,*)'Bisec.',iloop,xmu0,err
+        endif
 !
         if (abs(err) < 1.0d-12) exit
 !
@@ -1139,7 +1176,7 @@ module M_qm_solver_gkrylov_dst
       enddo ! loop by iloop
 !
       if (i_verbose >=0) then
-        write(6,'(a,i20,2f30.20)')'chem_pot [au,eV]=',iloop,xmu0,xmu0*ev4au
+        if (lu>0) write(lu,'(a,i20,2f30.20)')'chem_pot [au,eV]=',iloop,xmu0,xmu0*ev4au
       endif  
       xmu=xmu0
 !
