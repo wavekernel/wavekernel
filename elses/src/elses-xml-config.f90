@@ -2477,6 +2477,7 @@ contains
     ! get <eigen_mpi> node
     solver%eigen_mpi%SEP_solver = "default"        ! dummy value (default)
     solver%eigen_mpi%GS_transformation = "default" ! dummy value (default)
+    solver%eigen_mpi%timer_output_filename = ""    ! dummy value (default)
     solver%eigen_mpi%blocksize     = -1                ! dummy value (default)
     solver%eigen_mpi%level_lowest  = -1                ! dummy value (default)
     solver%eigen_mpi%level_highest = -1                ! dummy value (default)
@@ -2499,6 +2500,16 @@ contains
           solver%eigen_mpi%GS_transformation = trim(adjustl(value))
           if (log_unit > 0) write(log_unit,'(2a)') &
              'INFO-XML:Optional tag : eigen_mpi%GS_transformation =', trim(solver%eigen_mpi%GS_transformation)
+        endif
+      end if
+!
+      node_tmp => getFirstElementByTagName(node,"timer_output_filename")
+      if ( associated(node_tmp) ) then
+        value = getChildValue(node_tmp)
+        if ( value /= "" ) then
+          solver%eigen_mpi%timer_output_filename = trim(adjustl(value))
+          if (log_unit > 0) write(log_unit,'(2a)') &
+             'INFO-XML:Optional tag : eigen_mpi%timer_output_filename =', trim(solver%eigen_mpi%timer_output_filename)
         endif
       end if
 !

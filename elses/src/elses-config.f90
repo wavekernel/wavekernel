@@ -298,6 +298,7 @@ module M_config
   type :: eigen_mpi_type
      character(len=128)   :: SEP_solver
      character(len=128)   :: GS_transformation
+     character(len=128)   :: timer_output_filename
      integer              :: blocksize
      integer              :: level_lowest
      integer              :: level_highest

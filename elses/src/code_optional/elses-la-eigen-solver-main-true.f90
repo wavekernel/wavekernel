@@ -51,7 +51,7 @@ contains
     integer,                intent(inout)            :: level_low_high(2)
     integer,                intent(in)               :: log_unit
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
-    real(DOUBLE_PRECISION), intent(out), allocatable :: eig_vectors(:, :)    
+    real(DOUBLE_PRECISION), intent(out), allocatable :: eig_vectors(:, :)
 !
     character(len=1024)                              :: eigen_mpi_scheme_wrk
     character(len=1024)                              :: SEP_solver
@@ -69,7 +69,8 @@ contains
     integer :: i, j
     real(DOUBLE_PRECISION) :: wtime_start, wtime_end
     type(fson_value), pointer :: output
-    
+    character(len=128) :: timer_output_filename
+    integer, parameter :: timer_output_iunit = 31
 
     call mpi_barrier(mpi_comm_world, ierr)
     g_mpi_wtime_init = mpi_wtime()
@@ -211,15 +212,20 @@ contains
     call add_event('main:total', wtime_end - wtime_start)
 
     if (check_master()) then
-       call fson_events_add(output)
-       open(31, file="out_times.json", status='unknown', position='append')
-       call fson_print(31, output)
-       close(31)
+      call fson_events_add(output)
+      if (trim(config%calc%solver%eigen_mpi%timer_output_filename) == '') then
+        timer_output_filename = 'timer_output.json'
+      else
+        timer_output_filename = trim(config%calc%solver%eigen_mpi%timer_output_filename)
+      end if
+      open(timer_output_iunit, file=trim(timer_output_filename), status='unknown', position='append')
+      call fson_print(timer_output_iunit, output)
+      close(timer_output_iunit)
     end if
 
     if (log_unit >0) then
       write(log_unit,*)'eig_solver_center finished'
-    end if    
+    end if
   end subroutine eig_solver_center
 
   subroutine convert_sparse_matrix_data_to_eigenkernel_sparse(matrix_data_, ek_sparse)
@@ -236,12 +242,12 @@ contains
 
   subroutine eig_solver_center_scalapack(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     type(eigenkernel_sparse_matrix), intent(in)      :: matrix_A
-    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B        
+    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B
     integer,                intent(in)               :: level_low_high(2)
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
     real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)
 
-    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), ierr    
+    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), ierr
     type(process) :: proc
     double precision, allocatable :: A_dist(:, :), B_dist(:, :)
     type(eigenpairs_types_union) :: eigenpairs
@@ -264,18 +270,18 @@ contains
 
   subroutine eig_solver_center_eigenexa_scalapack(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     type(eigenkernel_sparse_matrix), intent(in)      :: matrix_A
-    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B        
+    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B
     integer,                intent(in)               :: level_low_high(2)
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
-    real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)    
+    real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)
 
-    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr    
+    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr
     type(process) :: proc
     double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
     type(eigenpairs_types_union) :: eigenpairs, eigenpairs_tmp
 
     dim = matrix_A%size
-    num_output_vectors = level_low_high(2) - level_low_high(1) + 1    
+    num_output_vectors = level_low_high(2) - level_low_high(1) + 1
     call setup_distribution(proc)
     call setup_distributed_matrix('A', proc, dim, dim, desc_A, matrix_A_dist)
     call setup_distributed_matrix('B', proc, dim, dim, desc_B, matrix_B_dist)
@@ -309,18 +315,18 @@ contains
 
   subroutine eig_solver_center_scalapack_elpa(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     type(eigenkernel_sparse_matrix), intent(in)      :: matrix_A
-    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B        
+    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B
     integer,                intent(in)               :: level_low_high(2)
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
     real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)
 
-    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr    
+    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr
     type(process) :: proc
     double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
     type(eigenpairs_types_union) :: eigenpairs, eigenpairs_tmp
 
     dim = matrix_A%size
-    num_output_vectors = level_low_high(2) - level_low_high(1) + 1    
+    num_output_vectors = level_low_high(2) - level_low_high(1) + 1
     call setup_distribution(proc)
     call solve_with_general_elpa_scalapack(dim, proc, matrix_A, eigenpairs, matrix_B)
     call gather_matrix_part(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
@@ -331,18 +337,18 @@ contains
 
   subroutine eig_solver_center_elpa1_elpa(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     type(eigenkernel_sparse_matrix), intent(in)      :: matrix_A
-    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B    
+    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B
     integer,                intent(in)               :: level_low_high(2)
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
     real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)
 
-    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr    
+    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr
     type(process) :: proc
     double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
     type(eigenpairs_types_union) :: eigenpairs, eigenpairs_tmp
 
     dim = matrix_A%size
-    num_output_vectors = level_low_high(2) - level_low_high(1) + 1    
+    num_output_vectors = level_low_high(2) - level_low_high(1) + 1
     call setup_distribution(proc)
     call solve_with_general_elpa1(dim, proc, matrix_A, eigenpairs, matrix_B)
     call gather_matrix_part(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
@@ -354,12 +360,12 @@ contains
 
   subroutine eig_solver_center_elpa2_elpa(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     type(eigenkernel_sparse_matrix), intent(in)      :: matrix_A
-    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B    
+    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B
     integer,                intent(in)               :: level_low_high(2)
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
     real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)
 
-    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr    
+    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr
     type(process) :: proc
     double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
     type(eigenpairs_types_union) :: eigenpairs, eigenpairs_tmp
@@ -376,18 +382,18 @@ contains
 
   subroutine eig_solver_center_eigenexa_elpa(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     type(eigenkernel_sparse_matrix), intent(in)      :: matrix_A
-    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B    
+    type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B
     integer,                intent(in)               :: level_low_high(2)
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
-    real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)    
+    real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)
 
-    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr    
+    integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr
     type(process) :: proc
     double precision, allocatable :: matrix_A_dist(:, :), matrix_B_dist(:, :), matrix_A_redist(:, :)
     type(eigenpairs_types_union) :: eigenpairs, eigenpairs_tmp
 
     dim = matrix_A%size
-    num_output_vectors = level_low_high(2) - level_low_high(1) + 1    
+    num_output_vectors = level_low_high(2) - level_low_high(1) + 1
     call setup_distribution(proc)
     call solve_with_general_elpa_eigenexa(dim, proc, matrix_A, eigenpairs, matrix_B)
     call gather_matrix_part(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
@@ -401,7 +407,7 @@ contains
     type(eigenkernel_sparse_matrix), intent(in)      :: matrix_B
     integer,                intent(in)               :: level_low_high(2)
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
-    real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)    
+    real(DOUBLE_PRECISION), intent(out)              :: eig_vectors(:, :)
 
     integer :: max_block_size, dim, num_output_vectors, desc_A(9), desc_B(9), desc_A_re(9), ierr
     type(process) :: proc
@@ -409,7 +415,7 @@ contains
     type(eigenpairs_types_union) :: eigenpairs, eigenpairs_tmp
 
     dim = matrix_A%size
-    num_output_vectors = level_low_high(2) - level_low_high(1) + 1    
+    num_output_vectors = level_low_high(2) - level_low_high(1) + 1
     call setup_distribution(proc)
     call solve_with_general_elpa_eigenk(dim, proc, matrix_A, eigenpairs, matrix_B)
     call gather_matrix_part(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
