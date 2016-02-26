@@ -14,7 +14,7 @@ module M_wavepacket
     type(process) :: proc
     integer :: dim, num_atoms
     integer :: i, total_state_count, input_step, print_count
-    real(8) :: t, wtime_total, wtime
+    real(8) :: t, t_last_replace, wtime_total, wtime
     real(8) :: charge_coordinate_mean(3), charge_coordinate_msd(4)
     real(8) :: tightbinding_energy, nonlinear_term_energy, total_energy
     real(8) :: absolute_filter_error, relative_filter_error
@@ -22,7 +22,7 @@ module M_wavepacket
     complex(kind(0d0)), allocatable :: full_vecs_local(:, :), filtered_vecs_local(:, :)
     real(8), allocatable :: atom_coordinates(:, :)
     character, allocatable :: atom_elements(:)
-    type(fson_value), pointer :: output, states, split_files_metadata
+    type(fson_value), pointer :: output, states, split_files_metadata, structures
     ! Distributed matrices.
     type(wp_local_matrix_t), allocatable :: Y_local(:)  ! Not ScaLAPACK-like manner.
     complex(kind(0d0)), allocatable :: H(:, :), S(:, :), Y(:, :), S_inv_sqrt(:, :)  ! m x m
@@ -301,7 +301,10 @@ contains
     call prepare_json(state%dim, state%num_atoms, setting, state%proc, &
          state%absolute_filter_error, state%relative_filter_error, &
          state%filtered_vecs_desc, state%filtered_vecs, state%filtered_vecs_local, &
-         state%output, state%states, state%split_files_metadata)
+         state%atom_elements, state%group_id, state%filter_group_id, &
+         state%output, state%states, state%structures, state%split_files_metadata)
+    ! add_structure_json() must be called after both of coordinates reading and prepare_json().
+    call add_structure_json(state%num_atoms, state%atom_coordinates, 0d0, 1, state%structures)    
     call add_timer_event('main', 'prepare_json', state%wtime)
 
     if (check_master()) then
@@ -312,11 +315,13 @@ contains
     if (setting%is_restart_mode) then
       state%i = setting%restart_step_num
       state%t = setting%restart_t
+      state%t_last_replace = state%t
       state%total_state_count = setting%restart_total_states_count
       state%input_step = setting%restart_input_step
     else
       state%i = 0
       state%t = 0d0
+      state%t_last_replace = state%t
       setting%restart_t = 0d0  ! For simulation time report.
       state%total_state_count = 0
       state%input_step = 1  ! Valid only in multiple step input mode.
@@ -341,6 +346,7 @@ contains
     ! The step to be read is 'input_step + 1', not 'input_step + 2' because XYZ information is not interpolated.
     call read_atom_indices_and_coordinates_from_ELSES_config(state%dim, &
          state%num_atoms, state%atom_indices, state%atom_coordinates, state%atom_elements)
+    call add_structure_json(state%num_atoms, state%atom_coordinates, state%t, state%input_step + 1, state%structures)
     call add_timer_event('main', 'read_atom_indices_and_coordinates_from_ELSES_config', state%wtime)
 
     if (setting%to_replace_basis) then
@@ -375,14 +381,15 @@ contains
     call add_timer_event('main', 'set_aux_matrices_for_multistep', state%wtime)
 
     state%input_step = state%input_step + 1
+    state%t_last_replace = state%t
 
     ! re-save state after matrix replacement.
-    call save_state(state%dim, state%num_atoms, setting, state%i, state%t, &
+    call save_state(state%dim, state%num_atoms, setting, state%i, state%t, state%t_last_replace, &
          state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy, &
          state%charge_coordinate_mean, state%charge_coordinate_msd, &
          state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
-         state%full_vecs_local, state%filtered_vecs_local, &
-         state%split_files_metadata, state%total_state_count, state%input_step, .true., state%states)
+         state%full_vecs_local, state%filtered_vecs_local, state%atom_coordinates, &
+         state%split_files_metadata, state%total_state_count, state%input_step, .true., state%states, state%structures)
     call add_timer_event('main', 'save_state', state%wtime)
   end subroutine wavepacket_replace_matrix
 
@@ -407,12 +414,12 @@ contains
 
       ! Output for files.
       if (mod(state%i, setting%output_interval) == 0) then
-        call save_state(state%dim, state%num_atoms, setting, state%i, state%t, &
+        call save_state(state%dim, state%num_atoms, setting, state%i, state%t, state%t_last_replace, &
              state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy, &
              state%charge_coordinate_mean, state%charge_coordinate_msd, &
              state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
-             state%full_vecs_local, state%filtered_vecs_local, &
-             state%split_files_metadata, state%total_state_count, state%input_step, .false., state%states)
+             state%full_vecs_local, state%filtered_vecs_local, state%atom_coordinates, &
+             state%split_files_metadata, state%total_state_count, state%input_step, .false., state%states, state%structures)
         call add_timer_event('main', 'save_state', state%wtime)
       end if
 
