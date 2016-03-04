@@ -2461,7 +2461,8 @@ contains
     type(fnode), pointer :: node_tmp, node_tmp2
     character(len=256)   :: value
     integer              :: i_verbose, log_unit
-
+    integer              :: ierr
+!
     i_verbose=config%option%verbose
     log_unit=config%calc%distributed%log_unit
 !
@@ -2553,6 +2554,26 @@ contains
        read(unit=value,fmt=*) solver%projection
        if (log_unit > 0) write(log_unit,'(a,i10)')'INFO-XML:Optional tag detected : solver projection = ', &
 &                                                     solver%projection
+    end if
+
+    ! get <projection_list_length> node
+    node => getFirstElementByTagName(solver_node,"projection_list_length")
+    solver%projection_list_length = -1 ! dummy setting 
+    if ( associated(node) ) then
+      value = getChildValue(node)
+      if (trim(adjustl(value)) == 'default')  solver%projection_list_length = -2
+      if (trim(adjustl(value)) == 'full')     solver%projection_list_length = -3
+      if (solver%projection_list_length == -1) then
+        read(unit=value,fmt=*,iostat=ierr) solver%projection_list_length
+        if (ierr /= 0) then
+          write(*,*)'ERROR(XML):projection_list_length=',trim(adjustl(value))
+          stop
+        endif
+      endif
+      if (solver%projection_list_length /= -1) then
+        if (log_unit > 0) write(log_unit,'(a,a)') &
+&            'INFO-XML:Optional tag detected : solver projection_list_length = ', trim(adjustl(value))
+      endif
     end if
 
     ! get <dimension> node

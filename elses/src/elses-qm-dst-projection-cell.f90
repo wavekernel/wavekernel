@@ -58,6 +58,8 @@ module M_qm_dst_proj_cell
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine set_dst_atm_list
 !
+   use M_config,           only : config  !(unchanged)
+!                            only used for config%calc%solver%projection_list_length
    use M_md_dst,           only : myrank, nprocs     !(unchanged)
    use M_qm_domain,        only : noav                !(unchanged)
    use elses_param_ctl_kr, only : noak_min_def        !(unchanged)
@@ -189,7 +191,25 @@ module M_qm_dst_proj_cell
    endif
 !
    size1=min(noav, noak_min_def*2)
-  size2=int(dble(len_dst_atm_list(2))*1.2d0)
+   size2=int(dble(len_dst_atm_list(2))*1.2d0)
+!
+   select case(config%calc%solver%projection_list_length)
+     case (-1,-2)
+       size1=min(noav, noak_min_def*2) ! default setting
+       if (lu >0) write(lu,'(a,i10)')'INFO-DST: projection_list_length (default)   =', size1
+     case (-3)
+       size1=noav                      ! 'full'  setting
+       if (lu >0) write(lu,'(a,i10)')'INFO-DST: projection_list_length (full)      =', size1
+     case default
+       size1=config%calc%solver%projection_list_length
+       if ((size1 < noak_min_def) .or. (size1 > noav)) then
+         write(*,*)'ERROR:projection_list_length=',size1
+         stop
+       endif
+       if (lu >0) write(lu,'(a,i10)')'INFO-DST: projection_list_length (specified) =', size1
+   end select
+!
+
 !
    if (flag_for_allocate) then
      if (allocated(jsv4jsk_dst)) then 

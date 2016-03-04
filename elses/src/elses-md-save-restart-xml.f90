@@ -90,7 +90,7 @@ contains
     character(len=64)   :: filename_header
     integer :: lenf
     character(len=64)   :: chara_wrk1, chara_wrk2, chara_wrk3, chara_wrk4, chara_wrk5
-    integer             :: j_ini, j_fin, atom_id
+    integer             :: j_ini, j_fin, atom_id, group_id_wrk
     integer             :: j_tot_ini, j_tot_fin
     integer             :: split_index ! ( = 0, 1, 2..., number_of_split_files -1)
 !
@@ -264,12 +264,14 @@ contains
         endif   
         if (config%output%restart%atom_id_is_added) then
           atom_id=j 
+          group_id_wrk=atom%group_id
         else  
           atom_id=-1 
+          group_id_wrk=-1
         endif   
         call atom_save( fd, structure%vatom(j), structure%unitcell, &
 &                       atom%population_set, atom%population_guess_set, &
-&                      atom%population, atom%population_guess, atom_id)
+&                      atom%population, atom%population_guess, atom_id, group_id_wrk)
       end do
 !
       if ((i_verbose >= 1) .and. (log_unit > 0)) then 
@@ -329,7 +331,7 @@ contains
 
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
   subroutine atom_save( fd, atom, unitcell, population_set, population_guess_set, & 
-&                       population, population_guess, atom_id)
+&                       population, population_guess, atom_id, group_id)
     use M_structure,   only : atom_type, unitcell_type !(type)
     implicit none
     integer, intent(in) :: fd
@@ -340,12 +342,14 @@ contains
     real(8),  intent(in) :: population
     real(8),  intent(in) :: population_guess
     integer,  intent(in) :: atom_id    ! NOTE: 'atom_id = -1' means the atom_id is not added.
+    integer,  intent(in) :: group_id   ! NOTE: 'atom_id = -1' means the atom_id is not added.
 !   integer :: k
     real(8) :: a, b, c
     real(8) :: la, lb, lc
     character(len=64)    :: chara_wrk
     character(len=64)    :: chara_wrk_class
     character(len=64)    :: chara_wrk_atom_id
+    character(len=64)    :: chara_wrk_group_id
     character(len=64)    :: chara_sep
 !
     la = dsqrt(dot_product(unitcell%vectorA,unitcell%vectorA))
@@ -373,12 +377,18 @@ contains
       chara_wrk_atom_id='' 
     else
       write(chara_wrk,*) atom_id
-      chara_wrk=trim(adjustl(chara_wrk))
-      chara_wrk_atom_id='id="'//trim(chara_wrk)//chara_sep
+      chara_wrk_atom_id='id="'//trim(adjustl(chara_wrk))//chara_sep
     endif  
 !
-    write(fd,'(a,a,a,a,a,a,a,a,a,a)') ' <atom element="', trim(atom%name), '" ', &
-&        trim(adjustl(chara_wrk_class)), ' ', trim(adjustl(chara_wrk_atom_id)), ' ', &
+    if (group_id == -1) then
+      chara_wrk_group_id='' 
+    else
+      write(chara_wrk,*) group_id
+      chara_wrk_group_id='group_id="'//trim(adjustl(chara_wrk))//chara_sep
+    endif  
+!
+    write(fd,'(a,a,a,a,a,a,a,a,a,a,a,a)') ' <atom element="', trim(atom%name), '" ', &
+&        trim(adjustl(chara_wrk_class)), ' ', trim(adjustl(chara_wrk_atom_id)), ' ', trim(adjustl(chara_wrk_group_id)), ' ', &
 &        'motion="', trim(atom%motion), '">'
 !      
 !   if (atom_id == -1) then

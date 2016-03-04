@@ -64,12 +64,14 @@ contains
     character(64) :: filename_in
     character(64) :: filename_out
     character(64) :: filename_xyz
+    character(64) :: filename_fixed_atom_list
     integer       :: iargc  
     character(64) :: argv3
     integer       :: ierr
     integer       :: n_split
 !    
-    call get_info_from_command_argument(filename_xyz, filename_in, filename_out, n_split, ierr)
+    call get_info_from_command_argument(filename_xyz, filename_in, filename_out, & 
+&            filename_fixed_atom_list, n_split, ierr)
 !
     if ( ierr /= 0 ) then
       write(*,'(a)') "# Usage of this utility program (1) for single output file"
@@ -87,6 +89,9 @@ contains
     write(*,'(a)')'@@@ elses-xml-generate'
 !
     call generate_load( generate, filename_in, filename_xyz )
+!
+    call set_fixed_atom ( filename_fixed_atom_list )
+!
     call generate_output_split( generate, filename_out, n_split )
 !
     write(*,'(a)')'.... elses-xml-generate ends without error'
@@ -809,9 +814,50 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine get_info_from_command_argument(filename_xyz, filename_setting, filename_output, n_split, ierr_result)
+  subroutine set_fixed_atom (filename)
    implicit none
-    character(len=*), intent(out) :: filename_xyz, filename_setting, filename_output
+   character(len=*),    intent(in)    :: filename
+   integer, parameter :: fd = 1
+   integer            :: j_atom
+   integer            :: ierr, j, n_list, n_list_max
+!
+    n_list_max=structure_info%total_number_of_atoms+1
+!
+   if (len_trim(filename) == 0) then 
+     write(*,*)'INFO:set_fixed_atom ... is ignored'
+     return
+   else
+     write(*,*)'INFO:set_fixed_atom: filename =',trim(filename)
+   endif
+!
+   open(fd,file=filename,status='old')
+!
+   do j=1,n_list_max
+     if (j == n_list_max) then
+       write(*,*)'ERROR(set_fixed_atom);Too many list ?:j=',j
+     endif
+     read(fd, *, iostat=ierr) j_atom
+     if (ierr /= 0) then 
+       n_list=j-1
+       exit
+     endif
+     write(*,*)'j=',j
+     structure_info%atom_info(j_atom)%motion = 'fixed'  
+   enddo
+!
+   write(*,*)'INFO:set_fixed_atom: number of fixed atoms =',n_list
+!
+   close(fd)
+  end subroutine set_fixed_atom
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+  subroutine get_info_from_command_argument(filename_xyz, filename_setting, & 
+&               filename_output, filename_fixed_atom_list, n_split, ierr_result)
+   implicit none
+    character(len=*), intent(out) :: filename_xyz, filename_setting, filename_output, filename_fixed_atom_list
     integer,          intent(out) :: n_split
     integer,          intent(out) :: ierr_result
     integer             :: iargc  
@@ -824,6 +870,7 @@ contains
     filename_xyz     =''  ! dummy value
     filename_setting =''  ! dummy value
     filename_output  =''  ! dummy value
+    filename_fixed_atom_list  =''  ! dummy value
     ierr_result      = 0  ! dummy value
 !
     write(*,'(a)')'@@@ get_info_from_command_argument'
@@ -882,6 +929,18 @@ contains
         cycle
       endif
 !
+      chara_header='-fixed_atom_list='
+      if (index(arg, trim(chara_header)) > 0) then
+        len_header=len_trim(chara_header)
+        chara_wrk=trim(arg(len_header+1:len_arg))
+        if (debug) write(*,*)' INFO:command argument : ', i, trim(chara_wrk)
+        read(chara_wrk, *, iostat=ierr)  filename_fixed_atom_list
+        if (ierr /= 0) stop 'ERROR (get_command_argument) : filename_fixed_atom_list'
+        cycle
+      endif
+!
+      write(*,*)'INFO: non-header argument : ', trim(arg)
+!
       if (len_trim(filename_setting) == 0) then 
         filename_setting=trim(arg)
         cycle
@@ -897,6 +956,7 @@ contains
     write(*,*)'INFO:filename of the xyz file     =', trim(filename_xyz)
     write(*,*)'INFO:filename of the setting file =', trim(filename_setting)
     write(*,*)'INFO:filename of the output  file =', trim(filename_output)
+    write(*,*)'INFO:filename of the fixed atom list file =', trim(filename_fixed_atom_list)
     if (n_split > 0) then
       write(*,*)'INFO: the number of split files   =', n_split
     else
@@ -904,5 +964,7 @@ contains
     endif
 !    
   end subroutine get_info_from_command_argument
+!
+
 !
 end program elses_xml_generate

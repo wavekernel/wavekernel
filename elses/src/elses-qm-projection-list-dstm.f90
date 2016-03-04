@@ -145,6 +145,7 @@ module M_qm_proj_list_dstm
               write(*,*)'ERROR(set_rcut_kry_dst_cell):rcut_book_tmp=',rcut_book_tmp
               write(*,*)'ERROR(set_rcut_kry_dst_cell):length_of_atm_list_wrk=',length_of_atm_list_wrk
               write(*,*)'ERROR(set_rcut_kry_dst_cell):num_atm_list_min =',num_atm_list_min
+              write(*,*)'ERROR: Too small projection_list_length ? or Too large cut_off ?'
               stop
             else  
               atm_list(n_count)=atm_index2

@@ -308,6 +308,10 @@ module M_config
      character(len=16)   :: scheme
      character(len=64)   :: eigen_mpi_scheme
      integer             :: projection
+     integer             :: projection_list_length 
+!                              = -1 : dummy setting (when the tag is missing)
+!                              = -2 : default setting (when the tag appears as <tag> default </tag>)
+!                              = -3 : 'full' setting (when the tag appears as <tag> full </tag>)
      integer             :: dimension
      integer             :: mode_for_large_memory
      character(len=32)   :: mode_for_suggest_projection
