@@ -55,6 +55,8 @@ module M_la_gkrylov_main_dstm
 !
     use M_la_matvec_crs, only : make_mat_crs, get_num_nonzero_elem !(routine)
     use M_la_matvec_crs, only : calc_u_su_hu_crs                   !(routine)
+    use M_la_matvec_crs, only : cg_s_mat_crs                       !(routine)
+!   use M_la_matvec_crs, only : cg_s_mat_crs_dum                   !(routine)
 !
     implicit none
     integer,          intent(in)  :: dst_atm_index, atm_index, orb_index
@@ -79,7 +81,9 @@ module M_la_gkrylov_main_dstm
     real(DOUBLE_PRECISION), intent(in) :: ham_tot_dstm(:,:,:,:)
     real(DOUBLE_PRECISION), intent(in) :: overlap_dstm(:,:,:,:)
 !
-    logical, parameter   :: use_mat_crs = .true.
+    character(len=*), parameter   :: mat_vec_type = 'crs'  ! 'dstm', 'crs' or 'dens'
+!
+!   logical, parameter   :: use_mat_crs = .true.
 !   logical, parameter   :: use_mat_crs = .false.
 !
     real(8), allocatable :: u(:)
@@ -342,7 +346,7 @@ module M_la_gkrylov_main_dstm
       enddo
     endif   
 !
-    if (use_mat_crs) then
+    if (mat_vec_type == 'crs') then
       allocate (mat_crs_irp(mat_dim+1), stat=ierr) 
       if (ierr /= 0) then
         write(*,*)'Alloc. Erro in mat_crs_irp'
@@ -375,16 +379,19 @@ module M_la_gkrylov_main_dstm
       su(:)=0.0d0
       hu(:)=0.0d0
       norm_factor=0.0d0
-      if (use_mat_crs) then
-!        call calc_u_su_hu_dstm(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
-!&           booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
-        call calc_u_su_hu_crs(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
-&            booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, &
-&            mat_crs_irp, mat_crs_icol, mat_crs_val          )
-      else
-        call calc_u_su_hu_dstm(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
+      select case(mat_vec_type)
+        case ('crs')
+          call calc_u_su_hu_crs(u,su,hu,norm_factor, mat_crs_irp, mat_crs_icol, mat_crs_val, ierr)
+!         call calc_u_su_hu_crs(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
+!&            booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, &
+!&            mat_crs_irp, mat_crs_icol, mat_crs_val          )
+        case ('dstm')
+          call calc_u_su_hu_dstm(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
 &           booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
-      endif
+        case default
+          write(*,*)'ERROR:mat_vec_type is not specified'
+          stop
+      end select
 !
 !        --->  u(:) :   |u_n> = |l_n> / |<l_n|S|l_n>|^{1/2}
 !                     (S-normalized vector) 
@@ -459,11 +466,18 @@ module M_la_gkrylov_main_dstm
         ite_cg=max_ite_for_cg_loop
         eps=eps_c
         u(1:mat_dim)=s_inv_e_j_wrk(1:mat_dim)
-       call cg_s_mat_dstm   (b, u, eps, ite_cg, jsv4jsk, jjkset, &
+!
+        select case(mat_vec_type)
+          case ('crs')
+           call cg_s_mat_crs   (b, u, eps, ite_cg, mat_crs_irp, mat_crs_icol, mat_crs_val)
+        case ('dstm')
+           call cg_s_mat_dstm      (b, u, eps, ite_cg, jsv4jsk, jjkset, &
 &                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-!       call cg_s_mat_dstm   (b, u, eps, ite_cg, jsv4jsk, jsk4jsv, jjkset, &
-!&                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-!       call cg_s_mat_proj_r2(b, u, eps, ite_cg, jsv4jsk, jsk4jsv, jjkset)
+        case default
+          write(*,*)'ERROR:mat_vec_type is not specified'
+          stop
+        end select
+!
         s_inv_e_j_wrk(1:mat_dim)=u(1:mat_dim)
         if (i_show >= 1) then
           write(*,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', & 

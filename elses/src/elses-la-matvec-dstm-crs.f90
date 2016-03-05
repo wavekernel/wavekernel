@@ -11,6 +11,8 @@ module M_la_matvec_crs
   public :: make_mat_crs
   public :: get_num_nonzero_elem
   public :: calc_u_su_hu_crs
+  public :: cg_s_mat_crs
+  public :: cg_s_mat_crs_dum
 !
 !
   contains
@@ -228,24 +230,15 @@ module M_la_matvec_crs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine calc_u_su_hu_crs(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
-&              booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, &
-&                            irp, icol, val )
+  subroutine calc_u_su_hu_crs(u,su,hu,norm_factor, irp, icol, val, ierr )
 !
     implicit none
-    integer,          intent(in)  :: jsv4jsk(:)
-!   integer,          intent(in)  :: jsk4jsv(:)
-    integer,          intent(in)  :: jjkset(:)
     real(8),       intent(inout)  :: u(:)
     real(8),         intent(out)  :: su(:)
     real(8),         intent(out)  :: hu(:)
     real(8),         intent(out)  :: norm_factor
     integer,         intent(out)  :: ierr
 !
-    integer,                intent(in)  :: booking_list_dstm(:,:)
-    integer,                intent(in)  :: booking_list_dstm_len(:)
-    real(DOUBLE_PRECISION), intent(in)  :: overlap_dstm(:,:,:,:)
-    real(DOUBLE_PRECISION), intent(in)  :: ham_tot_dstm(:,:,:,:)
     integer,                intent(in) :: irp(:)
     integer,                intent(in) :: icol(:)
     real(DOUBLE_PRECISION), intent(in) :: val(:,:)
@@ -293,6 +286,255 @@ module M_la_matvec_crs
 !        ---> hu : H|u_n> 
 
   end subroutine calc_u_su_hu_crs
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine cg_s_mat_crs(b,x,eps,kend, irp, icol, val)
+!
+!    ---> Solve linear eq.: S x = b (REAL VARIALE)
+!          convergence criteria : 
+!             log_10 | r / b | < EPS
+!      kend : (in input ) the maximum iteration number
+!           : (in output) the last iteration number that is executed
+!
+!   use M_la_matvec_io, only : matvec_mul
+!   use M_qm_projection, only : matvec_mul_proj ! (routine)
+!
+    implicit none
+    real(8),       intent(in)     :: b(:)
+    real(8),       intent(inout)  :: x(:)
+    real(8),       intent(inout)  :: eps
+    integer,        intent(inout) :: kend
+!   integer,           intent(in) :: jsv4jsk(:)
+!   integer,           intent(in) :: jsk4jsv(:)
+!   integer,           intent(in) :: jjkset(:)
+!
+!   integer,                intent(in)  :: booking_list_dstm(:,:)
+!   integer,                intent(in)  :: booking_list_dstm_len(:)
+!   real(DOUBLE_PRECISION), intent(in)  :: overlap_dstm(:,:,:,:)
+!
+    integer,                intent(in) :: irp(:)
+    integer,                intent(in) :: icol(:)
+    real(DOUBLE_PRECISION), intent(in) :: val(:,:)
+!
+    real(8), allocatable          :: r(:), p(:), ap(:)
+    real(8)                       :: alpha, beta, rho0, rho1, tbs
+    real(8)                       :: hg, hal, pap,hnor
+    integer                       :: m, m2, i, ierr
+    integer                       :: kk, kend_in
+!
+!
+    kend_in=kend
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Get matrix size : m
+!
+    m=size(b,1)
+    m2=size(x,1)
+    if (m /= m2) stop 'Parameter Mismatch:m,m2'
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Matrix allocation
+!
+    allocate (r(m),stat=ierr)
+    if (ierr /= 0) stop 'Abort:ERROR in alloc'
+!
+    allocate (p(m),stat=ierr)
+    if (ierr /= 0) stop 'Abort:ERROR in alloc'
+!
+    allocate (ap(m),stat=ierr)
+    if (ierr /= 0) stop 'Abort:ERROR in alloc'
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Iniital value
+!
+    beta = 0.0d0
+!
+!   call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+    call matvec_mul_crs(x, ap, irp, icol, val(:,2))
+!        ---> Mat-vec multiplication : ap = S x
+!
+    r(:) = b(:)-ap(:)  ! r_0 = b - A x_0
+    p(:) = r(:)        ! p_0 = r_0
+!
+    rho0 = dot_product(r(:),r(:))
+    hnor = dot_product(b(:),b(:))
+    hnor=dlog10(hnor)/2.0d0
+!
+    kk=-1
+    hal = rho0
+    hg = dlog10(hal)/2.0d0 - hnor
+    if(hg .le. eps) then
+      eps= dlog10(hal)/2.0d0 - hnor
+      kend=kk
+      return
+    endif    
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Main CG loop
+!
+    do kk = 0, kend_in
+!
+      hal = rho0
+      hg = dlog10(hal)/2.0d0 - hnor
+!
+      if(hg .le. eps) then
+!        --  If converged, the true residual is calculated and exit---
+!
+!        call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+         call matvec_mul_crs    (x, ap, irp, icol, val(:,2))
+!          ---> Mat-vec multiplication : ap = S x
+!
+        r(:) = b(:)-ap(:)
+        rho0 = dot_product(r(:),r(:))
+        hal = rho0 + 1.0d-100
+        eps= dlog10(hal)/2.0d0 - hnor
+        kend=kk
+        return
+      end if
+!
+      p(:) = r(:) + beta*p(:)
+!
+!     call matvec_mul_crs_dum(p, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+      call matvec_mul_crs    (p, ap, irp, icol, val(:,2))
+!        ---> Mat-vec multiplication : ap = S p
+      pap = dot_product(p(:),ap(:))
+!
+      alpha = rho0/pap
+      x(:) = x(:) +alpha*p(:)
+      r(:) = r(:) -alpha*ap(:)
+      rho1=dot_product(r(:),r(:))
+      beta = rho1/rho0
+      rho0 = rho1
+!
+    enddo
+!
+    return
+!
+!
+  end subroutine cg_s_mat_crs
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine cg_s_mat_crs_dum(b,x,eps,kend,jsv4jsk,jjkset, &
+&                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+!    ---> Solve linear eq.: S x = b (REAL VARIALE)
+!          convergence criteria : 
+!             log_10 | r / b | < EPS
+!      kend : (in input ) the maximum iteration number
+!           : (in output) the last iteration number that is executed
+!
+!   use M_la_matvec_io, only : matvec_mul
+!   use M_qm_projection, only : matvec_mul_proj ! (routine)
+!
+    implicit none
+    real(8),       intent(in)     :: b(:)
+    real(8),       intent(inout)  :: x(:)
+    real(8),       intent(inout)  :: eps
+    integer,        intent(inout) :: kend
+    integer,           intent(in) :: jsv4jsk(:)
+!   integer,           intent(in) :: jsk4jsv(:)
+    integer,           intent(in) :: jjkset(:)
+!
+    integer,                intent(in)  :: booking_list_dstm(:,:)
+    integer,                intent(in)  :: booking_list_dstm_len(:)
+    real(DOUBLE_PRECISION), intent(in)  :: overlap_dstm(:,:,:,:)
+!
+    real(8), allocatable          :: r(:), p(:), ap(:)
+    real(8)                       :: alpha, beta, rho0, rho1, tbs
+    real(8)                       :: hg, hal, pap,hnor
+    integer                       :: m, m2, i, ierr
+    integer                       :: kk, kend_in
+!
+!
+    kend_in=kend
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Get matrix size : m
+!
+    m=size(b,1)
+    m2=size(x,1)
+    if (m /= m2) stop 'Parameter Mismatch:m,m2'
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Matrix allocation
+!
+    allocate (r(m),stat=ierr)
+    if (ierr /= 0) stop 'Abort:ERROR in alloc'
+!
+    allocate (p(m),stat=ierr)
+    if (ierr /= 0) stop 'Abort:ERROR in alloc'
+!
+    allocate (ap(m),stat=ierr)
+    if (ierr /= 0) stop 'Abort:ERROR in alloc'
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Iniital value
+!
+    beta = 0.0d0
+!
+    call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+!        ---> Mat-vec multiplication : ap = S x
+!
+    r(:) = b(:)-ap(:)  ! r_0 = b - A x_0
+    p(:) = r(:)        ! p_0 = r_0
+!
+    rho0 = dot_product(r(:),r(:))
+    hnor = dot_product(b(:),b(:))
+    hnor=dlog10(hnor)/2.0d0
+!
+    kk=-1
+    hal = rho0
+    hg = dlog10(hal)/2.0d0 - hnor
+    if(hg .le. eps) then
+      eps= dlog10(hal)/2.0d0 - hnor
+      kend=kk
+      return
+    endif    
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Main CG loop
+!
+    do kk = 0, kend_in
+!
+      hal = rho0
+      hg = dlog10(hal)/2.0d0 - hnor
+!
+      if(hg .le. eps) then
+!        --  If converged, the true residual is calculated and exit---
+!
+         call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+!          ---> Mat-vec multiplication : ap = S x
+!
+        r(:) = b(:)-ap(:)
+        rho0 = dot_product(r(:),r(:))
+        hal = rho0 + 1.0d-100
+        eps= dlog10(hal)/2.0d0 - hnor
+        kend=kk
+        return
+      end if
+!
+      p(:) = r(:) + beta*p(:)
+!
+      call matvec_mul_crs_dum(p, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+!        ---> Mat-vec multiplication : ap = S p
+      pap = dot_product(p(:),ap(:))
+!
+      alpha = rho0/pap
+      x(:) = x(:) +alpha*p(:)
+      r(:) = r(:) -alpha*ap(:)
+      rho1=dot_product(r(:),r(:))
+      beta = rho1/rho0
+      rho0 = rho1
+!
+    enddo
+!
+    return
+!
+!
+  end subroutine cg_s_mat_crs_dum
 !
 end module M_la_matvec_crs
 
