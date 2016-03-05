@@ -56,7 +56,10 @@ module M_la_gkrylov_main_dstm
     use M_la_matvec_crs, only : make_mat_crs, get_num_nonzero_elem !(routine)
     use M_la_matvec_crs, only : calc_u_su_hu_crs                   !(routine)
     use M_la_matvec_crs, only : cg_s_mat_crs                       !(routine)
-!   use M_la_matvec_crs, only : cg_s_mat_crs_dum                   !(routine)
+!
+    use M_la_matvec_dens, only : make_mat_dens                     !(routine)
+    use M_la_matvec_dens, only : calc_u_su_hu_dens                 !(routine)
+    use M_la_matvec_dens, only : cg_s_mat_dens                     !(routine)
 !
     implicit none
     integer,          intent(in)  :: dst_atm_index, atm_index, orb_index
@@ -81,7 +84,7 @@ module M_la_gkrylov_main_dstm
     real(DOUBLE_PRECISION), intent(in) :: ham_tot_dstm(:,:,:,:)
     real(DOUBLE_PRECISION), intent(in) :: overlap_dstm(:,:,:,:)
 !
-    character(len=*), parameter   :: mat_vec_type = 'crs'  ! 'dstm', 'crs' or 'dens'
+    character(len=*), parameter   :: mat_vec_type = 'crs'   ! 'dstm', 'crs' or 'dens'
 !
 !   logical, parameter   :: use_mat_crs = .true.
 !   logical, parameter   :: use_mat_crs = .false.
@@ -106,7 +109,9 @@ module M_la_gkrylov_main_dstm
 !
     integer,                allocatable  :: mat_crs_irp(:)
     integer,                allocatable  :: mat_crs_icol(:)
-    real(DOUBLE_PRECISION), allocatable  :: mat_crs_val(:,:)  ! H and S
+    real(DOUBLE_PRECISION), allocatable  :: mat_crs_val(:,:)  ! H and S in the CRS format
+!
+    real(DOUBLE_PRECISION), allocatable  :: mat_dens_h_s(:,:,:)  ! H and S in the dense format
 !
     integer :: ierr
 !
@@ -189,6 +194,8 @@ module M_la_gkrylov_main_dstm
 !
     mat_dim=size(b,1)
 !     ----> Matrix dimension
+!
+!   write(*,*)'mat_dim=', mat_dim
 !
     i_show=0
     if (i_check_mode == 1) then
@@ -346,7 +353,8 @@ module M_la_gkrylov_main_dstm
       enddo
     endif   
 !
-    if (mat_vec_type == 'crs') then
+    if ((mat_vec_type == 'crs') .or. (mat_vec_type == 'dens')) then
+!     write(*,*)'Allocate : mat_crs_irp; size=', mat_dim+1
       allocate (mat_crs_irp(mat_dim+1), stat=ierr) 
       if (ierr /= 0) then
         write(*,*)'Alloc. Erro in mat_crs_irp'
@@ -372,6 +380,19 @@ module M_la_gkrylov_main_dstm
 &                       mat_crs_irp, mat_crs_icol, mat_crs_val)
     endif
 !
+    if (mat_vec_type == 'dens') then
+      allocate (mat_dens_h_s(mat_dim,mat_dim,2), stat=ierr) 
+      if (ierr /= 0) then
+        write(*,*)'Alloc. Erro in mat_dens_h_s'
+        stop
+      endif
+!
+      call make_mat_dens(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm, overlap_dstm, &
+&                       mat_dens_h_s)
+    endif
+!
+!   stop 'Stop manually'
+!
     do kr_dim=1,kr_dim_max_loop
 !       u(:) : input |l_n> ( non-normalized vector) 
 !
@@ -385,6 +406,9 @@ module M_la_gkrylov_main_dstm
 !         call calc_u_su_hu_crs(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
 !&            booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, &
 !&            mat_crs_irp, mat_crs_icol, mat_crs_val          )
+        case ('dens')
+          call calc_u_su_hu_dens(u,su,hu,norm_factor, mat_dens_h_s, ierr)
+!         call calc_u_su_hu_dens_dum(u,su,hu,norm_factor, mat_crs_irp, mat_crs_icol, mat_crs_val, ierr)
         case ('dstm')
           call calc_u_su_hu_dstm(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
 &           booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
@@ -468,8 +492,10 @@ module M_la_gkrylov_main_dstm
         u(1:mat_dim)=s_inv_e_j_wrk(1:mat_dim)
 !
         select case(mat_vec_type)
-          case ('crs')
+         case ('crs')
            call cg_s_mat_crs   (b, u, eps, ite_cg, mat_crs_irp, mat_crs_icol, mat_crs_val)
+         case ('dens')
+           call cg_s_mat_dens  (b, u, eps, ite_cg, mat_dens_h_s(:,:,2) )
         case ('dstm')
            call cg_s_mat_dstm      (b, u, eps, ite_cg, jsv4jsk, jjkset, &
 &                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
@@ -955,6 +981,8 @@ module M_la_gkrylov_main_dstm
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Deallocation
 !
+
+
     deallocate (interaction_list,stat=ierr)
     if (ierr /= 0) stop 'Abort:ERROR in dealloc (interaction_list)'
 !
@@ -982,6 +1010,23 @@ module M_la_gkrylov_main_dstm
       if (ierr /= 0) stop 'Abort:ERROR in dealloc (s_mat_kr)'
     endif  
 !
+    select case(mat_vec_type)
+      case ('crs')
+        deallocate (mat_crs_irp,  stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_crs_irp)'
+        deallocate (mat_crs_icol, stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_crs_icol)'
+        deallocate (mat_crs_val,  stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_crs_val)'
+      case ('dens')
+        deallocate (mat_dens_h_s,  stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_mat_dens_h_s)'
+      case ('dstm')
+      case default
+        write(*,*)'ERROR:mat_vec_type is not specified'
+        stop
+    end select
+
 !   deallocate (v_mat_kr ,stat=ierr)
 !   if (ierr /= 0) stop 'Abort:ERROR in dealloc (v_mat_kr)'
 !
