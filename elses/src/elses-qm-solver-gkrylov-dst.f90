@@ -911,7 +911,7 @@ module M_qm_solver_gkrylov_dst
       if (i_verbose > 1) then 
         if (lu>0) write(lu,*)'Nelec=',Nelec
       endif
-      if ( dabs( total_electron_number - Nelec) >= 1.0d-10 ) then
+      if ( dabs( total_electron_number - Nelec)/dabs(Nelec) >= 1.0d-10 ) 
          write(*,*)'ERROR in Nelec : Nelec=',Nelec, total_electron_number
          stop
       endif   
