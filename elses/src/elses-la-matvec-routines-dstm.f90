@@ -4,6 +4,7 @@
 !================================================================
 module M_la_matvec_routines_dstm
 !
+  use M_config  !(unchanged)
   use M_qm_domain, only : i_verbose, DOUBLE_PRECISION !(unchanged)
   implicit none
 !
@@ -22,7 +23,8 @@ module M_la_matvec_routines_dstm
 !
   subroutine matvec_mul_dstm(vect_in, vect_out, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_dstm)
 !
-    use M_qm_domain,     only : nval, atm_element  ! (unchanged)
+    use M_qm_domain,      only : nval, atm_element  ! (unchanged)
+    use M_la_matvec_bcrs, only : switch_to_bcrs     ! (routine)
 !
     implicit none
     real(DOUBLE_PRECISION), intent(in)  :: vect_in(:)
@@ -33,16 +35,23 @@ module M_la_matvec_routines_dstm
     integer,                intent(in)  :: booking_list_dstm_len(:)
     real(DOUBLE_PRECISION), intent(in)  :: mat_dstm(:,:,:,:)
 !
-    logical, parameter :: debug_mode = .true.
+!   logical, parameter :: debug_mode = .true.
+    logical, parameter :: debug_mode = .false.
 !
     integer :: jsk2, jsk1, jsd, jsv2, jsv1, ja2, ja1
     integer :: num_atom_proj
     integer :: jjkset1, jjkset2, jjk1, jjk2
     real(DOUBLE_PRECISION)  :: mat_value
 !
+    if (config%calc%distributed%mat_vec_switch_bcrs) then
+      if (config%calc%distributed%mat_vec_const_num_orbital) then
+        call switch_to_bcrs(vect_in, vect_out, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_dstm)
+      endif
+    endif
+!
     vect_out(:)=0.0d0
 !
-!   write(*,*)'matvec_mul_dstm'
+!   write(*,*)'INFO:matvec_mul_dstm'
 !
     num_atom_proj=size(mat_dstm, 4)
 !

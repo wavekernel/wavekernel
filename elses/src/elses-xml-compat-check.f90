@@ -19,11 +19,27 @@ module M_xml_compat_chk
   subroutine check_xml_compat
 !
     implicit none
+    integer i_v, lu
+    integer ierr
 !
-    i_verbose=config%option%verbose
-    log_unit  = config%calc%distributed%log_unit
+    i_v = config%option%verbose
+    lu  = config%calc%distributed%log_unit
 !
-!   if (log_unit > 0) write(log_unit,'(a)') '@@ check_xml_compat:check XML file for compatibility'
+    if (i_v >= 1) then
+      if (lu > 0) write(lu,'(a)') '@@ check_xml_compat:check XML file for compatibility'
+    endif
+!
+    if (config%system%structure%use_matom) then
+      ierr=1
+      if (trim(config%calc%mode) == "cell-change-only" ) ierr=0
+      if (trim(config%calc%mode) == "conversion" ) ierr=0
+      if (ierr /= 0) then
+        write(*,*)'ERROR:(check_xml_compat)incompatible setting'
+        write(*,*)'  use_matom  = ', config%system%structure%use_matom
+        write(*,*)'  calc%mode  = ', trim(config%calc%mode)
+        stop
+      endif
+    endif
 !
     if (config%calc%distributed%set) then
       call check_xml_compat_dst

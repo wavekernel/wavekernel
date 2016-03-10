@@ -40,11 +40,11 @@ module M_io_dst_write_log
     max_node_for_log  = config%option%log_node_number - 1
 !
     write(myrank_chara, '(i6.6)') myrank
-    log_node_filename='log-node'//trim(myrank_chara)//'.txt'
+    log_node_filename=trim(config%option%output_dir)//'log-node'//trim(myrank_chara)//'.txt'
 !
     if (myrank > max_node_for_log) then
       log_file_is_set = .false.
-      log_node_filename='log-nodeXXXXXX.txt'  ! dummy 
+      log_node_filename=trim(config%option%output_dir)//'log-nodeXXXXXX.txt'  ! dummy 
     endif
 !   
     output_unit = -1

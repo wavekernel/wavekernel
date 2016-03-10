@@ -20,6 +20,7 @@ module M_la_gkrylov_main_dstm
 &         s_inv_e_j_wrk,dm_wrk,u_hst_wrk, v_mat_kr, eig_wrk, u_b_hst_wrk, wt_kr_wrk, kr_dim_max, &
 &         booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
 !
+    use M_config    ! (unchanged)
     use  M_la_krgl_main, only : get_num_of_nonzeros, &
 &                             check_matrix, schmidt_orth_w_s_mat !(routine)
     use M_qm_domain, only : i_verbose, chemical_potential,temp_for_electron !(unchanged)
@@ -84,7 +85,7 @@ module M_la_gkrylov_main_dstm
     real(DOUBLE_PRECISION), intent(in) :: ham_tot_dstm(:,:,:,:)
     real(DOUBLE_PRECISION), intent(in) :: overlap_dstm(:,:,:,:)
 !
-    character(len=*), parameter   :: mat_vec_type = 'crs'   ! 'dstm', 'crs' or 'dens'
+    character(len=64)    :: mat_vec_type 
 !
 !   logical, parameter   :: use_mat_crs = .true.
 !   logical, parameter   :: use_mat_crs = .false.
@@ -113,6 +114,7 @@ module M_la_gkrylov_main_dstm
 !
     real(DOUBLE_PRECISION), allocatable  :: mat_dens_h_s(:,:,:)  ! H and S in the dense format
 !
+    integer :: lu
     integer :: ierr
 !
     integer :: mat_dim
@@ -159,6 +161,8 @@ module M_la_gkrylov_main_dstm
 ! @@ Initial procedure
 !
     msg=''
+    lu=config%calc%distributed%log_unit
+    mat_vec_type=trim(adjustl(config%calc%distributed%mat_vec_mode))
 !
     if (i_verbose >=5) then 
       i_check_mode=1
@@ -208,10 +212,13 @@ module M_la_gkrylov_main_dstm
     endif  
 !
     if (i_show >= 1) then
-      write(*,*)'atm_index=',atm_index
-      write(*,*)'orb_index=',orb_index
-      write(*,*)'the position of non-zero element in the initial vector=',ini_elem
-      write(*,*)'mode for large memory=',i_kr_hst_str
+      if (lu > 0) then
+        write(lu,*)'atm_index=',atm_index
+        write(lu,*)'orb_index=',orb_index
+        write(lu,*)'the position of non-zero element in the initial vector=',ini_elem
+        write(lu,*)'mode for large memory=',i_kr_hst_str
+        write(lu,*)'mat_vec_mode =',trim(mat_vec_type)
+      endif 
     endif  
 !
 !
@@ -244,7 +251,7 @@ module M_la_gkrylov_main_dstm
 !
     m_int=size(dm_wrk,1)
     if (i_show >= 1) then
-      write(*,*)'m_int=',m_int
+      if (lu > 0) write(lu,*)'m_int=',m_int
     endif  
 !
 !   if (i_check_mode == 1) then
@@ -265,7 +272,7 @@ module M_la_gkrylov_main_dstm
 &                               jjkset, m_int, interaction_list)
 !    
     if (i_show >= 1) then
-      write(*,*)' ...set_interac_list_proj is ended'
+      if (lu > 0) write(lu,*)' ...set_interac_list_proj is ended'
     endif  
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -325,8 +332,10 @@ module M_la_gkrylov_main_dstm
     u(:)=b(:)
 !
     if (i_show >= 1) then
-      write(*,'(a,i10,F10.5,2I10)') 'ite_cg, eps, atm_index, orb_index=', & 
+      if (lu > 0) then
+        write(lu,'(a,i10,F10.5,2I10)') 'ite_cg, eps, atm_index, orb_index=', & 
 &                                   ite_cg, eps, atm_index, orb_index
+      endif
     endif  
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -413,7 +422,7 @@ module M_la_gkrylov_main_dstm
           call calc_u_su_hu_dstm(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
 &           booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
         case default
-          write(*,*)'ERROR:mat_vec_type is not specified'
+          write(*,*)'ERROR:mat_vec_type is not specified:', trim(mat_vec_type)
           stop
       end select
 !
@@ -477,7 +486,7 @@ module M_la_gkrylov_main_dstm
         call cg_s_mat_dstm   (hu, sinv_hu, eps, ite_cg, jsv4jsk, jjkset, &
 &                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
         if (i_show >= 1) then
-          write(*,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', &  
+          if (lu > 0) write(lu,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', &  
 &                                        prc_index, orb_index, atm_index, eps, ite_cg
         endif   
         u(:)=sinv_hu(:)
@@ -485,7 +494,7 @@ module M_la_gkrylov_main_dstm
 !
       if ( (scheme_mode == 'gKrylov_A') .and. (kr_dim == kr_dim_max_input - mArnoldi_q_wrk ) ) then
         if (i_show >= 1) then
-          write(*,*) ' Multiple KR space : kr_dim=',kr_dim
+          if (lu > 0) write(lu,*) ' Multiple KR space : kr_dim=',kr_dim
         endif  
         ite_cg=max_ite_for_cg_loop
         eps=eps_c
@@ -506,8 +515,8 @@ module M_la_gkrylov_main_dstm
 !
         s_inv_e_j_wrk(1:mat_dim)=u(1:mat_dim)
         if (i_show >= 1) then
-          write(*,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', & 
-&                   prc_index, orb_index, atm_index, eps, ite_cg
+          if (lu > 0) write(lu,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', & 
+&                      prc_index, orb_index, atm_index, eps, ite_cg
         endif   
       endif  
 !
@@ -570,12 +579,14 @@ module M_la_gkrylov_main_dstm
           if (ddmax > 1.0d-10) then
             if (i_verbose >= 1) then
               call get_num_of_nonzeros(u_hst(:,n),n_count,n_count2)
-              write(*,*)'INFO:Shrink kr_dim_max       = ', n-1, kr_dim_max
-              write(*,*)'INFO:   atm_index,orb_index  = ', atm_index, orb_index
-              write(*,*)'INFO:   n, m_pick            = ', n, m_pick
-              write(*,*)'INFO:   ddmax                = ', ddmax
-              write(*,*)'INFO:   n_count, n_count2    = ', n_count, n_count2
-              write(*,*)'INFO:   mat_dim              = ', mat_dim
+              if (lu > 0) then
+                write(lu,*)'INFO:Shrink kr_dim_max       = ', n-1, kr_dim_max
+                write(lu,*)'INFO:   atm_index,orb_index  = ', atm_index, orb_index
+                write(lu,*)'INFO:   n, m_pick            = ', n, m_pick
+                write(lu,*)'INFO:   ddmax                = ', ddmax
+                write(lu,*)'INFO:   n_count, n_count2    = ', n_count, n_count2
+                write(lu,*)'INFO:   mat_dim              = ', mat_dim
+              endif
 !             write(*,*)'INFO:   njsd                 = ', njsd(atm_index,1)
             endif
             kr_dim_max=n-1
@@ -625,16 +636,18 @@ module M_la_gkrylov_main_dstm
 !
     if ( i_check_mode ==1 ) then
       if (i_show >= 1) then
-        do n=1,kr_dim_max
-          call get_num_of_nonzeros(u_hst(:,n),n_count,n_count2)
-          write(*,'(a,3i10)')'n, num of non-zero =',n, n_count, n_count2
-        enddo  
+        if (lu > 0) then 
+          do n=1,kr_dim_max
+            call get_num_of_nonzeros(u_hst(:,n),n_count,n_count2)
+            write(lu,'(a,3i10)')'n, num of non-zero =',n, n_count, n_count2
+          enddo  
+        endif
       endif  
 !
       imode_check_mat=1
       call check_matrix(s_mat_kr,ddd,imode_check_mat)
       if (i_show >= 1) then
-         write(*,*)' Check (reduced S) = I : deviation=',ddd
+         if (lu > 0) write(lu,*)' Check (reduced S) = I : deviation=',ddd
       endif  
       if (ddd > 1.0d-9) then
         write(*,*)' Abort:Deviation  for (reduced S)=I:deviation=',ddd
@@ -786,7 +799,7 @@ module M_la_gkrylov_main_dstm
       enddo   
 !
       if (i_show >= 1) then
-        write(*,*)' Sum of eigen values (eV) =',ddd
+        if (lu > 0) write(*,*)' Sum of eigen values (eV) =',ddd
       endif  
 !
     endif  

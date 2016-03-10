@@ -51,7 +51,7 @@ OBJS-ELSES = \
 	elses-qm-geno-rest-kernal.o \
 	elses-qm-domain.o elses-qm-engine.o elses-qm-engine-nrl.o elses-qm-geno-output.o  elses-qm-engine-csc.o elses-qm-engine-csc-tb0.o \
 	elses-qm-geno.o elses-ini-load-common.o elses-ini-load-geno.o elses-io-ctrl-dos-plot.o elses-io-ctrl-plot-eigenstates.o \
-	elses-qm-vdW-parameters.o \
+	elses-qm-vdW-parameters.o elses-ini-dst.o \
 	elses-qm-geno-Huckel-atom-parameters.o elses-xml-check-element-info.o \
 	elses-qm-geno-Huckel.o elses-qm-geno-csc-basic.o elses-qm-geno-csc.o  elses-qm-solver-eig-geno.o \
 	elses-00-main.o elses-md-main.o elses-md-init.o elses-md-velocity-routines.o \
@@ -93,7 +93,7 @@ OBJS-ELSES = \
 	elses-xml-sax-data-sync-matom.o elses-qm-chk-allocated.o elses-md-virial-pressure.o elses-la-eigen-solver-main.o \
 	elses-gid-initial.o elses-gid-basic-routines.o elses-gid-constraint.o elses-lib-read-w-comment.o elses-lib-read-w-split.o \
 	elses-ext-atom-info.o elses-ext-matrix-data.o elses-ext-test-quantum-dynamics.o \
-	elses-la-matvec-dstm-crs.o elses-la-matvec-dstm-dens.o
+	elses-la-matvec-dstm-crs.o elses-la-matvec-dstm-dens.o elses-la-matvec-dstm-bcrs.o
 
 #elses-xml-selftest: elses-xml-selftest.o $(OBJS-XML)
 #	$(F90)  $(LDFLAGS) elses-xml-selftest.o $(OBJS-XML) $(LIBS-XML) -o $@

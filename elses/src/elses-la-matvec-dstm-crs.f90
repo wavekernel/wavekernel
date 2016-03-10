@@ -12,7 +12,7 @@ module M_la_matvec_crs
   public :: get_num_nonzero_elem
   public :: calc_u_su_hu_crs
   public :: cg_s_mat_crs
-  public :: cg_s_mat_crs_dum
+! public :: cg_s_mat_crs_dum
 !
 !
   contains
@@ -172,64 +172,6 @@ module M_la_matvec_crs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Matrix-vector multiplication with DSTM matrix : A (= H or S)
-!      (vect_out): = A (vect_in)
-!
-  subroutine matvec_mul_crs_dum(vect_in, vect_out, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_dstm)
-    use M_qm_domain,     only : nval, atm_element  ! (unchanged)
-!
-    implicit none
-    real(DOUBLE_PRECISION), intent(in)  :: vect_in(:)
-    real(DOUBLE_PRECISION), intent(out) :: vect_out(:)
-    integer,                intent(in)  :: jjkset(:)
-    integer,                intent(in)  :: jsv4jsk(:)
-    integer,                intent(in)  :: booking_list_dstm(:,:)
-    integer,                intent(in)  :: booking_list_dstm_len(:)
-    real(DOUBLE_PRECISION), intent(in)  :: mat_dstm(:,:,:,:)
-!
-    logical, parameter :: debug_mode = .true.
-!
-    integer :: jsk2, jsk1, jsd, jsv2, jsv1, ja2, ja1
-    integer :: num_atom_proj
-    integer :: jjkset1, jjkset2, jjk1, jjk2
-    real(DOUBLE_PRECISION)  :: mat_value
-!
-    vect_out(:)=0.0d0
-!
-!   write(*,*)'matvec_mul_dstm'
-!
-    num_atom_proj=size(mat_dstm, 4)
-!
-!   write(*,*)'num_atom_proj=',num_atom_proj
-!
-    do jsk2=1, num_atom_proj
-      jjkset2=jjkset(jsk2)
-      jsv2=jsv4jsk(jsk2)
-      do jsd=1, booking_list_dstm_len(jsk2)
-        jsk1=booking_list_dstm(jsd, jsk2)
-        if (debug_mode) then
-          if ( ( jsk1 <= 0 ) .or. (jsk1 > num_atom_proj)) then
-            stop 'ERROR(matvec_mul_dstm)'
-          endif
-        endif
-        jsv1=jsv4jsk(jsk1)
-        jjkset1=jjkset(jsk1)
-        do ja2=1,nval(atm_element(jsv2))
-          jjk2=jjkset2+ja2
-          do ja1=1,nval(atm_element(jsv1))
-            jjk1=jjkset1+ja1
-            mat_value=mat_dstm(ja1,ja2,jsd,jsk2)
-            vect_out(jjk2)=vect_out(jjk2)+mat_value*vect_in(jjk1)
-          enddo
-        enddo
-      enddo
-    enddo
-!
-  end subroutine matvec_mul_crs_dum
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine calc_u_su_hu_crs(u,su,hu,norm_factor, irp, icol, val, ierr )
 !
     implicit none
@@ -414,127 +356,6 @@ module M_la_matvec_crs
 !
 !
   end subroutine cg_s_mat_crs
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine cg_s_mat_crs_dum(b,x,eps,kend,jsv4jsk,jjkset, &
-&                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-!    ---> Solve linear eq.: S x = b (REAL VARIALE)
-!          convergence criteria : 
-!             log_10 | r / b | < EPS
-!      kend : (in input ) the maximum iteration number
-!           : (in output) the last iteration number that is executed
-!
-!   use M_la_matvec_io, only : matvec_mul
-!   use M_qm_projection, only : matvec_mul_proj ! (routine)
-!
-    implicit none
-    real(8),       intent(in)     :: b(:)
-    real(8),       intent(inout)  :: x(:)
-    real(8),       intent(inout)  :: eps
-    integer,        intent(inout) :: kend
-    integer,           intent(in) :: jsv4jsk(:)
-!   integer,           intent(in) :: jsk4jsv(:)
-    integer,           intent(in) :: jjkset(:)
-!
-    integer,                intent(in)  :: booking_list_dstm(:,:)
-    integer,                intent(in)  :: booking_list_dstm_len(:)
-    real(DOUBLE_PRECISION), intent(in)  :: overlap_dstm(:,:,:,:)
-!
-    real(8), allocatable          :: r(:), p(:), ap(:)
-    real(8)                       :: alpha, beta, rho0, rho1, tbs
-    real(8)                       :: hg, hal, pap,hnor
-    integer                       :: m, m2, i, ierr
-    integer                       :: kk, kend_in
-!
-!
-    kend_in=kend
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Get matrix size : m
-!
-    m=size(b,1)
-    m2=size(x,1)
-    if (m /= m2) stop 'Parameter Mismatch:m,m2'
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Matrix allocation
-!
-    allocate (r(m),stat=ierr)
-    if (ierr /= 0) stop 'Abort:ERROR in alloc'
-!
-    allocate (p(m),stat=ierr)
-    if (ierr /= 0) stop 'Abort:ERROR in alloc'
-!
-    allocate (ap(m),stat=ierr)
-    if (ierr /= 0) stop 'Abort:ERROR in alloc'
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Iniital value
-!
-    beta = 0.0d0
-!
-    call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-!        ---> Mat-vec multiplication : ap = S x
-!
-    r(:) = b(:)-ap(:)  ! r_0 = b - A x_0
-    p(:) = r(:)        ! p_0 = r_0
-!
-    rho0 = dot_product(r(:),r(:))
-    hnor = dot_product(b(:),b(:))
-    hnor=dlog10(hnor)/2.0d0
-!
-    kk=-1
-    hal = rho0
-    hg = dlog10(hal)/2.0d0 - hnor
-    if(hg .le. eps) then
-      eps= dlog10(hal)/2.0d0 - hnor
-      kend=kk
-      return
-    endif    
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Main CG loop
-!
-    do kk = 0, kend_in
-!
-      hal = rho0
-      hg = dlog10(hal)/2.0d0 - hnor
-!
-      if(hg .le. eps) then
-!        --  If converged, the true residual is calculated and exit---
-!
-         call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-!          ---> Mat-vec multiplication : ap = S x
-!
-        r(:) = b(:)-ap(:)
-        rho0 = dot_product(r(:),r(:))
-        hal = rho0 + 1.0d-100
-        eps= dlog10(hal)/2.0d0 - hnor
-        kend=kk
-        return
-      end if
-!
-      p(:) = r(:) + beta*p(:)
-!
-      call matvec_mul_crs_dum(p, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-!        ---> Mat-vec multiplication : ap = S p
-      pap = dot_product(p(:),ap(:))
-!
-      alpha = rho0/pap
-      x(:) = x(:) +alpha*p(:)
-      r(:) = r(:) -alpha*ap(:)
-      rho1=dot_product(r(:),r(:))
-      beta = rho1/rho0
-      rho0 = rho1
-!
-    enddo
-!
-    return
-!
-!
-  end subroutine cg_s_mat_crs_dum
 !
 end module M_la_matvec_crs
 

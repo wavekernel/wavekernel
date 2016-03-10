@@ -30,7 +30,7 @@ module M_ini_load_geno
     use M_check_xml_element_info, only : check_xml_element_info !(routine)
     use M_group_id_setting,       only : ini_group_id           !(routine)
     use M_lib_read_w_split,       only : test_read_w_split      !(routine)
-
+    use M_ini_dst,                only : ini_dst_set            !(routine)
     ! 
     implicit none
     logical, parameter :: cell_change_for_next_step = .false.
@@ -122,6 +122,9 @@ module M_ini_load_geno
 !
 !   call flexible_cutoff_ini
 !       ---> Optional initial routine for the flexible cutoff
+!
+    call ini_dst_set
+!       ---> Initial procedure for DST workflow setting
 !
     call chk_input_data
 !       ---> Check the consistency of input data

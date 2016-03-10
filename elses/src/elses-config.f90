@@ -390,6 +390,10 @@ module M_config
      integer               :: log_unit
      logical               :: root_node
      logical               :: use_mpi_barrier
+     character(len=20)     :: mat_vec_mode  
+     logical               :: mat_vec_const_num_orbital
+     integer               :: mat_vec_max_num_orbital
+     logical               :: mat_vec_switch_bcrs
   end type distributed_type
 
   type :: interation_range_type
@@ -504,6 +508,9 @@ module M_config
 
   type :: option_type
      character(len=256)  :: filename
+     character(len=256)  :: directory     ! to be deleted
+     character(len=256)  :: input_dir
+     character(len=256)  :: output_dir
      integer             :: verbose       ! Old variable
      integer             :: verbose_level ! New variable (8. Feb. 2015)
      integer             :: debug
@@ -654,7 +661,12 @@ contains
     distributed%micro_cell_booking%mode = "default"
     distributed%micro_cell_booking%cell_number(:)  = -1
     distributed%micro_cell_booking%search_range(:) = -1
-
+!
+    distributed%mat_vec_mode              = "default"
+    distributed%mat_vec_const_num_orbital = .false. 
+    distributed%mat_vec_max_num_orbital   = -1
+    distributed%mat_vec_switch_bcrs       = .false.
+!
     return
   end subroutine distributed_default
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

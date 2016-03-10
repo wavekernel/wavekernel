@@ -17,15 +17,28 @@ module M_options
 contains
   subroutine elses_process_options
     implicit none
-    integer :: i
+    integer :: i, lenf
     character(len=256) :: argv
+    character(len=256) :: chara_wrk
+    character(len=256) :: directory_wrk
 !    
     call option_default( config%option ) 
 !    
+    config%option%directory  ='' ! default setting
+    config%option%output_dir ='' ! default setting
+!
     do i=1, command_argument_count()
        call get_command_argument(i,argv)
 !       
        if( argv(1:1) == "-" ) then
+          chara_wrk='output_dir='
+          lenf=len_trim(chara_wrk)
+          if (argv(2:lenf+1) == trim(chara_wrk)) then
+            read(unit=argv(lenf+2:),fmt=*) directory_wrk
+            config%option%output_dir = trim(adjustl(directory_wrk))//'/'
+            config%option%directory  = trim(adjustl(directory_wrk))//'/'
+            cycle
+          endif
           select case(argv(2:))
           case("band":"band@")
              config%option%functionality=argv(2:)

@@ -2796,6 +2796,19 @@ contains
 !
     endif
 !
+    ! get <mat_vec> node  ! default values are set in 'distributed_default'
+    node => getFirstElementByTagName(distributed_node,"mat_vec")
+    if ( associated(node) ) then
+      node_wrk1 => getFirstElementByTagName(node, "mat_vec_mode")
+      if (associated(node_wrk1)) then
+        value = getChildValue(node_wrk1)
+        read(unit=value,fmt=*) distributed%mat_vec_mode
+        if (log_unit > 0) write(log_unit,'(a,a)')'INFO-XML:Optional tag:mat_vec_mode=', &
+&                                                  trim(distributed%mat_vec_mode)
+      endif
+!
+    endif
+
     return
   end subroutine distributed_load
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3005,13 +3018,13 @@ contains
     ! get <main> node
     node => getFirstElementByTagName(output_node,"main")
     output%main%set      = .false.
-    output%main%filename = "Output.txt"
+    output%main%filename = trim(config%option%output_dir)//"Output.txt"
     if ( associated(node) ) then
       value       = getAttribute(node,"filename")
       value_mode  = getAttribute(node,"mode")
       if ( trim(value_mode) /= "default_name" ) then
         if ( trim(value) /= "" ) then
-          output%main%filename = trim(value)
+          output%main%filename = trim(config%option%output_dir)//trim(value)
           output%main%set      = .true.
           if (log_unit>0) write(log_unit,'(a,a)') &
             &     'INFO-XML:Optional tag detected : output%main; filename=', &
@@ -3026,7 +3039,7 @@ contains
     output%restart%append_mode = "off"
     if( .not. associated(node) ) then
        output%restart%set = .true.
-       output%restart%filename = "restart.xml"
+       output%restart%filename = trim(config%option%output_dir)//"restart.xml"
        output%restart%interval = 10
        output%restart%split    = .false.
        output%restart%atom_id_is_added  = .false.
@@ -3039,7 +3052,7 @@ contains
     node => getFirstElementByTagName(output_node,"wavefunction")
     if( .not. associated(node) ) then
        output%wavefunction%set = .false.
-       output%wavefunction%filename = "output_wavefunction.txt"
+       output%wavefunction%filename = trim(config%option%output_dir)//"output_wavefunction.txt"
        output%wavefunction%interval = -1
     else
        call file_load( output%wavefunction, node )
@@ -3066,7 +3079,7 @@ contains
     node => getFirstElementByTagName(output_node,"atom_charge")
     if( .not. associated(node) ) then
        output%atom_charge%set = .false.
-       output%atom_charge%filename = "output_atom_charge.txt"
+       output%atom_charge%filename = trim(config%option%output_dir)//"output_atom_charge.txt"
        output%atom_charge%interval = -1
     else
       call file_load( output%atom_charge, node )
@@ -3077,7 +3090,7 @@ contains
     node => getFirstElementByTagName(output_node,"atom_energy")
     if( .not. associated(node) ) then
       output%atom_energy%set = .false.
-      output%atom_energy%filename = "output_atom_energy.txt"
+      output%atom_energy%filename = trim(config%option%output_dir)//"output_atom_energy.txt"
       output%atom_energy%interval = -1
     else
       call file_load( output%atom_energy, node )
@@ -3096,7 +3109,7 @@ contains
     node => getFirstElementByTagName(output_node,"bond_list")
     if( .not. associated(node) ) then
        output%bond_list%set = .false.
-       output%bond_list%filename = "output_bond_list.txt"
+       output%bond_list%filename = trim(config%option%output_dir)//"output_bond_list.txt"
        output%bond_list%interval = -1
     else
        call file_load( output%bond_list, node )
@@ -3149,7 +3162,7 @@ contains
 
     ! get filename attribute
     value=getAttribute(file_node,"filename")
-    file%filename=adjustL(value)
+    file%filename=trim(config%option%output_dir)//adjustL(value)
 
     ! get history attribute
     value=getAttribute(file_node,"history")
@@ -3245,14 +3258,14 @@ contains
 !
     if (mode_for_H) then
       config%output%matrix_hamiltonian%set      = .false.
-      config%output%matrix_hamiltonian%filename = ""
+      config%output%matrix_hamiltonian%filename = trim(config%option%output_dir)
       config%output%matrix_hamiltonian%mode     = "last"
       config%output%matrix_hamiltonian%format   = "MatrixMarket_sym"
       config%output%matrix_hamiltonian%unit     = "a.u."
       config%output%matrix_hamiltonian%interval = 0
     else
       config%output%matrix_overlap%set          = .false.
-      config%output%matrix_overlap%filename     = ""
+      config%output%matrix_overlap%filename     = trim(config%option%output_dir)
       config%output%matrix_overlap%mode         = "last"
       config%output%matrix_overlap%format       = "MatrixMarket_sym"
       config%output%matrix_overlap%unit         = "a.u."
@@ -3276,11 +3289,11 @@ contains
     value=trim(adjustL(value))
     if (value /= "") then
       if (mode_for_H) then
-        config%output%matrix_hamiltonian%filename = trim(value)
+        config%output%matrix_hamiltonian%filename = trim(config%option%output_dir)//trim(value)
         if (log_unit>0) write(log_unit,'(a,a)') &
            &   'INFO-XML:An optional tag is found:config%output%matrix_hamiltonian%filename=',trim(value)
       else
-        config%output%matrix_overlap%filename     = trim(value)
+        config%output%matrix_overlap%filename     = trim(config%option%output_dir)//trim(value)
         if (log_unit>0) write(log_unit,'(a,a)') &
            &   'INFO-XML:An optional tag is found:config%output%matrix_overlap%filename=',trim(value)
       endif
@@ -3403,7 +3416,7 @@ contains
 !   write(*,*)'@@ file_load_matrices'
 !
     config%output%eigen_level%set      = .false.
-    config%output%eigen_level%filename = ""
+    config%output%eigen_level%filename = trim(config%option%output_dir)
     config%output%eigen_level%mode     = "last"
     config%output%eigen_level%format   = "full"
     config%output%eigen_level%unit     = "a.u."
@@ -3421,7 +3434,7 @@ contains
     value=getAttribute(file_node,"filename")
     value=trim(adjustL(value))
     if (value /= "") then
-      config%output%eigen_level%filename = trim(value)
+      config%output%eigen_level%filename = trim(config%option%output_dir)//trim(value)
       if (log_unit > 0) write(log_unit,'(a,a)') &
         &    'INFO-XML:An optional tag is found:config%output%eigen_level%filename=',trim(value)
     else
