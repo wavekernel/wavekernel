@@ -39,6 +39,13 @@ contains
             config%option%directory  = trim(adjustl(directory_wrk))//'/'
             cycle
           endif
+          !========
+          if (argv(2:11) == "test_mode=") then
+            read(unit=argv(12:),fmt=*) config%option%test_mode
+            write(*,*) "test_mode : ", trim(config%option%test_mode)
+            cycle
+          end if
+          !========          
           select case(argv(2:))
           case("band":"band@")
              config%option%functionality=argv(2:)
