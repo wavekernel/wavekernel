@@ -17,20 +17,31 @@ module M_options
 contains
   subroutine elses_process_options
     implicit none
-    integer :: i, lenf
+    integer :: i, lenf, ierr
     character(len=256) :: argv
     character(len=256) :: chara_wrk
+    character(len=256) :: chara_wrk2
     character(len=256) :: directory_wrk
 !    
     call option_default( config%option ) 
 !    
     config%option%directory  ='' ! default setting
+    config%option%input_dir  ='' ! default setting
     config%option%output_dir ='' ! default setting
+    config%option%test_mode  ='' ! default setting
 !
     do i=1, command_argument_count()
        call get_command_argument(i,argv)
 !       
        if( argv(1:1) == "-" ) then
+          chara_wrk='test_mode='
+          lenf=len_trim(chara_wrk)
+          if (argv(2:lenf+1) == trim(chara_wrk)) then
+            read(unit=argv(lenf+2:),fmt=*) chara_wrk2
+            config%option%test_mode = trim(adjustl(chara_wrk2))
+            cycle
+          endif
+
           chara_wrk='output_dir='
           lenf=len_trim(chara_wrk)
           if (argv(2:lenf+1) == trim(chara_wrk)) then
@@ -39,13 +50,7 @@ contains
             config%option%directory  = trim(adjustl(directory_wrk))//'/'
             cycle
           endif
-          !========
-          if (argv(2:11) == "test_mode=") then
-            read(unit=argv(12:),fmt=*) config%option%test_mode
-            write(*,*) "test_mode : ", trim(config%option%test_mode)
-            cycle
-          end if
-          !========          
+
           select case(argv(2:))
           case("band":"band@")
              config%option%functionality=argv(2:)
@@ -72,6 +77,15 @@ contains
     end do
 
     config%option%verbose_level = config%option%verbose
+
+    if (trim(adjustl(config%option%test_mode)) /= '') then
+      ierr=1
+      if (trim(adjustl(config%option%test_mode)) == 'initial') ierr=0
+      if (ierr /= 0) then
+        write(*,*)'ERROR:command argument for test mode : ', trim(adjustl(config%option%test_mode))
+        stop
+      endif
+    endif
     
     return
   end subroutine elses_process_options
