@@ -496,6 +496,7 @@ module M_config
      type(file_type)     :: restart
      type(file_type)     :: position
      type(file_type)     :: wavefunction
+     type(file_type)     :: wfn_charge
      type(file_type)     :: atom_charge
      type(file_type)     :: atom_energy
      type(file_type)     :: density_of_states
@@ -516,6 +517,7 @@ module M_config
      integer             :: debug
      character(len=16)   :: functionality
      integer             :: log_node_number
+     character(len=256)  :: test_mode
   end type option_type
 
   type :: config_type

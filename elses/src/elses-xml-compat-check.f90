@@ -31,7 +31,7 @@ module M_xml_compat_chk
 !
     if (config%system%structure%use_matom) then
       ierr=1
-      if (trim(config%calc%mode) == "cell-change-only" ) ierr=0
+      if (trim(config%calc%mode) == "cell_change_only" ) ierr=0
       if (trim(config%calc%mode) == "conversion" ) ierr=0
       if (ierr /= 0) then
         write(*,*)'ERROR:(check_xml_compat)incompatible setting'

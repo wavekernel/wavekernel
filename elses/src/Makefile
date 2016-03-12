@@ -70,8 +70,8 @@ OBJS-ELSES = \
 	elses-la-matvec-io.o elses-la-gscocg-cg-s-mat.o \
 	elses-la-gscocg-main.o elses-la-gscocg-tru-res.o \
 	elses-la-gkrylov-hist.o elses-qm-solver-krgl.o elses-la-krgl-main.o elses-la-gkrylov-output.o \
-	elses-band-calc.o elses-qm-output-eigenstates.o elses-qm-output-atom-charge.o \
-	elses-qm-output-icohp.o \
+	elses-band-calc.o elses-qm-output-eigenstates.o elses-qm-output-atom-charge.o elses-qm-output-basis-info.o \
+	elses-qm-output-icohp.o elses-qm-output-wfn-charge.o \
 	elses-la-gkrylov-main.o elses-qm-solver-gkrylov.o elses-md-dst.o \
 	elses-qm-solver-gkrylov-dst.o elses-qm-engine-dst.o elses-qm-dst-global-weight.o \
 	elses-qm-dst-global-dens-mat.o elses-md-dst-booking.o elses-qm-dst-domain.o \

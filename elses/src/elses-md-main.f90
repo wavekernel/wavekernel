@@ -45,6 +45,7 @@ module M_md_main
     use M_md_motion,        only : optimization_check            !(routine)
     use M_qm_output_matrices, only : output_levels_matrices      !(routine)
     use M_qm_geno_output,     only : output_for_eigen_solver     !(routine)
+    use M_output_wfn_charge,  only : output_for_wfn_charge       !(routine)
 !
     implicit none
 !   real*8 tb0, tb, ptime, entime, entime_bak
@@ -155,10 +156,15 @@ module M_md_main
 
     elapse_time_previous=elapse_time
 !
-    if (root_node) then
-      write(*,*)'--------MD loop starts:itemdmx=',itemdmx
-      write(*,*)'--------MD loop starts:itemdmx=',itemdmx
-      write(*,*)'--------MD loop starts:itemdmx=',itemdmx
+!   write(*,*)'config%option%test_mode=', trim(adjustl(config%option%test_mode))
+!
+    if (trim(adjustl(config%option%test_mode)) == 'initial') then
+      if (log_unit > 0) write(log_unit, '(a)') 'INFO:TEST MODE ONLY FOR INITIAL PROCEDURE !'
+      if (root_node)    write(*,'(a)')         'INFO:TEST MODE ONLY FOR INITIAL PROCEDURE !'
+      itemdmx=0
+    else
+      if (log_unit > 0) write(log_unit, *) '--------MD loop starts:itemdmx=',itemdmx
+      if (root_node)    write(*,*)         '--------MD loop starts:itemdmx=',itemdmx
     endif  
 !
     itemdmx_result=itemdmx
@@ -248,6 +254,9 @@ module M_md_main
 !
       call output_for_eigen_solver
 !         ---> Plot the wavefunction and so on (only for the eigen solver)
+!
+      call output_for_wfn_charge
+!         ---> Plot the wavefunction charge
 !
       imode = 0
       if (first_iteration) imode=1

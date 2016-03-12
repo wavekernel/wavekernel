@@ -3058,6 +3058,16 @@ contains
        call file_load( output%wavefunction, node )
     end if
 
+    ! get <wavefunction_charge> node
+    node => getFirstElementByTagName(output_node,"wavefunction_charge")
+    if( .not. associated(node) ) then
+       output%wfn_charge%set = .false.
+       output%wfn_charge%filename = trim(config%option%output_dir)//"output_wavefunction_charge.txt"
+       output%wfn_charge%interval = -1
+    else
+       call file_load( output%wfn_charge, node )
+    end if
+
     ! get <position> node
     node => getFirstElementByTagName(output_node,"position")
     if( .not. associated(node) ) then

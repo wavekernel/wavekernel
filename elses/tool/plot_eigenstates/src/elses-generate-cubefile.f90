@@ -12,7 +12,9 @@ program elses_generate_cubefile
   integer, parameter :: nmo=1
   integer :: level_index_ini, level_index_fin
   logical :: sign_inversion
-
+  logical :: absolute_value
+!             = .true. for the absolute value of STO: \sum_i c_i  |f_i(r)|
+!
   real(8) :: unitvectorA(3), unitvectorB(3), unitvectorC(3)
 ! integer :: mesh_point=80
   integer :: mesh_point_x
@@ -88,7 +90,8 @@ program elses_generate_cubefile
   filename_input_wrk=""
   cube_filename_header_wrk=""
   write(*,*)'Read the options'
-  call read_options(level_index_ini, level_index_fin, sign_inversion, r_cut, filename_input_wrk, cube_filename_header_wrk)
+  call read_options(level_index_ini, level_index_fin, sign_inversion, absolute_value, &
+&                     r_cut, filename_input_wrk, cube_filename_header_wrk)
 !     -----> The values of  (level_index_ini) and (level_index_fin) are -1 (dummy value),
 !                  if not specified
 !
@@ -153,7 +156,7 @@ program elses_generate_cubefile
     write(chara_tmp, '(i6.6)') level_index
     filename_output = trim(adjustl(cube_filename_header))//trim(chara_tmp)//".cube"
 !
-    call output_cubefile(sign_inversion, r_cut)
+    call output_cubefile(sign_inversion, absolute_value, r_cut)
 !
   enddo
 !
@@ -242,12 +245,14 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !Read the options for the level index and the sign value
 !
-  subroutine read_options(level_index_ini,level_index_fin,sign_inversion,r_cut_wrk, filename_wrk, cube_header_wrk)
+  subroutine read_options(level_index_ini,level_index_fin,sign_inversion,absolute_value, & 
+&                          r_cut_wrk, filename_wrk, cube_header_wrk)
 !
     implicit none
     integer, intent(out) :: level_index_ini
     integer, intent(out) :: level_index_fin
     logical, intent(out) :: sign_inversion
+    logical, intent(out) :: absolute_value
     character(len=*), intent(inout) :: filename_wrk
     character(len=*), intent(inout) :: cube_header_wrk
     integer :: iargc
@@ -265,6 +270,7 @@ contains
     level_index_fin=-1     ! dummy value
     sign_inversion = .false.
     r_cut_wrk = -1.0d0 ! dummy value
+    absolute_value = .false. ! default value
 !
 !   write(*,*)'INFO:the number of the options  : ', count
 !
@@ -275,6 +281,10 @@ contains
       if (ierr /= 0) then
         acceptable_option = .false.
 !       write(*,*)'INFO:an option found : ', trim(argc)
+        if (argc(1:15)  == '-absolute_value') then
+          absolute_value = .true. 
+          cycle
+        endif
         if (argc(1:3)  == '-si') then
           acceptable_option = .true.
           sign_inversion = .true.
@@ -342,6 +352,7 @@ contains
     enddo
 !
     write(*,*)'INFO:sign inversion = ', sign_inversion
+    write(*,*)'INFO:absolute value = ', absolute_value
 !
     if (level_index_ini /= -1) then
       write(*,*)'INFO:the lowest  level index = ', level_index_ini
@@ -694,10 +705,11 @@ contains
 !Calculation of amptitudes of wave function at
 !every mesh points, and output a cube file.
 !
-  subroutine output_cubefile(sign_inversion, r_cut_wrk)
+  subroutine output_cubefile(sign_inversion, absolute_value, r_cut_wrk)
 
     implicit none
     logical, intent(in) :: sign_inversion
+    logical, intent(in) :: absolute_value
     real(8), intent(in) :: r_cut_wrk ! cutoff for plot in au
 !
     integer :: i,j,k,atom_index,orbital_index,wf_index,mesh_index
@@ -970,6 +982,7 @@ contains
 !                   write(*,'("atmp(",I10,",",I10,")=",F)') wf_index,level_index, &
 !                   atmp(wf_index,level_index)
 
+                   if (absolute_value) sto=dabs(sto)
                    wf=wf+sto*atmp(wf_index,level_index)
 
 !                   write(*,'(" wf=",F)') wf

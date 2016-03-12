@@ -87,6 +87,7 @@ contains
 !
   subroutine calc_participation
 !
+    use M_config                            !(unchanged)
     use elses_mod_phys_const, only : ev4au  !(unchanged)
     use elses_arr_eig_leg, only : atmp, eig2, f_occ  !(unchanged)
     use elses_mod_orb2,  only : j2js,j2ja,js2j,n_tot_base  !(unchanged)
@@ -94,20 +95,28 @@ contains
     use elses_mod_file_io,      only : vacant_unit  !(function)
 !
     implicit none
-    character(len=*), parameter :: filename="output_participation.txt"
+    character(len=*), parameter :: filename_header="output_participation.txt"
+    character(len=128)          :: filename
     integer :: k, j
     integer :: atm_index, orb_index 
     integer :: ierr
     real(kind=8), allocatable ::  weight(:,:)
     real(kind=8) :: wfn, p_ratio, wt_sum1, wt_sum2
     integer :: iunit
+    integer :: lu, i_v
 !
-    if (i_verbose >= 1) write(*,*)'@@ calc_participation'
+    lu  = config%calc%distributed%log_unit
+    i_v = config%option%verbose
+!
+    if (i_v >= 1) then
+      if (lu > 0) write(lu,*)'@@ calc_participation'
+    endif
 !
     allocate (weight(noav,2), stat=ierr)
     weight(:,:)=0.0d0
 !
     iunit=vacant_unit()
+    filename=trim(config%option%output_dir)//filename_header
     open(iunit, file=filename)
 !
     do k=1, n_tot_base
