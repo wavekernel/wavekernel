@@ -3121,9 +3121,18 @@ contains
        output%bond_list%set = .false.
        output%bond_list%filename = trim(config%option%output_dir)//"output_bond_list.txt"
        output%bond_list%interval = -1
+       output%bond_list%optional_variable1 = 0.0d0
     else
        call file_load( output%bond_list, node )
        if (log_unit>0) write(log_unit,'(a)') 'INFO-XML:A optional tag is found : config%output%bond_list'
+       output%bond_list%optional_variable1 = -1.0d0  ! dummy value
+       value = getAttribute(node,"criteria_in_ev")
+       if (value == '') value = getAttribute(node,"criteria_in_eV")
+       if (value /= '') then
+         read(value,fmt=*) output%bond_list%optional_variable1 ! criteria for plot in eV
+         if (log_unit>0) write(log_unit,'(a,f20.10)') 'INFO-XML: bond criteria for plot (eV) = ', & 
+&                                                        output%bond_list%optional_variable1
+       endif
     end if
 
     ! get <matrix_hamiltonian> node

@@ -479,6 +479,7 @@ module M_config
      logical             :: split
      integer             :: number_of_split_files
      logical             :: atom_id_is_added
+     real(8)             :: optional_variable1 ! the meaning may be different among files
   end type file_type
 
   type :: file_matrix_type

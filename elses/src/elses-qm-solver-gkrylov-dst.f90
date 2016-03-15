@@ -87,6 +87,7 @@ module M_qm_solver_gkrylov_dst
     use M_qm_partial_trace_dstm, only : set_interac_list_dstm        !(routine)
     use M_qm_geno_rest_dstm,     only : calc_geno_rest_dstm          !(routine)
 !
+    use M_cohp_dstm_plot,     only : file_unit_cohp       !(unchanged)
     use M_qm_cohp_dstm,          only : calc_cohp_dstm       !(routine)
 !
     use M_qm_chk_allocated,      only : chk_allocated_dst    !(routine)
@@ -175,7 +176,8 @@ module M_qm_solver_gkrylov_dst
     integer                             :: omp_get_num_threads, omp_get_thread_num
     logical                             :: calc_rest_part
     logical, parameter                  :: calc_atm_energy_by_2nd_def = .false.
-    logical, parameter                  :: calc_cohp                  = .false.
+!   logical, parameter                  :: calc_cohp                  = .false.
+    logical                             :: calc_cohp
 !
     real(8), allocatable :: e_num_on_atom_dst(:)    ! DIFFERENT VALUES AMONG NODES
     real(8), allocatable :: e_num_on_basis_dst(:,:) ! DIFFERENT VALUES AMONG NODES
@@ -188,6 +190,12 @@ module M_qm_solver_gkrylov_dst
     n_csc_loop = config%calc%genoOption%CSC_max_loop_count
     nval_max=maxval(nval)
     if (allocated(atm_force_tb0))  atm_force_tb0(:,:)=0.0d0
+!
+    if (allocated(file_unit_cohp)) then
+      calc_cohp = .true.
+    else
+      calc_cohp = .false.
+    endif
 !
     if (v_level >= 1) then
       if (lu > 0) then
@@ -689,7 +697,7 @@ module M_qm_solver_gkrylov_dst
              if (calc_cohp) then
                call calc_cohp_dstm(atm_index, dst_atm_index, orb_index, m_int, & 
 &                   dm_wrk(:,1), ham_tb0_dstm, local_energy_on_basis(orb_index,1), & 
-&                        jsv4jsk, booking_list_dstm, booking_list_dstm_len, jjkset)
+&                        jsv4jsk, booking_list_dstm, booking_list_dstm_len, jjkset, id_of_my_omp_thread)
                if (i_show >=1) then 
                   if (lu>0) write(lu,*)'local energy on basis 3=',local_energy_on_basis(orb_index,1)
                endif

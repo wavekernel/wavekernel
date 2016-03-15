@@ -23,7 +23,7 @@ module M_qm_cohp_dstm
 !       such as local energy for given atom
 !
   subroutine calc_cohp_dstm(atm_index, dst_atm_index, orb_index, m_int, & 
-&                      dm_loc, mat_wrk, result_value, jsv4jsk, booking_list_dstm, booking_list_dstm_len, jjkset)
+&             dm_loc, mat_wrk, result_value, jsv4jsk, booking_list_dstm, booking_list_dstm_len, jjkset, id_of_my_omp_thread)
 !    
     use M_qm_domain,      only : jsv4jsd, noav, njsd, nval, atm_element !(unchanged)
     use M_cohp_dstm_plot, only : calc_cohp_dstm_plot  !(routine)
@@ -36,6 +36,7 @@ module M_qm_cohp_dstm
     real(DOUBLE_PRECISION),    intent(in)  :: mat_wrk(:,:,:,:)         !! hamiltonian
     integer,                   intent(in)  :: booking_list_dstm(:,:)
     integer,                   intent(in)  :: booking_list_dstm_len(:)
+    integer,                   intent(in)  :: id_of_my_omp_thread
 !
     integer :: jsv2, ja2, ict4h, jj, jsd1, jsv1, jjkset1, ja1, jjk1
     integer :: alloc_size_dst, nval_max
@@ -159,7 +160,8 @@ module M_qm_cohp_dstm
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  @@ plot the COHP into the file
 !
-    call calc_cohp_dstm_plot(atm_index,orb_index, cohp_loc,jsv4jsk,booking_list_dstm,booking_list_dstm_len)
+    call calc_cohp_dstm_plot(atm_index,orb_index, cohp_loc,jsv4jsk,booking_list_dstm, & 
+&                            booking_list_dstm_len,id_of_my_omp_thread)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

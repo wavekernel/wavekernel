@@ -18,6 +18,7 @@ module M_cohp_dstm_plot
   private
 !
 ! Public routines
+  public file_unit_cohp
   public prep_cohp_dst
   public calc_cohp_dstm_plot
 !
@@ -38,56 +39,82 @@ module M_cohp_dstm_plot
 !                        (only config%output%bond_list%set, config%output%bond_list%interval)
     use elses_mod_md_dat,    only : itemd  !(unchanged)
     implicit none
-    integer :: ierr, iunit1, iunit2
+    integer :: ierr, iunit1, iunit2, step_count, lenf
     real(DOUBLE_PRECISION) :: cohp_cri_wrk
+    character(len=128)    :: myrank_chara
+    character(len=128)    :: myrank_ipe
+    character(len=128)    :: bond_list_filename
+    character(len=128)    :: filename_header
+    integer ipe, npe
+    integer omp_get_num_threads
 !
-    if (allocated(file_unit_cohp)) return
     if ( .not. config%output%bond_list%set ) return
     if (mod(itemd-1,config%output%bond_list%interval) /= 0 ) return
 !
-    cohp_cri_wrk = -0.001d0 ! criteria for COHP in eV
+    step_count=config%system%structure%mdstep
+    filename_header=trim(adjustl(config%output%bond_list%filename))
+    lenf=len_trim(filename_header)
 !
-    if (i_verbose >= 1) then
-      write(*,*)'@@ prep_cohp_dst:cohp_criteria (eV)=', cohp_cri_wrk 
-    endif   
+!$omp parallel default(shared)
+      npe=1
+!$    npe=omp_get_num_threads()
+!$omp end parallel
 !
-!   allocate(file_unit_cohp(2), stat=ierr)
+    if (npe > 100000) then
+      write(*,*) 'ERROR:npe =', npe
+      stop
+    endif
 !
-    allocate(file_unit_cohp(1), stat=ierr)
-    if (ierr /= 0) stop 'Alloc Error (prep_cohp_dst)'
-    file_unit_cohp(:)=-1
+    if (allocated(file_unit_cohp)) then
+      if (size(file_unit_cohp,1) /= npe) then
+        write(*,*) 'ERROR(prep_cohp_dst):size(file_unit_cohp,1)= ', size(file_unit_cohp,1)
+        stop
+      endif
+      if (.not. allocated(cohp_cri)) then
+        write(*,*) 'ERROR(prep_cohp_dst): cohp_cri is NOT allocated.'
+        stop
+      endif
+      do ipe=1, npe
+        iunit1=file_unit_cohp(ipe)
+        write(iunit1,'(a,i10)') '## step_count = ', step_count
+      enddo
+    else
+      allocate(cohp_cri(1), stat=ierr)
+      if (ierr /= 0) stop 'Alloc Error (cohp_cri)'
+      if (config%output%bond_list%optional_variable1 < 0.0d0) then
+         cohp_cri(1) = 1.0d-4  ! default criteria for plotting in eV
+      else
+         cohp_cri(1) = config%output%bond_list%optional_variable1 ! criteria for plotting in eV
+      endif
+      allocate(file_unit_cohp(npe), stat=ierr)
+      if (ierr /= 0) stop 'Alloc Error (prep_cohp_dst)'
+      write(myrank_chara, '(i6.6)') myrank
+      do ipe=1, npe
+!       write(*,*) 'ipe, = ', ipe
+        if (ipe > 10000) then
+          write(*,*) 'ERROR:ipe, = ', ipe
+          stop
+        endif
+        write(myrank_ipe, '(i4.4)') ipe-1
+        iunit1=vacant_unit()
+        file_unit_cohp(ipe)=iunit1
+        bond_list_filename=trim(config%option%output_dir) &
+&                            //filename_header(1:lenf-4) &
+&                           //trim(myrank_chara)//'_'//trim(myrank_ipe)//'.txt'
+        open(iunit1, file=bond_list_filename, status='unknown')
+        write(iunit1,'(a,f20.10)') '## distributed bond list ICOHP in eV : criteria (for abs. value) (eV) = ', cohp_cri(1)
+        write(iunit1,'(a)') '## Ex. atom_index2, orbital_index1, atom_index1'
+        write(iunit1,'(a,i10)') '## step_count = ', step_count
+      enddo
+    endif
 !
-    allocate(cohp_cri(1), stat=ierr)
-    if (ierr /= 0) stop 'Alloc Error (cohp_cri)'
-    cohp_cri(1)=cohp_cri_wrk
-!
-    iunit1=vacant_unit()
-    file_unit_cohp(1)=iunit1
-    open(iunit1, file=filename_cohp_data, status='unknown')
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! @@ Write the file header only at the root node
-!
-    if (myrank == 0) then
-      write(iunit1,'(a)') trim(filename_cohp_data)
-      write(iunit1,'(i10,f20.10)') noav, cohp_cri_wrk
-    endif  
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!   iunit2=vacant_unit()
-!   file_unit_cohp(2)=iunit2
-!   open(iunit2, file=filename_cohp_body, status='unknown')
-!
-!   write(*,*) 'INFO:COHP file unit1=',iunit1, iunit2
-!
-!   write(iunit1,'(a)') trim(filename_cohp_head)
-!   write(iunit1,*) noav
-!
-!   write(iunit2,'(a)') trim(filename_cohp_body)
+!   stop 'STOP MANUALLY'
 !
   end subroutine prep_cohp_dst
+!    
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -95,7 +122,7 @@ module M_cohp_dstm_plot
 !       such as local energy for given atom
 !
   subroutine calc_cohp_dstm_plot & 
-&      (atm_index,orb_index,cohp_loc,jsv4jsk,booking_list_dstm,booking_list_dstm_len)
+&      (atm_index,orb_index,cohp_loc,jsv4jsk,booking_list_dstm,booking_list_dstm_len, id_of_my_omp_thread)
 !    
     use M_config,           only : config !(unchanged) 
 !                        (only config%output%bond_list%set, config%output%bond_list%interval)
@@ -111,6 +138,7 @@ module M_cohp_dstm_plot
     integer,                   intent(in)  :: jsv4jsk(:)
     integer,                   intent(in)  :: booking_list_dstm(:,:)
     integer,                   intent(in)  :: booking_list_dstm_len(:)
+    integer,                   intent(in)  :: id_of_my_omp_thread ! ( = 0,1,2... )
 !
     integer :: jsv2, jsd1, jsv1, jsk1, jsk2, ja2
     integer :: iunit1, iunit2
@@ -126,17 +154,17 @@ module M_cohp_dstm_plot
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     if (.not. allocated(file_unit_cohp)) return
-!
     if ( .not. config%output%bond_list%set ) return
     if (mod(itemd-1,config%output%bond_list%interval) /= 0 ) return
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-    iunit1=file_unit_cohp(1)
+    iunit1=file_unit_cohp(id_of_my_omp_thread+1)
 !   iunit2=file_unit_cohp(2)
 !
     if ((iunit1 <= 0) .or. (iunit1 >= 100)) then
       write(*,*)'ERROR(calc_cohp_dstm_plot):iunit1=',iunit1 
+      write(*,*)'             :id_of_my_omp_thread=',id_of_my_omp_thread
       stop
     endif
 !   
@@ -186,7 +214,7 @@ module M_cohp_dstm_plot
         if (cohp_in_ev > cohp_cri_wrk) cohp_plot= .false.
       endif   
       if (cohp_plot) then
-         write(iunit1,'(a,4i10,f20.10)')'cohp-body ', step_count, jsv2, ja2, jsv1, cohp_in_ev
+         write(iunit1,'(3i10,f20.10)') jsv2, ja2, jsv1, cohp_in_ev
       endif  
     enddo   
 !
@@ -194,8 +222,5 @@ module M_cohp_dstm_plot
 !
   end subroutine calc_cohp_dstm_plot
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 end module M_cohp_dstm_plot
