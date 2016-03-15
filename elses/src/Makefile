@@ -93,7 +93,7 @@ OBJS-ELSES = \
 	elses-xml-sax-data-sync-matom.o elses-qm-chk-allocated.o elses-md-virial-pressure.o elses-la-eigen-solver-main.o \
 	elses-gid-initial.o elses-gid-basic-routines.o elses-gid-constraint.o elses-lib-read-w-comment.o elses-lib-read-w-split.o \
 	elses-ext-atom-info.o elses-ext-matrix-data.o elses-ext-test-quantum-dynamics.o \
-	elses-la-matvec-dstm-crs.o elses-la-matvec-dstm-dens.o elses-la-matvec-dstm-bcrs.o
+	elses-la-matvec-dstm-crs.o elses-la-matvec-dstm-dens.o elses-la-matvec-dstm-bcrs.o elses-la-matvec-dstm-sss.o
 
 #elses-xml-selftest: elses-xml-selftest.o $(OBJS-XML)
 #	$(F90)  $(LDFLAGS) elses-xml-selftest.o $(OBJS-XML) $(LIBS-XML) -o $@

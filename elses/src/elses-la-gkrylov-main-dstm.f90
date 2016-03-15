@@ -62,6 +62,11 @@ module M_la_gkrylov_main_dstm
     use M_la_matvec_dens, only : calc_u_su_hu_dens                 !(routine)
     use M_la_matvec_dens, only : cg_s_mat_dens                     !(routine)
 !
+    use M_la_matvec_sss, only : get_num_nonzero_elem_od            !(routine)
+    use M_la_matvec_sss, only : make_mat_sss                       !(routine)
+    use M_la_matvec_sss, only : calc_u_su_hu_sss                   !(routine)
+    use M_la_matvec_sss, only : cg_s_mat_sss                       !(routine)
+!
     implicit none
     integer,          intent(in)  :: dst_atm_index, atm_index, orb_index
     integer,          intent(in)  :: jsv4jsk(:)
@@ -114,6 +119,11 @@ module M_la_gkrylov_main_dstm
 !
     real(DOUBLE_PRECISION), allocatable  :: mat_dens_h_s(:,:,:)  ! H and S in the dense format
 !
+    integer,                allocatable  :: mat_sss_irp(:)
+    integer,                allocatable  :: mat_sss_icol(:)
+    real(DOUBLE_PRECISION), allocatable  :: mat_sss_val(:,:)  ! off-diagonal elements of H and S for the SSS format ( i > j )
+    real(DOUBLE_PRECISION), allocatable  :: mat_sss_dia(:,:)  ! diagonal elements of H and S for the SSS format ( i = j )
+!
     integer :: lu
     integer :: ierr
 !
@@ -155,7 +165,8 @@ module M_la_gkrylov_main_dstm
     real(8) :: nna_distance
 !
     character(len=72) :: msg 
-    integer :: nnz   ! number of nonzero elements of H or S
+    integer :: nnz     ! number of nonzero elements of H or S
+    integer :: nnz_od  ! number of nonzero off-diagonal elements of H or S ( i < j )
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ Initial procedure
@@ -362,7 +373,7 @@ module M_la_gkrylov_main_dstm
       enddo
     endif   
 !
-    if ((mat_vec_type == 'crs') .or. (mat_vec_type == 'dens')) then
+    if ( (mat_vec_type == 'crs') .or. (mat_vec_type == 'dens') .or. (mat_vec_type == 'sss') ) then
 !     write(*,*)'Allocate : mat_crs_irp; size=', mat_dim+1
       allocate (mat_crs_irp(mat_dim+1), stat=ierr) 
       if (ierr /= 0) then
@@ -400,6 +411,52 @@ module M_la_gkrylov_main_dstm
 &                       mat_dens_h_s)
     endif
 !
+    if (mat_vec_type == 'sss') then
+!     write(*,*)'Allocate : mat_crs_irp; size=', mat_dim+1
+      allocate (mat_sss_irp(mat_dim+1), stat=ierr) 
+      if (ierr /= 0) then
+        write(*,*)'Alloc. Erro in mat_crs_irp'
+        stop
+      endif
+!
+
+      call get_num_nonzero_elem_od(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm, nnz_od)
+!
+      allocate (mat_sss_icol(nnz_od), stat=ierr) 
+      if (ierr /= 0) then
+        write(*,*)'Alloc. Erro in mat_crs_icol'
+        stop
+      endif
+!
+      allocate (mat_sss_val(nnz_od,2), stat=ierr) 
+      if (ierr /= 0) then
+        write(*,*)'Alloc. Erro in mat_crs_val'
+        stop
+      endif
+!
+      allocate (mat_sss_dia(mat_dim,2), stat=ierr) 
+      if (ierr /= 0) then
+        write(*,*)'Alloc. Erro in mat_crs_val'
+        stop
+      endif
+!
+!     call crs_to_sss(mat_crs_irp, mat_crs_icol, mat_crs_val,mat_sss_icol,mat_sss_val,mat_sss_dia)
+!
+      call make_mat_sss(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm, overlap_dstm, &
+&                        mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia)
+    endif
+!
+    if (mat_vec_type == 'dens') then
+      allocate (mat_dens_h_s(mat_dim,mat_dim,2), stat=ierr) 
+      if (ierr /= 0) then
+        write(*,*)'Alloc. Erro in mat_dens_h_s'
+        stop
+      endif
+!
+      call make_mat_dens(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm, overlap_dstm, &
+&                       mat_dens_h_s)
+    endif
+!
 !   stop 'Stop manually'
 !
     do kr_dim=1,kr_dim_max_loop
@@ -415,6 +472,8 @@ module M_la_gkrylov_main_dstm
 !         call calc_u_su_hu_crs(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
 !&            booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, &
 !&            mat_crs_irp, mat_crs_icol, mat_crs_val          )
+        case ('sss')
+          call calc_u_su_hu_sss(u,su,hu,norm_factor, mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia, ierr)
         case ('dens')
           call calc_u_su_hu_dens(u,su,hu,norm_factor, mat_dens_h_s, ierr)
 !         call calc_u_su_hu_dens_dum(u,su,hu,norm_factor, mat_crs_irp, mat_crs_icol, mat_crs_val, ierr)
@@ -503,17 +562,21 @@ module M_la_gkrylov_main_dstm
         select case(mat_vec_type)
          case ('crs')
            call cg_s_mat_crs   (b, u, eps, ite_cg, mat_crs_irp, mat_crs_icol, mat_crs_val)
+         case ('sss')
+           call cg_s_mat_sss   (b, u, eps, ite_cg, mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia)
          case ('dens')
            call cg_s_mat_dens  (b, u, eps, ite_cg, mat_dens_h_s(:,:,2) )
         case ('dstm')
            call cg_s_mat_dstm      (b, u, eps, ite_cg, jsv4jsk, jjkset, &
 &                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
         case default
-          write(*,*)'ERROR:mat_vec_type is not specified'
+          write(*,*)'ERROR:mat_vec_type is not specified:', trim(mat_vec_type)
           stop
         end select
 !
         s_inv_e_j_wrk(1:mat_dim)=u(1:mat_dim)
+!       write(*,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', & 
+!&                      prc_index, orb_index, atm_index, eps, ite_cg
         if (i_show >= 1) then
           if (lu > 0) write(lu,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', & 
 &                      prc_index, orb_index, atm_index, eps, ite_cg
@@ -624,8 +687,11 @@ module M_la_gkrylov_main_dstm
         do m=1,kr_dim_max
           h_mat_kr(m,n)=dot_product(u_hst(:,m),hu_hst(:,n)) ! ( u_m H u_n )
           s_mat_kr(m,n)=dot_product(u_hst(:,m),su_hst(:,n)) ! ( u_m S u_n )
+!         write(*,*)'m,n,H,S=', m,n, h_mat_kr(m,n), s_mat_kr(m,n)
         enddo
       enddo
+!
+!     stop 'STOP MANUALLY'
 !
     endif
 !
@@ -1031,6 +1097,15 @@ module M_la_gkrylov_main_dstm
         if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_crs_icol)'
         deallocate (mat_crs_val,  stat=ierr)
         if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_crs_val)'
+      case ('sss')
+        deallocate (mat_sss_irp,  stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_sss_irp)'
+        deallocate (mat_sss_icol, stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_sss_icol)'
+        deallocate (mat_sss_val,  stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_sss_val)'
+        deallocate (mat_sss_dia,  stat=ierr)
+        if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_sss_dia)'
       case ('dens')
         deallocate (mat_dens_h_s,  stat=ierr)
         if (ierr /= 0) stop 'Abort:ERROR in dealloc (mat_mat_dens_h_s)'

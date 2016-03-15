@@ -2,16 +2,17 @@
 ! ELSES version 0.06
 ! Copyright (C) ELSES. 2007-2016 all rights reserved
 !================================================================
-module M_la_matvec_crs
+module M_la_matvec_sss
 !
   use M_qm_domain, only : i_verbose, DOUBLE_PRECISION !(unchanged)
   implicit none
 !
   private
-  public :: make_mat_crs
-  public :: get_num_nonzero_elem
-  public :: calc_u_su_hu_crs
-  public :: cg_s_mat_crs
+  public :: get_num_nonzero_elem_od
+  public :: make_mat_sss
+  public :: matvec_mul_sss
+  public :: calc_u_su_hu_sss
+  public :: cg_s_mat_sss
 ! public :: cg_s_mat_crs_dum
 !
 !
@@ -20,10 +21,10 @@ module M_la_matvec_crs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Make matrix in CSR format
+! Get the number of non-zero off-diaagonal elements, A(i,j) , where i > j
 !
 !
-  subroutine get_num_nonzero_elem(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_dstm, nnz)
+  subroutine get_num_nonzero_elem_od(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_dstm, nnz)
 !
     use M_qm_domain,     only : nval, atm_element  ! (unchanged)
 !
@@ -35,8 +36,7 @@ module M_la_matvec_crs
     real(DOUBLE_PRECISION), intent(in)  :: mat_dstm(:,:,:,:)
     integer,                intent(out) :: nnz
 !
-    logical, parameter :: debug_mode = .false.
-!   logical, parameter :: debug_mode = .true.
+    logical, parameter :: debug_mode = .true.
 !
     integer :: jsk2, jsk1, jsd, jsv2, jsv1, ja2, ja1
     integer :: num_atom_proj
@@ -44,37 +44,46 @@ module M_la_matvec_crs
     integer :: nval1, nval2
     integer :: n_count, ierr, n_mat_size
 !
-!   write(*,*)'matvec_mul_dstm'
+!   write(*,*)'@@ get_num_nonzero_elem_od'
 !
     num_atom_proj=size(mat_dstm, 4)
 !
     n_count=0
-    do jsk2=1, num_atom_proj
+    do jsk2=1, num_atom_proj 
       jjkset2=jjkset(jsk2)
       jsv2=jsv4jsk(jsk2)
-      nval2=nval(atm_element(jsv2))
-      do jsd=1, booking_list_dstm_len(jsk2)
-        jsk1=booking_list_dstm(jsd, jsk2)
-        if (debug_mode) then
-          if ( ( jsk1 <= 0 ) .or. (jsk1 > num_atom_proj)) then
-            stop 'ERROR(matvec_mul_dstm)'
+      do ja2=1,nval(atm_element(jsv2))
+        jjk2=jjkset2+ja2    ! = index i
+        do jsd=1, booking_list_dstm_len(jsk2)
+          jsk1=booking_list_dstm(jsd, jsk2)
+          if (debug_mode) then
+            if ( ( jsk1 <= 0 ) .or. (jsk1 > num_atom_proj)) then
+              stop 'ERROR(matvec_mul_dstm)'
+            endif
           endif
-        endif
-        jsv1=jsv4jsk(jsk1)
-        nval1=nval(atm_element(jsv1))
-        n_count=n_count+nval1*nval2
+          jsv1=jsv4jsk(jsk1)
+          jjkset1=jjkset(jsk1) ! = index j
+          do ja1=1,nval(atm_element(jsv1))
+            jjk1=jjkset1+ja1
+            if (jjk1 < jjk2) then
+              n_count=n_count+1
+            endif
+          enddo
+        enddo
       enddo
     enddo
 !   write(*,*)'n_count=', n_count
     nnz=n_count
 !
-  end subroutine get_num_nonzero_elem
+!   stop
+!
+  end subroutine get_num_nonzero_elem_od
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine make_mat_crs(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_h, mat_s, &
-&                            irp, icol, val )
+  subroutine make_mat_sss(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_h, mat_s, &
+&                            irp, icol, val, val_dia )
 !
     use M_qm_domain,     only : nval, atm_element  ! (unchanged)
 !
@@ -90,22 +99,26 @@ module M_la_matvec_crs
     integer,                intent(out) :: irp(:)
     integer,                intent(out) :: icol(:)
     real(DOUBLE_PRECISION), intent(out) :: val(:,:)
+    real(DOUBLE_PRECISION), intent(out) :: val_dia(:,:)
 !
-    logical, parameter :: debug_mode = .false.
+    logical, parameter :: debug_mode = .true.
 !
     integer :: jsk2, jsk1, jsd, jsv2, jsv1, ja2, ja1
     integer :: num_atom_proj
     integer :: jjkset1, jjkset2, jjk1, jjk2
     integer :: nval1, nval2
-    integer :: iloop, n_count, ierr, mat_dim
+    integer :: iloop, n_count, ierr, mat_dim, nnz_od
+    integer :: n_count_dia
     real(DOUBLE_PRECISION)  :: mat_value
 !
 !   write(*,*)'matvec_mul_dstm'
 !
     num_atom_proj=size(mat_h, 4)
     mat_dim      =size(irp,1)-1
+    nnz_od       =size(val,1)
 !
     n_count=0
+    n_count_dia=0
     do jsk2=1, num_atom_proj
       jjkset2=jjkset(jsk2)
       jsv2=jsv4jsk(jsk2)
@@ -123,57 +136,92 @@ module M_la_matvec_crs
           jjkset1=jjkset(jsk1)
           do ja1=1,nval(atm_element(jsv1))
             jjk1=jjkset1+ja1
-            n_count=n_count+1
-            val(n_count,1) =mat_h(ja1,ja2,jsd,jsk2)
-            val(n_count,2) =mat_s(ja1,ja2,jsd,jsk2)
-            icol(n_count)=jjk1
+            if (jjk1 == jjk2) then
+              n_count_dia=n_count_dia+1
+              val_dia(jjk2,1)=mat_h(ja2,ja2,jsd,jsk2)
+              val_dia(jjk2,2)=mat_s(ja2,ja2,jsd,jsk2)
+              cycle
+            endif
+            if (jjk1 < jjk2) then
+              n_count=n_count+1
+!             write(*,*)'k, i,j,mat_h=', n_count, jjk2,jjk1, mat_h(ja1,ja2,jsd,jsk2)
+              val(n_count,1) =mat_h(ja1,ja2,jsd,jsk2)
+              val(n_count,2) =mat_s(ja1,ja2,jsd,jsk2)
+              icol(n_count)=jjk1
+            endif
           enddo
         enddo
       enddo
     enddo
-!   write(*,*)'jjk2, mat_dim, n_count=', jjk2, mat_dim, n_count
     irp(mat_dim+1)=n_count+1
+!!
+    if (n_count_dia /= mat_dim) then
+      write(*,*)'ERROR!:(make_mat_sss):n_count_dia, mat_dim=', n_count_dia, mat_dim
+      stop
+    endif
+!
+    if (n_count /= nnz_od) then
+      write(*,*)'ERROR!:(make_mat_sss):n_count, nnz_od=', n_count, nnz_od
+      stop
+    endif
+!
+!   write(*,*)'jjk2, mat_dim, n_count=', jjk2, mat_dim, n_count
 !
 !
 !   stop 'Stop manually'
 !
-  end subroutine make_mat_crs
+  end subroutine make_mat_sss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Matrix-vector multiplication with CRS format
+! Matrix-vector multiplication with SSS format
 !      (vect_out): = A (vect_in)
 !
-  subroutine matvec_mul_crs(vect_in, vect_out, irp, icol, val)
+  subroutine matvec_mul_sss(vect_in, vect_out, irp, icol, val, val_dia)
     implicit none
     real(DOUBLE_PRECISION), intent(in)  :: vect_in(:)
     real(DOUBLE_PRECISION), intent(out) :: vect_out(:)
     integer,                intent(in)  :: irp(:)
     integer,                intent(in)  :: icol(:)
     real(DOUBLE_PRECISION), intent(in)  :: val(:)
+    real(DOUBLE_PRECISION), intent(in)  :: val_dia(:)
     integer                             :: n
-    integer                             :: i, j_ptr
-    real(DOUBLE_PRECISION)              :: s
+    integer                             :: i, j_ptr, j
+    logical, parameter                  :: debug_mode = .true.
 !
 !   write(*,*)'INFO:MATVEC-CRS'
 !
     n=size(vect_in,1)
 !
     do i=1,n
-      s=0.0d0
+      vect_out(i)=val_dia(i)*vect_in(i) 
       do j_ptr=irp(i), irp(i+1)-1
-        s=s+val(j_ptr) * vect_in(icol(j_ptr))
+        j=icol(j_ptr)
+!       write(*,*)':i, j_ptr, j, A(j,i) = ',i, j_ptr, j, val(j_ptr)
+        if (debug_mode) then
+          if (i <= j) then
+            write(*,*)'ERROR(matvec_mul_sss):i, j_ptr, j = ',i, j_ptr, j
+            stop
+          endif
+        endif
+        vect_out(i)=vect_out(i)+val(j_ptr) * vect_in(j)
+        vect_out(j)=vect_out(j)+val(j_ptr) * vect_in(i)
       enddo
-      vect_out(i)=s
     enddo
 !
-  end subroutine matvec_mul_crs
+!   do i=1,n
+!     write(*,*) 'SSS:i, v_in(i), v_out(i) =', i, vect_in(i), vect_out(i)
+!   enddo
+!
+!   stop 'STOP MANUALLY'
+!
+  end subroutine matvec_mul_sss
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine calc_u_su_hu_crs(u,su,hu,norm_factor, irp, icol, val, ierr )
+  subroutine calc_u_su_hu_sss(u,su,hu,norm_factor, irp, icol, val, val_dia, ierr )
 !
     implicit none
     real(8),       intent(inout)  :: u(:)
@@ -185,22 +233,24 @@ module M_la_matvec_crs
     integer,                intent(in) :: irp(:)
     integer,                intent(in) :: icol(:)
     real(DOUBLE_PRECISION), intent(in) :: val(:,:)
+    real(DOUBLE_PRECISION), intent(in) :: val_dia(:,:)
 !
     real(8) :: ddd
 !
-!     call matvec_mul_crs_dum(u, su, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-      call matvec_mul_crs(u, su, irp, icol, val(:,2))
+      call matvec_mul_sss(u, su, irp, icol, val(:,2), val_dia(:,2))
 !               ---> su : S |m_n> (non-normalized vector)
 !
 !
 !     call matvec_mul_crs_dum(u, hu, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm)
-      call matvec_mul_crs(u, hu, irp, icol, val(:,1))
+      call matvec_mul_sss(u, hu, irp, icol, val(:,1), val_dia(:,1))
 !               ---> hu : H |m_n> (non-normalized vector)
+!
+!     stop 'STOP MANUALLY'
 !
       ddd=dot_product(u(:),su(:))
 !
       if (ddd < 0.0d0) then
-        write(*,*)'ERROR:(calc_u_su_hu_dstm): <u|S|u>=',ddd
+        write(*,*)'ERROR:(calc_u_su_hu_sss): <u|S|u>=',ddd
         norm_factor=ddd  ! norm_factor is used as uSu in this case !!!
         ierr=2
         return
@@ -212,7 +262,7 @@ module M_la_matvec_crs
       ierr=0
       if (dabs(ddd) < 1.0d-10) then
 !        write(*,*)'ERROR:calc_u_su_hu'
-         write(*,*)'Info(calc_u_su_hu_dstm):Too small normalization factor:=',ddd
+         write(*,*)'Info(calc_u_su_hu_sss):Too small normalization factor:=',ddd
          ierr=1
          return
       endif   
@@ -228,12 +278,12 @@ module M_la_matvec_crs
       hu(:) = hu(:)/ddd
 !        ---> hu : H|u_n> 
 
-  end subroutine calc_u_su_hu_crs
+  end subroutine calc_u_su_hu_sss
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine cg_s_mat_crs(b,x,eps,kend, irp, icol, val)
+  subroutine cg_s_mat_sss(b,x,eps,kend, irp, icol, val, val_dia)
 !
 !    ---> Solve linear eq.: S x = b (REAL VARIALE)
 !          convergence criteria : 
@@ -260,6 +310,7 @@ module M_la_matvec_crs
     integer,                intent(in) :: irp(:)
     integer,                intent(in) :: icol(:)
     real(DOUBLE_PRECISION), intent(in) :: val(:,:)
+    real(DOUBLE_PRECISION), intent(in) :: val_dia(:,:)
 !
     real(8), allocatable          :: r(:), p(:), ap(:)
     real(8)                       :: alpha, beta, rho0, rho1, tbs
@@ -294,8 +345,7 @@ module M_la_matvec_crs
 !
     beta = 0.0d0
 !
-!   call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-    call matvec_mul_crs(x, ap, irp, icol, val(:,2))
+    call matvec_mul_sss(x, ap, irp, icol, val(:,2), val_dia(:,2))
 !        ---> Mat-vec multiplication : ap = S x
 !
     r(:) = b(:)-ap(:)  ! r_0 = b - A x_0
@@ -319,13 +369,20 @@ module M_la_matvec_crs
 !
     do kk = 0, kend_in
 !
+      if (kk == kend_in) then
+        write(*,*) 'ERROR(cg_s_mat_sss):kk, kend_in = ', kk, kend_in
+        stop
+      endif
+!
       hal = rho0
       hg = dlog10(hal)/2.0d0 - hnor
+!
+!     write(*,*)'kk, hg=', kk, hg
 !
       if(hg .le. eps) then
 !        --  If converged, the true residual is calculated and exit---
 !
-         call matvec_mul_crs    (x, ap, irp, icol, val(:,2))
+         call matvec_mul_sss(x, ap, irp, icol, val(:,2), val_dia(:,2))
 !          ---> Mat-vec multiplication : ap = S x
 !
         r(:) = b(:)-ap(:)
@@ -338,9 +395,11 @@ module M_la_matvec_crs
 !
       p(:) = r(:) + beta*p(:)
 !
-      call matvec_mul_crs    (p, ap, irp, icol, val(:,2))
+      call matvec_mul_sss(p, ap, irp, icol, val(:,2), val_dia(:,2))
 !        ---> Mat-vec multiplication : ap = S p
       pap = dot_product(p(:),ap(:))
+!
+!     write(*,*)'pap=', pap
 !
       alpha = rho0/pap
       x(:) = x(:) +alpha*p(:)
@@ -354,8 +413,11 @@ module M_la_matvec_crs
     return
 !
 !
-  end subroutine cg_s_mat_crs
+  end subroutine cg_s_mat_sss
 !
-end module M_la_matvec_crs
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+end module M_la_matvec_sss
 
 
