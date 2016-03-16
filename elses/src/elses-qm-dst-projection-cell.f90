@@ -68,8 +68,10 @@ module M_qm_dst_proj_cell
    use M_qm_domain_dst,    only : set_projection_dst_cell !(routine)
    use M_md_dst_get_atom_range, only : dst_get_atm_index_range !(routine)
    use M_qm_proj_suggest_radius, only : suggest_proj_radius    !(routine)
+   use M_dstm_reordering,        only : reorder_booked_atoms   !(routine)
 !
    implicit none
+   logical, parameter :: flag_for_reordering = .false.
    integer :: ierr
    integer :: atm_index_ini, atm_index_fin, atm_index, jj
    integer :: jsk, jsv, dst_atm_index
@@ -271,6 +273,26 @@ module M_qm_dst_proj_cell
 &                         time_wrk-time_wrk_previous
    time_wrk_previous=time_wrk
 !
+   if (flag_for_reordering) then
+!
+!$omp  parallel default(shared) &
+!$omp& private (dst_atm_index, atm_index) &
+!$omp& private (num_atom_list)
+!$omp  do schedule(static)
+   do dst_atm_index=1,len_dst_atm_list(1)
+     num_atom_list=noak_dst(dst_atm_index)
+     atm_index=dst_atm_list(dst_atm_index)
+     call reorder_booked_atoms( atm_index, jsv4jsk_dst(1:num_atom_list,dst_atm_index) )
+   enddo
+!$omp end do
+!$omp end parallel
+!
+     if (lu > 0) write(lu,'(a,f20.5)')'TIME:qm_solver_gkrylov_dst:reordering       =', & 
+&                         time_wrk-time_wrk_previous
+     time_wrk_previous=time_wrk
+!
+   endif
+
    if (.not. second_booking) then 
      if (lu >0)  write(lu,*)'.... scond booking is skipped'
 !    stop 'Stop manually'
