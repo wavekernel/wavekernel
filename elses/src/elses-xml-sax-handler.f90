@@ -255,6 +255,21 @@ contains
           if (tag_dump) write(*,*)'  motion name =',config%system%structure%vatom(counter_atom)%motion
         endif  
 !
+!       chara_wrk=''
+        call get_value(attributes,"group_id", chara_wrk, status)
+        if (config%system%structure%use_vatom) then
+          if (status /= 0) then
+            config%system%structure%vatom(atom_id)%group_id=-1
+          else   
+            read(chara_wrk,*,iostat=ierr) config%system%structure%vatom(atom_id)%group_id
+            if (ierr /= 0) then
+              write(*,*)'ERROR(sax XML handler for group_id): ',trim(chara_wrk)
+              stop
+            endif
+            if (tag_dump) write(*,*)'  group_id    =',config%system%structure%vatom(atom_id)%group_id
+          endif   
+        endif  
+!
       case('myLength')
         in_myLength = .true. 
         if (in_unitcell) then

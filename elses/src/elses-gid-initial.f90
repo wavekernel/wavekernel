@@ -31,6 +31,7 @@ module M_group_id_setting
 !
     implicit none
     integer :: lu
+    character(len=1024) :: comm ! comment from routines
 !
     lu=config%calc%distributed%log_unit
 !
@@ -43,8 +44,11 @@ module M_group_id_setting
 !      ----> allocate and set : num_group_mem(num_groups)
 !      ----> allocate and set : group_mem(max_group_mem,num_groups)
 !
-    call set_weight_center
+    comm=''
+    call set_weight_center(comm)
 !      ----> allocate and set : group_center(3,num_groups)
+!
+    if (comm == 'unsupported') return
 !
     call set_weight_center_ini
 !      ----> allocate and set : group_center_ini(3,num_groups)
@@ -110,16 +114,18 @@ module M_group_id_setting
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @ Set the weight center for each group : COMPATIBLE ONLY TO THE NON-PERIODIC CASES
 !
-  subroutine set_weight_center
+  subroutine set_weight_center(comm)
     use M_config,           only : config                    !(unchanged)
 !
     implicit none
+    character(len=*), intent(inout) :: comm   ! comment
     integer :: gid, j, jsv
     integer :: n_atom
     integer :: lu
     integer :: ierr
     real(DOUBLE_PRECISION) :: mass_sum, mass
 !
+    comm=''
     lu=config%calc%distributed%log_unit
     n_atom = config%system%structure%natom
 !
@@ -130,8 +136,9 @@ module M_group_id_setting
     if (config%system%boundary%periodic_y) ierr=1
     if (config%system%boundary%periodic_z) ierr=1
     if (ierr == 1) then
-      write(*,*)'ERROR(set_weight_center):Periodic cases are not supported now'
-      stop
+      write(*,*)'WARNING(set_weight_center):Periodic cases are not supported now'
+      comm='unsupported'
+      return
     endif
 !
     allocate (group_center(3,num_groups),stat=ierr)
