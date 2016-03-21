@@ -92,6 +92,7 @@ module M_ini_load_matom
         write(*,*)'ERROR(set_structure_data_from_matom):Alloc. error: atom_element'
         stop
       endif   
+      atm_element(:)=0   ! dummy setting
       if (i_verbose >=1 ) then
         if (log_unit > 0 ) then
           write(log_unit,'(a,f20.10)')'INFO:Alloc. of atm_element  : size [GB]  =', 4.0d0*dble(noav)/1.0d9
@@ -114,6 +115,11 @@ module M_ini_load_matom
       stop
     endif   
 !
+!$omp  parallel &
+!$omp& default(shared) &
+!$omp& private(j, txpd, typd, tzpd, tx, ty, tz) &
+!$omp& private(k)
+!$omp  do schedule(static)
     do j=1, config%system%structure%natom
       atom => config%system%structure%matom(j)
 !
@@ -134,32 +140,28 @@ module M_ini_load_matom
       atm_position(2,j)=ty
       atm_position(3,j)=tz
 !
-      atm_element(j)=0   ! dummy setting
-!
-      do k = 1, config%system%structure%nelement
+      do k = 1, config%system%structure%nelement+1
+        if (k == config%system%structure%nelement+1) then
+           write(*,*)'ERROR(set_structure_data_from_matom):j,atm_element(j)=',j, atm_element(j)
+           write(*,*)'ERROR(set_structure_data_from_matom): element name  )=',trim(atom%name)
+           write(*,*) '#ELSES: Stop by error:'
+           write(*,*) '#This may be due to mismatch'
+           write(*,*) '#  between the configuration XML file'
+           write(*,*) '#  and the structure XML file'
+           write(*,*) '# The element tag is required '
+           write(*,*) '#  for each atom species'
+           write(*,*) '#  in the configuration file.'
+           stop
+        endif
         if( trim(atom%name) == trim(config%system%structure%velement(k)%name) ) then
            atm_element(j)= k               
+           exit
         end if
       end do
 !
-!     if (log_unit > 0 ) then
-!       write(log_unit,'(a,2i10,3f20.10)')'j,atm_element, atm_pos=',j, atm_element(j), atm_position(1:3,j)
-!     endif
-!
-      if (atm_element(j) == 0) then
-         write(*,*)'ERROR(set_structure_data_from_matom):j,atm_element(j)=',j, atm_element(j)
-         write(*,*)'ERROR(set_structure_data_from_matom): element name  )=',trim(atom%name)
-         write(*,*) '#ELSES: Stop by error:'
-         write(*,*) '#This may be due to mismatch'
-         write(*,*) '#  between the configuration XML file'
-         write(*,*) '#  and the structure XML file'
-         write(*,*) '# The element tag is required '
-         write(*,*) '#  for each atom species'
-         write(*,*) '#  in the configuration file.'
-         stop
-       endif   
-!
     end do
+!$omp end do
+!$omp end parallel
 !
     if (log_unit > 0 ) then
        write(log_unit,'(a)') 'INFO:dealloc. of config%system%structure%matom'
