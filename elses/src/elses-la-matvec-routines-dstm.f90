@@ -46,6 +46,7 @@ module M_la_matvec_routines_dstm
     if (config%calc%distributed%mat_vec_switch_bcrs) then
       if (config%calc%distributed%mat_vec_const_num_orbital) then
         call switch_to_bcrs(vect_in, vect_out, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_dstm)
+        return
       endif
     endif
 !
