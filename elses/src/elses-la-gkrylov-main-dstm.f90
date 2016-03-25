@@ -446,17 +446,6 @@ module M_la_gkrylov_main_dstm
 &                        mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia)
     endif
 !
-    if (mat_vec_type == 'dens') then
-      allocate (mat_dens_h_s(mat_dim,mat_dim,2), stat=ierr) 
-      if (ierr /= 0) then
-        write(*,*)'Alloc. Erro in mat_dens_h_s'
-        stop
-      endif
-!
-      call make_mat_dens(jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm, overlap_dstm, &
-&                       mat_dens_h_s)
-    endif
-!
 !   stop 'Stop manually'
 !
     do kr_dim=1,kr_dim_max_loop
