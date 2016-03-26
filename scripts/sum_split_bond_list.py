@@ -30,7 +30,7 @@ def mmwrite_symmetric(mtx, m, n, filename, comment):
             num_nonzeros += 1
         fp.write('%7d %7d %12d\n' % (m, n, num_nonzeros))
         for (i, j), x in mtx.items():
-            fp.write('%7d %7d % .16e\n' % (i, j, x))  # The space between % and . is intended.
+            fp.write('%7d %7d % .16e\n' % (i + 1, j + 1, x))  # The space between % and . is intended.
 
 if __name__ == '__main__':
     num_atoms = int(sys.argv[1])
