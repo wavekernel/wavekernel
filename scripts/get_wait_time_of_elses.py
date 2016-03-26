@@ -12,14 +12,16 @@ if __name__ == '__main__':
             break
         if f.find('log-node') >= 0:
             log_node_paths.append(os.path.join(dirname, f))
-            if i > 0 and i % 500 == 0:
-                print 'file %d read' % i
             i += 1
     data = []
+    i = 0
     for f in log_node_paths:
         lap_times_total = []
         lap_times_mpi = []
         lap_times_wait = []
+        if i > 0 and i % 500 == 0:
+            print 'read file %d / %d: %s' % (i + 1, len(log_node_paths), f)
+        i += 1
         with open(f) as fp:
             for line in fp:
                 m = re.search(r'elaps-time\((lap|befor)\s+MDloop\)=\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)', line)
@@ -35,10 +37,10 @@ if __name__ == '__main__':
                         lap_times_wait.append(time_wait)
                     else:  # mode == 'befor'
                         befor_time = time_total
-        for i, t in zip(range(len(lap_times_wait)), lap_times_wait):
-            if len(data) <= i:
+        for j, t in zip(range(len(lap_times_wait)), lap_times_wait):
+            if len(data) <= j:
                 data.append([])
-            data[i].append(t)
+            data[j].append(t)
     times_wait_for_laps = data  #map(list, zip(*data))
 
     max_wait = 0.0
