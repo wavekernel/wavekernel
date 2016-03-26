@@ -3038,9 +3038,9 @@ contains
     output%restart%first_write = .true.
     output%restart%append_mode = "off"
     if( .not. associated(node) ) then
-       output%restart%set = .true.
+       output%restart%set = .false.
        output%restart%filename = trim(config%option%output_dir)//"restart.xml"
-       output%restart%interval = 10
+       output%restart%interval = -1
        output%restart%split    = .false.
        output%restart%atom_id_is_added  = .false.
        output%restart%number_of_split_files  = -1

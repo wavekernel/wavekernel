@@ -37,6 +37,12 @@ module M_md_save_struct
       return
     endif   
 !
+    if (.not. config%output%restart%set) then
+      if (i_verbose >= 1) then
+        if (log_unit > 0) write(log_unit,*)'@@ elses_md_save_struct is SKIPPED:restart set=',config%output%restart%set
+      endif
+      return
+    endif   
 !
     save_at_this_node = .false.
     split_save_mode   = .false.
