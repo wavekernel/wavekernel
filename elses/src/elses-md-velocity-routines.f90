@@ -113,6 +113,10 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     ddsum_compo(:)=0.d00
+!$omp  parallel default(shared) &
+!$omp& private (js) &
+!$omp& reduction (+ : ddsum_compo) 
+!$omp  do schedule(static)
     do js=1,noa
       if (dabs(amm(js)) .le. 1.0D-10) then
         write(*,*)'ERROR!(CALC_KIN_ENE):js,amm=',js,amm(js)
@@ -122,6 +126,8 @@ module M_md_velocity_routines
       ddsum_compo(2)=ddsum_compo(2)+vely(js)*vely(js)/amm(js)*ay*ay
       ddsum_compo(3)=ddsum_compo(3)+velz(js)*velz(js)/amm(js)*az*az
     enddo    
+!$omp end do
+!$omp end parallel
     ddsum_compo(:)=ddsum_compo(:)*0.5d0/(dtmd*dtmd)
     ddsum=sum(ddsum_compo(:))
 !
@@ -221,6 +227,10 @@ module M_md_velocity_routines
       stop
     endif   
 !
+!$omp  parallel default(shared) &
+!$omp& private (js,mass) &
+!$omp& reduction (+ : total_momentum)
+!$omp  do schedule(static)
     do js=1,noa
       mass=1.0d0/amm(js)
       if (iflag(js) == 1) then
@@ -229,6 +239,8 @@ module M_md_velocity_routines
         total_momentum(3)=total_momentum(3)+mass*velz(js)*az/dtmd
       endif    
     enddo      
+!$omp end do 
+!$omp end parallel
 !
   end subroutine calc_total_momentum
 !
@@ -259,6 +271,10 @@ module M_md_velocity_routines
 !
     total_momentum(1:3)=0.0d0
 !
+!$omp  parallel default(shared) &
+!$omp& private (js,mass) &
+!$omp& reduction (+ : total_momentum)
+!$omp  do schedule(static)
     do js=1,noa
       mass=1.0d0/amm(js)
       if (iflag(js) == 1) then
@@ -267,6 +283,8 @@ module M_md_velocity_routines
         total_momentum(3)=total_momentum(3)+mass*dabs(velz(js))*az/dtmd
       endif    
     enddo      
+!$omp end do 
+!$omp end parallel
 !
   end subroutine calc_total_momentum_abs
 !
@@ -324,6 +342,9 @@ module M_md_velocity_routines
     d_py = total_momentum(2)/dble(noac)
     d_pz = total_momentum(3)/dble(noac)
 
+!$omp  parallel default(shared) &
+!$omp& private (js,mass)
+!$omp  do schedule(static)      
     do js=1,noa
       if (iflag(js) == 1) then
         mass=1.0d0/amm(js)
@@ -332,6 +353,8 @@ module M_md_velocity_routines
         velz(js)=velz(js)-d_pz*dtmd/az/mass
       endif    
     enddo      
+!$omp end do
+!$omp end parallel
 !
     call calc_total_momentum(total_momentum)
 !
@@ -379,6 +402,11 @@ module M_md_velocity_routines
     real(8) :: total_momentum(3)
     real(8) :: tempk0
     integer lu
+    logical :: forced_initialization 
+    logical :: parameter_checking
+!
+    forced_initialization = .true.
+    parameter_checking    = .false.
 !
     lu = config%calc%distributed%log_unit
 !
@@ -396,66 +424,74 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Parameter checking
 !
-    if (tempk0 .le. -1.0d-10) then
-      write(*,*)'ERROR!(calc_initial_velocity)'
-      stop
-    endif   
-!
-    do ioa=1,noa
-      if (dabs(amm(ioa)) .le. 1.0d-10) then
+    if (parameter_checking) then 
+      if (tempk0 .le. -1.0d-10) then
         write(*,*)'ERROR!(calc_initial_velocity)'
-        write(*,*)'ioa, amm=',ioa,amm(ioa)
         stop
       endif   
-    enddo   
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  Calculation 
+!$omp  parallel default(shared) &
+!$omp& private (ioa)
+!$omp  do schedule(static) 
+      do ioa=1,noa
+        if (dabs(amm(ioa)) .le. 1.0d-10) then
+          write(*,*)'ERROR!(calc_initial_velocity)'
+          write(*,*)'ioa, amm=',ioa,amm(ioa)
+          stop
+        endif   
+      enddo   
+!$omp end do
+!$omp end parallel
 !
-    call calc_kinetic_energy(kinetic_energy)
-!
-    call calc_total_momentum(total_momentum)
-!
-    if (i_verbose >= 1) then
-      if (lu > 0) then
-        write(lu,*)'Kinetic eneregy = ',kinetic_energy
-        write(lu,*)' total momemtum in x direction =',total_momentum(1)
-        write(lu,*)' total momemtum in y direction =',total_momentum(2)
-        write(lu,*)' total momemtum in z direction =',total_momentum(3)
-      endif
     endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  Parameter checking
+!  Detect the meaningful velocity data in the XML file
 !
-    myrank=0
+    if (.not. forced_initialization) then 
 !
+      call calc_kinetic_energy(kinetic_energy)
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      call calc_total_momentum(total_momentum)
 !
-    tempk=2.d0/3.d0*kinetic_energy/dble(noa)
+      if (i_verbose >= 1) then
+        if (lu > 0) then
+          write(lu,*)'Kinetic eneregy = ',kinetic_energy
+          write(lu,*)' total momemtum in x direction =',total_momentum(1)
+          write(lu,*)' total momemtum in y direction =',total_momentum(2)
+          write(lu,*)' total momemtum in z direction =',total_momentum(3)
+        endif
+      endif
 !
-    if(i_verbose >= 1) then
-      if (lu > 0) write(lu,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
+      myrank=0
+!
+      tempk=2.d0/3.d0*kinetic_energy/dble(noa)
+!
+      if(i_verbose >= 1) then
+        if (lu > 0) write(lu,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
+      endif
+!
+      if (dabs(tempk0) .lt. 1.0d-10) then
+        write(*,*)'ERROR:zero temperature:tempk0=',tempk0
+        stop
+      endif   
+!
+      tempr=tempk/tempk0
+!
+      if (dabs(tempr) .gt. 1.0d-10) then
+        if (lu > 0) then
+          write(lu,*) 'INFO:Optional XML tag detected : Meaningful velocity data (will be used)'
+          write(lu,*) ' The temperature of the input velocity data [eV, kel]=', & 
+  &                    tempk*ev4au, tempk*ev4au*ev2kel
+          write(lu,*) ' thb, thbold=',thb, thbold
+          write(lu,*) ' vhb, vhbold=',vhb, vhbold
+          return
+        endif
+      endif   
+!
     endif
 !
-    if (dabs(tempk0) .lt. 1.0d-10) then
-      write(*,*)'ERROR:zero temperature:tempk0=',tempk0
-      stop
-    endif   
-!
-    tempr=tempk/tempk0
-!
-    if (dabs(tempr) .gt. 1.0d-10) then
-      if (lu > 0) then
-        write(lu,*) 'INFO:Optional XML tag detected : Meaningful velocity data (will be used)'
-        write(lu,*) ' The temperature of the input velocity data [eV, kel]=', & 
-&                    tempk*ev4au, tempk*ev4au*ev2kel
-        write(lu,*) ' thb, thbold=',thb, thbold
-        write(lu,*) ' vhb, vhbold=',vhb, vhbold
-        return
-      endif
-    endif   
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     if (i_verbose >= 1) then
       if (lu > 0) then
@@ -510,11 +546,16 @@ module M_md_velocity_routines
     endif
 !      
     tempr=dsqrt(tempr)
-    do ioa=1, noa
-       velx(ioa)=velx(ioa)/tempr
-       vely(ioa)=vely(ioa)/tempr
-       velz(ioa)=velz(ioa)/tempr
-    enddo   
+!
+    velx(:)=velx(:)/tempr
+    vely(:)=vely(:)/tempr
+    velz(:)=velz(:)/tempr
+!
+!   do ioa=1, noa
+!      velx(ioa)=velx(ioa)/tempr
+!      vely(ioa)=vely(ioa)/tempr
+!      velz(ioa)=velz(ioa)/tempr
+!   enddo   
 !
     call calc_kinetic_energy(kinetic_energy)
     tempk=2.d0/3.d0*kinetic_energy/dble(noa)
@@ -582,6 +623,9 @@ module M_md_velocity_routines
       stop
     endif   
 !
+!$omp  parallel default(shared) &
+!$omp& private (ioa)
+!$omp  do schedule(static)
     do ioa=1,noa
       if (dabs(amm(ioa)) .le. 1.0d-10) then
         write(*,*)'ERROR!(set_velocity_from_maxwell)'
@@ -589,6 +633,8 @@ module M_md_velocity_routines
         stop
       endif   
     enddo   
+!$omp end do
+!$omp end parallel
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !   Preperation for rundom number generator
@@ -603,7 +649,7 @@ module M_md_velocity_routines
     velx(:)=0.0d0
     vely(:)=0.0d0
     velz(:)=0.0d0
-!
+!!
     do ioa=1,noa
 !
        if (iflag(ioa) /= 1) cycle
