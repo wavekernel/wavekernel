@@ -18,7 +18,7 @@ module M_la_gkrylov_main_dstm
   subroutine gkrylov_main_dstm(dst_atm_index, atm_index, orb_index, b, &
 &         jsv4jsk, jjkset, prc_index, scheme_mode, & 
 &         s_inv_e_j_wrk,dm_wrk,u_hst_wrk, v_mat_kr, eig_wrk, u_b_hst_wrk, wt_kr_wrk, kr_dim_max, &
-&         booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
+&         booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, id_of_my_omp_thread )
 !
     use M_config    ! (unchanged)
     use  M_la_krgl_main, only : get_num_of_nonzeros, &
@@ -89,6 +89,7 @@ module M_la_gkrylov_main_dstm
     integer,                intent(in) :: booking_list_dstm_len(:)
     real(DOUBLE_PRECISION), intent(in) :: ham_tot_dstm(:,:,:,:)
     real(DOUBLE_PRECISION), intent(in) :: overlap_dstm(:,:,:,:)
+    integer,                intent(in) :: id_of_my_omp_thread
 !
     character(len=64)    :: mat_vec_type 
 !
@@ -457,18 +458,19 @@ module M_la_gkrylov_main_dstm
       norm_factor=0.0d0
       select case(mat_vec_type)
         case ('crs')
-          call calc_u_su_hu_crs(u,su,hu,norm_factor, mat_crs_irp, mat_crs_icol, mat_crs_val, ierr)
+          call calc_u_su_hu_crs(u,su,hu,norm_factor, mat_crs_irp, mat_crs_icol, mat_crs_val, ierr, id_of_my_omp_thread)
 !         call calc_u_su_hu_crs(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
 !&            booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, &
 !&            mat_crs_irp, mat_crs_icol, mat_crs_val          )
         case ('sss')
-          call calc_u_su_hu_sss(u,su,hu,norm_factor, mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia, ierr)
+          call calc_u_su_hu_sss(u,su,hu,norm_factor, mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia, & 
+&                                ierr, id_of_my_omp_thread)
         case ('dens')
-          call calc_u_su_hu_dens(u,su,hu,norm_factor, mat_dens_h_s, ierr)
+          call calc_u_su_hu_dens(u,su,hu,norm_factor, mat_dens_h_s, ierr, id_of_my_omp_thread)
 !         call calc_u_su_hu_dens_dum(u,su,hu,norm_factor, mat_crs_irp, mat_crs_icol, mat_crs_val, ierr)
         case ('dstm')
           call calc_u_su_hu_dstm(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
-&           booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
+&           booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, id_of_my_omp_thread )
         case default
           write(*,*)'ERROR:mat_vec_type is not specified:', trim(mat_vec_type)
           stop
@@ -532,7 +534,7 @@ module M_la_gkrylov_main_dstm
       if (trim(scheme_mode) == 'gKrylov_L') then
         sinv_hu(:)=hu(:)
         call cg_s_mat_dstm   (hu, sinv_hu, eps, ite_cg, jsv4jsk, jjkset, &
-&                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+&                booking_list_dstm, booking_list_dstm_len, overlap_dstm, id_of_my_omp_thread)
         if (i_show >= 1) then
           if (lu > 0) write(lu,'(a,3i10,f30.20,i10)')'Sinv: prc_index, orb, atm, eps, ite_cg=', &  
 &                                        prc_index, orb_index, atm_index, eps, ite_cg
@@ -550,14 +552,14 @@ module M_la_gkrylov_main_dstm
 !
         select case(mat_vec_type)
          case ('crs')
-           call cg_s_mat_crs   (b, u, eps, ite_cg, mat_crs_irp, mat_crs_icol, mat_crs_val)
+           call cg_s_mat_crs   (b, u, eps, ite_cg, mat_crs_irp, mat_crs_icol, mat_crs_val, id_of_my_omp_thread)
          case ('sss')
-           call cg_s_mat_sss   (b, u, eps, ite_cg, mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia)
+           call cg_s_mat_sss   (b, u, eps, ite_cg, mat_sss_irp, mat_sss_icol, mat_sss_val, mat_sss_dia, id_of_my_omp_thread)
          case ('dens')
-           call cg_s_mat_dens  (b, u, eps, ite_cg, mat_dens_h_s(:,:,2) )
+           call cg_s_mat_dens  (b, u, eps, ite_cg, mat_dens_h_s(:,:,2) , id_of_my_omp_thread)
         case ('dstm')
            call cg_s_mat_dstm      (b, u, eps, ite_cg, jsv4jsk, jjkset, &
-&                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+&                booking_list_dstm, booking_list_dstm_len, overlap_dstm, id_of_my_omp_thread)
         case default
           write(*,*)'ERROR:mat_vec_type is not specified:', trim(mat_vec_type)
           stop

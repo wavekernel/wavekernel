@@ -47,6 +47,9 @@ module M_md_main
     use M_qm_geno_output,     only : output_for_eigen_solver     !(routine)
     use M_output_wfn_charge,  only : output_for_wfn_charge       !(routine)
 !
+    use M_lib_timer_in_thread,    only : init_timer_in_thread       !(routine)
+    use M_lib_timer_in_thread,    only : matvec_timer_in_thread     !(CHANGED)
+!
     implicit none
 !   real*8 tb0, tb, ptime, entime, entime_bak
     integer istop, itemd2
@@ -63,6 +66,9 @@ module M_md_main
     real(8) :: elapse_time_mpi_allreduce, elapse_time_mpi_barrier
     logical, parameter :: record_total_mpi_time_is_active = .false.
     logical :: converged_in_optimization
+    integer :: ierr
+    real(8) :: matvec_timer_wrk
+    integer :: ipe
 !
 !   log_file_is_set = .false.    ! dummy setting
 !   log_unit        = 0          ! dummy setting
@@ -146,13 +152,14 @@ module M_md_main
     call get_lap_of_allreduce_time(elapse_time_mpi_allreduce)
     call get_lap_of_barrier_time(elapse_time_mpi_barrier)
 !
+    matvec_timer_wrk=0.0d0
     if (root_node) then
       print '(A,I15,F24.10)', 'elaps-time(befor  MDloop)=', & 
 &            itemd2,elapse_time-elapse_time_previous
     endif  
-    if (log_unit > 0) write(log_unit,'(A,I15,3F15.6)')  'elaps-time(befor  MDloop)=', &
+    if (log_unit > 0) write(log_unit,'(A,I15,4F15.6)')  'elaps-time(befor  MDloop)=', &
 &            itemd2,elapse_time-elapse_time_previous, & 
-&                 elapse_time_mpi_allreduce, elapse_time_mpi_barrier
+&                 elapse_time_mpi_allreduce, elapse_time_mpi_barrier, matvec_timer_wrk
 
     elapse_time_previous=elapse_time
 !
@@ -223,6 +230,7 @@ module M_md_main
 !
      if ( dst_calculation ) then
        if (root_node) write(*,*)'INFO:Distributed calculation mode'
+       call init_timer_in_thread
        call qm_engine_dst
      else
        if (root_node) write(*,*)'INFO:NON-distributed calculation mode'
@@ -320,9 +328,21 @@ module M_md_main
 &            itemd2,elapse_time-elapse_time_previous
      endif 
 !
-     if (log_unit > 0) write(log_unit,'(A,I15, 3F15.6)') 'elaps-time(lap    MDloop)=', &
+     matvec_timer_wrk=0.0d0
+     if (allocated(matvec_timer_in_thread)) then 
+       matvec_timer_wrk=sum(matvec_timer_in_thread(:))/size(matvec_timer_in_thread,1)
+       do ipe=1, size(matvec_timer_in_thread,1)
+        if (log_unit > 0) then 
+          write(log_unit,*) 'INFO:matvec time per thread =', itemd2, ipe, matvec_timer_in_thread(ipe)
+        endif
+       enddo
+     else
+       matvec_timer_wrk=0.0d0
+     endif
+!
+     if (log_unit > 0) write(log_unit,'(A,I15, 4F15.6)') 'elaps-time(lap    MDloop)=', &
 &            itemd2,elapse_time-elapse_time_previous, & 
-&                 elapse_time_mpi_allreduce, elapse_time_mpi_barrier
+&                 elapse_time_mpi_allreduce, elapse_time_mpi_barrier, matvec_timer_wrk
       elapse_time_previous=elapse_time
 !
      if (mpi_time_check) then

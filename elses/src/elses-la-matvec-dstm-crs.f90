@@ -145,18 +145,27 @@ module M_la_matvec_crs
 ! Matrix-vector multiplication with CRS format
 !      (vect_out): = A (vect_in)
 !
-  subroutine matvec_mul_crs(vect_in, vect_out, irp, icol, val)
+  subroutine matvec_mul_crs(vect_in, vect_out, irp, icol, val, id_of_my_omp_thread)
+    use M_lib_mpi_wrapper,     only : mpi_wrapper_wtime        !(routine)
+    use M_lib_timer_in_thread, only : matvec_timer_in_thread   !(CHANGED)
     implicit none
     real(DOUBLE_PRECISION), intent(in)  :: vect_in(:)
     real(DOUBLE_PRECISION), intent(out) :: vect_out(:)
     integer,                intent(in)  :: irp(:)
     integer,                intent(in)  :: icol(:)
     real(DOUBLE_PRECISION), intent(in)  :: val(:)
+    integer,                intent(in)  :: id_of_my_omp_thread
     integer                             :: n
     integer                             :: i, j_ptr
     real(DOUBLE_PRECISION)              :: s
 !
-!   write(*,*)'INFO:MATVEC-CRS'
+    real(DOUBLE_PRECISION)              :: time_data1, time_data2
+!
+    write(*,*)'INFO:MATVEC-CRS:id_of_my_omp_thread =', id_of_my_omp_thread
+!
+    if (allocated(matvec_timer_in_thread)) then
+      call mpi_wrapper_wtime(time_data1)
+    endif
 !
     n=size(vect_in,1)
 !
@@ -168,12 +177,17 @@ module M_la_matvec_crs
       vect_out(i)=s
     enddo
 !
+    if (allocated(matvec_timer_in_thread)) then
+      call mpi_wrapper_wtime(time_data2)
+      matvec_timer_in_thread(id_of_my_omp_thread+1)=matvec_timer_in_thread(id_of_my_omp_thread+1)+(time_data2-time_data1)
+    endif
+!
   end subroutine matvec_mul_crs
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine calc_u_su_hu_crs(u,su,hu,norm_factor, irp, icol, val, ierr )
+  subroutine calc_u_su_hu_crs(u,su,hu,norm_factor, irp, icol, val, ierr, id_of_my_omp_thread )
 !
     implicit none
     real(8),       intent(inout)  :: u(:)
@@ -185,16 +199,17 @@ module M_la_matvec_crs
     integer,                intent(in) :: irp(:)
     integer,                intent(in) :: icol(:)
     real(DOUBLE_PRECISION), intent(in) :: val(:,:)
+    integer,                intent(in) :: id_of_my_omp_thread
 !
     real(8) :: ddd
 !
 !     call matvec_mul_crs_dum(u, su, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-      call matvec_mul_crs(u, su, irp, icol, val(:,2))
+      call matvec_mul_crs(u, su, irp, icol, val(:,2), id_of_my_omp_thread)
 !               ---> su : S |m_n> (non-normalized vector)
 !
 !
 !     call matvec_mul_crs_dum(u, hu, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm)
-      call matvec_mul_crs(u, hu, irp, icol, val(:,1))
+      call matvec_mul_crs(u, hu, irp, icol, val(:,1), id_of_my_omp_thread)
 !               ---> hu : H |m_n> (non-normalized vector)
 !
       ddd=dot_product(u(:),su(:))
@@ -233,7 +248,7 @@ module M_la_matvec_crs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine cg_s_mat_crs(b,x,eps,kend, irp, icol, val)
+  subroutine cg_s_mat_crs(b,x,eps,kend, irp, icol, val, id_of_my_omp_thread)
 !
 !    ---> Solve linear eq.: S x = b (REAL VARIALE)
 !          convergence criteria : 
@@ -260,6 +275,7 @@ module M_la_matvec_crs
     integer,                intent(in) :: irp(:)
     integer,                intent(in) :: icol(:)
     real(DOUBLE_PRECISION), intent(in) :: val(:,:)
+    integer,                intent(in) :: id_of_my_omp_thread
 !
     real(8), allocatable          :: r(:), p(:), ap(:)
     real(8)                       :: alpha, beta, rho0, rho1, tbs
@@ -295,7 +311,7 @@ module M_la_matvec_crs
     beta = 0.0d0
 !
 !   call matvec_mul_crs_dum(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
-    call matvec_mul_crs(x, ap, irp, icol, val(:,2))
+    call matvec_mul_crs(x, ap, irp, icol, val(:,2), id_of_my_omp_thread)
 !        ---> Mat-vec multiplication : ap = S x
 !
     r(:) = b(:)-ap(:)  ! r_0 = b - A x_0
@@ -325,7 +341,7 @@ module M_la_matvec_crs
       if(hg .le. eps) then
 !        --  If converged, the true residual is calculated and exit---
 !
-         call matvec_mul_crs    (x, ap, irp, icol, val(:,2))
+         call matvec_mul_crs    (x, ap, irp, icol, val(:,2), id_of_my_omp_thread)
 !          ---> Mat-vec multiplication : ap = S x
 !
         r(:) = b(:)-ap(:)
@@ -338,7 +354,7 @@ module M_la_matvec_crs
 !
       p(:) = r(:) + beta*p(:)
 !
-      call matvec_mul_crs    (p, ap, irp, icol, val(:,2))
+      call matvec_mul_crs    (p, ap, irp, icol, val(:,2), id_of_my_omp_thread)
 !        ---> Mat-vec multiplication : ap = S p
       pap = dot_product(p(:),ap(:))
 !

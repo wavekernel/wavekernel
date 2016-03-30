@@ -666,7 +666,7 @@ module M_qm_solver_gkrylov_dst
           endif  
           call gkrylov_main_dstm(dst_atm_index, atm_index, orb_index, b, jsv4jsk, jjkset, prc_index, scheme_mode, & 
 &                    s_inv_e_j_wrk,dm_wrk,u_hst_wrk, v_mat_kr, eig_wrk, u_b_hst_wrk, wt_kr_wrk, kr_dim_max, &
-&                    booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )
+&                    booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, id_of_my_omp_thread )
 !
           if (prc_index == 1) then
             wt_kr_dst(1:kr_dim_max_input,orb_index,dst_atm_index) =wt_kr_wrk(1:kr_dim_max_input)

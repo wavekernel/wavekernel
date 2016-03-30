@@ -37,9 +37,21 @@ module M_lib_mpi_wrapper !(TRUE ROUTINES)
   public :: sum_up_wtime
   public :: total_allreduce_time
   public :: total_barrier_time
-
+!
+  public :: mpi_wrapper_wtime
 !
   contains
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine mpi_wrapper_wtime(time_data)
+    implicit none
+    real(8), intent(out) :: time_data
+!
+    time_data=mpi_wtime()
+!
+  end subroutine mpi_wrapper_wtime
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

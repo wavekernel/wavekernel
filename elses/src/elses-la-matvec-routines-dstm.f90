@@ -21,10 +21,13 @@ module M_la_matvec_routines_dstm
 ! Matrix-vector multiplication with DSTM matrix : A (= H or S)
 !      (vect_out): = A (vect_in)
 !
-  subroutine matvec_mul_dstm(vect_in, vect_out, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, mat_dstm)
+  subroutine matvec_mul_dstm(vect_in, vect_out, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, &
+&                             mat_dstm, id_of_my_omp_thread)
 !
     use M_qm_domain,      only : nval, atm_element  ! (unchanged)
     use M_la_matvec_bcrs, only : switch_to_bcrs     ! (routine)
+    use M_lib_mpi_wrapper,     only : mpi_wrapper_wtime        !(routine)
+    use M_lib_timer_in_thread, only : matvec_timer_in_thread   !(CHANGED)
 !
     implicit none
     real(DOUBLE_PRECISION), intent(in)  :: vect_in(:)
@@ -34,6 +37,7 @@ module M_la_matvec_routines_dstm
     integer,                intent(in)  :: booking_list_dstm(:,:)
     integer,                intent(in)  :: booking_list_dstm_len(:)
     real(DOUBLE_PRECISION), intent(in)  :: mat_dstm(:,:,:,:)
+    integer,                intent(in)  :: id_of_my_omp_thread
 !
 !   logical, parameter :: debug_mode = .true.
     logical, parameter :: debug_mode = .false.
@@ -42,6 +46,11 @@ module M_la_matvec_routines_dstm
     integer :: num_atom_proj
     integer :: jjkset1, jjkset2, jjk1, jjk2
     real(DOUBLE_PRECISION)  :: mat_value
+    real(DOUBLE_PRECISION)  :: time_data1, time_data2
+!
+    if (allocated(matvec_timer_in_thread)) then
+      call mpi_wrapper_wtime(time_data1)
+    endif
 !
     if (config%calc%distributed%mat_vec_switch_bcrs) then
       if (config%calc%distributed%mat_vec_const_num_orbital) then
@@ -81,13 +90,18 @@ module M_la_matvec_routines_dstm
       enddo
     enddo
 !
+    if (allocated(matvec_timer_in_thread)) then
+      call mpi_wrapper_wtime(time_data2)
+      matvec_timer_in_thread(id_of_my_omp_thread+1)=matvec_timer_in_thread(id_of_my_omp_thread+1)+(time_data2-time_data1)
+    endif
+!
   end subroutine matvec_mul_dstm
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine calc_u_su_hu_dstm(u,su,hu,norm_factor,jsv4jsk,jjkset,ierr, &
-&              booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm )   
+&              booking_list_dstm, booking_list_dstm_len, overlap_dstm, ham_tot_dstm, id_of_my_omp_thread )   
 !
     implicit none
     integer,          intent(in)  :: jsv4jsk(:)
@@ -103,13 +117,14 @@ module M_la_matvec_routines_dstm
     integer,                intent(in)  :: booking_list_dstm_len(:)
     real(DOUBLE_PRECISION), intent(in)  :: overlap_dstm(:,:,:,:)
     real(DOUBLE_PRECISION), intent(in)  :: ham_tot_dstm(:,:,:,:)
+    integer,                intent(in)  :: id_of_my_omp_thread
 !
     real(8) :: ddd
 !
-      call matvec_mul_dstm(u, su, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+      call matvec_mul_dstm(u, su, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm, id_of_my_omp_thread)
 !               ---> su : S |m_n> (non-normalized vector)
 !
-      call matvec_mul_dstm(u, hu, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm)
+      call matvec_mul_dstm(u, hu, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm, id_of_my_omp_thread)
 !               ---> hu : H |m_n> (non-normalized vector)
 !
       ddd=dot_product(u(:),su(:))
@@ -149,7 +164,7 @@ module M_la_matvec_routines_dstm
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine cg_s_mat_dstm(b,x,eps,kend,jsv4jsk,jjkset, &
-&                booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+&                booking_list_dstm, booking_list_dstm_len, overlap_dstm, id_of_my_omp_thread)
 !    ---> Solve linear eq.: S x = b (REAL VARIALE)
 !          convergence criteria : 
 !             log_10 | r / b | < EPS
@@ -171,6 +186,7 @@ module M_la_matvec_routines_dstm
     integer,                intent(in)  :: booking_list_dstm(:,:)
     integer,                intent(in)  :: booking_list_dstm_len(:)
     real(DOUBLE_PRECISION), intent(in)  :: overlap_dstm(:,:,:,:)
+    integer,                intent(in)  :: id_of_my_omp_thread
 !
     real(8), allocatable          :: r(:), p(:), ap(:)
     real(8)                       :: alpha, beta, rho0, rho1, tbs
@@ -205,7 +221,7 @@ module M_la_matvec_routines_dstm
 !
     beta = 0.0d0
 !
-    call matvec_mul_dstm(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+    call matvec_mul_dstm(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm, id_of_my_omp_thread)
 !        ---> Mat-vec multiplication : ap = S x
 !
     r(:) = b(:)-ap(:)  ! r_0 = b - A x_0
@@ -235,7 +251,8 @@ module M_la_matvec_routines_dstm
       if(hg .le. eps) then
 !        --  If converged, the true residual is calculated and exit---
 !
-         call matvec_mul_dstm(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+         call matvec_mul_dstm(x, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, & 
+&                             overlap_dstm, id_of_my_omp_thread)
 !          ---> Mat-vec multiplication : ap = S x
 !
         r(:) = b(:)-ap(:)
@@ -248,7 +265,8 @@ module M_la_matvec_routines_dstm
 !
       p(:) = r(:) + beta*p(:)
 !
-      call matvec_mul_dstm(p, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, overlap_dstm)
+      call matvec_mul_dstm(p, ap, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, & 
+&                          overlap_dstm, id_of_my_omp_thread)
 !        ---> Mat-vec multiplication : ap = S p
       pap = dot_product(p(:),ap(:))
 !

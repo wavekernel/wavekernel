@@ -178,7 +178,9 @@ module M_la_matvec_sss
 ! Matrix-vector multiplication with SSS format
 !      (vect_out): = A (vect_in)
 !
-  subroutine matvec_mul_sss(vect_in, vect_out, irp, icol, val, val_dia)
+  subroutine matvec_mul_sss(vect_in, vect_out, irp, icol, val, val_dia, id_of_my_omp_thread)
+    use M_lib_mpi_wrapper,     only : mpi_wrapper_wtime        !(routine)
+    use M_lib_timer_in_thread, only : matvec_timer_in_thread   !(CHANGED)
     implicit none
     real(DOUBLE_PRECISION), intent(in)  :: vect_in(:)
     real(DOUBLE_PRECISION), intent(out) :: vect_out(:)
@@ -186,11 +188,17 @@ module M_la_matvec_sss
     integer,                intent(in)  :: icol(:)
     real(DOUBLE_PRECISION), intent(in)  :: val(:)
     real(DOUBLE_PRECISION), intent(in)  :: val_dia(:)
+    integer,                intent(in)  :: id_of_my_omp_thread
     integer                             :: n
     integer                             :: i, j_ptr, j
-    logical, parameter                  :: debug_mode = .true.
+    logical, parameter                  :: debug_mode = .false.
+    real(DOUBLE_PRECISION)              :: time_data1, time_data2
 !
 !   write(*,*)'INFO:MATVEC-CRS'
+!
+    if (allocated(matvec_timer_in_thread)) then
+      call mpi_wrapper_wtime(time_data1)
+    endif
 !
     n=size(vect_in,1)
 !
@@ -210,6 +218,11 @@ module M_la_matvec_sss
       enddo
     enddo
 !
+    if (allocated(matvec_timer_in_thread)) then
+      call mpi_wrapper_wtime(time_data2)
+      matvec_timer_in_thread(id_of_my_omp_thread+1)=matvec_timer_in_thread(id_of_my_omp_thread+1)+(time_data2-time_data1)
+    endif
+!
 !   do i=1,n
 !     write(*,*) 'SSS:i, v_in(i), v_out(i) =', i, vect_in(i), vect_out(i)
 !   enddo
@@ -221,7 +234,7 @@ module M_la_matvec_sss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine calc_u_su_hu_sss(u,su,hu,norm_factor, irp, icol, val, val_dia, ierr )
+  subroutine calc_u_su_hu_sss(u,su,hu,norm_factor, irp, icol, val, val_dia, ierr, id_of_my_omp_thread )
 !
     implicit none
     real(8),       intent(inout)  :: u(:)
@@ -234,15 +247,16 @@ module M_la_matvec_sss
     integer,                intent(in) :: icol(:)
     real(DOUBLE_PRECISION), intent(in) :: val(:,:)
     real(DOUBLE_PRECISION), intent(in) :: val_dia(:,:)
+    integer,         intent(in)   :: id_of_my_omp_thread
 !
     real(8) :: ddd
 !
-      call matvec_mul_sss(u, su, irp, icol, val(:,2), val_dia(:,2))
+      call matvec_mul_sss(u, su, irp, icol, val(:,2), val_dia(:,2), id_of_my_omp_thread)
 !               ---> su : S |m_n> (non-normalized vector)
 !
 !
 !     call matvec_mul_crs_dum(u, hu, jjkset, jsv4jsk, booking_list_dstm, booking_list_dstm_len, ham_tot_dstm)
-      call matvec_mul_sss(u, hu, irp, icol, val(:,1), val_dia(:,1))
+      call matvec_mul_sss(u, hu, irp, icol, val(:,1), val_dia(:,1), id_of_my_omp_thread)
 !               ---> hu : H |m_n> (non-normalized vector)
 !
 !     stop 'STOP MANUALLY'
@@ -283,7 +297,7 @@ module M_la_matvec_sss
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine cg_s_mat_sss(b,x,eps,kend, irp, icol, val, val_dia)
+  subroutine cg_s_mat_sss(b,x,eps,kend, irp, icol, val, val_dia, id_of_my_omp_thread)
 !
 !    ---> Solve linear eq.: S x = b (REAL VARIALE)
 !          convergence criteria : 
@@ -311,6 +325,7 @@ module M_la_matvec_sss
     integer,                intent(in) :: icol(:)
     real(DOUBLE_PRECISION), intent(in) :: val(:,:)
     real(DOUBLE_PRECISION), intent(in) :: val_dia(:,:)
+    integer,                intent(in) :: id_of_my_omp_thread
 !
     real(8), allocatable          :: r(:), p(:), ap(:)
     real(8)                       :: alpha, beta, rho0, rho1, tbs
@@ -345,7 +360,7 @@ module M_la_matvec_sss
 !
     beta = 0.0d0
 !
-    call matvec_mul_sss(x, ap, irp, icol, val(:,2), val_dia(:,2))
+    call matvec_mul_sss(x, ap, irp, icol, val(:,2), val_dia(:,2), id_of_my_omp_thread)
 !        ---> Mat-vec multiplication : ap = S x
 !
     r(:) = b(:)-ap(:)  ! r_0 = b - A x_0
@@ -382,7 +397,7 @@ module M_la_matvec_sss
       if(hg .le. eps) then
 !        --  If converged, the true residual is calculated and exit---
 !
-         call matvec_mul_sss(x, ap, irp, icol, val(:,2), val_dia(:,2))
+         call matvec_mul_sss(x, ap, irp, icol, val(:,2), val_dia(:,2), id_of_my_omp_thread)
 !          ---> Mat-vec multiplication : ap = S x
 !
         r(:) = b(:)-ap(:)
@@ -395,7 +410,7 @@ module M_la_matvec_sss
 !
       p(:) = r(:) + beta*p(:)
 !
-      call matvec_mul_sss(p, ap, irp, icol, val(:,2), val_dia(:,2))
+      call matvec_mul_sss(p, ap, irp, icol, val(:,2), val_dia(:,2), id_of_my_omp_thread)
 !        ---> Mat-vec multiplication : ap = S p
       pap = dot_product(p(:),ap(:))
 !

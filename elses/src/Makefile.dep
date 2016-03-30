@@ -48,10 +48,10 @@ elses-la-gscocg-tru-res.o : elses-la-matvec-io.o
 elses-la-krgl-main.o : elses-mod-03.o elses-io-ctrl-dos-plot.o elses-mod-file-io.o elses-mod-01.o elses-la-gkrylov-hist.o elses-lib-math-func.o elses-qm-projection.o elses-lib-wall-clock-time.o elses-la-matvec-routines.o elses-la-matvec-io.o elses-mod-03.o elses-lib-phys-const.o elses-config.o elses-qm-domain.o 
 elses-la-matvec-dst.o : elses-qm-geno-dst.o elses-qm-dst-projection-cell.o elses-qm-domain.o 
 elses-la-matvec-dstm-bcrs.o : elses-qm-domain.o elses-config.o 
-elses-la-matvec-dstm-crs.o : elses-qm-domain.o 
-elses-la-matvec-dstm-dens.o : elses-qm-domain.o 
-elses-la-matvec-dstm-sss.o : elses-qm-domain.o 
-elses-la-matvec-routines-dstm.o : elses-la-matvec-dstm-bcrs.o elses-qm-domain.o elses-config.o 
+elses-la-matvec-dstm-crs.o : elses-lib-timer-in-thread.o elses-lib-mpi-wrapper-compile.o elses-qm-domain.o 
+elses-la-matvec-dstm-dens.o : elses-lib-timer-in-thread.o elses-lib-mpi-wrapper-compile.o elses-qm-domain.o 
+elses-la-matvec-dstm-sss.o : elses-lib-timer-in-thread.o elses-lib-mpi-wrapper-compile.o elses-qm-domain.o 
+elses-la-matvec-routines-dstm.o : elses-lib-timer-in-thread.o elses-lib-mpi-wrapper-compile.o elses-la-matvec-dstm-bcrs.o elses-qm-domain.o elses-config.o 
 elses-la-matvec-routines.o : elses-qm-projection.o elses-la-matvec-dst.o elses-qm-geno-dst.o elses-qm-domain.o 
 elses-lib-mpi-wrapper-compile.o : elses-lib-dst-info.o 
 elses-lib-omp.o : elses-lib-dst-info.o elses-qm-domain.o 
@@ -68,7 +68,7 @@ elses-md-dst-get-atom-range.o : elses-md-dst.o elses-lib-dst-info.o elses-qm-dom
 elses-md-dst-update-cell-booking.o : elses-md-dst-get-atom-range.o elses-lib-mpi-wrapper-compile.o elses-md-dst.o elses-md-dst-cell.o elses-lib-wall-clock-time.o elses-io-dst-write-log.o elses-qm-domain.o 
 elses-md-dst.o : elses-lib-mpi-wrapper-compile.o elses-config.o elses-00-version-info.o elses-lib-dst-info.o elses-qm-domain.o 
 elses-md-get-distance.o : elses-qm-domain.o 
-elses-md-main.o : elses-qm-output-wfn-charge.o elses-qm-geno-output.o elses-qm-output-matrices.o elses-lib-report-mpi-time.o elses-lib-stop-signal.o elses-lib-mpi-wrapper-compile.o elses-md-dst.o elses-lib-dst-info.o elses-qm-engine-dst.o elses-ini-load-geno.o elses-qm-engine.o elses-lib-wall-clock-time.o elses-md-output.o elses-md-save-struct.o elses-md-motion-verlet.o elses-md-motion.o elses-mod-03.o elses-config.o elses-mod-01.o 
+elses-md-main.o : elses-lib-timer-in-thread.o elses-qm-output-wfn-charge.o elses-qm-geno-output.o elses-qm-output-matrices.o elses-lib-report-mpi-time.o elses-lib-stop-signal.o elses-lib-mpi-wrapper-compile.o elses-md-dst.o elses-lib-dst-info.o elses-qm-engine-dst.o elses-ini-load-geno.o elses-qm-engine.o elses-lib-wall-clock-time.o elses-md-output.o elses-md-save-struct.o elses-md-motion-verlet.o elses-md-motion.o elses-mod-03.o elses-config.o elses-mod-01.o 
 elses-md-make-bk-list-w-cell.o : elses-md-dst-get-atom-range.o elses-lib-mpi-wrapper-compile.o elses-md-get-distance.o elses-md-dst-cell.o elses-md-dst.o elses-lib-wall-clock-time.o elses-io-dst-write-log.o elses-qm-domain.o 
 elses-md-motion-verlet.o : elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-md-velocity-routines.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-config.o elses-io-dst-write-log.o elses-qm-domain.o 
 elses-md-motion.o : elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-lib-phys-const.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-gid-constraint.o elses-io-update-snapshot.o elses-lib-mpi-wrapper-compile.o elses-qm-population.o elses-md-motion-verlet.o elses-md-constraint.o elses-md-cell-change.o elses-md-velocity-routines.o elses-mod-01.o elses-config.o elses-io-dst-write-log.o elses-mod-01.o 
@@ -152,6 +152,7 @@ elses-xml-sax-data-sync-matom.o : elses-lib-element-name.o elses-lib-mpi-wrapper
 elses-xml-sax-data-sync.o : elses-lib-element-name.o elses-lib-mpi-wrapper-compile.o elses-config.o 
 elses-xml-sax-handler.o : elses-xml-misc.o elses-config.o 
 elses-xml-sax-parser.o : elses-xml-sax-handler.o elses-xml-sax-counter.o elses-config.o 
+elses-xml-selftest.o : elses-options.o elses-xml-config.o 
 Nrl/nrlvar.o : elses-mod-01.o elses-mod-02.o elses-mod-03.o elses-mod-01.o elses-mod-02.o elses-mod-02.o elses-mod-01.o elses-mod-01.o 
 Nrl/nrladapt.o : elses-mod-01.o elses-mod-01.o Nrl/nrlio.o Nrl/nrlvar.o Nrl/nrlrep.o Nrl/nrlldos.o Nrl/nrlmatrix.o elses-mod-nrl.o 
 Nrl/nrlhop.o : elses-xml-misc.o Nrl/nrlcut.o Nrl/nrlpair.o Nrl/nrlsystem.o Nrl/skderiv.o Nrl/sktable.o 

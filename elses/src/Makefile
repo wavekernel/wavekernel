@@ -33,7 +33,7 @@ FFLAGS += $(FFLAGS-NRL) $(FFLAGS-XML) -I$(TOPDIR)/ext-lib
 OBJS-XML = \
 	elses-lib-dst-info.o  elses-lib-wall-clock-time.o \
 	elses-xml-config.o elses-xml-misc.o elses-options.o elses-config.o elses-lib-mpi-wrapper-compile.o \
-	elses-lib-quad-precision.o \
+	elses-lib-quad-precision.o elses-lib-timer-in-thread.o \
 	elses-xml-sax-counter.o elses-xml-sax-handler.o  elses-xml-sax-parser.o elses-xml-compat-check.o
 
 OBJS-NRL = \

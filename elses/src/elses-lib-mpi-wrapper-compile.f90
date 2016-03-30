@@ -11,6 +11,8 @@ module M_lib_mpi_wrapper !(DUMMY ROUTINES)
   real(kind(1d0)), allocatable :: total_allreduce_time(:)
   real(kind(1d0)), allocatable :: total_barrier_time(:)
 !
+  real(kind(1d0)), allocatable :: matvec_timer_in_thread(:) 
+!
   private
   public :: mpi_wrapper_initial      !(DUMMY ROUTINE)
   public :: mpi_wrapper_final        !(DUMMY ROUTINE)
@@ -34,9 +36,23 @@ module M_lib_mpi_wrapper !(DUMMY ROUTINES)
   public :: sum_up_wtime
   public :: total_allreduce_time
   public :: total_barrier_time
-
+!
+  public :: mpi_wrapper_wtime
 !
   contains
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine mpi_wrapper_wtime(time_data)
+    implicit none
+    real(8), intent(out) :: time_data
+    integer :: count, rate, max
+!
+    call system_clock(count, rate)
+    time_data=dble(count)/dble(rate)
+!
+  end subroutine mpi_wrapper_wtime
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
