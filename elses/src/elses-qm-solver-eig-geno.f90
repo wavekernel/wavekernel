@@ -286,7 +286,9 @@ module M_qm_solver_eig_geno
 !
 !   use elses_arr_eig_leg, only:atmp,atmp2,atmp3,atmpo
 !
-    use M_config,          only : config !(unchanged)                                                                                                                implicit none
+    use M_config,          only : config !(unchanged)
+    use elses_arr_eig_leg
+    implicit none
     integer :: imode
     logical :: flag_for_dump
 !
@@ -317,7 +319,7 @@ module M_qm_solver_eig_geno
   subroutine eig_mateig_wrapper(imode)
 !   use elses_arr_eig_leg,      only : mat_a=>atmp, mat_b=>atmp2, eig_levels=>eig2 ! CHANGED
     use elses_mod_orb2,     only : n_tot_base
-    use elses_arr_eig_leg,      only : atmp, eig_levels=>eig2 ! CHANGED
+    use elses_arr_eig_leg,      only : atmp, eig_levels=>eig2, desc_eigenvectors, eigenvectors ! CHANGED
     use M_eig_solver_center, only : eig_solver_center ! routine
     use M_config,          only : config !(unchanged)                                                                        
     implicit none
@@ -327,7 +329,6 @@ module M_qm_solver_eig_geno
     integer            :: blocksize_wrk
     integer            :: level_low_high(2)
     integer            :: log_unit_wrk
-    real(DOUBLE_PRECISION), allocatable :: eig_vectors(:, :)  ! Change_for_sparse_matrix_passing
     integer            :: vec_size, ierr
 
     if (allocated(eig_levels)) then
@@ -346,31 +347,30 @@ module M_qm_solver_eig_geno
     imode=2
 !   solver_scheme_wrk='scalapack'
     call eig_solver_center(imode, log_unit_wrk, trim(SEP_solver_wrk), & 
-&           trim(GS_transformation_wrk), blocksize_wrk, level_low_high, eig_levels, eig_vectors)
-!    call eig_solver_center(imode, log_unit_wrk, trim(SEP_solver_wrk), & 
-!&           trim(GS_transformation_wrk), blocksize_wrk, level_low_high, mat_a, eig_levels, mat_b)
-!
-!
-    if ((level_low_high(1) == 1) .and. (level_low_high(2) == vec_size )) then
-      if (.not. allocated(atmp)) then 
-        allocate(atmp(vec_size, vec_size),stat=ierr) 
-        if (ierr /= 0) then
-          stop 'Alloc error. atmp2 (eig_mateig_wrapper)' 
-        endif
-      endif
-      ierr=0
-      if (size(atmp,1) /= size(eig_vectors,1)) ierr=1
-      if (size(atmp,2) /= size(eig_vectors,2)) ierr=1
-      if (ierr /= 0) then
-         write(*,*) 'ERROR:imcompatible matrix size (eig_mateig_wrapper)'
-         write(*,*) ' size(atmp2,1)=', size(atmp,1)
-         write(*,*) ' size(atmp2,2)=', size(atmp,2)
-         write(*,*) ' size(eig_vectors,1)=', size(eig_vectors,1)
-         write(*,*) ' size(eig_vectors,2)=', size(eig_vectors,2)
-         stop
-      endif
-      atmp(:,:)=eig_vectors(:,:)
-    endif
+         trim(GS_transformation_wrk), blocksize_wrk, level_low_high, eig_levels, &
+         desc_eigenvectors, eigenvectors)
+
+!    if ((level_low_high(1) == 1) .and. (level_low_high(2) == vec_size )) then
+!      if (.not. allocated(atmp)) then 
+!        allocate(atmp(vec_size, vec_size),stat=ierr) 
+!        if (ierr /= 0) then
+!          stop 'Alloc error. atmp2 (eig_mateig_wrapper)' 
+!        endif
+!      endif
+!      ierr=0
+!      if (size(atmp,1) /= size(eig_vectors,1)) ierr=1
+!      if (size(atmp,2) /= size(eig_vectors,2)) ierr=1
+!      if (ierr /= 0) then
+!         write(*,*) 'ERROR:imcompatible matrix size (eig_mateig_wrapper)'
+!         write(*,*) ' size(atmp2,1)=', size(atmp,1)
+!         write(*,*) ' size(atmp2,2)=', size(atmp,2)
+!         write(*,*) ' size(eig_vectors,1)=', size(eig_vectors,1)
+!         write(*,*) ' size(eig_vectors,2)=', size(eig_vectors,2)
+!         stop
+!      endif
+!      atmp(:,:)=eig_vectors(:,:)
+!    endif
+    
 !
 !   write(*,*)'@@ eig_mateig_wrapper'
 !    stop 'stop manually'

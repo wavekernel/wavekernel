@@ -30,7 +30,8 @@ contains
   !                      output : not preserved
   !
   subroutine eig_solver_center(imode, log_unit, SEP_solver_in, GS_transformation_in, &
-&                blocksize_in, level_low_high, eig_levels, eig_vectors)
+       blocksize_in, level_low_high, eig_levels, eig_vectors, &
+       desc_eigenvectors, eigenvectors)
     !
     use mpi
     use elses_mod_md_dat, only : final_iteration
@@ -51,7 +52,10 @@ contains
     integer,                intent(inout)            :: level_low_high(2)
     integer,                intent(in)               :: log_unit
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
-    real(DOUBLE_PRECISION), intent(out), allocatable :: eig_vectors(:, :)
+    integer,                intent(out)              :: desc_eigenvectors(9)
+    ! Must not be allocated at the start of this routine.
+    ! Must be deallocated after calculating density matrix.
+    real(DOUBLE_PRECISION), intent(out), allocatable :: eigenvectors(:, :)
 !
     character(len=1024)                              :: eigen_mpi_scheme_wrk
     character(len=1024)                              :: SEP_solver
