@@ -152,7 +152,6 @@ elses-xml-sax-data-sync-matom.o : elses-lib-element-name.o elses-lib-mpi-wrapper
 elses-xml-sax-data-sync.o : elses-lib-element-name.o elses-lib-mpi-wrapper-compile.o elses-config.o 
 elses-xml-sax-handler.o : elses-xml-misc.o elses-config.o 
 elses-xml-sax-parser.o : elses-xml-sax-handler.o elses-xml-sax-counter.o elses-config.o 
-elses-xml-selftest.o : elses-options.o elses-xml-config.o 
 Nrl/nrlvar.o : elses-mod-01.o elses-mod-02.o elses-mod-03.o elses-mod-01.o elses-mod-02.o elses-mod-02.o elses-mod-01.o elses-mod-01.o 
 Nrl/nrladapt.o : elses-mod-01.o elses-mod-01.o Nrl/nrlio.o Nrl/nrlvar.o Nrl/nrlrep.o Nrl/nrlldos.o Nrl/nrlmatrix.o elses-mod-nrl.o 
 Nrl/nrlhop.o : elses-xml-misc.o Nrl/nrlcut.o Nrl/nrlpair.o Nrl/nrlsystem.o Nrl/skderiv.o Nrl/sktable.o 

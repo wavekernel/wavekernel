@@ -161,7 +161,7 @@ module M_la_matvec_crs
 !
     real(DOUBLE_PRECISION)              :: time_data1, time_data2
 !
-    !write(*,*)'INFO:MATVEC-CRS:id_of_my_omp_thread =', id_of_my_omp_thread
+!   write(*,*)'INFO:MATVEC-CRS:id_of_my_omp_thread =', id_of_my_omp_thread
 !
     if (allocated(matvec_timer_in_thread)) then
       call mpi_wrapper_wtime(time_data1)
