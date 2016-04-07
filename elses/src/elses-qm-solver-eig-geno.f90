@@ -28,6 +28,7 @@ module M_qm_solver_eig_geno
      use elses_arr_eig_leg,  only : atmp       !(CHANGED)
      use  M_wall_clock_time, only : get_system_clock_time
      use elses_mod_eig_leg,  only : n_base_eig_leg !(CHANGED)
+     use M_eig_solver_center, only : set_density_matrix_mpi
 !
      implicit none
      integer i_init
@@ -80,7 +81,7 @@ module M_qm_solver_eig_geno
          call get_system_clock_time(elapse_time)
          if (lu > 0) write(lu,"(a,f20.10)") ' TIME:qm_solver_eig_geno:initial alloc=',elapse_time-elapse_time_bak
          elapse_time_bak=elapse_time
-       endif   
+       endif
 !
        call copy_to_full_matrices
 !      --> Copy the Hamiltonian and overlap matrices
@@ -104,8 +105,8 @@ module M_qm_solver_eig_geno
      call set_eigen_states
 !      --> Set the eigen states 
 !        OUTPUT: eig2(n)    (Eigen levels)
-!        OUTPUT: atmp(n,n)  (Eigen vectors A(i,k))
-!                  k:eigen level
+!        OUTPUT (normal mode): atmp
+!        OUTPUT (eigen_mpi mode): desc_eigenvectors(:), eigenvectors(:, :)  (Distributed eigen vectors A(i,k))
 !
      if (i_verbose >= 1) then
        call get_system_clock_time(elapse_time)
@@ -126,7 +127,11 @@ module M_qm_solver_eig_geno
        elapse_time_bak=elapse_time
      endif   
 !
-     call set_density_matrix
+     if (trim(config%calc%solver%scheme) == 'eigen_mpi') then
+       call set_density_matrix_mpi()
+     else
+       call set_density_matrix
+     end if
 !      --> Set the density matrix
 !        OUTPUT: dbij : density matrix
 !        OUTPUT: dpij : energy density matrix
