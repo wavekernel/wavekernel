@@ -44,7 +44,11 @@ if __name__ == '__main__':
     times_wait_for_laps = data  #map(list, zip(*data))
 
     max_wait = 0.0
-    for lap in range(len(times_wait_for_laps)):
-        print '%d %.4f' % (lap, max(times_wait_for_laps[lap]))
-        max_wait = max(max_wait, max(times_wait_for_laps[lap]))
+    sum_wait = 0.0
+    for lap, times in enumerate(times_wait_for_laps):
+        t = max(times)
+        print '%d %.4f' % (lap, t)
+        max_wait = max(max_wait, t)
+        sum_wait += t
     print 'max %.4f' % max_wait
+    print 'avf %.4f' % (sum_wait / len(times_wait_for_laps))
