@@ -41,5 +41,5 @@ if __name__ == '__main__':
     for (befor, avg_time_total, avg_time_mpi, avg_time_wait) in data:
         print '%.4f %.4f %.4f %.4f' % (befor, avg_time_total, avg_time_mpi, avg_time_wait)
     if len(data) == 2:
-        print '%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f' % (data[0][0], data[0][1], data[0][2], data[0][3],
-                                                           data[1][0], data[1][1], data[1][2], data[1][3])
+        print '%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f' % (data[0][0], data[1][0], data[0][1], data[1][1],
+                                                           data[0][2], data[1][2], data[0][3], data[1][3])
