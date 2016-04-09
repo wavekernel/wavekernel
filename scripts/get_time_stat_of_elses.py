@@ -16,6 +16,7 @@ if __name__ == '__main__':
         if f.find('log-node') >= 0:
             log_node_paths.append(os.path.join(dirname, f))
             i += 1
+    log_node_paths.sort()
     befor_times = []
     body_total_times = []
     body_mpi_times = []
