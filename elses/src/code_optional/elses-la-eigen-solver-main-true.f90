@@ -11,7 +11,7 @@ module M_eig_solver_center
   !include 'mpif.h'
   !
   private
-  public :: eig_solver_center, set_density_matrix_mpi
+  public :: eig_solver_center, set_density_matrix_mpi, set_pratio_mpi
   !
 contains
   !
@@ -52,8 +52,6 @@ contains
     integer,                intent(in)               :: log_unit
     real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
     integer,                intent(out)              :: desc_eigenvectors(9)
-    ! Must not be allocated at the start of this routine.
-    ! Must be deallocated after calculating density matrix.
     real(DOUBLE_PRECISION), intent(out), allocatable :: eigenvectors(:, :)
 !
     character(len=1024)                              :: eigen_mpi_scheme_wrk
@@ -269,11 +267,11 @@ contains
     call eigen_solver_scalapack_all(proc, desc_A, A_dist, eigenpairs)
     call recovery_generalized(dim, dim, B_dist, desc_B, eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
     desc_eigenvectors(:) = eigenpairs%blacs%desc
+    if (allocated(eigenvectors)) then
+      deallocate(eigenvectors)
+    end if
     allocate(eigenvectors(size(eigenpairs%blacs%Vectors, 1), size(eigenpairs%blacs%Vectors, 2)))
     eigenvectors(:, :) = eigenpairs%blacs%Vectors
-    !call gather_matrix_part(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
-    !     1, level_low_high(1), dim, num_output_vectors, 0, 0, eig_vectors)
-    !call mpi_bcast(eig_vectors, dim * num_output_vectors, mpi_double_precision, 0, mpi_comm_world, ierr)
     eig_levels(:) = eigenpairs%blacs%values(:)
   end subroutine eig_solver_center_scalapack
 
@@ -433,6 +431,44 @@ contains
   !  eig_levels(:) = eigenpairs%blacs%values(:)
   !end subroutine eig_solver_center_eigenk_elpa
 
+  subroutine set_pratio_mpi()  ! set pratios to atmp(k, 1)
+    use elses_arr_eig_leg, only : atmp, desc_eigenvectors, eigenvectors
+
+    integer :: n_tot_base, i, j, n_procs_row, n_procs_col, my_proc_row, my_proc_col
+    real(8) :: sum_power4(desc_eigenvectors(cols_)), sum_power2(desc_eigenvectors(cols_)), pratio
+    complex(kind(0d0)) :: elem
+    integer :: indxg2p
+
+    n_tot_base = desc_eigenvectors(cols_)
+
+    if (allocated(atmp)) then
+      deallocate(atmp)
+    endif    
+    allocate(atmp(n_tot_base, 1))
+    
+    call blacs_gridinfo(desc_eigenvectors(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
+    sum_power4(:) = 0d0
+    sum_power2(:) = 0d0
+    do j = 1, n_tot_base
+      if (indxg2p(j, desc_eigenvectors(block_col_), 0, 0, n_procs_col) == my_proc_col) then
+        do i = 1, n_tot_base
+          if (indxg2p(i, desc_eigenvectors(block_row_), 0, 0, n_procs_row) == my_proc_row) then
+            call pdelget('Self', ' ', elem, eigenvectors, i, j, desc_eigenvectors)
+            sum_power4(j) = sum_power4(j) + elem ** 4d0
+            sum_power2(j) = sum_power2(j) + elem ** 2d0
+          end if
+        end do
+      end if
+    end do
+    call dgsum2d(desc_eigenvectors(context_), 'All', ' ', 1, n_tot_base, sum_power4, 1, -1, -1)
+    call dgsum2d(desc_eigenvectors(context_), 'All', ' ', 1, n_tot_base, sum_power2, 1, -1, -1)
+
+    do j = 1, n_tot_base
+      pratio = (sum_power2(j) ** 2d0) / sum_power4(j)
+      atmp(j, 1) = pratio
+    end do
+  end subroutine set_pratio_mpi
+
   subroutine set_density_matrix_mpi()
     use M_qm_domain, only : i_verbose, &
          &      dhij, dsij, dbij, dpij, njsd, noav, atm_element, nval, jsv4jsd, &
@@ -441,30 +477,27 @@ contains
     use elses_mod_orb2,  only : j2js,j2ja,js2j,n_tot_base
     use elses_mod_js4jsv,   only : js4jsv
     use elses_mod_multi,    only : ict4h
+    use M_lib_mpi_wrapper,  only : mpi_wrapper_allreduce_r4
 !
     implicit none
     integer :: neig_k
     integer :: jsv2, js2, ja2, jsd1
-    integer :: jsv1, js1, ja1
+    integer :: jsv1, js1, ja1, j1, j2, k
     integer :: maxNumOrb, numOrb1, numOrb2
     integer :: ierr
+    integer :: desc_atmp(desc_size), local_rows, local_cols, nprow, npcol, myprow, mypcol, prow, pcol
+    integer :: indxg2p  ! Function.
 !
     real(DOUBLE_PRECISION), allocatable, dimension(:,:)&
-            :: atmp6, atmp7, atmp8, atmp9
-    real(DOUBLE_PRECISION) :: w0
+            :: f_eigenvectors, f_e_eigenvectors, l_matrix, p_matrix
+    real(DOUBLE_PRECISION) :: w0, db_elem, dp_elem
     real(DOUBLE_PRECISION) :: EPSILON=1d-14
 !
-    if (.not. allocated(atmp)) then
-      allocate(atmp(n_tot_base, n_tot_base))
-    endif
-
     if (desc_eigenvectors(rows_) /= n_tot_base .or. desc_eigenvectors(cols_) /= n_tot_base) then
       write(*,*) 'ERROR(set_density_matrix_mpi): Inconsistent matrix dimension'
       stop
     end if
-    call gather_matrix_part(eigenvectors, desc_eigenvectors, &
-         1, 1, n_tot_base, n_tot_base, 0, 0, atmp)
-    call mpi_bcast(atmp, n_tot_base * n_tot_base, mpi_double_precision, 0, mpi_comm_world, ierr)    
+    call blacs_gridinfo(desc_eigenvectors(context_), nprow, npcol, myprow, mypcol)
 
     dbij(:,:,:,:) = 0.0d0
     dpij(:,:,:,:) = 0.0d0
@@ -472,17 +505,25 @@ contains
     do neig_k = 1, n_tot_base
        if(f_occ(neig_k) < EPSILON) exit
     end do
+    print *, 'neig_k, n_tot_base', neig_k, n_tot_base
 !     ----> upper limit of sum_k
 !            ( k = 1, 2, ..., neig_k )
-!
-    maxNumOrb = maxval(nval)
-    allocate(atmp6(neig_k, n_tot_base))
+
+    local_rows = size(eigenvectors, 1)
+    local_cols = size(eigenvectors, 2)
+    allocate(f_eigenvectors(local_rows, local_cols))
+    allocate(f_e_eigenvectors(local_rows, local_cols))
+    allocate(l_matrix(local_rows, local_cols))
+    allocate(p_matrix(local_rows, local_cols))
+
+    f_eigenvectors(:, :) = eigenvectors(:, :)
 
     do ja1 = 1, neig_k
-       w0 = sqrt(f_occ(ja1))
-       do ja2 = 1, n_tot_base
-          atmp6(ja1, ja2) = w0 * atmp(ja2, ja1)
-       end do
+      w0 = sqrt(f_occ(ja1))
+      call pdscal(n_tot_base, w0, f_eigenvectors, 1, ja1, desc_eigenvectors, 1)
+    end do
+    do ja1 = neig_k + 1, n_tot_base
+      call pdscal(n_tot_base, 0d0, f_eigenvectors, 1, ja1, desc_eigenvectors, 1)
     end do
 
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -498,28 +539,44 @@ contains
       write(6,*)'calc.of L-matrix and P-matrix'
     endif
 
-    allocate(atmp7(neig_k, maxNumOrb))
+    f_e_eigenvectors(:, :) = f_eigenvectors(:, :)  ! f_eigenvectors is used as temporary copy of f_eigenvectors.
+    call pdgemm('N', 'T', n_tot_base, n_tot_base, n_tot_base, 1d0, &
+         f_eigenvectors, 1, 1, desc_eigenvectors, &
+         f_e_eigenvectors, 1, 1, desc_eigenvectors, 0d0, &
+         l_matrix, 1, 1, desc_eigenvectors)    
+    do k = 1, neig_k
+      call pdscal(n_tot_base, eig2(k), f_e_eigenvectors, 1, k, desc_eigenvectors, 1)
+    end do
+    call pdgemm('N', 'T', n_tot_base, n_tot_base, n_tot_base, 1d0, &
+         f_eigenvectors, 1, 1, desc_eigenvectors, &
+         f_e_eigenvectors, 1, 1, desc_eigenvectors, 0d0, &
+         p_matrix, 1, 1, desc_eigenvectors)    
+    
     do jsv2 = 1, noav
       js2 = js4jsv(jsv2)
       numOrb2 = nval(atm_element(jsv2))
-      do ja2 = 1, numOrb2
-        atmp7(1 : neig_k, ja2) = atmp6(1 : neig_k, js2j(ja2, js2)) * eig2(1 : neig_k)
-      end do
       do jsd1 = 1, njsd(jsv2, ict4h)
         jsv1 = jsv4jsd(jsd1, jsv2)
         js1 = js4jsv(jsv1)
         numOrb1 = nval(atm_element(jsv1))
         do ja2=1, numOrb2
           do ja1=1, numOrb1
-            dbij(ja1, ja2, jsd1, js2) = &
-                 dot_product(atmp6(1 : neig_k, js2j(ja1, js1)), atmp6(1 : neig_k, js2j(ja2, js2)))
-            dpij(ja1,ja2,jsd1,js2)= &
-                 dot_product(atmp6(1 : neig_k, js2j(ja1, js1)), atmp7(1 : neig_k, ja2))
+            j1 = js2j(ja1, js1)
+            j2 = js2j(ja2, js2)
+            prow = indxg2p(j1, desc_eigenvectors(block_row_), 0, desc_eigenvectors(rsrc_), nprow)
+            pcol = indxg2p(j2, desc_eigenvectors(block_col_), 0, desc_eigenvectors(csrc_), npcol)
+            call pdelget('Self', ' ', db_elem, l_matrix, j1, j2, desc_eigenvectors)
+            call pdelget('Self', ' ', dp_elem, p_matrix, j1, j2, desc_eigenvectors)
+            if (myprow == prow .and. mypcol == pcol) then
+              dbij(ja1, ja2, jsd1, js2) = db_elem
+              dpij(ja1, ja2, jsd1, js2) = dp_elem
+            end if
           enddo
         enddo
       end do
     enddo
-
-    deallocate(atmp7)
+    call mpi_wrapper_allreduce_r4(dbij)
+    call mpi_wrapper_allreduce_r4(dpij)
+    deallocate(f_eigenvectors, f_e_eigenvectors, l_matrix, p_matrix)
   end subroutine set_density_matrix_mpi
 end module M_eig_solver_center

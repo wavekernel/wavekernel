@@ -24,10 +24,11 @@ module M_qm_output_levels
 !
     use M_qm_domain ,  only : i_verbose    !(unchanged)
     use M_config,            only : config !(unchanged)
-    use elses_arr_eig_leg,    only: eig2, f_occ !(unchanged)
+    use elses_arr_eig_leg,    only: eig2, f_occ, atmp !(unchanged)
     use elses_mod_file_io, only : vacant_unit !(function)
     use M_qm_domain ,  only : total_electron_number  !(unchanged)
     use M_output_participation, only : gene_participation !(routine)
+    use M_eig_solver_center, only : set_pratio_mpi
 !
     implicit none
     character(len=*), intent(in) :: filename_wrk
@@ -102,7 +103,12 @@ module M_qm_output_levels
         write(*,*)'Alloc error in part_ratio'
         stop
       endif
-      call gene_participation(part_ratio,lu)
+      if (trim(config%calc%solver%scheme) == 'eigen_mpi') then
+        call set_pratio_mpi()
+        part_ratio(:) = atmp(:, 1)
+      else
+        call gene_participation(part_ratio,lu)
+      end if
     endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

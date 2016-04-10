@@ -9,7 +9,7 @@ module M_eig_solver_center   ! DUMMY routines
   implicit none
 !
   private
-  public :: eig_solver_center
+  public :: eig_solver_center, set_density_matrix_mpi, set_pratio_mpi
 !
   contains
 !
@@ -28,7 +28,7 @@ module M_eig_solver_center   ! DUMMY routines
 !                      output : not preserved
 !
   subroutine eig_solver_center(imode, log_unit, SEP_solver, GS_transformation, blocksize, level_low_high, &
-&                eig_levels, eig_vectors)
+&                eig_levels, desc_eigenvectors, eigenvectors)
 !
    use elses_mod_md_dat, only : final_iteration
    use M_config, only : config
@@ -45,8 +45,10 @@ module M_eig_solver_center   ! DUMMY routines
    integer,                intent(in)               :: level_low_high(2)
    integer,                intent(in)               :: log_unit
    real(DOUBLE_PRECISION), intent(out)              :: eig_levels(:)
-   real(DOUBLE_PRECISION), intent(inout), optional  :: eig_vectors(:,:)
+   integer,                intent(out)              :: desc_eigenvectors(9)
+   real(DOUBLE_PRECISION), intent(out), allocatable :: eigenvectors(:, :)
 !
+   
    write(*,*)'@@ eig_solver_center : dummy routine'
 !
    write(*,*)'  SEP_solver        =', trim(SEP_solver)
@@ -61,6 +63,16 @@ module M_eig_solver_center   ! DUMMY routines
 !
 !
   end subroutine eig_solver_center
+
+  subroutine set_density_matrix_mpi()
+    write(*,*)'ERROR:DUMMY routine is called(set_density_matrix_mpi)'
+    write(*,*)'The external library called Eigen Engine may be required.'
+  end subroutine set_density_matrix_mpi
+
+  subroutine set_pratio_mpi()
+    write(*,*)'ERROR:DUMMY routine is called(set_pratio_mpi)'
+    write(*,*)'The external library called Eigen Engine may be required.'
+  end subroutine set_pratio_mpi
 !
 !
 end module M_eig_solver_center
