@@ -41,22 +41,48 @@ if __name__ == '__main__':
     avgs_total = []
     avgs_mpi = []
     maxs_wait = []
+    maxs_wait_node = []
+    mins_wait = []
+    mins_wait_node = []    
     for s in steps:
         avg_total = 0.0
         avg_mpi = 0.0
         max_wait = 0.0
+        max_wait_node = None
+        min_wait = 100000.0
+        min_wait_node = None
         for n in nodes:
             avg_total += totals[(n, s)]
             avg_mpi += mpis[(n, s)]
-            max_wait = max(max_wait, waits[(n, s)])
+            w = waits[(n, s)]
+            if max_wait < w:
+                max_wait = w
+                max_wait_node = n
+            if min_wait > w:
+                min_wait = w
+                min_wait_node = n
         avg_total /= num_nodes
         avg_mpi /= num_nodes
         avgs_total.append(avg_total)
         avgs_mpi.append(avg_mpi)
         maxs_wait.append(max_wait)
+        maxs_wait_node.append(max_wait_node)
+        mins_wait.append(min_wait)
+        mins_wait_node.append(min_wait_node)
     avg_avg_total = get_avg(avgs_total)
     avg_avg_mpi = get_avg(avgs_mpi)
     avg_max_wait = get_avg(maxs_wait)
+    avg_min_wait = get_avg(mins_wait)
 
+    print ''
+    print 'max wait.\nlap node wait'
+    for s, n, t in zip(steps, maxs_wait_node, maxs_wait):
+        print '%d %5d %.4f' % (s, n, t)
+    print ''
+    print 'min wait.\nlap node wait'
+    for s, n, t in zip(steps, mins_wait_node, mins_wait):
+        print '%d %5d %.4f' % (s, n, t)
+
+    print ''
     print 'avg.avg.total, avg.avg.mpi, avg.max.wait'
     print '%.4f %.4f %.4f' % (avg_avg_total, avg_avg_mpi, avg_max_wait)
