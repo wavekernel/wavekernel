@@ -35,6 +35,7 @@ module M_qm_output_icohp
 !
     use M_qm_domain ,          only : c_system              !(unchanged) 
     use M_qm_output_rest_pair, only : plot_rest_energy_pair !(routine)
+    use M_lib_dst_info,        only : mpi_is_active, myrank
 !
     implicit none
 !   character(len=*), parameter :: filename="output_icohp.txt"
@@ -56,6 +57,9 @@ module M_qm_output_icohp
 !
 !   write(*,*)'@@ qm_output_icohp(TEST):imode,step_count=',imode, config%system%structure%mdstep
 !
+    if (mpi_is_active) then
+      if (myrank /= 0) return
+    endif
     if ( .not. config%output%bond_list%set ) return
     if (mod(itemd-1,config%output%bond_list%interval) /= 0 ) return
     filename_wrk=trim(config%output%bond_list%filename)

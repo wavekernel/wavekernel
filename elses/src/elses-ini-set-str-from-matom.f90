@@ -113,14 +113,12 @@ module M_ini_load_matom
     if (dabs(az) < 1.0d-10) then
       write(*,*)'ERROR(set_structure_data_from_matom):az=',az
       stop
-    endif
+    endif   
 !
 !$omp  parallel &
-!$omp& default(none) &
-!$omp& shared(atm_position, atm_element, config) &
+!$omp& default(shared) &
 !$omp& private(j, txpd, typd, tzpd, tx, ty, tz) &
-!$omp& private(k, atom) &
-!$omp& firstprivate(ax, ay, az)
+!$omp& private(k)
 !$omp  do schedule(static)
     do j=1, config%system%structure%natom
       atom => config%system%structure%matom(j)
