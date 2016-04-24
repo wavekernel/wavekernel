@@ -2056,6 +2056,13 @@ contains
       work_node2 => getFirstElementByTagName(work_node1,"re_initialize")
       if ( associated(work_node2) ) then
         calc%wave_packet%re_initialize_method = getAttribute(work_node2,"type")
+        if ( trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_cutoff" ) then
+          work_node3 => getFirstElementByTagName(work_node2,"cutoff_residual")
+          if( associated(work_node3) ) then
+            value = getChildValue(work_node3)
+            read(unit=value,fmt=*) calc%wave_packet%vector_cutoff_residual
+          end if
+        end if
       end if
 
       ! get nodes for time evolution config

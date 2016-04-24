@@ -216,6 +216,9 @@ contains
     ! Copy re-initializatin method setting.
     if (trim(config%calc%wave_packet%re_initialize_method) /= '') then
       setting%re_initialize_method = config%calc%wave_packet%re_initialize_method
+        if ( trim(setting%re_initialize_method) == "minimize_lcao_error_cutoff" ) then
+          setting%vector_cutoff_residual = config%calc%wave_packet%vector_cutoff_residual
+        end if
     end if
     ! Settings that automatically determined when called from ELSES.
     setting%is_atom_indices_enabled = .true.
