@@ -420,6 +420,7 @@ module M_config
      real(kind(1d0))       :: amplitude_print_threshold
      real(kind(1d0))       :: amplitude_print_interval
      real(kind(1d0))       :: vector_cutoff_residual
+     real(kind(1d0))       :: vector_suppress_constant
      integer               :: alpha_delta_index
      integer               :: fst_filter
      integer               :: end_filter

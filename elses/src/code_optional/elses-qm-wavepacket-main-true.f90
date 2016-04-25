@@ -74,7 +74,7 @@ contains
       atom_elements(i) = config%system%structure%vatom(i)%name
       if (atom_elements(i) == 'H') then
         atom_valence = 1
-      else if (atom_elements(i) == 'C') then
+      else if (atom_elements(i) == 'C' .or. atom_elements(i) == 'O') then
         atom_valence = 4
       else
         stop 'unknown atom name'
@@ -216,8 +216,10 @@ contains
     ! Copy re-initializatin method setting.
     if (trim(config%calc%wave_packet%re_initialize_method) /= '') then
       setting%re_initialize_method = config%calc%wave_packet%re_initialize_method
-        if ( trim(setting%re_initialize_method) == "minimize_lcao_error_cutoff" ) then
+        if (trim(setting%re_initialize_method) == "minimize_lcao_error_cutoff") then
           setting%vector_cutoff_residual = config%calc%wave_packet%vector_cutoff_residual
+        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_suppress") then
+          setting%vector_suppress_constant = config%calc%wave_packet%vector_suppress_constant
         end if
     end if
     ! Settings that automatically determined when called from ELSES.
