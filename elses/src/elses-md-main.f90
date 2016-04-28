@@ -22,7 +22,8 @@ module M_md_main
     use elses_mod_sel_sys, only : c_system !(unchanged)
     use elses_mod_md_dat, only : itemdmx   !(unchanged)
     use M_md_motion,      only : elses_md_motion, elses_ini_set_velocity !(routine)
-    use M_md_verlet,      only : md_motion_verlet_velocity               !(routine)
+!   use M_md_verlet,      only : md_motion_verlet_velocity               !(routine)
+    use M_md_velocity_dst,  only : md_motion_verlet_velocity_dst         !(routine)
     use M_md_save_struct, only : elses_md_save_struct                    !(routine)
     use M_md_output,      only : elses_md_output_main                    !(routine)
     use M_wall_clock_time,only : get_elapse_wall_clock_time              !(routine)
@@ -268,8 +269,11 @@ module M_md_main
 !
       imode = 0
       if (first_iteration) imode=1
-      call md_motion_verlet_velocity(imode)
+!     call md_motion_verlet_velocity(imode)
+      call md_motion_verlet_velocity_dst(imode)
 !         ---> Update the velocity (only in the dynamics mode)
+!
+!     stop 'STOP MANUALLY'
 !
      if (mpi_time_check) then
        call mpi_wrapper_barrier_time(time_check)

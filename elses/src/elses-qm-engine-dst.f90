@@ -23,7 +23,8 @@ module M_qm_engine_dst
 !   module variables changed
 !      --> 
 !
-     use elses_mod_md_dat,     only : itemd, itemdmx, e_kin
+     use elses_mod_md_dat,     only : itemd, itemdmx
+!    use elses_mod_md_dat,     only : e_kin
 !    use elses_mod_foi,        only : foi
      use elses_mod_ene,        only : etb, ecc
      use elses_mod_ene,        only : ecsc !(CHANGED)
@@ -48,7 +49,7 @@ module M_qm_engine_dst
      use M_qm_engine_nrl, only : qm_engine_nrl
      use M_qm_engine_csc,     only : qm_engine_csc
      use M_qm_engine_csc_tb0, only : qm_engine_csc_tb0
-     use M_md_velocity_routines, only : calc_kinetic_energy
+!    use M_md_velocity_routines, only : calc_kinetic_energy
      use M_qm_solver_gkrylov_dst,  only : qm_solver_gkrylov_dst  !(routine)
 !
      use M_qm_domain_dst, only : qm_domain_setting_dst !(routine)
@@ -106,11 +107,11 @@ module M_qm_engine_dst
      time_wrk_previous=time_wrk
 !
 !    call elses_calc_kin_ene
-     call calc_kinetic_energy(kinetic_energy)
-     e_kin=kinetic_energy
-     if (i_verbose >= 1) then
-       write(*,*)'  kinetic energy [au]=',e_kin
-     endif   
+!    call calc_kinetic_energy(kinetic_energy)
+!    e_kin=kinetic_energy
+!    if (i_verbose >= 1) then
+!      write(*,*)'  kinetic energy [au]=',e_kin
+!    endif   
 !
      call get_system_clock_time(time_wrk)
 !    write(*,'(a,f20.10)')'TIME:qm_engine_dst:calc_kinetic_energy =',time_wrk-time_wrk_previous

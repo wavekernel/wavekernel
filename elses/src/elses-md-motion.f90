@@ -26,7 +26,7 @@ module M_md_motion
 !
    subroutine elses_md_motion_ini_set
      use M_config, only: config
-     use elses_mod_md_dat, only: dtmd, itemdmx
+     use elses_mod_md_dat, only: dtmd, itemdmx  !(unchanged)
      implicit none
      real(8) :: dtmd_tmp, tot_sim_time
      real(8) :: sd_ratio_local
@@ -105,10 +105,17 @@ module M_md_motion
 !
    subroutine elses_ini_set_velocity
      use M_config, only: config
-!    use elses_mod_vel,      only : velx, vely, velz
-     use M_md_velocity_routines, only : calc_initial_velocity
+     use elses_mod_md_dat,       only : e_kin                   !(CHANGED!)
+     use M_md_velocity_routines, only : calc_initial_velocity   !(routine)
+     use M_md_velocity_dst,      only : convert_velocity        !(routine)
+     use M_md_velocity_dst,      only : calc_kinetic_energy_dst !(routine)
+     implicit none
      character(len=32) :: motion_type
+     integer           :: imode
+     real(8)           :: kinetic_energy_wrk
+
 !
+     e_kin= -1.0d0 ! dummy value
      motion_type=trim(config%calc%mode)
 !
      if (motion_type == "dynamics") then 
@@ -116,6 +123,13 @@ module M_md_motion
          if (log_unit > 0)  write(log_unit,*)'@@ elses_ini_set_velocity'
        endif
        call calc_initial_velocity
+       imode=1
+       call convert_velocity(imode)
+       call calc_kinetic_energy_dst(kinetic_energy_wrk)
+       if (log_unit > 0)  write(log_unit,*)' kinetic_energy_dst=', kinetic_energy_wrk
+       e_kin=kinetic_energy_wrk
+       imode=2
+       call convert_velocity(imode)
      else  
        if (i_verbose >= 1) then 
          if (log_unit > 0) write(log_unit,*)'@@ elses_ini_set_velocity....is skipped'
@@ -147,11 +161,13 @@ module M_md_motion
      use M_config, only: config
      use M_md_cell_change, only : elses_md_cell_change      !(routine)
      use M_md_constraint,  only : elses_md_constraint       !(routine)
-     use M_md_verlet,      only : md_motion_verlet_position !(routine)
+!    use M_md_verlet,      only : md_motion_verlet_position !(routine)
      use M_qm_population,  only : update_population_guess   !(routine)
      use M_lib_mpi_wrapper, only : mpi_wrapper_barrier_time !(routine)
      use M_io_update_snapshot, only : update_snapshot       !(routine)
      use M_gid_constraint,   only : add_constraint_w_groups !(routine)
+     use M_md_velocity_dst,  only : md_motion_verlet_position_dst !(routine)
+
 !
      implicit none
      character(len=32) :: motion_type
@@ -176,7 +192,8 @@ module M_md_motion
 !
      select case(motion_type)
      case ("dynamics")
-        call md_motion_verlet_position
+!       call md_motion_verlet_position
+        call md_motion_verlet_position_dst
         !       --> Atom motion by Newton eq.
      case ("optimization")
         if (i_verbose >= 1) then
