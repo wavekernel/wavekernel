@@ -115,7 +115,7 @@ module M_md_motion
      real(8)           :: kinetic_energy_wrk
 
 !
-     e_kin= -1.0d0 ! dummy value
+     e_kin= 0.0d0 ! dummy value
      motion_type=trim(config%calc%mode)
 !
      if (motion_type == "dynamics") then 

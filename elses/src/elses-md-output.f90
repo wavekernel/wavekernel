@@ -301,6 +301,11 @@ module M_md_output
      write(unit_num,'(" Energy summary (eV/atom): ",I12,6F18.8)') step_count, & 
 &         (etb+ecsc+ecc)*con_unit, (etb+ecsc+ecc+e_kin)*con_unit,  &
 &         etb*con_unit, ecsc*con_unit, ecc*con_unit, e_kin*con_unit
+     if (log_unit > 0) then
+       write(log_unit,'(" Energy summary (eV/atom): ",I12,6F18.8)') step_count, & 
+&         (etb+ecsc+ecc)*con_unit, (etb+ecsc+ecc+e_kin)*con_unit,  &
+&         etb*con_unit, ecsc*con_unit, ecc*con_unit, e_kin*con_unit
+     endif
 !
      write(unit_num,'(a,i10,2f30.20)') ' Chemical potential [au, eV]=', & 
 &                                        step_count, chemical_potential, chemical_potential*ev4au

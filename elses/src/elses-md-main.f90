@@ -245,12 +245,15 @@ module M_md_main
      endif
 !
       call get_elapse_wall_clock_time(time_wrk)
-!     write(*,*)'TIME:qm_engine = ',time_wrk-time_wrk_previous
-      if (log_unit > 0) write(log_unit,*) 'TIME:qm_engine = ',time_wrk-time_wrk_previous
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:qm_engine = ',time_wrk-time_wrk_previous
       time_wrk_previous=time_wrk 
 !
       call detect_stop_signal(stop_signal, time_wrk)
 !         ---> Detect the stop signal, if any
+!
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:detect_stop_signal = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
 !
       if (stop_signal /= 0)  final_iteration = .true.
 !
@@ -258,14 +261,30 @@ module M_md_main
 !         ---> Check the convergence (only in the optimization scheme)
       if (converged_in_optimization) final_iteration = .true.
 !
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:opt_check          = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
+!
       call output_levels_matrices
 !         ---> Plot the levels and matrices
+!
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_level_mat   = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
 !
       call output_for_eigen_solver
 !         ---> Plot the wavefunction and so on (only for the eigen solver)
 !
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_eigen_solv  = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
+!
       call output_for_wfn_charge
 !         ---> Plot the wavefunction charge
+!
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_wfn_charge  = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
 !
       imode = 0
       if (first_iteration) imode=1
@@ -273,7 +292,9 @@ module M_md_main
       call md_motion_verlet_velocity_dst(imode)
 !         ---> Update the velocity (only in the dynamics mode)
 !
-!     stop 'STOP MANUALLY'
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:md_verlet_vel      = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
 !
      if (mpi_time_check) then
        call mpi_wrapper_barrier_time(time_check)
@@ -282,6 +303,10 @@ module M_md_main
      endif
 !
       call elses_md_save_struct(final_iteration)
+!
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:save_struct        = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
 !
 !     if (mpi_is_active) then
 !       if (myrank == 0) then
@@ -307,6 +332,10 @@ module M_md_main
       call elses_md_output_main
 !         ---> Output (energy and so on)
 !
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_main        = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
+!
      if (mpi_time_check) then
        call mpi_wrapper_barrier_time(time_check)
 !      write(*,'(a,f20.10)')'TIME:mpi_check(out)= ',time_check
@@ -315,6 +344,10 @@ module M_md_main
 !
       if (.not. final_iteration) call elses_md_motion
 !         ---> Update the atom positions
+!
+      call get_elapse_wall_clock_time(time_wrk)
+      if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:md_motion         = ',time_wrk-time_wrk_previous
+      time_wrk_previous=time_wrk 
 !
      if (mpi_time_check) then
        call mpi_wrapper_barrier_time(time_check)
