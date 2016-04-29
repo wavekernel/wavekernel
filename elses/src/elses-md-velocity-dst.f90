@@ -51,7 +51,8 @@ module M_md_velocity_dst
     integer :: i_v, lu
     integer :: ierr, dst_atm_index, atm_index
     integer :: noa_dst
-    logical, parameter :: debug_mode = .true.
+    logical, parameter :: debug_mode = .false.
+!   logical, parameter :: debug_mode = .true.
     real(8)            :: timer_wrk1, timer_wrk2
 !
     i_v = config%option%verbose_level
@@ -145,7 +146,8 @@ module M_md_velocity_dst
     use M_lib_mpi_wrapper,  only : mpi_wrapper_wtime         !(routine)
 !
     implicit none
-    logical, parameter :: debug_mode = .true.
+    logical, parameter :: debug_mode = .false.
+!   logical, parameter :: debug_mode = .true.
     real(8), intent(out)           :: kinetic_energy    ! total kinetic energy
     real(8)  ddsum,ddd
     real(8)  mass
@@ -232,6 +234,7 @@ module M_md_velocity_dst
     use elses_mod_md_dat,     only : e_kin                         !(CHANGED!)
     use elses_mod_foi,        only : foi
     use elses_mod_foiold,     only : foiold
+    use M_lib_mpi_wrapper,    only : mpi_wrapper_wtime         !(routine)
 !   use M_md_velocity_routines, only : calc_total_momentum !(routine)
 !   use M_md_velocity_routines, only : adjust_velocity     !(routine)
 !
@@ -252,8 +255,12 @@ module M_md_velocity_dst
     integer :: noa_dst
     real(8) :: kinetic_energy_wrk
     real(8) :: mpi_elapse_time
+    real(8) :: timer_now, timer_prev
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+    call mpi_wrapper_wtime(timer_now)
+    timer_prev=timer_now
 !
     noa_dst = atm_index_fin - atm_index_ini + 1
     tempk0=config%system%temperature
@@ -295,6 +302,12 @@ module M_md_velocity_dst
       if (log_unit > 0) write(log_unit,*) '@@ md_motion_verlet_velocity_dst:itemd,noa_dst=',itemd,noa_dst
     endif
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:ini1:', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Select the mode (ivelini)
 !
@@ -319,6 +332,12 @@ module M_md_velocity_dst
     endif
 !
     dtmd2=dtmd*dtmd
+!
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:bath:', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  vleocity(t-dt) -> velocity(t)
@@ -351,6 +370,12 @@ module M_md_velocity_dst
 !
     endif   
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:vel :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Check or adjust the velocity 
 !         so as to keep the total momentum to be zero
@@ -376,12 +401,26 @@ module M_md_velocity_dst
 !
     endif  
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:adj :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
     call calc_kinetic_energy_dst(kinetic_energy_wrk)
     e_kin=kinetic_energy_wrk
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:k_ene:', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
     ekion=e_kin/dble(noav)
     tempk=2.d0/3.d0*ekion
-    if(myrank.eq.0)then
+    if(i_verbose >= 1)then
       if (log_unit > 0) write(log_unit,*) 'ekion per noa (a.u.)= ', ekion
       if (log_unit > 0) write(log_unit,*) 'ekion per noa (eV  )= ', ekion*ev4au
       if (log_unit > 0) write(log_unit,*) 'ekion per noa (Kelv)= ', ekion*ev4au*ev2kel
@@ -390,9 +429,21 @@ module M_md_velocity_dst
     eki=ekion*dble(noav)
     e_kin=eki
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:k_ene2:', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
     imode=2
     call convert_velocity(imode, mpi_elapse_time)
     if (log_unit > 0) write(log_unit,*) 'TIME:mpi_time for convert velocity =', mpi_elapse_time
+!
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:conv:', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Check the consistency of the velocity of heatbath 
@@ -402,11 +453,12 @@ module M_md_velocity_dst
        pkin2=3.0d0*dble(noav)*tempk0
        x=vhbold/dtmd+0.5d0*dtmd*amq*(2.0d0*eki+2.0d0*eki3-2.0d0*pkin2)
        err=vhb-x*dtmd
-       if(myrank.eq.0)then
+       if(i_verbose >= 1)then
          if (log_unit > 0) write(log_unit,*)' comparison for vhb = ',vhb,x*dtmd
        endif
 !
     endif
+!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -415,6 +467,12 @@ module M_md_velocity_dst
 !    thbold --> thb(t)
 !
       thbold=thb
+!
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:chk :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
 !
   end subroutine md_motion_verlet_velocity_dst
 !
@@ -469,8 +527,12 @@ module M_md_velocity_dst
     integer :: dst_atm_index, atm_index
     integer :: noa_dst
     real(8) :: mpi_elapse_time, timer_wrk1, timer_wrk2
+    real(8) :: timer_now, timer_prev
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+    call mpi_wrapper_wtime(timer_now)
+    timer_prev=timer_now
 !
     i_v = config%option%verbose_level
     lu  = config%calc%distributed%log_unit
@@ -494,6 +556,12 @@ module M_md_velocity_dst
       if (lu > 0) write(lu,*) '@@@ md_motion_verlet_position_dst:noa_dst=',noa_dst
     endif
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:ini :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Preparation of local variable and arrays
 !
@@ -507,6 +575,12 @@ module M_md_velocity_dst
       stop
     endif
     tpos(:,:)=0.0d0
+!
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:alloc tpos :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -524,6 +598,12 @@ module M_md_velocity_dst
 !$omp end do
 !$omp end parallel
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:copy to tpos :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+    !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Force including the interaction with the heat bath
 !    (note that VHB have already updated at HEATBATH)
@@ -547,6 +627,12 @@ module M_md_velocity_dst
 !$omp end do
 !$omp end parallel
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:upd tpos :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !   Copy the variable : tpos --> (txp, typ, tzp) and (tx, ty, tz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -569,18 +655,38 @@ module M_md_velocity_dst
 !$omp end do
 !$omp end parallel
 !
-    call mpi_wrapper_wtime(timer_wrk1)
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:copy from tpos :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
     call mpi_wrapper_allreduce_r1(txp)
     call mpi_wrapper_allreduce_r1(typ)
     call mpi_wrapper_allreduce_r1(tzp)
-    call mpi_wrapper_wtime(timer_wrk2)
-    mpi_elapse_time=timer_wrk2-timer_wrk1
-    if (log_unit > 0) write(log_unit,*) 'TIME:mpi_time for convert position:=', mpi_elapse_time
+!
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:conv tpos :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
 !
     foiold(:,:)=foi(:,:)
 !
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:copy foi :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
+!
     call elses_gene_tx
 !       ---> Periodic boundary condition, if you like
+!
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:gene tx :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  heatbath(t) -> heatbath(t+dt)
@@ -613,6 +719,12 @@ module M_md_velocity_dst
       endif
 !
     endif  
+!
+    call mpi_wrapper_wtime(timer_now)
+    if( i_verbose >= 1 )then
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:bath :', timer_now-timer_prev
+    endif
+    timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
