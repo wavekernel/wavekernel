@@ -36,20 +36,23 @@ module M_md_velocity_dst
 !       imode=2 :       vel_dst      --> (velx, vely, velz)
 !
   !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine convert_velocity(imode)
+  subroutine convert_velocity(imode, mpi_elapse_time)
 !    
     use M_config                                                ! (unchanged)
     use elses_mod_sim_cell, only : noa                          !(unchanged)
     use elses_mod_vel,      only : velx, vely, velz             !(CHANGED)
     use elses_mod_iflag,    only : iflag                        !(unchanged)
     use M_lib_mpi_wrapper,  only : mpi_wrapper_allreduce_r1     !(routine)
+    use M_lib_mpi_wrapper,  only : mpi_wrapper_wtime            !(routine)
     use M_md_dst_get_atom_range, only : dst_get_atm_index_range !(routine)
     implicit none
-    integer, intent(in) :: imode
+    integer, intent(in)  :: imode
+    real(8), optional    :: mpi_elapse_time
     integer :: i_v, lu
     integer :: ierr, dst_atm_index, atm_index
     integer :: noa_dst
     logical, parameter :: debug_mode = .true.
+    real(8)            :: timer_wrk1, timer_wrk2
 !
     i_v = config%option%verbose_level
     lu  = config%calc%distributed%log_unit
@@ -94,6 +97,8 @@ module M_md_velocity_dst
     endif
 !
     noa_dst = atm_index_fin - atm_index_ini + 1
+    timer_wrk1=0.0d0
+    timer_wrk2=0.0d0
 !
     if (imode == 1) then
       vel_dst(:,:)=0.0d0
@@ -113,11 +118,15 @@ module M_md_velocity_dst
         vely(atm_index)=vel_dst(2,dst_atm_index)
         velz(atm_index)=vel_dst(3,dst_atm_index)
       enddo
+      call mpi_wrapper_wtime(timer_wrk1)
       call mpi_wrapper_allreduce_r1(velx)
       call mpi_wrapper_allreduce_r1(vely)
       call mpi_wrapper_allreduce_r1(velz)
+      call mpi_wrapper_wtime(timer_wrk2)
     endif
 !
+    if (present(mpi_elapse_time)) mpi_elapse_time=timer_wrk2-timer_wrk1
+
   end subroutine convert_velocity
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -133,6 +142,7 @@ module M_md_velocity_dst
     use elses_mod_mass,       only : amm              !(unchanged)
     use elses_mod_sim_cell,   only : noa, ax, ay, az  !(unchanged)
     use M_lib_mpi_wrapper,  only : mpi_wrapper_allreduce_r0  !(routine)
+    use M_lib_mpi_wrapper,  only : mpi_wrapper_wtime         !(routine)
 !
     implicit none
     logical, parameter :: debug_mode = .true.
@@ -241,6 +251,7 @@ module M_md_velocity_dst
     integer :: dst_atm_index, atm_index
     integer :: noa_dst
     real(8) :: kinetic_energy_wrk
+    real(8) :: mpi_elapse_time
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -338,23 +349,6 @@ module M_md_velocity_dst
 !$omp end do
 !$omp end parallel
 !
-      imode=2
-      call convert_velocity(imode)
-!
-      call calc_kinetic_energy_dst(kinetic_energy_wrk)
-      e_kin=kinetic_energy_wrk
-!
-      ekion=e_kin/dble(noav)
-      tempk=2.d0/3.d0*ekion
-      if(myrank.eq.0)then
-        if (log_unit > 0) write(log_unit,*) 'ekion per noa (a.u.)= ', ekion
-        if (log_unit > 0) write(log_unit,*) 'ekion per noa (eV  )= ', ekion*ev4au
-        if (log_unit > 0) write(log_unit,*) 'ekion per noa (Kelv)= ', ekion*ev4au*ev2kel
-        if (log_unit > 0) write(log_unit,*) 'tempk,tempk0,ratio  = ',  tempk,tempk0,dble(tempk/tempk0)
-      endif 
-      eki=ekion*dble(noav)
-      e_kin=eki
-!
     endif   
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -381,6 +375,24 @@ module M_md_velocity_dst
       end select
 !
     endif  
+!
+    call calc_kinetic_energy_dst(kinetic_energy_wrk)
+    e_kin=kinetic_energy_wrk
+!
+    ekion=e_kin/dble(noav)
+    tempk=2.d0/3.d0*ekion
+    if(myrank.eq.0)then
+      if (log_unit > 0) write(log_unit,*) 'ekion per noa (a.u.)= ', ekion
+      if (log_unit > 0) write(log_unit,*) 'ekion per noa (eV  )= ', ekion*ev4au
+      if (log_unit > 0) write(log_unit,*) 'ekion per noa (Kelv)= ', ekion*ev4au*ev2kel
+      if (log_unit > 0) write(log_unit,*) 'tempk,tempk0,ratio  = ',  tempk,tempk0,dble(tempk/tempk0)
+    endif 
+    eki=ekion*dble(noav)
+    e_kin=eki
+!
+    imode=2
+    call convert_velocity(imode, mpi_elapse_time)
+    if (log_unit > 0) write(log_unit,*) 'TIME:mpi_time for convert velocity =', mpi_elapse_time
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Check the consistency of the velocity of heatbath 
@@ -431,6 +443,7 @@ module M_md_velocity_dst
     use elses_mod_foi,        only : foi        !(unchanged)
     use elses_mod_foiold,     only : foiold     !(CHANGED)
 !   use M_md_velocity_routines, only : calc_total_momentum, adjust_velocity !(routine)
+    use M_lib_mpi_wrapper,    only : mpi_wrapper_wtime         !(routine)
     use M_lib_mpi_wrapper,    only : mpi_wrapper_allreduce_r1  !(routine)
 !
     implicit none
@@ -455,6 +468,7 @@ module M_md_velocity_dst
     integer :: i_v, lu
     integer :: dst_atm_index, atm_index
     integer :: noa_dst
+    real(8) :: mpi_elapse_time, timer_wrk1, timer_wrk2
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -555,9 +569,13 @@ module M_md_velocity_dst
 !$omp end do
 !$omp end parallel
 !
+    call mpi_wrapper_wtime(timer_wrk1)
     call mpi_wrapper_allreduce_r1(txp)
     call mpi_wrapper_allreduce_r1(typ)
     call mpi_wrapper_allreduce_r1(tzp)
+    call mpi_wrapper_wtime(timer_wrk2)
+    mpi_elapse_time=timer_wrk2-timer_wrk1
+    if (log_unit > 0) write(log_unit,*) 'TIME:mpi_time for convert position:=', mpi_elapse_time
 !
     foiold(:,:)=foi(:,:)
 !
@@ -916,9 +934,6 @@ module M_md_velocity_dst
     enddo      
 !$omp end do
 !$omp end parallel
-!
-    imode=2
-    call convert_velocity(imode)
 !
     call calc_total_momentum_dst(total_momentum)
 !

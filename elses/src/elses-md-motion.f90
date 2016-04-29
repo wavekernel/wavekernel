@@ -113,6 +113,7 @@ module M_md_motion
      character(len=32) :: motion_type
      integer           :: imode
      real(8)           :: kinetic_energy_wrk
+     real(8)           :: mpi_elapse_time
 
 !
      e_kin= 0.0d0 ! dummy value
@@ -124,12 +125,13 @@ module M_md_motion
        endif
        call calc_initial_velocity
        imode=1
-       call convert_velocity(imode)
+       call convert_velocity(imode,mpi_elapse_time)
        call calc_kinetic_energy_dst(kinetic_energy_wrk)
        if (log_unit > 0)  write(log_unit,*)' kinetic_energy_dst=', kinetic_energy_wrk
        e_kin=kinetic_energy_wrk
        imode=2
-       call convert_velocity(imode)
+       call convert_velocity(imode,mpi_elapse_time)
+       if (log_unit > 0)  write(log_unit,*)'TIME:mpi_time for conv velocity =', mpi_elapse_time
      else  
        if (i_verbose >= 1) then 
          if (log_unit > 0) write(log_unit,*)'@@ elses_ini_set_velocity....is skipped'
