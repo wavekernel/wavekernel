@@ -435,15 +435,17 @@ module M_md_velocity_dst
     endif
     timer_prev=timer_now
 !
-    imode=2
-    call convert_velocity(imode, mpi_elapse_time)
-    if (log_unit > 0) write(log_unit,*) 'TIME:mpi_time for convert velocity =', mpi_elapse_time
+    if (config%calc%distributed%dst_bench_mode) then
+      imode=2
+      call convert_velocity(imode, mpi_elapse_time)
+      if (log_unit > 0) write(log_unit,*) 'TIME:mpi_time for convert velocity =', mpi_elapse_time
 !
-    call mpi_wrapper_wtime(timer_now)
-    if( i_verbose >= 1 )then
-      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:conv:', timer_now-timer_prev
+      call mpi_wrapper_wtime(timer_now)
+      if( i_verbose >= 1 )then
+        if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:conv:', timer_now-timer_prev
+      endif
+      timer_prev=timer_now
     endif
-    timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Check the consistency of the velocity of heatbath 
