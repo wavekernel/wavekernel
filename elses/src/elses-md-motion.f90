@@ -129,7 +129,7 @@ module M_md_motion
        call calc_kinetic_energy_dst(kinetic_energy_wrk)
        if (log_unit > 0)  write(log_unit,*)' kinetic_energy_dst=', kinetic_energy_wrk
        e_kin=kinetic_energy_wrk
-       if (config%calc%distributed%dst_bench_mode) then
+       if (.not. config%calc%distributed%dst_bench_mode) then
          imode=2
          call convert_velocity(imode,mpi_elapse_time)
          if (log_unit > 0)  write(log_unit,*)'TIME:mpi_time for conv velocity =', mpi_elapse_time

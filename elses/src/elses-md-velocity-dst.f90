@@ -435,7 +435,7 @@ module M_md_velocity_dst
     endif
     timer_prev=timer_now
 !
-    if (config%calc%distributed%dst_bench_mode) then
+    if (.not. config%calc%distributed%dst_bench_mode) then
       imode=2
       call convert_velocity(imode, mpi_elapse_time)
       if (log_unit > 0) write(log_unit,*) 'TIME:mpi_time for convert velocity =', mpi_elapse_time
