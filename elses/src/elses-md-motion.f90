@@ -197,6 +197,7 @@ module M_md_motion
 !       call md_motion_verlet_position
         call md_motion_verlet_position_dst
         !       --> Atom motion by Newton eq.
+        if (config%calc%distributed%dst_bench_mode) return
      case ("optimization")
         if (i_verbose >= 1) then
           if (log_unit > 0) then 
@@ -213,6 +214,7 @@ module M_md_motion
           !       --> Update the snapshot data
      case ("cell_change_only")
         if (log_unit > 0) write(log_unit,*)'cell_change_only mode'
+        if (config%calc%distributed%dst_bench_mode) return
      case default
         write(*,'("     config%calc%mode = ", A)') config%calc%mode
         stop "elses_md_motion: unknown motion_type"

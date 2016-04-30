@@ -23,14 +23,20 @@ module M_ini_load_vatom
     use M_qm_domain,        only : atm_position, atm_element !(CHANGED)
     use elses_mod_sim_cell, only : noa   ! (unchanged)
     use elses_mod_tx,       only : tx, ty, tz, jsei
+    use elses_mod_txp,      only : txp, typ, tzp
     use M_qm_domain,        only : make_booking_list !(routine)
+    use elses_mod_sim_cell,   only : i_pbc_x, i_pbc_y, i_pbc_z !(unchanged)
 !
     implicit none
     integer :: jsv,js, nss, ierr
     logical :: calledFirst
     real(8) :: time_wrk, time_wrk_previous
     integer :: i_verbose
+    integer :: i_pbc_all
 !
+    i_pbc_all= i_pbc_x*i_pbc_y*i_pbc_z 
+!       = 1  if the PBC is imposed on the three directions
+!       = 0  otherwise
     i_verbose=config%option%verbose
     noav=config%system%structure%natom
 !
@@ -69,6 +75,27 @@ module M_ini_load_vatom
        endif
        calledFirst=.true.
     end if
+!
+    if (config%calc%distributed%dst_bench_mode) then
+      if (i_pbc_all == 1) then 
+!$omp  parallel default(none) &
+!$omp& shared (jsei, atm_position, txp, typ, tzp, atm_element, noav) &
+!$omp& private (jsv) 
+!$omp  do schedule(static)
+        do jsv=1,noav
+          atm_position(1,jsv)=modulo(txp(jsv), 1.0d0)
+          atm_position(2,jsv)=modulo(typ(jsv), 1.0d0)
+          atm_position(3,jsv)=modulo(tzp(jsv), 1.0d0)
+          atm_element(jsv)=jsei(jsv)
+        enddo
+!$omp  end do
+!$omp  end parallel
+      else
+        write(*,*)'ERROR(set_atm_position_from_tx):unmatched in the dst_bench mode'
+        stop
+      endif
+      return
+    endif
 !
     do jsv=1,noav
        js=jsv  !!! ASSUMED (Memo by T. Hoshi, 2010.Jan.02)

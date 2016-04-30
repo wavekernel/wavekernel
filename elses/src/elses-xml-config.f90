@@ -2822,6 +2822,15 @@ contains
 !
     endif
 
+    ! get <dst_bench_mode> node  ! default values are set in 'distributed_default'
+    node => getFirstElementByTagName(distributed_node,"dst_bench_mode")
+    if ( associated(node) ) then
+      distributed%dst_bench_mode = .true.
+      if (log_unit > 0) write(log_unit,'(a)')'INFO-XML:Optional tag:dst_bench_mode'
+    else
+      distributed%dst_bench_mode = .false.
+    endif
+!
     return
   end subroutine distributed_load
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

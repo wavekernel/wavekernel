@@ -394,6 +394,7 @@ module M_config
      logical               :: mat_vec_const_num_orbital
      integer               :: mat_vec_max_num_orbital
      logical               :: mat_vec_switch_bcrs
+     logical               :: dst_bench_mode
   end type distributed_type
 
   type :: interation_range_type
@@ -671,6 +672,8 @@ contains
     distributed%mat_vec_const_num_orbital = .false. 
     distributed%mat_vec_max_num_orbital   = -1
     distributed%mat_vec_switch_bcrs       = .false.
+!
+    distributed%dst_bench_mode            = .false.
 !
     return
   end subroutine distributed_default

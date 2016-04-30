@@ -679,14 +679,20 @@ module M_md_velocity_dst
     endif
     timer_prev=timer_now
 !
-    call elses_gene_tx
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+    if (.not. config%calc%distributed%dst_bench_mode) then
+      call elses_gene_tx
 !       ---> Periodic boundary condition, if you like
 !
-    call mpi_wrapper_wtime(timer_now)
-    if( i_verbose >= 1 )then
-      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:gene tx :', timer_now-timer_prev
+      call mpi_wrapper_wtime(timer_now)
+      if( i_verbose >= 1 )then
+        if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:gene tx :', timer_now-timer_prev
+      endif
+      timer_prev=timer_now
     endif
-    timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  heatbath(t) -> heatbath(t+dt)
