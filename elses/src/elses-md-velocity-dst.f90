@@ -1038,6 +1038,7 @@ module M_md_velocity_dst
     d_px = total_momentum(1)/dble(noa_mobile)*dtmd/ax
     d_py = total_momentum(2)/dble(noa_mobile)*dtmd/ay
     d_pz = total_momentum(3)/dble(noa_mobile)*dtmd/az
+    noa_dst = atm_index_fin - atm_index_ini + 1
 !
 !$omp  parallel default(none) &
 !$omp& shared  (amm, vel_dst) &
