@@ -419,11 +419,8 @@ module M_config
      real(kind(1d0))       :: perturb_interval
      real(kind(1d0))       :: amplitude_print_threshold
      real(kind(1d0))       :: amplitude_print_interval
-<<<<<<< Updated upstream
      real(kind(1d0))       :: vector_cutoff_residual
      real(kind(1d0))       :: vector_suppress_constant
-=======
->>>>>>> Stashed changes
      integer               :: alpha_delta_index
      integer               :: fst_filter
      integer               :: end_filter
@@ -438,15 +435,9 @@ module M_config
      character(len=1024)   :: init_type
      character(len=1024)   :: filter_mode
      character(len=1024)   :: filter_group_filename
-<<<<<<< Updated upstream
      character(len=1024)   :: re_initialize_method
      logical               :: to_multiply_phase_factor
      logical               :: is_output_split
-=======
-     logical               :: to_multiply_phase_factor
-     logical               :: is_output_split
-     logical               :: to_use_precomputed_eigenpairs
->>>>>>> Stashed changes
      logical               :: is_overlap_ignored
      logical               :: is_binary_output_mode
      ! Restrictions for setting in ELSES with wavepacket.
