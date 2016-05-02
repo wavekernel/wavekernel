@@ -115,8 +115,20 @@ contains
   end subroutine convert_sparse_matrix_data_real_type_to_wp_sparse
 
 
+<<<<<<< Updated upstream
   subroutine copy_settings_from_elses_config_xml(setting)
     type(wp_setting_t), intent(out) :: setting
+=======
+  subroutine wavepacket_init(setting, state)
+    type(wp_setting_t), intent(inout) :: setting
+    type(wp_state_t), intent(inout) :: state
+    type(sparse_mat) :: H_sparse, S_sparse, H_multistep_sparse, S_multistep_sparse
+    integer :: ierr
+
+    call init_timers(state%wtime_total, state%wtime)
+
+    state%dim = matrix_data(1)%matrix_size
+>>>>>>> Stashed changes
 
     ! Required settings.
     setting%delta_t = config%calc%wave_packet%delta_t
@@ -150,6 +162,7 @@ contains
     else
       setting%filter_mode = config%calc%wave_packet%filter_mode
     end if
+<<<<<<< Updated upstream
     if (config%calc%wave_packet%fst_filter <= 0 .or. config%calc%wave_packet%end_filter <= 0) then
       ! Set default value.
       ! If fst_filter == 0, fill_filtering_setting will work.
@@ -157,6 +170,12 @@ contains
     else
       setting%fst_filter = config%calc%wave_packet%fst_filter
       setting%num_filter = config%calc%wave_packet%end_filter - setting%fst_filter + 1
+=======
+    if (config%calc%wave_packet%charge_factor_common < 0d0) then  ! Set default value.
+      setting%charge_factor_common = 0d0
+    else
+      setting%charge_factor_common = config%calc%wave_packet%charge_factor_common
+>>>>>>> Stashed changes
     end if
     setting%filter_group_filename = config%calc%wave_packet%filter_group_filename
     if (trim(setting%filter_mode) == 'group') then
@@ -402,11 +421,20 @@ contains
 
       ! Output for files.
       if (mod(state%i, setting%output_interval) == 0) then
+<<<<<<< Updated upstream
         call save_state(state%dim, setting, state%i, state%t, state%t_last_replace, &
              state%structure, state%dv_psi, state%dv_alpha, state%dv_atom_perturb, state%dv_atom_speed, &
              state%dv_charge_on_basis, state%dv_charge_on_atoms, state%energies, state%charge_moment, &
              state%split_files_metadata, state%total_state_count, state%input_step, .false., &
              state%states, state%structures)
+=======
+        call save_state(state%dim, state%num_atoms, setting, state%i, state%t, &
+             state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy, &
+             state%charge_coordinate_mean, state%charge_coordinate_msd, &
+             state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
+             state%full_vecs_local, state%filtered_vecs_local, &
+             state%filenames_split, state%total_state_count, state%input_step, .false., state%states)
+>>>>>>> Stashed changes
         call add_timer_event('main', 'save_state', state%wtime)
       end if
 
@@ -431,6 +459,7 @@ contains
       end if
 
       call make_matrix_step_forward(setting, state%proc, state%input_step, state%t, &
+<<<<<<< Updated upstream
            state%structure, state%filter_group_indices, state%charge_factor, &
            state%H_sparse, state%S_sparse, &
            state%Y_filtered_desc, state%Y_filtered, state%Y_local, state%dv_eigenvalues, &
@@ -444,6 +473,23 @@ contains
            state%H1_desc, state%H1, state%dv_alpha, state%dv_alpha_next, &
            state%dv_psi, state%charge_moment, state%energies)
       call add_timer_event('main', 'step_forward_post_process', state%wtime)
+=======
+           state%num_atoms, state%atom_indices, state%atom_elements, state%filter_group_indices, &
+           state%Y_filtered_desc, state%Y_filtered, state%Y_local, &
+           state%H_desc, state%H_multistep1, &
+           state%H1_desc, state%H1, state%H1_base, state%H1_multistep, state%H1_multistep1, state%H1_multistep2,  &
+           state%S_desc, state%S, state%A_desc, state%A, &
+           state%filtered_vecs_desc, state%filtered_vecs, &
+           state%full_vecs_desc, state%full_vecs)
+
+      call step_forward_post_process(state%dim, setting, state%t, &
+           state%num_atoms, state%atom_indices, state%atom_coordinates, state%atom_elements, &
+           state%H_desc, state%H, state%S_desc, state%S, state%Y_filtered_desc, state%Y_filtered, &
+           state%H1_desc, state%H1, &
+           state%full_vecs_desc, state%full_vecs, state%filtered_vecs_desc, state%filtered_vecs, &
+           state%charge_coordinate_mean, state%charge_coordinate_msd, &
+           state%tightbinding_energy, state%nonlinear_term_energy, state%total_energy)
+>>>>>>> Stashed changes
 
       state%i = state%i + 1
       state%t = setting%delta_t * state%i

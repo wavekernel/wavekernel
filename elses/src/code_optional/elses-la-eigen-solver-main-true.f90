@@ -66,6 +66,7 @@ contains
     logical :: is_wavepacket_end = .false.  ! Avoid calling finalization twice.
     type(wp_setting_t), save :: setting
     type(wp_state_t), save :: state
+<<<<<<< Updated upstream
     integer :: i, j
     real(DOUBLE_PRECISION) :: wtime_start, wtime_end
     type(fson_value), pointer :: output
@@ -77,6 +78,9 @@ contains
     wtime_start = g_mpi_wtime_init
     output => fson_value_create()
     output%value_type = TYPE_OBJECT
+=======
+    integer :: i
+>>>>>>> Stashed changes
 
     do i = 1, 2
       if (allocated(matrix_data(i)%element_index)) then
