@@ -227,9 +227,10 @@ contains
   end subroutine copy_settings_from_elses_config_xml
 
 
-  subroutine wavepacket_init(setting, state)
+  subroutine wavepacket_init(setting, state, eigenvalues, eigenvectors)
     type(wp_setting_t), intent(inout) :: setting
     type(wp_state_t), intent(inout) :: state
+    real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
     integer :: ierr
 
     call init_timers(state%wtime_total, state%wtime)
@@ -281,7 +282,8 @@ contains
          state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, state%Y_local, &
          state%dv_eigenvalues, state%dv_ipratios, state%filter_group_id, state%filter_group_indices, &
          state%eigenstate_mean, state%eigenstate_msd, &
-         state%H1_base, state%H1_desc)
+         state%H1_base, state%H1_desc, &
+         .true., eigenvalues, eigenvectors)
     call add_timer_event('main', 'set_aux_matrices', state%wtime)
 
     call initialize(setting, state%proc, state%dim, &
@@ -328,9 +330,10 @@ contains
 
   ! Read next input step if multiple step input mode.
   ! Note that group_id does not change.
-  subroutine wavepacket_replace_matrix(setting, state)
+  subroutine wavepacket_replace_matrix(setting, state, eigenvalues, eigenvectors)
     type(wp_setting_t), intent(in) :: setting
     type(wp_state_t), intent(inout) :: state
+    real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
 
     call add_timer_event('main', 'outside_wavepacket_before_replace_matrix', state%wtime)
 
@@ -365,7 +368,8 @@ contains
          state%filter_group_indices, state%Y_local, &
          state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
          state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_eigenvalues, &
-         state%charge_moment, state%energies, state%errors)
+         state%charge_moment, state%energies, state%errors, &
+         .true., eigenvalues, eigenvectors)
     call add_timer_event('main', 'set_aux_matrices_for_multistep', state%wtime)
 
     state%dv_psi(1 : state%dim) = state%dv_psi_reconcile(1 : state%dim)

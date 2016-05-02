@@ -87,25 +87,6 @@ contains
       end if
     end do
     call set_matrix_data
-
-    if (config%calc%wave_packet%mode == 'on' .and. .not. is_wavepacket_end) then
-      if (is_first_call_of_wavepacket) then
-        call wavepacket_init(setting, state)
-        is_first_call_of_wavepacket = .false.  ! wavepacket_init is called only once.
-      else
-        call wavepacket_replace_matrix(setting, state)  ! Update result of MD step.
-      end if
-      call wavepacket_main(setting, state)  ! Compute wavepacket dynamics while atoms are fixed.
-      if (final_iteration .or. setting%delta_t * (state%i + 1) >= setting%limit_t) then
-        call output_fson_and_destroy(setting, state%output, state%split_files_metadata, &
-             state%states, state%structures, state%wtime_total)
-        is_wavepacket_end = .true.  ! output_fson_and_destroy is called only once.
-      end if
-    end if
-
-    wtime_end = mpi_wtime()
-    call add_event('main:wavepacket', wtime_end - wtime_start)
-    wtime_start = wtime_end
 !
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -192,7 +173,9 @@ contains
 !
     select case (trim(eigen_mpi_scheme_wrk))
     case ('scalapack')
+      print *, 'ZZZZ1'
       call eig_solver_center_scalapack(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
+      print *, 'ZZZZ2'
     case ('eigenexa_scalapack')
       call eig_solver_center_eigenexa_scalapack(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     case ('scalapack_elpa')
@@ -210,7 +193,26 @@ contains
     end select
 
     wtime_end = mpi_wtime()
-    call add_event('main:total', wtime_end - wtime_start)
+    call add_event('main:gevp', wtime_end - wtime_start)
+    wtime_start = wtime_end
+
+    if (config%calc%wave_packet%mode == 'on' .and. .not. is_wavepacket_end) then
+      if (is_first_call_of_wavepacket) then
+        call wavepacket_init(setting, state, eig_levels, eig_vectors)
+        is_first_call_of_wavepacket = .false.  ! wavepacket_init is called only once.
+      else
+        call wavepacket_replace_matrix(setting, state, eig_levels, eig_vectors)  ! Update result of MD step.
+      end if
+      call wavepacket_main(setting, state)  ! Compute wavepacket dynamics while atoms are fixed.
+      if (final_iteration .or. setting%delta_t * (state%i + 1) >= setting%limit_t) then
+        call output_fson_and_destroy(setting, state%output, state%split_files_metadata, &
+             state%states, state%structures, state%wtime_total)
+        is_wavepacket_end = .true.  ! output_fson_and_destroy is called only once.
+      end if
+    end if
+
+    wtime_end = mpi_wtime()
+    call add_event('main:wavepacket', wtime_end - wtime_start)
 
     if (check_master()) then
       call fson_events_add(output)
@@ -260,11 +262,16 @@ contains
     call setup_distributed_matrix('B', proc, dim, dim, desc_B, B_dist)
     call distribute_global_sparse_matrix(matrix_A, desc_A, A_dist)
     call distribute_global_sparse_matrix(matrix_B, desc_B, B_dist)
+    print *, 'YYYY1'
     call reduce_generalized(dim, A_dist, desc_A, B_dist, desc_B)
+    print *, 'YYYY2'
     call eigen_solver_scalapack_all(proc, desc_A, A_dist, eigenpairs)
+    print *, 'YYYY3'
     call recovery_generalized(dim, dim, B_dist, desc_B, eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
+    print *, 'YYYY4'
     call gather_matrix_part(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
          1, level_low_high(1), dim, num_output_vectors, 0, 0, eig_vectors)
+    print *, 'YYYY5'
     call mpi_bcast(eig_vectors, dim * num_output_vectors, mpi_double_precision, 0, mpi_comm_world, ierr)
     eig_levels(:) = eigenpairs%blacs%values(:)
   end subroutine eig_solver_center_scalapack
