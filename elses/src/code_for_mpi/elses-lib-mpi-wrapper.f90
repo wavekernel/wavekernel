@@ -39,6 +39,7 @@ module M_lib_mpi_wrapper !(TRUE ROUTINES)
   public :: total_barrier_time
 !
   public :: mpi_wrapper_wtime
+  public :: get_wall_clock_time
 !
   contains
 !
@@ -52,6 +53,17 @@ module M_lib_mpi_wrapper !(TRUE ROUTINES)
     time_data=mpi_wtime()
 !
   end subroutine mpi_wrapper_wtime
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine get_wall_clock_time(time_data)
+    implicit none
+    real(8), intent(out) :: time_data
+!
+    time_data=mpi_wtime()
+!
+  end subroutine get_wall_clock_time
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

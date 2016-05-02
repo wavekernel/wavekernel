@@ -9,7 +9,8 @@ module M_md_velocity_dst
   use M_io_dst_write_log, only : log_unit
   implicit none
   real(8), allocatable :: vel_dst(:,:)    ! DIFFERENT AMONG NODES !!
-  integer :: atm_index_ini, atm_index_fin ! DIFFERENT AMONG NODES !!
+  real(8), allocatable :: pos_dst(:,:)    ! DIFFERENT AMONG NODES !!
+  integer :: atm_index_ini, atm_index_fin, noa_dst ! DIFFERENT AMONG NODES !!
 !                ----> determined in copy_velocity_to_vel_dst
   integer :: noa_mobile   ! number of mobile atoms. determined in copy_velocity_to_vel_dst 
 !
@@ -50,7 +51,6 @@ module M_md_velocity_dst
     real(8), optional    :: mpi_elapse_time
     integer :: i_v, lu
     integer :: ierr, dst_atm_index, atm_index
-    integer :: noa_dst
     logical, parameter :: debug_mode = .false.
 !   logical, parameter :: debug_mode = .true.
     real(8)            :: timer_wrk1, timer_wrk2
@@ -97,7 +97,6 @@ module M_md_velocity_dst
       endif
     endif
 !
-    noa_dst = atm_index_fin - atm_index_ini + 1
     timer_wrk1=0.0d0
     timer_wrk2=0.0d0
 !
@@ -153,11 +152,9 @@ module M_md_velocity_dst
     real(8)  mass
     integer lu, i_v
     integer :: ierr, dst_atm_index, atm_index
-    integer :: noa_dst
 !
     i_v = config%option%verbose_level
     lu  = config%calc%distributed%log_unit
-    noa_dst = atm_index_fin - atm_index_ini + 1
 !
     if (.not. allocated(vel_dst)) then
       write(*,*)'ERROR(calc_kinetic_energy_dst):vel_dst is not allocated'
@@ -252,7 +249,6 @@ module M_md_velocity_dst
 !
     integer :: imode
     integer :: dst_atm_index, atm_index
-    integer :: noa_dst
     real(8) :: kinetic_energy_wrk
     real(8) :: mpi_elapse_time
     real(8) :: timer_now, timer_prev
@@ -262,7 +258,6 @@ module M_md_velocity_dst
     call mpi_wrapper_wtime(timer_now)
     timer_prev=timer_now
 !
-    noa_dst = atm_index_fin - atm_index_ini + 1
     tempk0=config%system%temperature
 !
     if ( trim(config%calc%mode) /= "dynamics" ) then
@@ -520,14 +515,12 @@ module M_md_velocity_dst
 !
     real(8)  tempk0
 !
-    real(8), allocatable :: tpos(:,:)   ! DIFFERENT AMONG NODES
     real(8)  :: foi2_wrk(3)
     real(8)  :: cell_length(3)
     real(8)  :: dr(3)
 !
     integer :: i_v, lu
     integer :: dst_atm_index, atm_index
-    integer :: noa_dst
     real(8) :: mpi_elapse_time, timer_wrk1, timer_wrk2
     real(8) :: timer_now, timer_prev
 !
@@ -547,7 +540,6 @@ module M_md_velocity_dst
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-    noa_dst = atm_index_fin - atm_index_ini + 1
 !
     if (.not. allocated(iflag)) then
       write(*,*)'ERROR(md_motion_verlet_position):not allocated:iflag'
@@ -571,41 +563,43 @@ module M_md_velocity_dst
 !
     dtmd2=dtmd*dtmd
 !
-    allocate (tpos(3,noa_dst),stat=ierr)
-    if( ierr .ne. 0) then
-      write(6,*)'alloc. error!(tpos):ierr=',ierr
-      stop
+    if (.not. allocated(pos_dst)) then 
+      allocate (pos_dst(3,noa_dst),stat=ierr)
+      if( ierr .ne. 0) then
+        write(6,*)'alloc. error!(pos_dst):ierr=',ierr
+        stop
+      endif
     endif
-    tpos(:,:)=0.0d0
+    pos_dst(:,:)=0.0d0
 !
     call mpi_wrapper_wtime(timer_now)
     if( i_verbose >= 1 )then
-      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:alloc tpos :', timer_now-timer_prev
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:alloc pos_dst :', timer_now-timer_prev
     endif
     timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !$omp  parallel default(none) &
-!$omp& shared  (tpos, txp, typ, tzp) &
+!$omp& shared  (pos_dst, txp, typ, tzp) &
 !$omp& private (dst_atm_index, atm_index) &
 !$omp& firstprivate (atm_index_ini, atm_index_fin, noa_dst) 
 !$omp  do schedule(static)
     do dst_atm_index=1,noa_dst
       atm_index = atm_index_ini - 1 + dst_atm_index
-      tpos(1,dst_atm_index)=txp(atm_index)
-      tpos(2,dst_atm_index)=typ(atm_index)
-      tpos(3,dst_atm_index)=tzp(atm_index)
+      pos_dst(1,dst_atm_index)=txp(atm_index)
+      pos_dst(2,dst_atm_index)=typ(atm_index)
+      pos_dst(3,dst_atm_index)=tzp(atm_index)
     enddo   
 !$omp end do
 !$omp end parallel
 !
     call mpi_wrapper_wtime(timer_now)
     if( i_verbose >= 1 )then
-      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:copy to tpos :', timer_now-timer_prev
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:copy to pos_dst :', timer_now-timer_prev
     endif
     timer_prev=timer_now
-    !
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Force including the interaction with the heat bath
 !    (note that VHB have already updated at HEATBATH)
@@ -614,7 +608,7 @@ module M_md_velocity_dst
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !$omp  parallel default(none) &
-!$omp& shared  (amm, foi, vel_dst, iflag, tpos) &
+!$omp& shared  (amm, foi, vel_dst, iflag, pos_dst) &
 !$omp& private (dst_atm_index, atm_index, foi2_wrk, dr, acc0 ) &
 !$omp& firstprivate (atm_index_ini, atm_index_fin, noa_dst, cell_length, vhb, dtmd2)
 !$omp  do schedule(static)
@@ -624,19 +618,19 @@ module M_md_velocity_dst
       foi2_wrk(1:3)=foi(atm_index,1:3)-vel_dst(1:3,dst_atm_index)*acc0*cell_length(1:3)
       dr(1:3)=dble(iflag(atm_index))*(vel_dst(1:3,dst_atm_index)  &
 &            +0.5d0*dtmd2*amm(atm_index)*foi2_wrk(1:3)/cell_length(1:3))
-      tpos(1:3,dst_atm_index)=tpos(1:3,dst_atm_index)+dr(1:3)
+      pos_dst(1:3,dst_atm_index)=pos_dst(1:3,dst_atm_index)+dr(1:3)
     enddo   
 !$omp end do
 !$omp end parallel
 !
     call mpi_wrapper_wtime(timer_now)
     if( i_verbose >= 1 )then
-      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:upd tpos :', timer_now-timer_prev
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:upd pos_dst :', timer_now-timer_prev
     endif
     timer_prev=timer_now
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!   Copy the variable : tpos --> (txp, typ, tzp) and (tx, ty, tz)
+!   Copy the variable : pos_dst --> (txp, typ, tzp) and (tx, ty, tz)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     txp(:)=0.0d0
@@ -644,22 +638,22 @@ module M_md_velocity_dst
     tzp(:)=0.0d0
 !
 !$omp  parallel default(none) &
-!$omp& shared  (tpos, txp, typ, tzp) &
+!$omp& shared  (pos_dst, txp, typ, tzp) &
 !$omp& private (dst_atm_index, atm_index) &
 !$omp& firstprivate (atm_index_ini, atm_index_fin, noa_dst) 
 !$omp  do schedule(static)
     do dst_atm_index=1,noa_dst
       atm_index = atm_index_ini - 1 + dst_atm_index
-      txp(atm_index)=tpos(1,dst_atm_index)
-      typ(atm_index)=tpos(2,dst_atm_index)
-      tzp(atm_index)=tpos(3,dst_atm_index)
+      txp(atm_index)=pos_dst(1,dst_atm_index)
+      typ(atm_index)=pos_dst(2,dst_atm_index)
+      tzp(atm_index)=pos_dst(3,dst_atm_index)
     enddo   
 !$omp end do
 !$omp end parallel
 !
     call mpi_wrapper_wtime(timer_now)
     if( i_verbose >= 1 )then
-      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:copy from tpos :', timer_now-timer_prev
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:copy from pos_dst :', timer_now-timer_prev
     endif
     timer_prev=timer_now
 !
@@ -669,7 +663,7 @@ module M_md_velocity_dst
 !
     call mpi_wrapper_wtime(timer_now)
     if( i_verbose >= 1 )then
-      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:conv tpos :', timer_now-timer_prev
+      if (log_unit > 0) write(log_unit,*) 'TIME:md_motion_verlet_velocity_dst:conv pos_dst :', timer_now-timer_prev
     endif
     timer_prev=timer_now
 !
@@ -774,15 +768,12 @@ module M_md_velocity_dst
     real(8) tempk0
 !
     integer :: ierr, dst_atm_index, atm_index
-    integer :: noa_dst
 !
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
     tempk0=config%system%temperature
 !
     dtmd2=dtmd*dtmd
-!
-    noa_dst = atm_index_fin - atm_index_ini + 1
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !   Select the mode
@@ -957,9 +948,6 @@ module M_md_velocity_dst
     real(8)                       :: mass
 !
     integer :: ierr, dst_atm_index, atm_index
-    integer :: noa_dst
-!
-    noa_dst = atm_index_fin - atm_index_ini + 1
 !
     total_momentum(1:3)=0.0d0
 !
@@ -1004,7 +992,6 @@ module M_md_velocity_dst
     integer                       :: i_v, lu, imode
 !
     integer :: ierr, dst_atm_index, atm_index
-    integer :: noa_dst
 !
     i_v = config%option%verbose_level
     lu  = config%calc%distributed%log_unit
@@ -1038,7 +1025,6 @@ module M_md_velocity_dst
     d_px = total_momentum(1)/dble(noa_mobile)*dtmd/ax
     d_py = total_momentum(2)/dble(noa_mobile)*dtmd/ay
     d_pz = total_momentum(3)/dble(noa_mobile)*dtmd/az
-    noa_dst = atm_index_fin - atm_index_ini + 1
 !
 !$omp  parallel default(none) &
 !$omp& shared  (amm, vel_dst) &
@@ -1067,62 +1053,6 @@ module M_md_velocity_dst
     endif
 !
   end subroutine adjust_velocity_dst
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  @@ Copy velocity data into VEL_DST array
-!
-  !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine copy_velocity_config_to_vel_dst
-    use M_config                                    ! (unchanged)
-    use M_md_dst_get_atom_range, only : dst_get_atm_index_range  !(routine)
-    use elses_mod_md_dat,        only : dtmd                     !(unchagend)!
-    use elses_mod_sim_cell,      only : ax,ay,az                 !(unchanged)
-!    
-    implicit none
-    integer :: ierr, dst_atm_index, atm_index
-    integer :: noa_dst
-!
-    call dst_get_atm_index_range(atm_index_ini,atm_index_fin)
-    noa_dst = atm_index_fin - atm_index_ini + 1
-!
-    if (.not. allocated(vel_dst)) then
-      allocate(vel_dst(3,noa_dst), stat=ierr) 
-      if (ierr /= 0) then
-        write(*,*)'ALLOC ERROR:copy_velocity_to_vel_dst'
-        stop
-      endif
-    endif
-!
-    if (size(vel_dst, 2) /= noa_dst) then
-      write(*,*)'ERROR:copy_velocity_to_vel_dst:size=', size(vel_dst,1), noa_dst
-      stop
-    endif
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-    atm_index=1
-    if (.not. config%system%structure%vatom(atm_index)%velocity_set) then
-      write(*,*)'ERROR:copy_velocity_to_vel_dst:velocity data is absent'
-      stop
-    endif
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-    do dst_atm_index=1,noa_dst
-      atm_index = atm_index_ini - 1 + dst_atm_index
-      vel_dst(1,dst_atm_index)=config%system%structure%vatom(atm_index)%velocity(1)*dtmd/ax
-      vel_dst(2,dst_atm_index)=config%system%structure%vatom(atm_index)%velocity(2)*dtmd/ay
-      vel_dst(3,dst_atm_index)=config%system%structure%vatom(atm_index)%velocity(3)*dtmd/az
-    enddo
-!
-  end subroutine copy_velocity_config_to_vel_dst
 !
 !
 end module M_md_velocity_dst

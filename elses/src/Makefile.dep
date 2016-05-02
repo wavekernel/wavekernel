@@ -53,11 +53,11 @@ elses-la-matvec-dstm-dens.o : elses-lib-timer-in-thread.o elses-lib-mpi-wrapper-
 elses-la-matvec-dstm-sss.o : elses-lib-timer-in-thread.o elses-lib-mpi-wrapper-compile.o elses-qm-domain.o 
 elses-la-matvec-routines-dstm.o : elses-lib-timer-in-thread.o elses-lib-mpi-wrapper-compile.o elses-la-matvec-dstm-bcrs.o elses-qm-domain.o elses-config.o 
 elses-la-matvec-routines.o : elses-qm-projection.o elses-la-matvec-dst.o elses-qm-geno-dst.o elses-qm-domain.o 
-elses-lib-mpi-wrapper-compile.o : elses-lib-dst-info.o 
+elses-lib-mpi-wrapper-compile.o : elses-config.o elses-lib-dst-info.o 
 elses-lib-omp.o : elses-lib-dst-info.o elses-qm-domain.o 
 elses-lib-report-mpi-time.o : elses-mod-file-io.o elses-lib-mpi-wrapper-compile.o elses-lib-dst-info.o 
 elses-lib-stop-signal.o : elses-mod-file-io.o elses-config.o 
-elses-lib-wall-clock-time.o : 
+elses-lib-wall-clock-time.o : elses-lib-mpi-wrapper-compile.o 
 elses-md-alloc.o : elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-mod-01.o elses-config.o 
 elses-md-booking.o : elses-mod-02.o elses-mod-file-io.o elses-mod-02.o elses-mod-01.o elses-mod-02.o elses-mod-01.o elses-mod-01.o elses-mod-02.o elses-mod-01.o 
 elses-md-cell-change.o : elses-mod-01.o elses-md-velocity-routines.o elses-mod-01.o elses-mod-01.o elses-qm-domain.o elses-mod-03.o elses-mod-01.o elses-config.o elses-io-dst-write-log.o elses-mod-file-io.o elses-mod-01.o 

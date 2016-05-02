@@ -13,6 +13,9 @@ module M_lib_mpi_wrapper !(DUMMY ROUTINES)
 !
   real(kind(1d0)), allocatable :: matvec_timer_in_thread(:) 
 !
+  real(kind(1d0)), allocatable :: time_origin(:)  ! used in get_wall_clock_time
+  integer                      :: count_previous  ! used in get_wall_clock_time
+!
   private
   public :: mpi_wrapper_initial      !(DUMMY ROUTINE)
   public :: mpi_wrapper_final        !(DUMMY ROUTINE)
@@ -38,6 +41,7 @@ module M_lib_mpi_wrapper !(DUMMY ROUTINES)
   public :: total_barrier_time
 !
   public :: mpi_wrapper_wtime
+  public :: get_wall_clock_time 
 !
   contains
 !
@@ -53,6 +57,36 @@ module M_lib_mpi_wrapper !(DUMMY ROUTINES)
     time_data=dble(count)/dble(rate)
 !
   end subroutine mpi_wrapper_wtime
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+   subroutine get_wall_clock_time(elapse_time)
+!      ----> Get the elapse wall-clock time in sec.
+!             from the 'time origin'
+!
+     implicit none
+     real(kind=8), intent(out) :: elapse_time
+     integer :: count, rate, max
+     integer :: ierr
+!
+     call system_clock(count, rate, max)
+!
+     if ( .not. allocated(time_origin))then
+        allocate(time_origin(1), stat=ierr)
+        time_origin(1)=dble(count)/dble(rate)
+        count_previous=count
+     else
+        if (count < count_previous) then
+           time_origin(1)=time_origin(1)-dble(max)/dble(rate)
+        endif
+     endif
+!
+     elapse_time=dble(count)/dble(rate)-time_origin(1)
+     count_previous=count
+!
+   end subroutine get_wall_clock_time
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -221,10 +255,14 @@ module M_lib_mpi_wrapper !(DUMMY ROUTINES)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine mpi_wrapper_barrier_time(time_check)  
 !
+    use M_config,    only : config !(unchanged)
     implicit none
     real(8), intent(out) :: time_check
 !
     time_check=0.0d0
+    if (config%calc%distributed%use_mpi_barrier) then
+      time_check=0.0d0
+    endif
 !
   end subroutine mpi_wrapper_barrier_time
 !

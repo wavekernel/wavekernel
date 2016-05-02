@@ -41,8 +41,8 @@ module M_md_main
     use M_lib_rep_mpi_time, only : get_lap_of_allreduce_time     !(routine) 
     use M_lib_rep_mpi_time, only : get_lap_of_barrier_time       !(routine) 
     use M_lib_rep_mpi_time, only : record_allreduce_barrier_time !(routine)
-    use M_wall_clock_time,  only : measure_clock_time_period     !(routine)
-    use M_wall_clock_time,  only : show_reset_period_of_clock    !(routine)
+!   use M_wall_clock_time,  only : measure_clock_time_period     !(routine)
+!   use M_wall_clock_time,  only : show_reset_period_of_clock    !(routine)
     use M_md_motion,        only : optimization_check            !(routine)
     use M_qm_output_matrices, only : output_levels_matrices      !(routine)
     use M_qm_geno_output,     only : output_for_eigen_solver     !(routine)
@@ -83,9 +83,9 @@ module M_md_main
       write(*,*) '-----------------------'
       write(*,*) '|ELSES standard output|'
       write(*,*) '-----------------------'
-      call show_reset_period_of_clock(time_period) 
-      write(*,*) 'INFO:The reset period of the system clock (sec) =', time_period
-      write(*,*) 'INFO:The largest INTEGER-type number: huge(0)   =', huge(0)
+!     call show_reset_period_of_clock(time_period) 
+!     write(*,*) 'INFO:The reset period of the system clock (sec) =', time_period
+!     write(*,*) 'INFO:The largest INTEGER-type number: huge(0)   =', huge(0)
     endif   
 !
     call get_elapse_wall_clock_time(elapse_time)
@@ -121,8 +121,7 @@ module M_md_main
     endif
 !
     call get_elapse_wall_clock_time(time_wrk)
-    call measure_clock_time_period(time_wrk, time_wrk_previous, time_period)
-    if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:ini_load_geno = ',time_period
+    if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:ini_load_geno = ',time_wrk-time_wrk_previous
     time_wrk_previous=time_wrk
 !
     call elses_ini_set_velocity
@@ -134,8 +133,7 @@ module M_md_main
     endif
 !
     call get_elapse_wall_clock_time(time_wrk)
-    call measure_clock_time_period(time_wrk, time_wrk_previous, time_period)
-    if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME: ini_set_velocity= ',time_period
+    if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME: ini_set_velocity= ',time_wrk-time_wrk_previous
     time_wrk_previous=time_wrk
 !
     istop=0
@@ -204,10 +202,10 @@ module M_md_main
      scheme_mode=trim(config%calc%solver%scheme)
      if (scheme_mode == 'ekrgl') scheme_mode='gKrylov_A'
      config%calc%solver%scheme=scheme_mode
-     if (root_node) then
-       write(*,*)'scheme_mode=',scheme_mode
-       write(*,*)'c_system   =',c_system 
-     endif  
+!    if (root_node) then
+!      write(*,*)'scheme_mode=',scheme_mode
+!      write(*,*)'c_system   =',c_system 
+!    endif  
 !
      dst_calculation = config%calc%distributed%set
 !    if (c_system /= 'geno') then
@@ -384,7 +382,7 @@ module M_md_main
 !
      if (mpi_time_check) then
        call mpi_wrapper_barrier_time(time_check)
-       write(*,'(a,f20.10)')'TIME:mpi_check(fin)= ',time_check
+!      write(*,'(a,f20.10)')'TIME:mpi_check(fin)= ',time_check
        if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:mpi_check(fin)= ',time_check
      endif
 !
