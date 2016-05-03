@@ -14,6 +14,8 @@ module M_lib_mpi_wrapper !(TRUE ROUTINES)
   real(kind(1d0)), allocatable :: total_allreduce_time(:)
   real(kind(1d0)), allocatable :: total_barrier_time(:)
 !
+  real(kind(1d0)), allocatable :: time_origin(:)  ! used in get_wall_clock_time
+!
   private
   public :: mpi_wrapper_initial
   public :: mpi_wrapper_final
@@ -57,11 +59,23 @@ module M_lib_mpi_wrapper !(TRUE ROUTINES)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine get_wall_clock_time(time_data)
+  subroutine get_wall_clock_time(elapse_time)
+!      ----> Get the elapse wall-clock time in sec.
+!             from the 'time origin'
+!
     implicit none
-    real(8), intent(out) :: time_data
+    real(8), intent(out) :: elapse_time
+    real(8)              :: time_data
+    integer              :: ierr
 !
     time_data=mpi_wtime()
+!
+    if ( .not. allocated(time_origin)) then
+      allocate(time_origin(1), stat=ierr)
+      time_origin(1)=time_data
+    endif
+!
+    elapse_time=time_data-time_origin(1)
 !
   end subroutine get_wall_clock_time
 !
