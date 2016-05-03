@@ -173,9 +173,7 @@ contains
 !
     select case (trim(eigen_mpi_scheme_wrk))
     case ('scalapack')
-      print *, 'ZZZZ1'
       call eig_solver_center_scalapack(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
-      print *, 'ZZZZ2'
     case ('eigenexa_scalapack')
       call eig_solver_center_eigenexa_scalapack(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
     case ('scalapack_elpa')
