@@ -116,9 +116,11 @@ module M_ini_load_matom
     endif   
 !
 !$omp  parallel &
-!$omp& default(shared) &
+!$omp& default(none) &
+!$omp& shared(atm_position, atm_element, config) &
 !$omp& private(j, txpd, typd, tzpd, tx, ty, tz) &
-!$omp& private(k)
+!$omp& private(k, atom) &
+!$omp& firstprivate(ax, ay, az)
 !$omp  do schedule(static)
     do j=1, config%system%structure%natom
       atom => config%system%structure%matom(j)

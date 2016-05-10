@@ -2,9 +2,1369 @@
 ELSES history
 --------------------------------------------------------------------------------
 ***************************************************
-2016/01/16
+2016/05/05
+ELSES v0.06.02 Release Candidate  (elses-v0.06.02-20160505-rc.tgz)
+***************************************************
+--------------------------------------------------------------------------------
+日付 2016/05/05(2)
+担当者名 星健夫
+
+更新ファイル
+Makefile
+src/elses-00-version-info.f90
+
+バージョン番号更新(v0.06.01→v0.06.02)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/05
+担当者名 星健夫
+
+更新ファイル
+Makefile
+src/elses-ini-set-str-from-matom.f90
+
+概要：
+use_matomにおける、OpenMP計算の修正。
+3/21更新が不十分だったの修正。
+--------------------------------------------------------------------------------
+***************************************************
+2016/05/03
+ELSES v0.06.01 Released (elses-v0.06.01-20160218-rc2.tgz)
+Note: identical to RC2
+***************************************************
+--------------------------------------------------------------------------------
+日付 2016/05/03
+担当者名 星健夫
+
+更新ファイル:
+src/code_for_mpi/elses-lib-mpi-wrapper.f90
+
+概要：
+5/2(2)更新の修正(timerルーチン)。
+
+詳細：
+node log, 標準出力にでる
+「Total simulation time」の表示が、
+DST workflowでは不正だったので修正。
+計算結果や他の経過時間データ(MDloopなど)は、問題なし。
+
+メモ：
+timerルーチンは、
+elses-lib-wall-clock-time.f90 [モジュール：M_wall_clock_time]
+に含まれる、下記の2種がある。
+(1) get_system_clock_time
+時刻をsecで出力。時間原点は、systemが決めている。
+(2) get_elapse_wall_clock_time
+初回よばれた時刻を時間原点として、経過時間をsec単位で出力。
+(1)(2)とも、MPI true routineを使う場合、実体は
+MPI_wtimeに帰着されるが、dummy routineを使う場合は、
+system_clockに帰着される。
+後者の問題点としては、
+・低精度(システム依存だが、典型的にはmsec精度)
+・(1)にはtimerがresetされる危険性
+がある。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/01(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-lib-wall-clock-time.f90
+src/elses-md-main.f90
+src/code_for_mpi/elses-lib-mpi-wrapper.f90
+src/code_for_mpi/elses-lib-mpi-wrapper-dummy.f90
+src/elses-lib-mpi-wrapper-compile.f90 
+(注：elses-lib-mpi-wrapper-dummy.f90のdead copy)
+
+概要：
+timerルーチンの整備。
+MPIライブラリがtrue routineの時は、
+mpi_wtimeに帰着させるようにした。
+
+メモ：
+MPIライブラリがtrue routineの時は、
+従来通り、
+system_clock
+に帰着させるようになっている。
+
+メモ2：
+src/code_for_mpi/elses-lib-mpi-wrapper.f90
+src/code_for_mpi/elses-lib-mpi-wrapper-dummy.f90
+は、使用するuse文が同一である必要がある。
+そうでないと、Make depしたときに、consistencyがとれない。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/01
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-velocity-dst.f90
+
+概要：
+4/30(4)(5)更新への修正
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/30(5)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-motion.f90
+src/elses-md-velocity-dst.f90
+
+概要：
+4/30(4)更新への修正
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/30(4)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-motion.f90
+src/elses-md-velocity-dst.f90
+
+概要：
+dst_bench_modeの強化
+
+詳細：
+dst_bench_modeでは、
+globalなvelocity変数(velx, vely, velz)の
+(allreduceをともなう)更新をやめた。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/30(3)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-motion.f90
+src/elses-md-velocity-dst.f90
+src/elses-ini-set-str-from-vatom.f90
+
+概要：
+dst_bench_modeの強化。
+
+メモ：
+(tx, ty, tz)は廃止していく方向。
+dst_bench_modeでは、以下のように廃止。
+(txp,typ,tzp) → atm_position
+を使う。なお、現状のdst_bench_modeでの有限温度MDは、
+・(tx, ty, tz)が更新されない
+・config以下のpositionなどが更新されない
+（故にファイル出力が正しくできない）
+の状況にある。
+
+CallTree抜粋
+- elses_md_main_01
+|   - ini_load_geno
+|   |   - ini_load_common
+|   |   |   - set_structure_data
+|   |   |   |   + set_structure_data_from_vatom
+|   |   |   |   - set_atm_position_from_tx←DST_BENCH_MODEではtxpからコピー
+|   - qm_engine_dst
+|   |   - qm_domain_setting_dst
+|   |   |   - set_atm_position_from_tx←DST_BENCH_MODEではtxpからコピー
+|   - elses_md_motion
+|   |   - md_motion_verlet_position_dst
+|   |   |   + elses_gene_tx ←DST_BENCH_MODEではcallされず
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/30(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+src/elses-xml-config.f90
+
+概要：
+dst_bench_modeの追加。
+DST workflowのbenchmarkのみのためのモード。
+
+詳細：
+benchmarkで利用されない実験的ルーチンやそのための配列確保を、
+全てskipする機能。defaultではOFF。
+ONにするには、設定XMLファイルに「<dst_bench_mode />」を追加する。
+例：
+<distributed mode="on">
+  <global_density_matrix_is_off /> 
+  <global_hamiltonian_matrix_is_off /> 
+  <micro_cell_booking mode="default"></micro_cell_booking>
+<mat_vec>
+    <mat_vec_mode>crs</mat_vec_mode> 
+</mat_vec>
+<dst_bench_mode />
+</distributed>
+
+コード情報：
+以下のlogical variableで設定(defaultで.false.)
+config%calc%distributed%dst_bench_mode
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/30
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-main.f90
+src/elses-md-motion.f90
+src/elses-md-velocity-dst.f90
+
+概要：
+node logファイル出力の強化
+
+詳細：
+lap timeの解析に利用するために、timerを強化。
+すべて、elses-md-main.f90における測定。
+例えば、
+$ grep -i time log-node000000.txt | grep -v mpi_check
+として得られる、以下の部分：
+TIME:qm_engine =        97.3410000000
+TIME:detect_stop_signal =         0.0000000000
+TIME:opt_check          =         0.0000000000
+TIME:output_level_mat   =         0.0000000000
+TIME:output_eigen_solv  =         0.0000000000
+TIME:output_wfn_charge  =         0.0000000000
+ TIME:mpi_time for convert velocity =   0.0000000000000000     
+TIME:md_verlet_vel      =         0.0010000002
+TIME:save_struct        =         0.0000000000
+TIME:output_main        =         0.0000000000
+ TIME:mpi_time for convert position:=   0.0000000000000000     
+TIME:md_motion         =         0.0009999999
+
+注：上記でMD計算に必須なのは、以下
+(a) 量子的計算
+→TIME:qm_engine
+(b) 古典的計算のうちvelocity更新
+→TIME:md_verlet_vel
+注：(b)のうち、global変数のmpi_all_reduceにかかった時間
+→TIME:mpi_time for convert velocity
+(c) 古典的計算のうちposition更新
+→TIME:md_motion
+注：(b)のうち、global変数のmpi_all_reduceにかかった時間
+→TIME:mpi_time for convert position
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/29(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-output.f90
+
+概要：
+node logファイル出力の強化
+
+詳細：
+Output.txtへの出力のうち、
+「Energy summary (eV/atom):」の行を、node logにも出すようにした。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/29
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-motion.f90
+
+概要：
+4/28で混入したbugを修正。
+
+詳細：
+Cell-change-onlyでのkinetic energyが、
+本来は0であるべきなのに、そうなっていなかったので、修正。
+Cell-change-only以外には影響なし。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/28
+担当者名 星健夫
+
+新規ファイル:
+src/elses-md-velocity-dst.f90
+
+更新ファイル:
+src/elses-md-main.f90
+src/elses-md-motion.f90
+src/elses-qm-engine-dst.f90
+Makefile (上記新規ファイルを追記しただけ)
+
+概要：
+velocity計算部分を分散並列化。
+モジュール変数
+ vel_dst(3,noa_dst) [M_md_velocity_dst] (elses-md-velocity-dst.f90)
+によって、分散してvelocityデータを格納。
+今のところ、
+従来から使っている、global変数(velx, vely, velz)も併用。
+
+詳細：
+(1) elses-md-velocity-dst.f90 [M_md_velocity_dst]
+publicサブルーチン一覧
+・subroutine convert_velocity(imode)
+→velocity変数について、分散型変数とglobal型変数のconvert。
+・subroutine calc_kinetic_energy_dst(kinetic_energy)
+→分散型velocity変数を用いて、kinetic energyを計算。
+calc_kinetic_energyの代替
+・subroutine md_motion_verlet_velocity_dst(i_switch)
+→分散型velocity変数を用いて、velocityを更新。dynamicsモードでのみ利用。
+md_motion_verlet_velocityの代替。
+・subroutine md_motion_verlet_position_dst
+→分散型velocity変数を用いて、positonを更新。dynamicsモードでのみ利用。
+  md_motion_verlet_positionの代替。
+privateサブルーチン一覧
+・subroutine md_heatbath_dst
+→md_heatbathの代替
+・subroutine calc_total_momentum_dst(total_momentum)
+→calc_total_momentumの代替
+・subroutine adjust_velocity_dst
+→adjust_velocityの代替
+・subroutine copy_velocity_config_to_vel_dst
+→今のところ使っていない。
+
+(2) elses-md-main.f90への更新のsummary
+call md_motion_verlet_velocity
+を
+call md_motion_verlet_velocity_dst
+に変更。
+
+(3) elses-md-motion.f90への更新のsummary
+call md_motion_verlet_position
+を
+call md_motion_verlet_position_dst
+に変更。
+
+(4) elses-qm-engine-dst.f90への更新のsummary
+kinetic energyを(不要に)計算していたのを、やめた。
+方針として、kinetic energyは、
+velocityを更新した直後に、計算するようにする。
+
+CallTree更新
+- elses_md_main_01
+|   - elses_ini_set_velocity
+|   |   - calc_initial_velocity：ここはglobal変数を利用
+|   |   |   - calc_kinetic_energy
+|   |   |   - calc_total_momentum
+|   |   |   + set_velocity_from_maxwell
+|   |   |   - calc_kinetic_energy
+|   |   |   + adjust_velocity
+|   |   |   - calc_kinetic_energy
+|   |   |   - calc_kinetic_energy
+|   |   + convert_velocity ←新ルーチン
+|   |   + calc_kinetic_energy_dst ←新ルーチン
+|   |   + convert_velocity ←新ルーチン
+|   - md_motion_verlet_velocity_dst ←新ルーチン
+|   |   + md_heatbath_dst ←新ルーチン
+|   |   + convert_velocity ←新ルーチン
+|   |   + calc_kinetic_energy_dst ←新ルーチン
+|   |   + calc_total_momentum_dst ←新ルーチン
+|   |   + adjust_velocity_dst ←新ルーチン
+|   - elses_md_motion
+|   |   + md_motion_verlet_position_dst ←新ルーチン
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/25
+担当者名 井町宏人
+
+更新ファイル:
+src/elses-config.f90
+src/elses-xml-config.f90
+src/code_optional/elses-qm-wavepacket-main-true.f90
+
+概要：
+(1)
+config.xmlの<wave_packet>の子タグのひとつである<re_initialize>について、
+その子タグ<suppress_const>を追加した。これはre_initializeのtype属性が
+"minimize_lcao_error_suppress"であるときのみ読み込まれる。
+この値は、wavepacket計算中の行列の入れ替え時に、
+固有状態表現の状態ベクトルの小さい要素をより小さくし、純粋状態に近づける際のパラメーター。
+(2)
+wavepacket が構造データ中の酸素に非対応だったのを修正。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/04/20
+担当者名 星健夫
+
+更新ファイル:
+src/elses-qm-output-icohp.f90
+
+概要：
+ICOHP出力(非DSTワークフロー)を、MPI対応にした。
+rootノードでのみ、出力。
+
+詳細：
+- elses_md_main_01
+|   - elses_qm_engine
+|   |   + qm_output_icohp
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/30 (2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-la-matvec-dstm-sss.f90
+
+概要：
+デバッグ用のコマンドがONになっていたので、
+速度向上のため無効化
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/30 
+担当者名 星健夫
+
+新規ファイル:
+src/elses-lib-timer-in-thread.f90
+
+更新ファイル:
+src/elses-lib-mpi-wrapper-compile.f90
+src/elses-qm-solver-gkrylov-dst.f90
+src/elses-la-gkrylov-main-dstm.f90
+src/elses-md-main.f90
+src/elses-la-matvec-dstm-crs.f90
+src/elses-la-matvec-routines-dstm.f90
+src/elses-la-matvec-dstm-sss.f90
+src/elses-la-matvec-dstm-dens.f90
+src/code_for_mpi/elses-lib-mpi-wrapper.f90
+src/code_for_mpi/elses-lib-mpi-wrapper-dummy.f90
+
+src/elses-lib-mpi-wrapper-compile.f90
+(注：src/code_for_mpi/elses-lib-mpi-wrapper-dummy.f90のdead copy)
+src/Makefile (上記新規ファイルを追記しただけ)
+src/Makefile.dep
+
+概要
+DSTワークフローにおいて、
+各stepごとに、matvec演算にかかった総時間を表示するようにした。
+（非DSTワークフローには非対応）
+
+詳細：
+計算終了後、下記のようにすることで分かる。
+$ grep MDl log-node000000.txt 
+elaps-time(befor  MDloop)=              0       0.060000       0.000000     
+  0.000000       0.000000
+elaps-time(lap    MDloop)=              1      46.716000       0.000000     
+  0.000000      15.578500
+elaps-time(lap    MDloop)=              2      46.649000       0.000000     
+  0.000000      16.088250
+elaps-time(lap    MDloop)=              3      46.950000       0.000000     
+  0.000000      16.144000
+4つ目の値が、matvec演算の総時間(1stepごと)
+
+matvec演算はOMP threadの内側で実行されるので、総時間はスレッドごとに別々に集計される。
+上記にでている値は、それらの平均値である。
+スレッドごとの値を出したければ、以下のようにする（4スレッドのときの出力）
+$ grep 'INFO:matvec' log-node000000.txt
+ INFO:matvec time per thread =           1           1   15.469000007724389     
+ INFO:matvec time per thread =           1           2   15.553999993950129     
+ INFO:matvec time per thread =           1           3   15.774000006495044 
+ INFO:matvec time per thread =           1           4   15.516999998595566 
+ INFO:matvec time per thread =           2           1   16.021999993827194 
+ INFO:matvec time per thread =           2           2   16.092000002507120 
+ INFO:matvec time per thread =           2           3   16.018999983323738 
+ INFO:matvec time per thread =           2           4   16.219999993918464 
+2つの整数値は、それぞれ、iteration, OMP thread index、の意味。
+
+コードメモ1：
+Timer変数は、モジュールM_lib_timer_in_threadにある、以下の変数
+ real(8), allocatable :: matvec_timer_in_thread(:)
+allocateするとmatvec_timer_in_thread(1:n)になる(nは総スレッド数)
+
+コードメモ2：
+スレッド番号(id_of_my_omp_thread, 0から始まる値)を下位のルーチンに送るようにした。
+下記ルーチンに対して、
+CallTree抜粋
+- qm_solver_gkrylov_dst
+|   - gkrylov_main_dstm
+|   |   - calc_u_su_hu_crs
+|   |   |   - matvec_mul_crs
+|   |   - calc_u_su_hu_sss
+|   |   |   - matvec_mul_sss
+|   |   - calc_u_su_hu_dens
+|   |   |   - matvec_mul_dens
+|   |   - calc_u_su_hu_dstm
+|   |   |   + matvec_mul_dstm
+|   |   - cg_s_mat_dstm
+|   |   |   + matvec_mul_dstm
+|   |   - cg_s_mat_crs
+|   |   |   - matvec_mul_crs
+|   |   - cg_s_mat_sss
+|   |   |   - matvec_mul_sss
+|   |   - cg_s_mat_dens
+|   |   |   - matvec_mul_dens
+|   |   - cg_s_mat_dstm
+|   |   |   + matvec_mul_dstm
+
+メモ：
+matvec演算の総時間を表示させないようにする方法は、
+今のところソースコードを編集するしかない。具体的には、elses-md-main.f90における
+       call init_timer_in_thread
+をcomment outすれば良い。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/27
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-velocity-routines.f90
+
+概要：
+初期速度ベクトル生成ルーチンのOMP並列化。
+
+注：
+この更新では、XMLファイルに速度ベクトルがあっても、無視されてしまう。
+後日、修正予定。以下のflagを制御すれば良い。
+forced_initialization = .true.
+
+メモ：
+elses-md-velocity-routines.f90にあるルーチンの一覧。
+・set_zero_velocity_for_fixed_atoms：不使用(削除予定)
+・calc_kinetic_energy
+・calc_kin_ene_atom
+・calc_total_momentum
+・calc_total_momentum_abs
+・adjust_velocity
+・calc_initial_velocity
+・set_velocity_from_maxwell
+・allocate_velocity
+
+上記のうち、set_velocity_from_maxwellは、OMP化しなかった。
+乱数から初期速度ベクトルを生成するルーチンだが、
+OMP化すると出力される乱数列が変わってしまうようだ。
+当該部分をsimplifyしたもの：
+do ioa=1,noa←ここでのOMP化が出来なかった。
+  call rndu(rnd) 
+enddo   
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/26
+担当者名 星健夫
+
+更新ファイル:
+src/elses-xml-config.f90
+src/elses-md-save-struct.f90
+
+概要：
+output/restartタグのdefault仕様修正。
+
+詳細：
+これまでoutputタグ内では、restartタグだけは、
+defaultで(=当該タグが書かれていなくても)、
+restart XMLファイルを生成していた。
+これを修正し、
+「restartタグを明示的に書かない限り、
+restart XMLファイルは生成されない」
+という仕様に変更。
+
+メモ：
+修正点を記す。
+
+------------------------------------
+修正前のelses-xml-config.f90(抜粋)
+------------------------------------
+! get <restart> node                                                       
+                                             
+node => getFirstElementByTagName(output_node,"restart")
+output%restart%first_write = .true.
+output%restart%append_mode = "off"
+if( .not. associated(node) ) then
+   output%restart%set = .true. ←ここ
+   output%restart%filename = trim(config%option%output_dir)//"restart.xml"
+   output%restart%interval = 10 ←ここ
+   output%restart%split    = .false.
+   output%restart%atom_id_is_added  = .false.
+   output%restart%number_of_split_files  = -1
+else
+   call file_load( output%restart, node )
+end if
+------------------------------------
+------------------------------------
+修正後のelses-xml-config.f90(抜粋)
+------------------------------------
+! get <restart> node                                                       
+                                             
+node => getFirstElementByTagName(output_node,"restart")
+output%restart%first_write = .true.
+output%restart%append_mode = "off"
+if( .not. associated(node) ) then
+   output%restart%set = .false. ←ここ
+   output%restart%filename = trim(config%option%output_dir)//"restart.xml"
+   output%restart%interval = -1 ←ここ
+   output%restart%split    = .false.
+   output%restart%atom_id_is_added  = .false.
+   output%restart%number_of_split_files  = -1
+else
+   call file_load( output%restart, node )
+end if
+------------------------------------
+------------------------------------
+修正後のsubroutine elses_md_save_struct (elses-md-save-struct.f90)
+→以下を追加
+------------------------------------
+if (.not. config%output%restart%set) then
+  if (i_verbose >= 1) then
+    if (log_unit > 0) write(log_unit,*)'@@ elses_md_save_struct is 
+SKIPPED:restart set=',config%output%restart%set
+  endif
+  return
+endif
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/21
+担当者名 星健夫
+
+更新ファイル:
+src/elses-ini-set-str-from-matom.f90
+
+概要
+初期処理のOMP並列化を強化
+計算結果に影響なし。
+
+詳細：
+ルーチン
+set_structure_data_from_matom
+をOMP並列化。
+
+CallTree抜粋
+- elses_md_main_01
+|   - ini_load_geno
+|   |   - ini_load_common
+|   |   |   - set_structure_data
+|   |   |   |   - set_structure_data_from_matom
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/16(3)
+担当者名 星健夫
+
+新規ファイル:
+src/elses-qm-dstm-reordering.f90
+
+更新ファイル:
+src/elses-qm-dst-projection-cell.f90
+src/Makefile
+
+概要
+実験的機能：DST matvec演算むけreordering
+
+詳細：
+DSTワークフローでのmatvec演算高速化(可能性)のため、
+原子indexの並び替えを行うルーチン。
+有効にするには、今のところソースコード修正が必要。具体的には
+subroutine set_dst_atm_list (elses-qm-dst-projection-cell.f90)
+にある
+logical, parameter :: flag_for_reordering = .false.
+を
+logical, parameter :: flag_for_reordering = .true.
+と修正する。
+
+メモ：
+DSTワークフローでは、
+各原子(以下「center原子」)の近傍原子をbookするが、
+このbooking listでの順番いれかえを行う。
+ただし、booking listの最初(1番目)は、
+後の処理の都合上、center原子でなくてならならない。
+2番目以降のみ、並びかえても計算結果に影響はない。
+とりあえず現状では、
+center原子からの距離が小さい順位にならべた。
+この並べ方では、center原子は(距離=0なので)常に1番目になる。
+
+
+CallTree
+- elses_md_main_01
+|   - qm_engine_dst
+|   |   - qm_solver_gkrylov_dst
+|   |   |   - set_dst_atm_list
+|   |   |   |   - dst_get_atm_index_range
+|   |   |   |   - suggest_proj_radius
+|   |   |   |   + set_projection_dst_cell
+|   |   |   |   + reorder_booked_atoms ←ここ
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/16(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-gid-initial.f90
+
+概要
+group id機能の修正。
+
+詳細：
+これまでは、強制的にgroup centerを計算していたが、
+この計算は(今のところ)周期系には非対応。
+そこで、周期系のときは、group centerの計算をやめることにした。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/16
+担当者名 星健夫
+
+更新ファイル:
+src/elses-xml-sax-handler.f90
+
+概要
+group id機能の修正。
+
+詳細：
+SAX parserでは、
+group idが読み込まれていなかったので、修正。
+
+注：SAX parserでは、「tag damp属性」を追加する
+例：<cluster structure="Polymer_PPE_144atom.xml" parser="sax" tag_dump="on" />
+と、標準出力に、すべてのタグ(と一部の属性)がファイル出力される。
+（tag_dump="off"とすれば、書かないのと同じ）
+ position tag
+INFO-XML-SAX:position(1:3)=        0.7736875800        0.0082801600       
+ 0.0171401200
+ counter_atom (p) =         137
+   element name =H       
+   motion name =free    
+   group_id    =          12
+上記をみれば、読まれていない属性について、検討がつきやすい。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/15
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+src/elses-xml-config.f90
+src/elses-qm-solver-gkrylov-dst.f90
+src/elses-qm-cohp-dstm.f90
+src/elses-qm-cohp-dstm-plot.f90
+
+概要
+DST workflowでICOHPを出力。
+この使い方は、DST workflowのときのみ。
+使い方：
+outputタグ内に、下記のように書く。
+<bond_list filename="output_bond_list.txt" interval="2" 
+criteria_in_eV="0.0001" />
+有効になっているなら、以下のように確認できる。
+$ grep bond_list log-node000000.txt 
+INFO-XML:A optional tag is found : config%output%bond_list
+属性criteria_in_eVは、ファイル出力のしきい値をeVで書く。
+上記例だと、|(value)| >  0.0001 eV、のときのみ、プロットされる。
+(criteria_in_eVの指定がないときは、しきい値=0.0001 eVに設定される。)
+結果として、各スレッドが独立にファイル出力する。
+output_bond_list000000_0000.txt
+output_bond_list000000_0001.txt
+・・
+最初の6桁がMPI並列度数を、後ろの4桁の数字がOMP並列度数を表す。
+
+出力ファイルの内容：
+eV単位で、データをdumpする。
+## distributed bond list ICOHP in eV : criteria (for abs. value) (eV) =     
+    0.0001000000
+## Ex. atom_index2, orbital_index1, atom_index1
+## step_count =          0
+1         1         1      -18.9687993602
+         1         1       356       -3.0033680340
+         1         1       508       -5.6286284142
+         1         1       546       -1.8964870268
+         1         1      1525       -2.3684634507
+         1         2         1       -6.8245500335
+         1         2       508       -0.4676993016
+         1         2       546       -3.3807383647
+orbitalに依存するICOHPは、
+c(Iα,Jβ) ≡ ρ(Iα,Jβ) H(Jβ,Iα)
+で定義される。ここで、I,Jがatom indexで、それぞれにおけるorbital indexがα、β
+上記の量はαについてのみ和を取った
+c'(Iα,J) ≡ Σ_β c(Iα,Jβ)
+がプロットされている。
+(atom_index2がJ, orbital_index1がα、atom_index1がI)
+αについても和をとった値
+C(I,J) ≡ Σ_{α,β} c(Iα,Jβ)
+が本来のICOHPだが、これはpost処理として作りだす必要がある。
+
+注：iCOHP値は合計すると、
+電子構造エネルギー
+E_{elec} = Tr[ρH]
+になる。(小さい項は無視しているので、若干の値はあるだろうが）
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/14
+担当者名 星健夫
+
+新規ファイル:
+src/elses-la-matvec-dstm-sss.f90
+
+更新ファイル:
+src/elses-la-matvec-dstm-crs.f90
+src/elses-la-gkrylov-main-dstm.f90
+src/Makefile (上記新規ファイルを追記しただけ)
+
+概要
+DST workflowの疎行列ベクトル積に
+Sparse Symmetric Skyline (SSS) format
+を追加。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/12
+担当者名 星健夫 井町宏人
+
+更新ファイル:
+src/elses-options.f90
+
+概要：
+3/10(2)更新(「テストモード」の実装)が不十分だったので修正。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/10(3)
+担当者名 星健夫
+
+新規ファイル:
+src/elses-qm-output-basis-info.f90
+src/elses-qm-output-wfn-charge.f90
+
+更新ファイル:
+src/elses-config.f90
+src/elses-xml-config.f90
+src/elses-md-main.f90
+src/Makefile (上記新規ファイルを追記しただけ)
+tool/plot_eigenstates/src/elses-generate-cubefile.f90
+sample/sample_geno/C6H6_opt/config.xml
+
+概要
+波動関数電荷(軌道依存Mulliken chargeのLCAO係数データ)の出力
+config.xmlのoutputタグ内に以下のように書く。例：
+<output>
+  <wavefunction_charge filename="output_wfn_charge.txt" />
+</output>
+動作は、wavefunctionタグと同様。
+例として、
+sample/sample_geno/C6H6_opt/config.xml
+がある。
+
+メモ：
+cubefileを作るときは「-absolute_value」をつける。例：
+elses-generate-cubefile -absolute_value 
+-lcao_coef_file=output_wfn_charge.txt -cutoff_au=5 
+-cube_filename_header=wfn_charge 
+
+メモ：ここでのchargeの定義は、基底ごとのmulliken charge q_iに対して
+n(r) = \sum_i q_i | f_i(r) |
+で定義されるもの。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/10(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+src/elses-options.f90
+src/elses-md-main.f90
+
+概要：
+初期処理だけを行う「テストモード」の実装。
+設定XMLファイル、構造XMLファイルが正しく書けているか
+などの、チェックを行うことを想定している。
+ 
+詳細：
+command argumentに「-test_mode=initial」をつけることで、発動。例：
+./elses -test_mode=initial ./config.xml
+
+メモ：
+内部的には、MD loopの繰り返し回数を強制的に０に設定している。
+elses-md-main.f90のソースコード概要
+itemdmx=0 ←ここ
+do itemd2=1,itemdmx
+(MD loop)
+enddo
+
+メモ：
+対応する構造体(elses-config.f90)は下記：
+------------------------------------
+type :: option_type
+   character(len=256)  :: filename
+   character(len=256)  :: directory     ! to be deleted                     
+                                        
+   character(len=256)  :: input_dir
+   character(len=256)  :: output_dir
+   integer             :: verbose       ! Old variable                     
+                                         
+   integer             :: verbose_level ! New variable (8. Feb. 2015)       
+                                        
+   integer             :: debug
+   character(len=16)   :: functionality
+   integer             :: log_node_number
+   character(len=256)  :: test_mode ←追加
+end type option_type
+------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/10
+担当者名 星健夫
+
+更新ファイル:
+src/elses-qm-output-participation.f90
+
+概要
+実験的機能の実装。
+出力のためのdirectory名を設定する(継続)。
+3/7更新の続き。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/09
+担当者名 星健夫
+
+更新ファイル:
+src/elses-la-matvec-dstm-bcrs.f90
+
+概要：
+DST mat-vecのモードを導入の強化。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/07(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-xml-compat-check.f90
+
+概要：
+エラーチェック機能の強化。
+計算機能に変更なし。
+
+メモ：
+設定XMLファイルのチェックルーチンは、
+下記の
+check_xml_compat (elses-xml-compat-check.f90)
+で行っている。
+今回は、use_matomタグを指定した場合のチェックを追加。
+
+CallTree抜粋：
+- elses_md_main_01
+|   - ini_load_geno
+|   |   + load_xml_config
+|   |   - check_xml_compat ←ここ
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/07
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+src/elses-io-dst-write-log.f90
+src/elses-options.f90
+src/elses-xml-config.f90
+
+概要
+実験的機能の実装。
+出力のためのdirectory名を設定する。
+
+ただし、現状では、対応が確認されているファイルは、以下
+・メイン出力ファイル(Output.txt)
+・node logファイル
+・outputタグ内の、以下のタグ；
+restart, position, wavefunction, matrix_hamiltonian, matrix_overlap, 
+eigen_level
+他ファイルは、あいかわらず実行ディレクトリに保存される。
+
+例：実行時に下記例のように指定する
+$ ./elses -output_dir=test ./config.xml
+実行ディレクトリの下にある
+test/
+に、当該ファイルが保存される。
+ただし、当該ディレクトリ(上記だとtest/)が存在しないとエラーになる（らしい）。
+
+注：相対パスを想定。絶対パスは想定しない。
+
+注：ソースコードの例
+output%main%filename = trim(config%option%output_dir)//'Output.txt'
+実行ディレクトリの下にある
+test/Output.txt
+に保存される。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/06(3)
+担当者名 星健夫
+
+
+新規ファイル:
+src/elses-ini-dst.f90
+src/elses-la-matvec-dstm-bcrs.f90
+
+更新ファイル:
+src/elses-la-matvec-dstm-crs.f90
+src/elses-ini-load-geno.f90
+src/elses-la-matvec-routines-dstm.f90
+src/elses-la-gkrylov-main-dstm.f90
+src/Makefile (上記新規ファイルを追記しただけ)
+
+概要:
+DST workflowにおけるmat_vecをXMLから選択できるようになった。
+distributed tag内に、下記の例のように書く。
+<distributed mode="on">
+  <mat_vec>
+    <mat_vec_mode>dstm</mat_vec_mode> 
+  </mat_vec>
+</distributed>
+上記で、「dstm」のところで設定できる
+「dstm」「default」,タグなし
+→DSTM版(従来の動作)
+「crs」
+→Compressed Raw Storage (CRS)版
+「dens」
+→密行列版(演算量が増加する)
+「bcrs」
+→基底数が全原子で同じのときに、Blocked CRS版。
+そうでなければ、CRS型。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/06(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+src/elses-xml-config.f90
+
+概要:
+DST workflow用のtagを追加。
+
+メモ：構造体中の
+config%calc%distributed%mat_vec_mode
+config%calc%distributed%mat_vec_const_num_orbital
+config%calc%distributed%mat_vec_max_num_orbital
+config%calc%distributed%mat_vec_switch_bcrs
+に格納。
+
+-----------------------------
+elses-config.f90の当該部分
+-----------------------------
+type :: distributed_type
+   logical               :: set
+   logical               :: global_dens_mat
+   logical               :: global_ham_mat
+   type(micro_cell_type) :: micro_cell_booking
+   logical               :: mpi_is_active
+   integer               :: myrank
+   integer               :: nprocs
+   integer               :: log_unit
+   logical               :: root_node
+   logical               :: use_mpi_barrier
+   character(len=20)     :: mat_vec_mode  ←ここ！
+   logical               :: mat_vec_const_num_orbital ←ここ！
+   integer               :: mat_vec_max_num_orbital ←ここ！
+   logical               :: mat_vec_switch_bcrs ←ここ！
+end type distributed_type
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/06
+担当者名 星健夫
+
+更新ファイル:
+src/elses-qm-solver-gkrylov-dst.f90
+
+概要：
+エラーチェックルーチンの修正。
+(abortしない限り)影響なし。
+
+詳細：
+DST workflowにおいて、
+全電子数に対する数値チェックが厳しすぎで、
+エラーとして検出されてしまう場合があったので修正。
+
+メモ：
+当該部分は、全電子数に対する数値チェック部分。
+全電子数の精度は、2分法の収束criteriaできまり、
+subroutine set_chemical_potential_dst (elses-qm-solver-gkrylov-dst.f90)
+の下記部分
+ err=(Nelec-N_elec_tmp)/Nelec
+ if (abs(err) < 1.0d-12) exit
+で担っている。
+ すなわち、(相対誤差)<10^{-12}、が収束条件である。
+他部分で、上記より厳しい数値チェックをすると、
+ エラーとして検出されてしまう場合がある。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/05(3)
+担当者名 星健夫
+
+新規ファイル:
+elses-la-matvec-dstm-dens.f90
+
+更新ファイル:
+src/elses-la-gkrylov-main-dstm.f90
+src/Makefile (上記新規ファイルを追記しただけ)
+
+概要:
+DST workflowでの行列ベクトル積の整備。
+疎行列-ベクトル積、密行列ーベクトル積が使える。
+
+
+メモ：
+以下を選択できる(ただし、ソースコードを書き替えが必要)
+(1) CRS形式による疎行列-ベクトル積利用(default)
+(2) DSTM形式(4つにindexをもつ表示)による、疎行列-ベクトル積利用(従来)
+elses-la-gkrylov-main-dstm.f90
+における、
+character(len=*), parameter   :: mat_vec_type = 'crs'
+を、
+character(len=*), parameter   :: mat_vec_type = 'dstm'
+に書き換えれば良い。
+(3) Dense-matrix形式による、行列ーベクトル積
+elses-la-gkrylov-main-dstm.f90
+における、
+character(len=*), parameter   :: mat_vec_type = 'crs'
+を、
+character(len=*), parameter   :: mat_vec_type = 'dens'
+に書き換えれば良い。
+
+メモ：
+CallTree抜粋
+ - qm_solver_gkrylov_dst
+ |   - gkrylov_main_dstm
+ |   |   - make_mat_crs ←CRS array作成
+ |   |   - calc_u_su_hu_crs
+ |   |   |   - matvec_mul_crs ←CRS版mat-vec
+ |   |   - calc_u_su_hu_dens
+ |   |   |   - matvec_mul_dens ←dense版mat-vec
+ |   |   - calc_u_su_hu_dstm
+ |   |   |   - matvec_mul_dstm ←dstm版mat-vec
+ |   |   - cg_s_mat_crs
+ |   |   |   - matvec_mul_crs ←CRS版mat-vec
+ |   |   - cg_s_mat_dstm
+ |   |   |   - matvec_mul_dstm ←dstm版mat-vec
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/05(2)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-la-matvec-dstm-crs.f90
+src/elses-la-gkrylov-main-dstm.f90
+
+
+概要:
+DST workflowでのCRS型行列ベクトル積。
+Compressed Row Storage(CRS)形式での、matrix-vector積の実装。
+inner CG loop内のmat-vecもCRS化
+
+メモ：
+elses-la-gkrylov-main-dstm.f90にある
+character(len=*), parameter   :: mat_vec_type = 'crs' 
+でスイッチしている。'dstm'にすると、従来の動作。
+
+メモ：
+CallTree抜粋
+ - qm_solver_gkrylov_dst
+ |   - gkrylov_main_dstm
+ |   |   - make_mat_crs ←CRS array作成
+ |   |   - calc_u_su_hu_crs
+ |   |   |   - matvec_mul_crs ←CRS版mat-vec(新版)
+ |   |   - calc_u_su_hu_dstm
+ |   |   |   - matvec_mul_dstm ←dstm版mat-vec(従来)
+ |   |   - cg_s_mat_crs
+ |   |   |   - matvec_mul_crs ←CRS版mat-vec(新版)
+ |   |   - cg_s_mat_dstm
+ |   |   |   - matvec_mul_dstm ←dstm版mat-vec(従来)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/05
+担当者名 星健夫
+
+新規ファイル：
+src/elses-la-matvec-dstm-crs.f90
+
+更新ファイル:
+src/elses-la-gkrylov-main-dstm.f90
+
+
+概要:
+DST workflowでのCRS型行列ベクトル積。
+Compressed Row Storage(CRS)形式での、matrix-vector積の実装。
+
+メモ：
+elses-la-gkrylov-main-dstm.f90にある
+logical, parameter   :: use_mat_crs = .true.
+でスイッチしている。falseにすると、従来の動作。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/03/02
+担当者名 星健夫
+
+更新ファイル:
+src/elses-md-save-restart-xml.f90
+
+更新ファイル：以下のディレクトリに含まれる全ファイル
+sample/sample_geno/vdW_C6H6_dimer_cco
+注：ディレクトリ名をからvdW_C6H6_dimer変更。
+
+概要:
+restart XMLファイルへの出力を機能強化。
+group idを出力できるようになった。
+実際の計算例を
+sample/sample_geno/vdW_C6H6_dimer_cco
+にあげた。
+
+メモ：restart XMLファイルの例：
+ <atom element="C"  id="1" group_id="1" motion="free">
+注：「id=1」がatom id。「group_id="1"」がgroup id。
+
+メモ：
+group idを出力するためには、以下が必要：
+(1) 入力のXMLファイルにおいて、group idが付加されていること
+(2) config.xmlのoutputタグ内のrestartタグにおいて、
+「atom_id_is_added="on"」の属性を付加する
+（つまり、atom idが出力されると、group idも出力される）：
+<restart filename="restart.xml" interval="1" append_mode="on" 
+atom_id_is_added="on"/>
+注：atom_id_is_added="off"とすると、atom id, group idの出力がなくなる。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/02/26(3)
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+src/elses-xml-config.f90
+src/elses-qm-dst-projection-cell.f90
+src/elses-qm-projection-list-dstm.f90
+
+概要:
+DST workflowの更新。
+solver tag内に、optional tag 「projection_list_length」を設置。
+今のところ、DST workflowだけで利用。
+典型的な使い方(solver tag内で)
+<projection> 200 </projection>
+<projection_list_length> default </projection_list_length>
+<dimension>  30 </dimension>
+
+解説：
+projection_list_lengthタグは、
+localな情報をstoreするworking arrayのsizeを規定する。
+値は(エラーにならない限り)何でも良くて、計算結果には影響しない。
+原理的にいって、
+(projection値) =< (projection_list_length値) =< (全原子数)
+の範囲となる。
+使い方1：タグを省略。または、'default'と指定、つまり、
+<projection_list_length> default </projection_list_length>
+→ (projection_list_length値) = min( (全原子数), 2*(projection値) )
+（従来と同じ動作）
+使い方2：'full'を指定
+<projection_list_length> full </projection_list_length>
+→ (projection_list_length値) = (全原子数)
+使い方3：数値を指定
+<projection_list_length> 500 </projection_list_length>
+→ (projection_list_length値) = 指定した値(上記なら500)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/02/26(2)
+担当者名 井町宏人 星健夫
+
+更新ファイル:
+src/code_optional/elses-la-eigen-solver-main-true.f90
+src/code_optional/elses-qm-wavepacket-main-true.f90
+src/elses-config.f90
+src/elses-xml-config.f90
+
+概要:
+実験的機能の更新(波束ダイナミクス)。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/02/26
+担当者名 星健夫
+
+更新ファイル:
+tool/src/elses-xml-generate.f90
+
+概要:
+実験的機能追加：elses-xml-generateの更新(fixed atom list)。
+固定したい原子をファイルで与えられるようにした。
+
+使い方：
+補助ファイル(ファイル名任意)で指定する。
+以下では、ファイル名を
+fixed_atom_list.txt
+とする。command argumentで
+-fixed_atom_list=fixed_atom_list.txt
+と指定する。例：(Ref: これまでの使い方説明：更新記録2016/02/15(2))
+$ elses-xml-generate -xyz_file=structure.xyz 
+-setting_file=generate.xml -output_file=structure.xml 
+-fixed_atom_list=fixed_atom_list.txt -split=4
+(上記は実際には、1行で書く)
+
+補助ファイルは、固定したい原子のatom idを縦にならべるだけ。
+たとえば、(atom id)=2,4,5の3原子を固定したい場合は
+2
+4
+5
+と書く。
+注：今のところ「x,y,z方向全てを固定する」しか指定できない。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/02/24
+担当者名 星健夫
+
+更新ファイル:
+src/elses-qm-dst-projection-cell.f90
+src/elses-qm-solver-gkrylov-dst.f90
+
+概要：
+微修正。
+標準出力への書き出しを抑制。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/02/23
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+
+概要：
+2/22更新が不十分だったので、修正。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/02/22
+担当者名 星健夫
+
+更新ファイル:
+src/elses-config.f90
+
+概要：
+下記の不要ルーチンをcomment out。
+機能に差はなし
+subroutine structure_print
+subroutine unitcell_print
+subroutine atom_print
+subroutine element_print
+subroutine classic_print
+subroutine quantum_print
+subroutine config_print
+subroutine system_print
+subroutine target_print
+subroutine calc_print
+subroutine limit_print
+subroutine dynamics_print
+subroutine solver_print
+subroutine output_print
+subroutine file_print
+function target_match
+subroutine target_overwrite
+
+メモ：
+atom_typeに含まれるelementは、不要なので、廃止予定
+type :: atom_type
+   character(len=8)      :: name
+   type(element_type),pointer :: element  ←これ                               
+                                             
+ （略）
+end type atom_type
+--------------------------------------------------------------------------------
+***************************************************
+2016/02/18
 ELSES v0.06.01 Release Candidate  (elses-v0.06.01-20160116-rc.tgz)
 ***************************************************
+--------------------------------------------------------------------------------
+日付 2016/02/18
+担当者名 星健夫
+
+更新ファイル:
+src/elses-xml-config.f90
+
+概要：
+設定XMLファイル処理を微修正。
+
+メモ：
+仕様として、第一階層のタグである、
+systemタグ, calcタグ, outputタグは、
+必須とする(ない場合には実行時エラー)。
+このうち、outputタグはemptyタグ
+<output> </output>
+でも良い。この場合は、標準出力と
+Output.txt
+のみが出力ファイルとなる。
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 日付 2016/02/15(2)
 担当者名 星健夫
