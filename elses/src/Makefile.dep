@@ -119,7 +119,7 @@ elses-qm-output-atom-charge.o : elses-mod-01.o elses-mod-file-io.o elses-qm-geno
 elses-qm-output-basis-info.o : elses-qm-geno-Huckel-atom-parameters.o elses-md-save-struct.o elses-qm-domain.o elses-mod-03.o elses-config.o 
 elses-qm-output-eigenstates.o : elses-mod-eig-leg.o elses-qm-geno-Huckel-atom-parameters.o elses-md-save-struct.o elses-mod-03.o elses-mod-file-io.o elses-config.o elses-qm-domain.o 
 elses-qm-output-icohp.o : elses-lib-dst-info.o elses-qm-output-rest-energy-pair.o elses-qm-geno.o elses-mod-01.o elses-config.o elses-mod-02.o elses-qm-domain.o elses-lib-phys-const.o elses-mod-file-io.o 
-elses-qm-output-levels.o : elses-qm-output-participation.o elses-mod-file-io.o elses-mod-eig-leg.o elses-config.o elses-qm-domain.o 
+elses-qm-output-levels.o : elses-qm-output-participation.o elses-mod-file-io.o elses-mod-eig-leg.o elses-config.o elses-qm-domain.o elses-la-eigen-solver-main.o 
 elses-qm-output-matrices.o : elses-mod-file-io.o elses-mod-02.o elses-mod-03.o elses-qm-domain.o elses-mod-01.o elses-qm-output-levels.o elses-config.o elses-lib-phys-const.o 
 elses-qm-output-participation.o : elses-config.o elses-mod-file-io.o elses-mod-03.o elses-mod-eig-leg.o elses-mod-01.o elses-qm-domain.o 
 elses-qm-output-rest-energy-pair.o : elses-md-get-distance.o elses-qm-geno-Huckel.o elses-mod-01.o elses-config.o elses-mod-02.o elses-lib-phys-const.o elses-mod-file-io.o elses-qm-domain.o 

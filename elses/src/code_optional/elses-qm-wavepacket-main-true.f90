@@ -30,7 +30,6 @@ module M_wavepacket
     type(wp_local_matrix_t), allocatable :: Y_local(:)
 
     ! MPI realated
-    type(process) :: proc
     real(8), allocatable :: Y(:, :)  ! m x m
     real(8), allocatable :: Y_filtered(:, :)  ! m x n
     real(8), allocatable :: H1(:, :), H1_base(:, :)  ! n x n
@@ -227,10 +226,12 @@ contains
   end subroutine copy_settings_from_elses_config_xml
 
 
-  subroutine wavepacket_init(setting, state, eigenvalues, eigenvectors)
+  subroutine wavepacket_init(proc, setting, state, eigenvalues, desc_eigenvectors, eigenvectors)
+    type(wp_process_t), intent(in) :: proc
     type(wp_setting_t), intent(inout) :: setting
     type(wp_state_t), intent(inout) :: state
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
+    integer, intent(in) :: desc_eigenvectors(desc_size)
     integer :: ierr
 
     call init_timers(state%wtime_total, state%wtime)
@@ -241,7 +242,7 @@ contains
     call verify_setting(state%dim, setting)
     call print_setting(setting)
 
-    call setup_distributed_matrices(state%dim, setting, state%proc, state%Y_desc, state%Y, &
+    call setup_distributed_matrices(state%dim, setting, proc, state%Y_desc, state%Y, &
          state%Y_filtered_desc, state%Y_filtered, state%H1_desc, state%H1, state%H1_base, &
          state%A_desc, state%A, state%H1_multistep)
     call add_timer_event('main', 'setup_distributed_matrices', state%wtime)
@@ -277,16 +278,16 @@ contains
       call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(2), state%S_multistep_sparse)
     end if
 
-    call set_aux_matrices(state%dim, setting, state%proc, state%structure, &
+    call set_aux_matrices(state%dim, setting, proc, state%structure, &
          state%H_sparse, state%S_sparse, state%H_multistep_sparse, state%S_multistep_sparse, &
          state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, state%Y_local, &
          state%dv_eigenvalues, state%dv_ipratios, state%filter_group_id, state%filter_group_indices, &
          state%eigenstate_mean, state%eigenstate_msd, &
          state%H1_base, state%H1_desc, &
-         .true., eigenvalues, eigenvectors)
+         .true., eigenvalues, desc_eigenvectors, eigenvectors)
     call add_timer_event('main', 'set_aux_matrices', state%wtime)
 
-    call initialize(setting, state%proc, state%dim, &
+    call initialize(setting, proc, state%dim, &
          state%structure, state%group_id, &
          state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, state%dv_eigenvalues, &
          state%filter_group_indices, state%Y_local, state%charge_factor, &
@@ -295,7 +296,7 @@ contains
          state%dv_charge_on_atoms, state%charge_moment, state%energies, state%errors)
     call add_timer_event('main', 'initialize', state%wtime)
 
-    call prepare_json(state%dim, setting, state%proc, state%structure, state%errors, &
+    call prepare_json(state%dim, setting, proc, state%structure, state%errors, &
          state%group_id, state%filter_group_id, &
          state%dv_eigenvalues, state%eigenstate_mean, state%eigenstate_msd, state%dv_ipratios, &
          state%output, state%states, state%structures, state%split_files_metadata)
@@ -330,10 +331,12 @@ contains
 
   ! Read next input step if multiple step input mode.
   ! Note that group_id does not change.
-  subroutine wavepacket_replace_matrix(setting, state, eigenvalues, eigenvectors)
+  subroutine wavepacket_replace_matrix(proc, setting, state, eigenvalues, desc_eigenvectors, eigenvectors)
+    type(wp_process_t), intent(in) :: proc
     type(wp_setting_t), intent(in) :: setting
     type(wp_state_t), intent(inout) :: state
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
+    integer, intent(in) :: desc_eigenvectors(desc_size)
 
     call add_timer_event('main', 'outside_wavepacket_before_replace_matrix', state%wtime)
 
@@ -360,7 +363,7 @@ contains
     end if
     call add_timer_event('main', 'convert_sparse_matrix_data_real_type_to_wp_sparse', state%wtime)
 
-    call set_aux_matrices_for_multistep(state%dim, setting, state%proc, state%filter_group_id, &
+    call set_aux_matrices_for_multistep(state%dim, setting, proc, state%filter_group_id, &
          state%t, state%structure, state%charge_factor, &
          state%H_sparse, state%S_sparse, state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
          state%H_multistep_sparse, state%S_multistep_sparse, &
@@ -369,7 +372,7 @@ contains
          state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
          state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_eigenvalues, &
          state%charge_moment, state%energies, state%errors, &
-         .true., eigenvalues, eigenvectors)
+         .true., eigenvalues, desc_eigenvectors, eigenvectors)
     call add_timer_event('main', 'set_aux_matrices_for_multistep', state%wtime)
 
     state%dv_psi(1 : state%dim) = state%dv_psi_reconcile(1 : state%dim)
@@ -387,7 +390,8 @@ contains
   end subroutine wavepacket_replace_matrix
 
 
-  subroutine wavepacket_main(setting, state)
+  subroutine wavepacket_main(proc, setting, state)
+    type(wp_process_t), intent(in) :: proc
     type(wp_setting_t), intent(in) :: setting
     type(wp_state_t), intent(inout) :: state
     integer :: ierr
@@ -435,7 +439,7 @@ contains
         exit
       end if
 
-      call make_matrix_step_forward(setting, state%proc, state%input_step, state%t, &
+      call make_matrix_step_forward(setting, proc, state%input_step, state%t, &
            state%structure, state%filter_group_indices, state%charge_factor, &
            state%H_sparse, state%S_sparse, &
            state%Y_filtered_desc, state%Y_filtered, state%Y_local, state%dv_eigenvalues, &
