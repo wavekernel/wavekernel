@@ -34,6 +34,8 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          real*8,  allocatable :: eig2(:)
          real*8,  allocatable :: f_occ(:)
          integer, allocatable :: idngl2(:)
+         integer              :: desc_eigenvectors(9)
+         real*8,  allocatable :: eigenvectors(:,:)
       end module
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c

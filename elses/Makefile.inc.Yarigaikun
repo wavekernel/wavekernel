@@ -29,102 +29,10 @@ OBJS-XML = $(SRCDIR)/elses-xml-config.o $(SRCDIR)/elses-config.o\
  $(SRCDIR)/elses-xml-sax-handler.o $(SRCDIR)/elses-xml-sax-parser.o
 
 # Dummy setting for LIBS-EXT
-LIBS-EXT =
-
-##  for Intel Fortran compiler (ifort)
-#FC = ifort
-#FFLAGS = -O -openmp
-#LDFLAGS = $(FFLAGS)
-#LIBS = -L /opt/intel/mkl/10.0.3.020/lib/em64t -lmkl_lapack -lmkl -lguide -lpthread
-#LIBS = -L/opt/intel/mkl/10.0.3.020/lib/32 -lmkl_lapack -lmkl -lguide -lpthread
-#LIBS  = /opt/acml3.6.0/ifort64/lib/libacml.a
-
-##  for PGI Fortran compiler (pgf90)
-#FC = pgf90
-#FFLAGS = -O2 -g -mp
-#LDFLAGS = -mp
-#LIBS = -lacml
-
-##  for GNU G95 Fortran compiler (g95)
-#FC = g95 -mno-cygwin
-#FC = g95
-#FFLAGS = -g -ftrace=full
-#LDFLAGS =
-#LIBS = -llapack -lblas
-#LIBS =  -L /opt/acml3.6.0/gnu64/lib -lacml -lacml_mv -lg2c
-
-##  for GNU Fortran compiler (gfortran)
-#FC = gfortran
-#FFLAGS = -O2 -fopenmp
-#LDFLAGS = -fopenmp
-#LIBS = -L/usr/local/lib -llapack -lblas
-
-##  for GNU Fortran compiler (gfortran on MacOS-X with Xcode)
-#FC = gfortran
-#FC = openmpif90
-#FFLAGS = -O2 -fopenmp
-#FFLAGS = -Wall -pedantic -fbounds-check -fbacktrace -O -Wuninitialized -ffpe-trap=invalid,zero,overflow
-#FFLAGS = -Wall -pedantic -fbounds-check -fbacktrace -O -Wuninitialized -ffpe-trap=invalid,zero,overflow -std=f95
-#LDFLAGS = -fopenmp
-#LIBS = -framework vecLib
-
-## for IBM pSeries p5-570 System
-#F90 = xlf90
-#F77 = xlf
-#FFLAGS = -O2 -q64
-#LDFLAGS =
-#LIBS = -L/usr/local/lib -llapack -lessl
-
-## for NEC SX, SUPER-UX
-#FC = sxf90
-#FFLAGS = -C vopt -P openmp
-#LDFLAGS = -P openmp
-#LIBS = -L/lib -llapack -lblas
-
-## Solaris
-#FC = sunf95
-#FFLAGS = -g -C
-#LIBS = -L/opt/SunStudioExpress/lib -lsunperf
-#MOD_OPT=-M
-
-## Fujitsu FX10
-#FC = mpifrtpx
-#FFLAGS = -Kfast,openmp,SPARC64IXfx
-#LDFLAGS = $(FFLAGS)
-#LIBS = -SSL2
-
-###############################################################
-## For Developer; Intel Fortran compiler (ifort)
-#FC = ifort
-#FC = mpif90
-#FC = ifort -lmpi
-#FFLAGS = -O2 -openmp-stubs
-#FFLAGS = -g -O2 -openmp -mcmodel=medium
-#FFLAGS = -O2 -assume nobuffered_io
-#FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv
-#FFLAGS = -g -assume nobuffered_io -check all -traceback -ftrapuv  -implicitnone
-#FFLAGS = -g -assume nobuffered_io -warn nodeclarations -check all -traceback
-#LDFLAGS = $(FFLAGS)
-#LIBS  = /opt/acml4.4.0/ifort64/lib/libacml.a
-#LIBS  = /opt/acml4.4.0/ifort64_mp/lib/libacml_mp.a /opt/acml4.4.0/ifort64_mp/lib/libacml_mv.a  -lguide -lpthread
-#LIBS = -L/opt/intel/mkl/10.0/lib/32 -lmkl_lapack -lguide -lmkl_ia32
-#LIBS = -L /opt/intel/mkl/10.0.3.020/lib/em64t -lmkl_lapack -lmkl -lguide -lpthread
-#LIBS = -mkl=sequential
-
-# For ifort 11.1.0.038
-# LIBS = -L /opt/intel/Compiler/11.1/038/mkl/lib/em64t -lmkl_lapack \
-# -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
-
-# For intel composer 2013.3.163
-# LIBS = -L /opt/intel/composer_xe_2013.3.163/mkl/lib/intel64
-# -lmkl_lapack95_lp64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+LIBS-EXT = -L$(TOPDIR)/ext-lib -lwavepacket -lEigenTest
 
 # For gfortran with Eigen Engine
 FC = mpif90
-#FC = gfortran
-FFLAGS = -O2 -Wall -fopenmp
+FFLAGS = -O0 -Wall -fopenmp
 LDFLAGS = $(FFLAGS)
-#LIBS-EXT = -L$(TOPDIR)/ext-lib -lEigenTest
-INCLUDE = -I$(HOME)/lib -I$(HOME)/include -I$(HOME)/include/elpa_openmp-2014.06.001/modules
-#LIBS = $(INCLUDE) -L$(HOME)/lib -lelpa_openmp -lEigenExa -lscalapack -llapack -lblas -lgomp -L/usr/lib/openmpi/lib -lmpi
-LIBS = $(INCLUDE) -L$(HOME)/lib -lscalapack -llapack -lblas -lgomp -L/usr/lib/openmpi/lib -lmpi
+LIBS = -lscalapack -llapack -lblas
