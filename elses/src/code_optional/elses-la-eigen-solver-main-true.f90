@@ -260,18 +260,14 @@ contains
     call setup_distributed_matrix('B', proc, dim, dim, desc_B, B_dist)
     call distribute_global_sparse_matrix(matrix_A, desc_A, A_dist)
     call distribute_global_sparse_matrix(matrix_B, desc_B, B_dist)
-    print *, 'YYYY1'
     call reduce_generalized(dim, A_dist, desc_A, B_dist, desc_B)
-    print *, 'YYYY2'
     call eigen_solver_scalapack_all(proc, desc_A, A_dist, eigenpairs)
-    print *, 'YYYY3'
     call recovery_generalized(dim, dim, B_dist, desc_B, eigenpairs%blacs%Vectors, eigenpairs%blacs%desc)
-    print *, 'YYYY4'
     call gather_matrix_part(eigenpairs%blacs%Vectors, eigenpairs%blacs%desc, &
          1, level_low_high(1), dim, num_output_vectors, 0, 0, eig_vectors)
-    print *, 'YYYY5'
     call mpi_bcast(eig_vectors, dim * num_output_vectors, mpi_double_precision, 0, mpi_comm_world, ierr)
     eig_levels(:) = eigenpairs%blacs%values(:)
+    call blacs_gridexit(proc%context)
   end subroutine eig_solver_center_scalapack
 
   subroutine eig_solver_center_eigenexa_scalapack(matrix_A, matrix_B, level_low_high, eig_levels, eig_vectors)
