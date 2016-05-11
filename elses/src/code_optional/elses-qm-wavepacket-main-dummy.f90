@@ -3,6 +3,10 @@
 ! Copyright (C) ELSES. 2007-2015 all rights reserved
 !================================================================
 module M_wavepacket
+  use M_config
+  use M_group_id_setting
+  use M_ext_matrix_data
+! use wp_main_aux_m  
   implicit none
 
   private

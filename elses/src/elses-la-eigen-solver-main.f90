@@ -6,6 +6,7 @@ module M_eig_solver_center   ! DUMMY routines
 !
   use M_qm_domain, only : i_verbose, DOUBLE_PRECISION !(unchanged)
 ! use eigen_test
+! use global_variables  
   implicit none
 !
   private
@@ -32,8 +33,10 @@ module M_eig_solver_center   ! DUMMY routines
 !
    use elses_mod_md_dat, only : final_iteration
    use M_config, only : config
+   use M_ext_matrix_data   
    use M_lib_mpi_wrapper
 !  use wp_setting_m
+!  use wp_processes_m   
 !  use wp_main_aux_m
    use M_wavepacket  ! For testing wavepacket_main_ext().
    implicit none
@@ -64,15 +67,22 @@ module M_eig_solver_center   ! DUMMY routines
 !
   end subroutine eig_solver_center
 
+  subroutine set_pratio_mpi()
+    use elses_arr_eig_leg
+    write(*,*)'ERROR:DUMMY routine is called(set_pratio_mpi)'
+    write(*,*)'The external library called Eigen Engine may be required.'
+  end subroutine set_pratio_mpi  
+
   subroutine set_density_matrix_mpi()
+    use M_qm_domain
+    use elses_arr_eig_leg
+    use elses_mod_orb2
+    use elses_mod_js4jsv
+    use elses_mod_multi
+    use M_lib_mpi_wrapper
     write(*,*)'ERROR:DUMMY routine is called(set_density_matrix_mpi)'
     write(*,*)'The external library called Eigen Engine may be required.'
   end subroutine set_density_matrix_mpi
-
-  subroutine set_pratio_mpi()
-    write(*,*)'ERROR:DUMMY routine is called(set_pratio_mpi)'
-    write(*,*)'The external library called Eigen Engine may be required.'
-  end subroutine set_pratio_mpi
 !
 !
 end module M_eig_solver_center
