@@ -3072,6 +3072,8 @@ contains
 
     ! get <wavefunction> node
     node => getFirstElementByTagName(output_node,"wavefunction")
+    output%wavefunction%level_lowest   = -1 ! dummy value
+    output%wavefunction%level_highest  = -1 ! dummy value
     if( .not. associated(node) ) then
        output%wavefunction%set = .false.
        output%wavefunction%filename = trim(config%option%output_dir)//"output_wavefunction.txt"
@@ -3264,6 +3266,22 @@ contains
     endif
 
     file%set = .true.
+
+    ! get lowest_level attribute
+    value = getAttribute(file_node,"level_lowest")
+    if( value /= "" ) then
+      read(unit=value,fmt=*) file%level_lowest
+      if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:wavefunction/level_lowest   =', &
+&                                     file%level_lowest
+    end if
+
+    ! get highest_level attribute
+    value = getAttribute(file_node,"level_highest")
+    if( value /= "" ) then
+      read(unit=value,fmt=*) file%level_highest
+      if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:wavefunction/level_highest  =', &
+&                                     file%level_highest
+    end if
 
     return
   end subroutine file_load

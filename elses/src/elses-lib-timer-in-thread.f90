@@ -5,7 +5,7 @@
 module M_lib_timer_in_thread 
 !
   implicit none
-  real(8), allocatable :: matvec_timer_in_thread(:)
+  real(8), allocatable :: matvec_timer_in_thread(:,:)
 !
   private
 !
@@ -36,12 +36,12 @@ module M_lib_timer_in_thread
       stop
     endif
 !
-    allocate(matvec_timer_in_thread(n_threads), stat=ierr)
+    allocate(matvec_timer_in_thread(n_threads,2), stat=ierr)
     if (ierr /=0) then
       write(*,*)'Alloc. Error.matvec_timer_in_thread'
       stop
     endif
-    matvec_timer_in_thread(:)=0.0d0
+    matvec_timer_in_thread(:,:)=0.0d0
 !
   end subroutine init_timer_in_thread
 !

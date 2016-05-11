@@ -22,17 +22,25 @@ contains
 !   use M_io_ctrl_output_eigen, only : init_prep_for_plot_eigenstates
 
     implicit none
-    integer :: i, imode
+    integer :: i, imode, lu
     character(len=*), intent(in) :: filename
     logical,          intent(in), optional :: no_wavefunction
     logical                                :: no_wavefunction_wrk
+    integer :: level_range(2)
+!
+    lu=config%calc%distributed%log_unit
+    level_range(1)=config%output%wavefunction%level_lowest
+    level_range(2)=config%output%wavefunction%level_highest
+!
+!   write(*,*)'@@ output_eigenstates:level_range(1)=', level_range(1)
+!   write(*,*)'@@ output_eigenstates:level_range(2)=', level_range(2)
 !
     no_wavefunction_wrk = .false.
     if (present(no_wavefunction)) no_wavefunction_wrk=no_wavefunction
 !   
     if (i_verbose >= 1) then
-      write(*,*)'@@ output_eigenstates'
-      write(*,*)'    filename=',trim(filename)
+      if (lu > 0) write(lu,*) '@@ output_wavefunction: filename=',trim(filename)
+      if (lu > 0) write(lu,*) '   output_wavefunction: lowest and highest levels=',level_range(1:2)
     endif   
 
 !   call init_prep_for_plot_eigenstates(imode)
@@ -71,7 +79,7 @@ contains
     if (no_wavefunction_wrk) then
        write(unit_num,'(a)') '# LCAO coefficients .. are not included.'
     else
-      call output_coefficient
+      call output_coefficient(level_range)
     endif  
 
     close(unit_num)    
@@ -247,16 +255,47 @@ contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-  subroutine output_coefficient
+  subroutine output_coefficient(level_range)
 
     use elses_mod_orb2, only : n_tot_base
     use elses_arr_eig_leg, only : atmp
 
     implicit none
+    integer, intent(in) :: level_range(2)
     integer :: n_eigen_vectors
-    integer :: i,j
+    integer :: i,j, ierr
+    integer :: level_lowest, level_highest
 !
-    n_eigen_vectors = n_tot_base
+!   write(*,*) 'level_range(1) = ', level_range(1)
+!   write(*,*) 'level_range(2) = ', level_range(2)
+!
+    if (level_range(1) == -1) then
+      level_lowest=1
+    else
+      level_lowest=level_range(1)
+    endif
+!
+    if (level_range(2) == -1) then
+      level_highest=n_tot_base
+    else
+      level_highest=level_range(2)
+    endif
+!
+    ierr=0
+    if ( level_lowest  < 1            ) ierr=1
+    if ( level_lowest  > n_tot_base   ) ierr=1
+    if ( level_highest < 1            ) ierr=1
+    if ( level_highest > n_tot_base   ) ierr=1
+    if ( level_highest < level_lowest ) ierr=1
+!
+    if (ierr == 1) then
+      write(*,*) 'ERROR:output_coefficient'
+      write(*,*) 'level_lowest  = ', level_lowest
+      write(*,*) 'level_highest = ', level_highest
+      stop
+    endif
+!
+    n_eigen_vectors = level_highest - level_lowest + 1
 !
     write(unit_num,'(a)') '# LCAO coefficients'
     write(unit_num,'(I10)') n_eigen_vectors
@@ -266,7 +305,7 @@ contains
       stop
     endif   
 
-    do i=1, n_tot_base
+    do i=level_lowest, level_highest
        do j=1, n_tot_base
           write(unit_num,'(I10,F25.15,a,I10)') j, atmp(j,i), '   k=', i
        end do

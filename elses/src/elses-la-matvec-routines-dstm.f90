@@ -92,7 +92,8 @@ module M_la_matvec_routines_dstm
 !
     if (allocated(matvec_timer_in_thread)) then
       call mpi_wrapper_wtime(time_data2)
-      matvec_timer_in_thread(id_of_my_omp_thread+1)=matvec_timer_in_thread(id_of_my_omp_thread+1)+(time_data2-time_data1)
+      matvec_timer_in_thread(id_of_my_omp_thread+1,1)=matvec_timer_in_thread(id_of_my_omp_thread+1,1)+(time_data2-time_data1)
+      matvec_timer_in_thread(id_of_my_omp_thread+1,2)=matvec_timer_in_thread(id_of_my_omp_thread+1,2)+1.0d0
     endif
 !
   end subroutine matvec_mul_dstm

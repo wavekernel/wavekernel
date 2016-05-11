@@ -556,10 +556,8 @@
       var%size = lc
       allocate(var%chars(1:lc))
 !!AG: NAG compiler uses temporaries here:
-      !var%chars(:) = (/ (expr(i:i), i=1,lc) /)
-      do i = 1, lc
-        var%chars(i) = expr(i:i)
-      end do
+      var%chars(:) = (/ (expr(i:i), i=1,lc) /)
+
       end subroutine assign_c_to_s
 
 ! Mizuho-IR

@@ -263,21 +263,21 @@ module M_md_main
       if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:opt_check          = ',time_wrk-time_wrk_previous
       time_wrk_previous=time_wrk 
 !
-      call output_levels_matrices
+      if (root_node)  call output_levels_matrices
 !         ---> Plot the levels and matrices
 !
       call get_elapse_wall_clock_time(time_wrk)
       if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_level_mat   = ',time_wrk-time_wrk_previous
       time_wrk_previous=time_wrk 
 !
-      call output_for_eigen_solver
+      if (root_node) call output_for_eigen_solver
 !         ---> Plot the wavefunction and so on (only for the eigen solver)
 !
       call get_elapse_wall_clock_time(time_wrk)
       if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_eigen_solv  = ',time_wrk-time_wrk_previous
       time_wrk_previous=time_wrk 
 !
-      call output_for_wfn_charge
+      if (root_node) call output_for_wfn_charge
 !         ---> Plot the wavefunction charge
 !
       call get_elapse_wall_clock_time(time_wrk)
@@ -365,10 +365,10 @@ module M_md_main
 !
      matvec_timer_wrk=0.0d0
      if (allocated(matvec_timer_in_thread)) then 
-       matvec_timer_wrk=sum(matvec_timer_in_thread(:))/size(matvec_timer_in_thread,1)
+       matvec_timer_wrk=sum(matvec_timer_in_thread(:,1))/size(matvec_timer_in_thread,1)
        do ipe=1, size(matvec_timer_in_thread,1)
         if (log_unit > 0) then 
-          write(log_unit,*) 'INFO:matvec time per thread =', itemd2, ipe, matvec_timer_in_thread(ipe)
+          write(log_unit,'(a,2i10,f20.10,f30.2)') 'INFO:matvec time per thread =', itemd2, ipe, matvec_timer_in_thread(ipe,1:2)
         endif
        enddo
      else

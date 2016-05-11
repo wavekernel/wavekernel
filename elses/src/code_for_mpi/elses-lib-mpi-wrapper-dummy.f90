@@ -11,7 +11,7 @@ module M_lib_mpi_wrapper !(DUMMY ROUTINES)
   real(kind(1d0)), allocatable :: total_allreduce_time(:)
   real(kind(1d0)), allocatable :: total_barrier_time(:)
 !
-  real(kind(1d0)), allocatable :: matvec_timer_in_thread(:) 
+! real(kind(1d0)), allocatable :: matvec_timer_in_thread(:) 
 !
   real(kind(1d0)), allocatable :: time_origin(:)  ! used in get_wall_clock_time
   integer                      :: count_previous  ! used in get_wall_clock_time
