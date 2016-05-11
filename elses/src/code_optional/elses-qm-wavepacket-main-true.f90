@@ -302,8 +302,8 @@ contains
          state%output, state%states, state%structures, state%split_files_metadata)
 
     ! add_structure_json() must be called after both of coordinates reading and prepare_json().
-    call add_structure_json(state%structure%num_atoms, state%structure%atom_coordinates, &
-         0d0, 1, state%structures)
+    call add_structure_json(state%structure, state%group_id, 0d0, 1, &
+         state%Y_filtered, state%Y_filtered_desc, state%structures)
     call add_timer_event('main', 'prepare_json', state%wtime)
 
     if (check_master()) then
@@ -346,8 +346,6 @@ contains
     end if
     ! The step to be read is 'input_step + 1', not 'input_step + 2' because XYZ information is not interpolated.
     call read_structure_from_ELSES_config(state%structure)
-    call add_structure_json(state%structure%num_atoms, state%structure%atom_coordinates, &
-         state%t, state%input_step + 1, state%structures)
     call add_timer_event('main', 'read_atom_indices_and_coordinates_from_ELSES_config', state%wtime)
 
     if (setting%to_replace_basis) then
@@ -380,12 +378,16 @@ contains
     state%input_step = state%input_step + 1
     state%t_last_replace = state%t
 
+    call add_structure_json(state%structure, state%group_id, state%t, state%input_step, &
+         state%Y_filtered, state%Y_filtered_desc, state%structures)
+
     ! re-save state after matrix replacement.
       call save_state(state%dim, setting, state%i, state%t, state%t_last_replace, &
-           state%structure, state%dv_psi, state%dv_alpha, state%dv_atom_perturb, state%dv_atom_speed, &
+           state%structure, state%group_id, state%dv_psi, state%dv_alpha, &
+           state%dv_atom_perturb, state%dv_atom_speed, &
            state%dv_charge_on_basis, state%dv_charge_on_atoms, state%energies, state%charge_moment, &
            state%split_files_metadata, state%total_state_count, state%input_step, .true., &
-           state%states, state%structures)
+           state%Y_filtered, state%Y_filtered_desc, state%states, state%structures)
     call add_timer_event('main', 'save_state', state%wtime)
   end subroutine wavepacket_replace_matrix
 
@@ -412,10 +414,11 @@ contains
       ! Output for files.
       if (mod(state%i, setting%output_interval) == 0) then
         call save_state(state%dim, setting, state%i, state%t, state%t_last_replace, &
-             state%structure, state%dv_psi, state%dv_alpha, state%dv_atom_perturb, state%dv_atom_speed, &
+             state%structure, state%group_id, state%dv_psi, state%dv_alpha, &
+             state%dv_atom_perturb, state%dv_atom_speed, &
              state%dv_charge_on_basis, state%dv_charge_on_atoms, state%energies, state%charge_moment, &
              state%split_files_metadata, state%total_state_count, state%input_step, .false., &
-             state%states, state%structures)
+             state%Y_filtered, state%Y_filtered_desc, state%states, state%structures)
         call add_timer_event('main', 'save_state', state%wtime)
       end if
 
