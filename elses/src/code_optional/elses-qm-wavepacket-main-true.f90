@@ -10,36 +10,8 @@ module M_wavepacket
   use mpi
   implicit none
 
-  type wp_state_t
-    type(sparse_mat) :: H_sparse, S_sparse, H_multistep_sparse, S_multistep_sparse
-    type(wp_structure_t) :: structure
-    type(wp_energy_t) :: energies
-    type(wp_error_t) :: errors
-    integer :: dim, i, ierr, input_step
-    real(8) :: t, t_last_replace
-    complex(kind(0d0)), allocatable :: dv_alpha(:), dv_psi(:), dv_alpha_next(:), dv_psi_next(:)
-    complex(kind(0d0)), allocatable :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
-    real(8), allocatable :: dv_atom_perturb(:), dv_atom_speed(:), dv_charge_on_basis(:), dv_charge_on_atoms(:)
-    real(8), allocatable :: dv_eigenvalues(:), dv_ipratios(:), eigenstate_mean(:, :), eigenstate_msd(:, :)
-    type(wp_charge_moment_t) :: charge_moment
-    type(wp_charge_factor_t) :: charge_factor
-    real(8) :: wtime_total, wtime
-    integer, allocatable :: group_id(:, :), filter_group_id(:, :), filter_group_indices(:, :)
-    type(fson_value), pointer :: output, states, split_files_metadata, structures
-    integer :: print_count, total_state_count
-    type(wp_local_matrix_t), allocatable :: Y_local(:)
-
-    ! MPI realated
-    real(8), allocatable :: Y(:, :)  ! m x m
-    real(8), allocatable :: Y_filtered(:, :)  ! m x n
-    real(8), allocatable :: H1(:, :), H1_base(:, :)  ! n x n
-    complex(kind(0d0)), allocatable :: A(:, :)  ! n x n
-    real(8), allocatable :: H1_multistep(:, :)
-    integer :: Y_desc(desc_size), Y_filtered_desc(desc_size), H1_desc(desc_size), A_desc(desc_size)
-  end type wp_state_t
-
   private
-  public :: wp_state_t, wavepacket_init, wavepacket_replace_matrix, wavepacket_main
+  public :: wavepacket_init, wavepacket_replace_matrix, wavepacket_main
 
 contains
 
@@ -242,9 +214,7 @@ contains
     call verify_setting(state%dim, setting)
     call print_setting(setting)
 
-    call setup_distributed_matrices(state%dim, setting, proc, state%Y_desc, state%Y, &
-         state%Y_filtered_desc, state%Y_filtered, state%H1_desc, state%H1, state%H1_base, &
-         state%A_desc, state%A, state%H1_multistep)
+    call setup_distributed_matrices(state%dim, setting, proc, state)
     call add_timer_event('main', 'setup_distributed_matrices', state%wtime)
 
     ! step = 1
@@ -262,11 +232,7 @@ contains
     end if
     call add_timer_event('main', 'set_atom_indices_and_coordinates_and_group_id', state%wtime)
 
-    call allocate_dv_vectors(state%dim, setting, state%structure, &
-         state%dv_alpha, state%dv_psi, state%dv_alpha_next, state%dv_psi_next, &
-         state%dv_alpha_reconcile, state%dv_psi_reconcile, &
-         state%dv_atom_perturb, state%dv_atom_speed, state%dv_charge_on_basis, state%dv_charge_on_atoms, &
-         state%dv_eigenvalues, state%dv_ipratios, state%eigenstate_mean, state%eigenstate_msd)
+    call allocate_dv_vectors(setting, state)
 
     state%charge_factor%charge_factor_common = setting%charge_factor_common
     state%charge_factor%charge_factor_H = setting%charge_factor_H
@@ -278,32 +244,16 @@ contains
       call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(2), state%S_multistep_sparse)
     end if
 
-    call set_aux_matrices(state%dim, setting, proc, state%structure, &
-         state%H_sparse, state%S_sparse, state%H_multistep_sparse, state%S_multistep_sparse, &
-         state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, state%Y_local, &
-         state%dv_eigenvalues, state%dv_ipratios, state%filter_group_id, state%filter_group_indices, &
-         state%eigenstate_mean, state%eigenstate_msd, &
-         state%H1_base, state%H1_desc, &
+    call set_aux_matrices(state%dim, setting, proc, state, &
          .true., eigenvalues, desc_eigenvectors, eigenvectors)
     call add_timer_event('main', 'set_aux_matrices', state%wtime)
 
-    call initialize(setting, proc, state%dim, &
-         state%structure, state%group_id, &
-         state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, state%dv_eigenvalues, &
-         state%filter_group_indices, state%Y_local, state%charge_factor, &
-         state%H1_base, state%H1, state%H1_desc, &
-         state%dv_psi, state%dv_alpha, state%dv_charge_on_basis, &
-         state%dv_charge_on_atoms, state%charge_moment, state%energies, state%errors)
+    call initialize(setting, proc, state)
     call add_timer_event('main', 'initialize', state%wtime)
 
-    call prepare_json(state%dim, setting, proc, state%structure, state%errors, &
-         state%group_id, state%filter_group_id, &
-         state%dv_eigenvalues, state%eigenstate_mean, state%eigenstate_msd, state%dv_ipratios, &
-         state%output, state%states, state%structures, state%split_files_metadata)
-
+    call prepare_json(setting, proc, state)
     ! add_structure_json() must be called after both of coordinates reading and prepare_json().
-    call add_structure_json(state%structure, state%group_id, 0d0, 1, &
-         state%Y_filtered, state%Y_filtered_desc, state%structures)
+    call add_structure_json(0d0, 1, state)
     call add_timer_event('main', 'prepare_json', state%wtime)
 
     if (check_master()) then
@@ -361,16 +311,8 @@ contains
     end if
     call add_timer_event('main', 'convert_sparse_matrix_data_real_type_to_wp_sparse', state%wtime)
 
-    call set_aux_matrices_for_multistep(state%dim, setting, proc, state%filter_group_id, &
-         state%t, state%structure, state%charge_factor, &
-         state%H_sparse, state%S_sparse, state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
-         state%H_multistep_sparse, state%S_multistep_sparse, &
-         state%H1_desc, state%H1, state%H1_base, state%H1_multistep, &
-         state%filter_group_indices, state%Y_local, &
-         state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
-         state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_eigenvalues, &
-         state%charge_moment, state%energies, state%errors, &
-         .true., eigenvalues, desc_eigenvectors, eigenvectors)
+    call set_aux_matrices_for_multistep(setting, proc, &
+         .true., eigenvalues, desc_eigenvectors, eigenvectors, state)
     call add_timer_event('main', 'set_aux_matrices_for_multistep', state%wtime)
 
     state%dv_psi(1 : state%dim) = state%dv_psi_reconcile(1 : state%dim)
@@ -378,16 +320,10 @@ contains
     state%input_step = state%input_step + 1
     state%t_last_replace = state%t
 
-    call add_structure_json(state%structure, state%group_id, state%t, state%input_step, &
-         state%Y_filtered, state%Y_filtered_desc, state%structures)
+    call add_structure_json(state%t, state%input_step, state)
 
     ! re-save state after matrix replacement.
-      call save_state(state%dim, setting, state%i, state%t, state%t_last_replace, &
-           state%structure, state%group_id, state%dv_psi, state%dv_alpha, &
-           state%dv_atom_perturb, state%dv_atom_speed, &
-           state%dv_charge_on_basis, state%dv_charge_on_atoms, state%energies, state%charge_moment, &
-           state%split_files_metadata, state%total_state_count, state%input_step, .true., &
-           state%Y_filtered, state%Y_filtered_desc, state%states, state%structures)
+      call save_state(setting, .true., state)
     call add_timer_event('main', 'save_state', state%wtime)
   end subroutine wavepacket_replace_matrix
 
@@ -413,12 +349,7 @@ contains
 
       ! Output for files.
       if (mod(state%i, setting%output_interval) == 0) then
-        call save_state(state%dim, setting, state%i, state%t, state%t_last_replace, &
-             state%structure, state%group_id, state%dv_psi, state%dv_alpha, &
-             state%dv_atom_perturb, state%dv_atom_speed, &
-             state%dv_charge_on_basis, state%dv_charge_on_atoms, state%energies, state%charge_moment, &
-             state%split_files_metadata, state%total_state_count, state%input_step, .false., &
-             state%Y_filtered, state%Y_filtered_desc, state%states, state%structures)
+        call save_state(setting, .false., state)
         call add_timer_event('main', 'save_state', state%wtime)
       end if
 
@@ -442,19 +373,10 @@ contains
         exit
       end if
 
-      call make_matrix_step_forward(setting, proc, state%input_step, state%t, &
-           state%structure, state%filter_group_indices, state%charge_factor, &
-           state%H_sparse, state%S_sparse, &
-           state%Y_filtered_desc, state%Y_filtered, state%Y_local, state%dv_eigenvalues, &
-           state%H1_desc, state%H1, state%H1_base, state%H1_multistep, &
-           state%A_desc, state%A, &
-           state%dv_charge_on_atoms, state%dv_alpha, state%dv_alpha_next)
+      call make_matrix_step_forward(setting, proc, state)
       call add_timer_event('main', 'make_matrix_step_forward', state%wtime)
 
-      call step_forward_post_process(state%dim, setting, state%t, state%structure, state%charge_factor, &
-           state%H_sparse, state%S_sparse, state%Y_filtered_desc, state%Y_filtered, state%dv_eigenvalues, &
-           state%H1_desc, state%H1, state%dv_alpha, state%dv_alpha_next, &
-           state%dv_psi, state%charge_moment, state%energies)
+      call step_forward_post_process(setting, state)
       call add_timer_event('main', 'step_forward_post_process', state%wtime)
 
       state%i = state%i + 1
