@@ -11,7 +11,7 @@ module M_eig_solver_center
   !include 'mpif.h'
   !
   private
-  public :: eig_solver_center, set_density_matrix_mpi, set_pratio_mpi
+  public :: eig_solver_center, set_density_matrix_mpi
   !
 contains
   !
@@ -203,6 +203,12 @@ contains
 
     wtime_end = mpi_wtime()
     call add_event('main:gevp', wtime_end - wtime_start)
+    wtime_start = wtime_end
+
+    call set_pratio_mpi(desc_eigenvectors, eigenvectors)
+
+    wtime_end = mpi_wtime()
+    call add_event('main:set_pratio_mpi', wtime_end - wtime_start)
     wtime_start = wtime_end
 
     if (config%calc%wave_packet%mode == 'on' .and. .not. is_wavepacket_end) then
@@ -499,8 +505,10 @@ contains
     eig_levels(:) = eigenpairs%blacs%values(:)
   end subroutine eig_solver_center_eigenk_elpa
 
-  subroutine set_pratio_mpi()  ! set pratios to atmp(k, 1)
-    use elses_arr_eig_leg, only : atmp, desc_eigenvectors, eigenvectors
+  subroutine set_pratio_mpi(desc_eigenvectors, eigenvectors)  ! set pratios to atmp(k, 1)
+    use elses_arr_eig_leg, only : atmp
+    integer, intent(in) :: desc_eigenvectors(9)
+    real(DOUBLE_PRECISION), intent(in) :: eigenvectors(:, :)
 
     integer :: n_tot_base, i, j, n_procs_row, n_procs_col, my_proc_row, my_proc_col
     real(8) :: sum_power4(desc_eigenvectors(cols_)), sum_power2(desc_eigenvectors(cols_)), pratio

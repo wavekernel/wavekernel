@@ -28,7 +28,6 @@ module M_qm_output_levels
     use elses_mod_file_io, only : vacant_unit !(function)
     use M_qm_domain ,  only : total_electron_number  !(unchanged)
     use M_output_participation, only : gene_participation !(routine)
-    use M_eig_solver_center, only : set_pratio_mpi
 !
     implicit none
     character(len=*), intent(in) :: filename_wrk
@@ -104,7 +103,7 @@ module M_qm_output_levels
         stop
       endif
       if (trim(config%calc%solver%scheme) == 'eigen_mpi') then
-        call set_pratio_mpi()
+        ! Participation ratio is already calculated in eig_solver_center() by set_pratio_mpi()
         part_ratio(:) = atmp(:, 1)
       else
         call gene_participation(part_ratio,lu)
