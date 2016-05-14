@@ -8,3 +8,4 @@ all:
 clean:
 	make -C eigenkernel clean
 	make -C wavepacket clean
+	rm -f ./*.mod ./lib*.a
