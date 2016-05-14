@@ -1,7 +1,10 @@
-.PHONY: all 
+.PHONY: all clean
 
-all: 
-	echo 'INFO: make ext-lib for dummy'
-clean: 
-	echo 'INFO: make clean ext-lib for dummy'
-
+all:
+	make -C eigenkernel
+	cp eigenkernel/src/*.mod eigenkernel/src/libeigenkernel.a ./
+	make -C wavepacket
+	cp wavepacket/src/*.mod wavepacket/src/libwavepacket.a ./
+clean:
+	make -C eigenkernel clean
+	make -C wavepacket clean

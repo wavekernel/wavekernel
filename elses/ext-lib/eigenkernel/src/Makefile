@@ -7,7 +7,7 @@ LDFLAGS_INTERNAL = $(LDFLAGS)
 
 TARGET_MAIN = eigen
 
-TARGET_LIB = libEigenTest.a
+TARGET_LIB = libeigenkernel.a
 
 .PHONY: all lib clean dep
 
