@@ -146,6 +146,8 @@ contains
     end if
     call setup_distributed_matrix_complex('A', proc, &
          setting%num_filter, setting%num_filter, state%A_desc, state%A, .true.)
+    call setup_distributed_matrix_real('YSY_filtered', proc, &
+         setting%num_filter, setting%num_filter, state%YSY_filtered_desc, state%YSY_filtered)
   end subroutine setup_distributed_matrices
 
 
@@ -311,6 +313,7 @@ contains
       call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
            state%group_id, state%filter_group_id, state%t, state%structure, &
            state%H_sparse, state%S_sparse, state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
+           state%YSY_filtered_desc, state%YSY_filtered, &
            state%H1_desc, state%H1, state%H1_base, &
            state%filter_group_indices, state%Y_local, state%charge_factor, &
            state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
@@ -652,7 +655,8 @@ contains
 
 
   subroutine read_next_input_step_with_basis_replace(dim, setting, proc, group_id, filter_group_id, t, structure, &
-       H_sparse, S_sparse, Y_desc, Y, Y_filtered_desc, Y_filtered, H1_desc, H1, H1_base, &
+       H_sparse, S_sparse, Y_desc, Y, Y_filtered_desc, Y_filtered, YSY_filtered_desc, YSY_filtered, &
+       H1_desc, H1, H1_base, &
        filter_group_indices, Y_local, charge_factor, &
        dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
        dv_charge_on_basis, dv_charge_on_atoms, dv_eigenvalues, &
@@ -666,11 +670,12 @@ contains
     type(wp_charge_factor_t), intent(in) :: charge_factor
     integer, allocatable, intent(inout) :: filter_group_indices(:, :)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), H1_desc(desc_size)
-    integer, intent(in) :: desc_eigenvectors(desc_size)
-    real(8), intent(inout) :: Y_filtered(:, :)  ! value of last step is needed for offdiag norm calculation.
-    real(8), intent(out) :: Y(:, :), H1(:, :), H1_base(:, :)
-    real(8), intent(out) :: dv_charge_on_basis(:), dv_charge_on_atoms(:), dv_eigenvalues(:)
+    integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    integer, intent(in) :: H1_desc(desc_size), desc_eigenvectors(desc_size)
+    ! value of last step is needed for offdiag norm calculation.
+    real(8), intent(inout) :: dv_eigenvalues(:), Y_filtered(:, :)
+    real(8), intent(out) :: Y(:, :), YSY_filtered(:, :), H1(:, :), H1_base(:, :)
+    real(8), intent(out) :: dv_charge_on_basis(:), dv_charge_on_atoms(:)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
     type(wp_local_matrix_t), allocatable, intent(out) :: Y_local(:)
@@ -681,14 +686,27 @@ contains
     logical, intent(in) :: to_use_precomputed_eigenpairs
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
 
-    integer :: end_filter
-    real(8), allocatable :: eigenstate_charges(:, :)
+    integer :: end_filter, S_desc(desc_size), SY_desc(desc_size)
+    real(8) :: dv_eigenvalues_prev(setting%num_filter)
+    real(8), allocatable :: eigenstate_charges(:, :), S(:, :), SY(:, :)
     real(8) :: wtime
 
     wtime = mpi_wtime()
 
     call clear_offdiag_blocks_of_overlap(setting, filter_group_indices, S_sparse)
     call add_timer_event('read_next_input_step_with_basis_replace', 'clear_offdiag_blocks_of_overlap', wtime)
+
+    dv_eigenvalues_prev(:) = dv_eigenvalues(:)
+    if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
+      call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
+      call distribute_global_sparse_matrix_wp(S_sparse, S_desc, S)
+      call setup_distributed_matrix_real('SY', proc, dim, setting%num_filter, SY_desc, SY)
+      call pdgemm('No', 'No', dim, setting%num_filter, dim, 1d0, &
+           S, 1, 1, S_desc, &
+           Y_filtered, 1, 1, Y_filtered_desc, &
+           0d0, &
+           SY, 1, 1, SY_desc)
+    end if
 
     if (setting%is_reduction_mode) then
       call terminate('read_next_input_step_with_basis_replace: reduction mode is not implemented in this version', 1)
@@ -712,6 +730,15 @@ contains
            dv_eigenvalues, Y_filtered_desc, Y_filtered, filter_group_indices)
     end if
     call add_timer_event('read_next_input_step_with_basis_replace', 'set_eigenpairs', wtime)
+
+    if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
+      call pdgemm('Trans', 'No', setting%num_filter, setting%num_filter, dim, 1d0, &
+           Y_filtered, 1, 1, Y_filtered_desc, &
+           SY, 1, 1, SY_desc, &
+           0d0, &
+           YSY_filtered, 1, 1, YSY_filtered_desc)
+      deallocate(S, SY)
+    end if
 
     allocate(eigenstate_charges(size(group_id, 2), setting%num_filter))
     call get_eigenstate_charges_on_groups(Y_filtered, Y_filtered_desc, &
@@ -742,7 +769,8 @@ contains
     call re_initialize_state(setting, proc, dim, t - setting%delta_t, structure, charge_factor, &
          H_sparse, S_sparse, &  !full_vecs, full_vecs_desc, filtered_vecs, filtered_vecs_desc, &
          Y_filtered, Y_filtered_desc, &
-         dv_eigenvalues, filter_group_indices, Y_local, &
+         YSY_filtered, YSY_filtered_desc, &
+         dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
          H1_base, H1, H1_desc, dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
          dv_charge_on_basis, dv_charge_on_atoms, &
          charge_moment, energies, errors)

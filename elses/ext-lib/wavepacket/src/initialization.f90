@@ -275,6 +275,45 @@ contains
   end subroutine reconcile_from_lcao_coef_suppress
 
 
+  subroutine reconcile_from_alpha_matrix_suppress(num_filter, t, suppress_constant, &
+       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+    complex(kind(0d0)), intent(in) :: dv_alpha(:)
+    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
+    real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum
+    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
+    real(8), allocatable :: YSY_filtered_suppress(:, :)
+
+    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    YSY_filtered_suppress(:, :) = 0d0
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
+    do j = 1, num_filter
+      do i = 1, num_filter
+        dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+      end do
+      suppress_factor_sum = sum(dv_suppress_factor)
+      dv_suppress_factor(:) = dv_suppress_factor(:) / suppress_factor_sum
+      do i = 1, num_filter
+        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        if (myrow == rsrc .and. mycol == csrc) then
+          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+        end if
+      end do
+    end do
+    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
+    call normalize_vector(num_filter, dv_alpha_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    deallocate(YSY_filtered_suppress)
+  end subroutine reconcile_from_alpha_matrix_suppress
+
+
   subroutine set_initial_value(setting, proc, dim, structure, group_id, &
        H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
        dv_psi, dv_alpha, errors)
@@ -548,7 +587,8 @@ contains
 
   subroutine re_initialize_state(setting, proc, dim, t, structure, charge_factor, &
        H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
-       eigenvalues, filter_group_indices, Y_local, &
+       YSY_filtered, YSY_filtered_desc, &
+       dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
        H1_base, H1, H1_desc, dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
        dv_charge_on_basis, dv_charge_on_atoms, &
        charge_moment, energies, errors)
@@ -557,10 +597,10 @@ contains
     type(wp_structure_t), intent(in) :: structure
     type(wp_charge_factor_t), intent(in) :: charge_factor
     integer, intent(in) :: dim, filter_group_indices(:, :)
-    real(8), intent(in) :: t, eigenvalues(dim)
+    real(8), intent(in) :: t, dv_eigenvalues_prev(setting%num_filter), dv_eigenvalues(setting%num_filter)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size)
-    real(8), intent(in) :: Y_filtered(:, :), H1_base(:, :)
+    integer, intent(in) :: Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size), H1_desc(desc_size)
+    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :), H1_base(:, :)
     type(wp_local_matrix_t), intent(in) :: Y_local(:)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
@@ -572,19 +612,23 @@ contains
 
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error') then
       call reconcile_from_lcao_coef(setting%num_filter, t, &
-           S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
+           S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
            dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_cutoff') then
       call reconcile_from_lcao_coef_cutoff(setting%num_filter, t, setting%vector_cutoff_residual, &
-           S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
+           S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
            dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_suppress') then
-      call reconcile_from_lcao_coef_suppress(setting%num_filter, t, setting%vector_suppress_constant, &
-           S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
+      call reconcile_from_lcao_coef_suppress(setting%num_filter, t, setting%suppress_constant, &
+           S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
            dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
+    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
+      call reconcile_from_alpha_matrix_suppress(setting%num_filter, t, setting%suppress_constant, &
+           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+           dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_alpha_error') then
       dv_alpha_reconcile(:) = dv_alpha(:)
-      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
     else
       call terminate('re_initialize_state: unknown re-initialization method', 1)
     end if
@@ -611,7 +655,7 @@ contains
 
     call compute_energies(setting, proc, structure, &
        H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_charge_on_atoms, charge_factor, &
-       filter_group_indices, Y_local, eigenvalues, dv_psi_reconcile, dv_alpha_reconcile, &
+       filter_group_indices, Y_local, dv_eigenvalues, dv_psi_reconcile, dv_alpha_reconcile, &
        H1_base, H1, H1_desc, energies)
   end subroutine re_initialize_state
 

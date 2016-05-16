@@ -31,10 +31,12 @@ module wp_state_m
     ! MPI realated
     real(8), allocatable :: Y(:, :)  ! m x m
     real(8), allocatable :: Y_filtered(:, :)  ! m x n
+    real(8), allocatable :: YSY_filtered(:, :)  ! n x n
     real(8), allocatable :: H1(:, :), H1_base(:, :)  ! n x n
     complex(kind(0d0)), allocatable :: A(:, :)  ! n x n
     real(8), allocatable :: H1_multistep(:, :)
-    integer :: Y_desc(desc_size), Y_filtered_desc(desc_size), H1_desc(desc_size), A_desc(desc_size)
+    integer :: Y_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    integer :: H1_desc(desc_size), A_desc(desc_size)
   end type wp_state_t
 
 contains

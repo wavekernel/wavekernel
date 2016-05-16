@@ -187,7 +187,9 @@ contains
         if (trim(setting%re_initialize_method) == "minimize_lcao_error_cutoff") then
           setting%vector_cutoff_residual = config%calc%wave_packet%vector_cutoff_residual
         else if (trim(setting%re_initialize_method) == "minimize_lcao_error_suppress") then
-          setting%vector_suppress_constant = config%calc%wave_packet%vector_suppress_constant
+          setting%suppress_constant = config%calc%wave_packet%suppress_constant
+        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_matrix_suppress") then
+          setting%suppress_constant = config%calc%wave_packet%suppress_constant
         end if
     end if
     ! Settings that automatically determined when called from ELSES.

@@ -17,7 +17,7 @@ module wp_setting_m
          temperature, restart_t, &
          alpha_delta_min_x, alpha_delta_max_x, perturb_interval, &
          amplitude_print_threshold = -1d0, amplitude_print_interval, multistep_input_read_interval, &
-         vector_cutoff_residual = 0d0, vector_suppress_constant = 0d0
+         vector_cutoff_residual = 0d0, suppress_constant = 0d0
     ! Special value of alpha_delta_index: 0 -> HOMO
     integer :: alpha_delta_index = 1, num_steps_per_output_split = 100
     integer :: fst_filter = 0, num_filter  ! fst_filter = 0 means not being set.
@@ -324,7 +324,7 @@ contains
           index_arg = index_arg + 1
         case ('-suppress-const')
           call getarg(index_arg + 1, argv)
-          read(argv, *) setting%vector_suppress_constant
+          read(argv, *) setting%suppress_constant
           index_arg = index_arg + 1
         case default
           stop 'unknown option'
@@ -586,6 +586,7 @@ contains
          (trim(setting%re_initialize_method) == 'minimize_lcao_error' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_cutoff' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_suppress' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_alpha_error')) then
       stop 'unknown state re-initialization method'
     end if
@@ -657,7 +658,9 @@ contains
       if (setting%re_initialize_method == 'minimize_lcao_error_cutoff') then
         print *, 'vector_cutoff_residual: ', setting%vector_cutoff_residual
       else if (setting%re_initialize_method == 'minimize_lcao_error_suppress') then
-        print *, 'vector_suppress_constant: ', setting%vector_suppress_constant
+        print *, 'vector_suppress_constant: ', setting%suppress_constant
+      else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress') then
+        print *, 'matrix_suppress_constant: ', setting%suppress_constant
       end if
     else
       print *, 'to_replace_basis: false'
@@ -729,7 +732,7 @@ contains
       buf_real(14) = setting%charge_factor_H
       buf_real(15) = setting%charge_factor_C
       buf_real(16) = setting%vector_cutoff_residual
-      buf_real(17) = setting%vector_suppress_constant
+      buf_real(17) = setting%suppress_constant
       buf_integer(1) = setting%alpha_delta_index
       buf_integer(2) = setting%num_steps_per_output_split
       buf_integer(3) = setting%fst_filter
@@ -821,7 +824,7 @@ contains
       setting%charge_factor_H = buf_real(14)
       setting%charge_factor_C = buf_real(15)
       setting%vector_cutoff_residual = buf_real(16)
-      setting%vector_suppress_constant = buf_real(17)
+      setting%suppress_constant = buf_real(17)
       setting%alpha_delta_index = buf_integer(1)
       setting%num_steps_per_output_split = buf_integer(2)
       setting%fst_filter = buf_integer(3)

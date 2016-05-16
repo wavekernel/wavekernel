@@ -2062,11 +2062,12 @@ contains
             value = getChildValue(work_node3)
             read(unit=value,fmt=*) calc%wave_packet%vector_cutoff_residual
           end if
-        else if ( trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_suppress" ) then
+        else if ( trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_suppress" .or. &
+             trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_matrix_suppress" ) then
           work_node3 => getFirstElementByTagName(work_node2,"suppress_const")
           if( associated(work_node3) ) then
             value = getChildValue(work_node3)
-            read(unit=value,fmt=*) calc%wave_packet%vector_suppress_constant
+            read(unit=value,fmt=*) calc%wave_packet%suppress_constant
           end if
         end if
       end if
