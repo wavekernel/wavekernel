@@ -1,5 +1,6 @@
 # Intermediate
 *.lst
+perf.data
 
 # Executable
 bin/
@@ -20,3 +21,8 @@ src/HTML/
 
 # Link
 Makefile.inc
+
+# Misc
+tool/experimental/.*
+tool/experimental/set_group_id/.*
+xmlf90-1.2g-elses/macros/lib/stddjdm6
