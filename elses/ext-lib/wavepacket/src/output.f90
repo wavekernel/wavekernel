@@ -687,9 +687,15 @@ contains
       call fson_set_name('coordinates_' // coordinate_names(coord : coord), structure_item)
       call fson_value_add(structure_fson, structure_item)
     end do
+    ! Save ipratios.
     structure_item => fson_value_create()
     call fson_set_as_real_array(state%Y_filtered_desc(cols_), state%eigenstate_ipratios, structure_item)
-    call fson_set_name('ipratios', structure_item)
+    call fson_set_name('eigenstate_ipratio_on_groups', structure_item)
+    call fson_value_add(structure_fson, structure_item)
+    ! Save eigenvalues.
+    structure_item => fson_value_create()
+    call fson_set_as_real_array(state%Y_filtered_desc(cols_), state%dv_eigenvalues, structure_item)
+    call fson_set_name('eigenvalues', structure_item)
     call fson_value_add(structure_fson, structure_item)
     ! Save all items.
     call fson_value_add(state%structures, structure_fson)
