@@ -216,7 +216,16 @@ module M_md_motion
           !       --> Update the snapshot data
      case ("cell_change_only")
         if (log_unit > 0) write(log_unit,*)'cell_change_only mode'
-        if (config%calc%distributed%dst_bench_mode) return
+        if (config%calc%distributed%dst_bench_mode) then
+          call elses_md_cell_change(cell_change_for_next_step)
+!            ---> Change the simulation (peridic) cell sizes (experimental)
+          if (mpi_time_check) then
+            call mpi_wrapper_barrier_time(time_check)
+            if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:mpi_check(mov5)= ',time_check
+          endif
+          return
+        endif
+!
      case default
         write(*,'("     config%calc%mode = ", A)') config%calc%mode
         stop "elses_md_motion: unknown motion_type"
