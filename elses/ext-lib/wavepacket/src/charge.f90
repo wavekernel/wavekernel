@@ -100,7 +100,7 @@ contains
       atom_index_end = structure%atom_indices(a + 1) - 1
       do k = atom_index_start, atom_index_end
         charge_a = charge_a + dble(dconjg(dv_psi(k)) * dv_work(k))
-        call check_nan_scalar(charge_a)
+        call check_nan_scalar('get_mulliken_charges_on_atoms', charge_a)
       end do
       dv_charge_on_atoms(a) = charge_a
       sum_mulliken_charges = sum_mulliken_charges + charge_a

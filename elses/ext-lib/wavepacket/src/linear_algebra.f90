@@ -33,8 +33,8 @@ contains
       call terminate('not implemented', 83)
     end if
 
-    call check_nan_vector(dreal(dv_x))
-    call check_nan_vector(aimag(dv_x))
+    call check_nan_vector('matvec_sd_z input', dreal(dv_x))
+    call check_nan_vector('matvec_sd_z input', aimag(dv_x))
 
     dv_Ax(:) = kZero
     do n = 1, A%num_non_zeros
@@ -48,8 +48,8 @@ contains
     end do
     dv_y(:) = beta * dv_y(:) + dv_Ax(:)
 
-    call check_nan_vector(dreal(dv_y))
-    call check_nan_vector(aimag(dv_y))
+    call check_nan_vector('matvec_sd_z output', dreal(dv_y))
+    call check_nan_vector('matvec_sd_z output', aimag(dv_y))
   end subroutine matvec_sd_z
 
 

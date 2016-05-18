@@ -140,26 +140,28 @@ contains
   end subroutine terminate
 
 
-  subroutine check_nan_scalar(x)
+  subroutine check_nan_scalar(name, x)
+    character(len=*), intent(in) :: name
     real(8), intent(in) :: x
     if (x /= x) then
-      call terminate('check_nan_scalar: detect NaN', 1)
+      call terminate('check_nan_scalar: detect NaN in ' // name, 1)
     end if
   end subroutine check_nan_scalar
 
-  
-  subroutine check_nan_vector(xs)
+
+  subroutine check_nan_vector(name, xs)
+    character(len=*), intent(in) :: name
     real(8), intent(in) :: xs(:)
     integer :: i
     do i = 1, size(xs, 1)
       if (xs(i) /= xs(i)) then
         print *, '[Error] NaN at ', i
-        call terminate('check_nan_vector: detect NaN', 1)
+        call terminate('check_nan_vector: detect NaN in ' // name, 1)
       end if
     end do
   end subroutine check_nan_vector
 
-  
+
   subroutine check_nan_matrix(xss)
     real(8), intent(in) :: xss(:, :)
     integer :: i, j
