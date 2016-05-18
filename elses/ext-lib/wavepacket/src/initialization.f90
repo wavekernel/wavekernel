@@ -175,6 +175,10 @@ contains
     real(8) :: psi_norm
     real(8) :: dznrm2  ! Function.
 
+    call check_nan_vector('get_filtering_errors orig real', dreal(dv_psi_orig))
+    call check_nan_vector('get_filtering_errors orig imag', aimag(dv_psi_orig))
+    call check_nan_vector('get_filtering_errors filtered real', dreal(dv_psi_filtered))
+    call check_nan_vector('get_filtering_errors filtered imag', aimag(dv_psi_filtered))
     dv_psi_diff(1 : dim) = dv_psi_orig(1 : dim) - dv_psi_filtered(1 : dim)
     errors%absolute = dznrm2(dim, dv_psi_diff, 1)
     psi_norm = dznrm2(dim, dv_psi_orig, 1)
@@ -298,6 +302,12 @@ contains
         dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
       end do
       suppress_factor_sum = sum(dv_suppress_factor)
+      if (check_master()) then
+        write (0, '(A, F16.6, A, F16.6, F16.6, F16.6, F16.6)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+             '] reconcile_from_alpha_matrix_suppress() : t, min, max, sum of dv_suppress_factor ', &
+             t, minval(dv_suppress_factor), maxval(dv_suppress_factor), suppress_factor_sum
+      end if
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
       dv_suppress_factor(:) = dv_suppress_factor(:) / suppress_factor_sum
       do i = 1, num_filter
         call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
@@ -306,6 +316,7 @@ contains
         end if
       end do
     end do
+    dv_evcoef_reconcile(:) = kZero
     call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
     call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
     call normalize_vector(num_filter, dv_alpha_reconcile)

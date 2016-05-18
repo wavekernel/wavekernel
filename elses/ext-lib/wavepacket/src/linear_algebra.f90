@@ -33,8 +33,8 @@ contains
       call terminate('not implemented', 83)
     end if
 
-    call check_nan_vector('matvec_sd_z input', dreal(dv_x))
-    call check_nan_vector('matvec_sd_z input', aimag(dv_x))
+    call check_nan_vector('matvec_sd_z input real', dreal(dv_x))
+    call check_nan_vector('matvec_sd_z input imag', aimag(dv_x))
 
     dv_Ax(:) = kZero
     do n = 1, A%num_non_zeros
@@ -48,8 +48,8 @@ contains
     end do
     dv_y(:) = beta * dv_y(:) + dv_Ax(:)
 
-    call check_nan_vector('matvec_sd_z output', dreal(dv_y))
-    call check_nan_vector('matvec_sd_z output', aimag(dv_y))
+    call check_nan_vector('matvec_sd_z output real', dreal(dv_y))
+    call check_nan_vector('matvec_sd_z output imag', aimag(dv_y))
   end subroutine matvec_sd_z
 
 
@@ -64,6 +64,9 @@ contains
     integer :: i, j, m, n, nprow, npcol, myrow, mycol, li, lj, pi, pj, ierr
     real(8) :: elem
     complex(kind(0d0)), allocatable :: dv_Ax(:), dv_Ax_recv(:)
+
+    call check_nan_vector('matvec_dd_z input real', dreal(dv_x))
+    call check_nan_vector('matvec_dd_z input imag', aimag(dv_x))
 
     call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
     if (trans(1 : 1) == 'T') then
@@ -99,6 +102,9 @@ contains
     end if
     call mpi_allreduce(dv_Ax, dv_Ax_recv, m, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
     dv_y(:) = alpha * dv_Ax_recv(:) + beta * dv_y(:)
+
+    call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
+    call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
   end subroutine matvec_dd_z
 
 
