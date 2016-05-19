@@ -7,7 +7,7 @@ module wp_util_m
        remove_directory_from_filename, read_vector, wp_random_number, comb_sort
 
   type wp_energy_t
-    real(8) :: tightbinding, nonlinear, total
+    real(8) :: tightbinding, nonlinear, total, tightbinding_deviation
   end type wp_energy_t
 
   type wp_error_t

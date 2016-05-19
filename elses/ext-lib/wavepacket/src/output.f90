@@ -549,6 +549,11 @@ contains
     state_elem%value_type = TYPE_REAL
     state_elem%value_real = energies%total
     call fson_value_add(state, state_elem)
+    state_elem => fson_value_create()
+    call fson_set_name('TB_energy_deviation', state_elem)
+    state_elem%value_type = TYPE_REAL
+    state_elem%value_real = energies%tightbinding_deviation
+    call fson_value_add(state, state_elem)
 
     ! Set alpha (EVE coefficients).
     allocate(state_elem)

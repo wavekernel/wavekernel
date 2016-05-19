@@ -501,16 +501,31 @@ contains
     real(8), intent(out) :: H1(:, :)
     type(wp_energy_t), intent(out) :: energies
 
-    integer :: dim, num_filter
+    integer :: dim, num_filter, i
+    real(8) :: dv_alpha_squared(setting%num_filter), alpha_norm
     complex(kind(0d0)) :: energy_tmp, dv_h_psi(Y_filtered_desc(rows_)), dv_evcoef(Y_filtered_desc(cols_))
-    complex(kind(0d0)) :: zdotc  ! Function.
+    ! Functions.
+    real(8) :: dznrm2
+    complex(kind(0d0)) :: zdotc
 
     dim = Y_filtered_desc(rows_)
     num_filter = Y_filtered_desc(cols_)
 
-    dv_h_psi(:) = kZero
-    call matvec_sd_z('No', H_sparse, kOne, dv_psi, kZero, dv_h_psi)
-    energies%tightbinding = truncate_imag(zdotc(dim, dv_psi, 1, dv_h_psi, 1))
+    alpha_norm = dznrm2(num_filter, dv_alpha, 1)
+    do i = 1, num_filter
+      dv_alpha_squared(i) = (abs(dv_alpha(i)) / alpha_norm) ** 2d0
+    end do
+    energies%tightbinding = 0d0
+    energies%tightbinding_deviation = 0d0
+    do i = 1, setting%num_filter
+      energies%tightbinding = energies%tightbinding + dv_alpha_squared(i) * eigenvalues(i)
+    end do
+    do i = 1, setting%num_filter
+      energies%tightbinding_deviation = energies%tightbinding_deviation + &
+           dv_alpha_squared(i) * (eigenvalues(i) - energies%tightbinding) ** 2d0
+    end do
+    energies%tightbinding_deviation = sqrt(energies%tightbinding_deviation)
+
     call make_H1(proc, setting%h1_type, structure, &
          S_sparse, Y_filtered, Y_filtered_desc, &
          .true., &  ! H and H_desc are not referenced because is_init is true.
