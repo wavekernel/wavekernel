@@ -288,8 +288,8 @@ contains
     complex(kind(0d0)), intent(in) :: dv_alpha(:)
     complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
 
-    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
-    real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(num_filter)
+    real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum, dv_suppress_factor_copy(num_filter)
     complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
     real(8), allocatable :: YSY_filtered_suppress(:, :)
 
@@ -302,10 +302,14 @@ contains
         dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
       end do
       suppress_factor_sum = sum(dv_suppress_factor)
+      dv_suppress_factor_copy(:) = dv_suppress_factor(:)
       if (check_master()) then
-        write (0, '(A, F16.6, A, F16.6, F16.6, F16.6, F16.6)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-             '] reconcile_from_alpha_matrix_suppress() : t, min, max, sum of dv_suppress_factor ', &
-             t, minval(dv_suppress_factor), maxval(dv_suppress_factor), suppress_factor_sum
+        call comb_sort(num_filter, dv_suppress_factor_copy, ks)
+        write (0, '(A, F16.6, A, F16.6, I10, 4F16.6)') ' [Event', &
+             mpi_wtime() - g_wp_mpi_wtime_init, &
+             '] reconcile_from_alpha_matrix_suppress() : t, j, min, 2ndmax, max, sum of dv_suppress_factor ', &
+             t, j, dv_suppress_factor_copy(num_filter), &
+             dv_suppress_factor_copy(2), dv_suppress_factor_copy(1), suppress_factor_sum
       end if
       call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
       dv_suppress_factor(:) = dv_suppress_factor(:) / suppress_factor_sum
