@@ -3,20 +3,10 @@ import sys, re
 
 def read_xyz(fp):
     xyz = []
-    is_first_line = True
-    for line in fp:
+    for i, line in enumerate(fp):
         line = line.strip()
-        if is_first_line:
-            m = re.search(r'(\d+)', line)
-            if m:
-                num_atoms = int(m.group(1))
-                is_first_line = False
-            else:
-                sys.exit(1)
-        elif line != '' and line[0] != '#':
+        if i > 1:
             xyz.append(line)
-        if len(xyz) >= num_atoms:
-            break
     return xyz
 
 def read_group_id(fp):
