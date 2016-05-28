@@ -11,7 +11,7 @@ module wp_linear_algebra_m
   complex(kind(0d0)) :: zdotc
   integer :: numroc, indxg2p, blacs_pnum
 
-  public :: matvec_sd_z, matvec_dd_z, &
+  public :: matvec_sd_z, matvec_dd_z, matvec_dd_z2, matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
        get_symmetricity, print_offdiag_norm, cutoff_vector
@@ -106,6 +106,65 @@ contains
     call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
     call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
   end subroutine matvec_dd_z
+
+
+  subroutine matvec_nearest_orthonormal_matrix(A, A_desc, dv_x, dv_y, B)
+    real(8), intent(in) :: A(:, :)
+    integer, intent(in) :: A_desc(desc_size)
+    complex(kind(0d0)), intent(in) :: dv_x(:)
+    complex(kind(0d0)), intent(out) :: dv_y(:)
+    real(8), intent(out) :: B(:, :)
+
+    integer :: dim, lwork, ierr
+    real(8) :: A_work(size(A, 1), size(A, 2)), singular_values(A_desc(rows_))
+    real(8) :: U(size(A, 1), size(A, 2)), VT(size(A, 1), size(A, 2)), lwork_real
+    real(8), allocatable :: work(:)
+    complex(kind(0d0)) :: dv_VTx(A_desc(rows_))
+
+    dim = A_desc(rows_)
+    A_work(:, :) = A(:, :)
+    call pdgesvd('V', 'V', dim, dim, A_work, 1, 1, A_desc, singular_values, &
+         U, 1, 1, A_desc, VT, 1, 1, A_desc, lwork_real, -1, ierr)
+    lwork = ceiling(lwork_real)
+    allocate(work(lwork))
+    call pdgesvd('V', 'V', dim, dim, A_work, 1, 1, A_desc, singular_values, &
+         U, 1, 1, A_desc, VT, 1, 1, A_desc, work, lwork, ierr)
+    dv_VTx(:) = kZero
+    dv_y(:) = kZero
+    call matvec_dd_z('N', VT, A_desc, kOne, dv_x, kZero, dv_VTx)
+    call matvec_dd_z('N', U, A_desc, kOne, dv_VTx, kZero, dv_y)
+    call pdgemm('N', 'N', dim, dim, dim, 1d0, &
+         U, 1, 1, A_desc, VT, 1, 1, A_desc, 0d0, B, 1, 1, A_desc)
+  end subroutine matvec_nearest_orthonormal_matrix
+
+
+  subroutine scale_columns_to_stochastic_matrix(A_desc, A)
+    integer, intent(in) :: A_desc(desc_size)
+    real(8), intent(inout) :: A(:, :)
+
+    integer :: dim, i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ierr
+    real(8) :: buf_column_sum(A_desc(cols_)), buf_column_sum_recv(A_desc(cols_))
+
+    call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
+    dim = A_desc(cols_)
+    buf_column_sum(:) = kZero
+    buf_column_sum_recv(:) = kZero
+    do i = 1, dim
+      do j = 1, dim
+        call infog2l(i, j, A_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        if (myrow == rsrc .and. mycol == csrc) then
+          buf_column_sum(j) = buf_column_sum(j) + A(i_local, j_local)
+        end if
+      end do
+    end do
+    call mpi_allreduce(buf_column_sum, buf_column_sum_recv, dim, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+    do j = 1, dim
+      if (abs(buf_column_sum_recv(j)) >= 1d-10) then
+        call pdscal(dim, 1d0 / buf_column_sum_recv(j), A, 1, j, A_desc, 1)
+      end if
+    end do
+    call check_nan_matrix('scale_columns_to_stochastic_matrix', A)
+  end subroutine scale_columns_to_stochastic_matrix
 
 
   ! 最初に一般化固有値問題を解く部分.

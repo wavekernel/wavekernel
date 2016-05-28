@@ -279,7 +279,7 @@ contains
   end subroutine reconcile_from_lcao_coef_suppress
 
 
-  subroutine reconcile_from_alpha_matrix_suppress(num_filter, t, suppress_constant, &
+  subroutine reconcile_from_alpha_matrix_suppress_old(num_filter, t, suppress_constant, &
        dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
        dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
     integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
@@ -291,15 +291,25 @@ contains
     integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(num_filter)
     real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum, dv_suppress_factor_copy(num_filter)
     complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
-    real(8), allocatable :: YSY_filtered_suppress(:, :)
-
+    real(8), allocatable :: YSY_filtered_suppress(:, :), B(:, :)
+    real(8) :: work(1000)
+    integer, save :: count = 0
+    character(len=50) :: filename
+    character(len=6) :: count_str
+    character(len=12) :: time_str
+    integer, parameter :: iunit_YSY = 20
+    real(8) :: dznrm2
+    print *, 'ZZZZZstart', count, t * 2.418884326505e-5
+    print *, 'ZZZZZdiffeigenval', abs(dv_eigenvalues(:) - dv_eigenvalues_prev(:))
     call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
     allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    allocate(B(size(YSY_filtered, 1), size(YSY_filtered, 2)))
     YSY_filtered_suppress(:, :) = 0d0
     call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
     do j = 1, num_filter
       do i = 1, num_filter
         dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+        !dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues(j)) ** 2d0)
       end do
       suppress_factor_sum = sum(dv_suppress_factor)
       dv_suppress_factor_copy(:) = dv_suppress_factor(:)
@@ -310,9 +320,112 @@ contains
              '] reconcile_from_alpha_matrix_suppress() : t, j, min, 2ndmax, max, sum of dv_suppress_factor ', &
              t, j, dv_suppress_factor_copy(num_filter), &
              dv_suppress_factor_copy(2), dv_suppress_factor_copy(1), suppress_factor_sum
+        !if (j /= ks(1)) then
+        !  write (0, '(A, F16.6, A, I10, I0)') ' [Event', &
+        !       mpi_wtime() - g_wp_mpi_wtime_init, &
+        !       '] reconcile_from_alpha_matrix_suppress() : swap occured between ', j, ks(1)
+        !end if
       end if
       call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
+      dv_suppress_factor(:) = dv_suppress_factor(:) !/ suppress_factor_sum
+      print *, 'ZZZZZZZsuppressfactor j, suppress_factor_sum, all: ', j, suppress_factor_sum, ',', dv_suppress_factor(:)
+      do i = 1, num_filter
+        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        if (myrow == rsrc .and. mycol == csrc) then
+          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+          if (abs(YSY_filtered_suppress(i_local, j_local)) > 5d-3) then
+            print *, 'ZZZZZZZYSYsuppressed j, i, YSYs, YSY, fac: ', j, ' -> ', i, YSY_filtered_suppress(i_local, j_local), ', ', &
+                 YSY_filtered(i_local, j_local), dv_suppress_factor(i)
+          end if
+        end if
+      end do
+    end do
+
+    write(count_str, '(I6.6)') count
+    write(time_str, '(F0.4)') t * 2.418884326505e-5  ! kPsecPerAu.
+    filename = 'YSY_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+    if (check_master()) then
+      open(iunit_YSY, file=trim(filename))
+    end if
+    call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+    if (check_master()) then
+      close(iunit_YSY)
+    end if
+    filename = 'YSYsuppress_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+    if (check_master()) then
+      open(iunit_YSY, file=trim(filename))
+    end if
+    call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSYsuppress', &
+         iunit_YSY, work)
+    if (check_master()) then
+      close(iunit_YSY)
+    end if
+
+    dv_evcoef_reconcile(:) = kZero
+    !stop
+    !print *, 'ZZZZ1', t * 2.418884326505e-5, 'ps', dv_evcoef
+    !call matvec_nearest_orthonormal_matrix(YSY_filtered_suppress, YSY_filtered_desc, &
+    !     dv_evcoef, dv_evcoef_reconcile, B)
+    !filename = 'YSYB_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+    !if (check_master()) then
+    !  open(iunit_YSY, file=trim(filename))
+    !end if
+    !call pdlaprnt(num_filter, num_filter, B, 1, 1, YSY_filtered_desc, 0, 0, 'YSYB', &
+    !     iunit_YSY, work)
+    !if (check_master()) then
+    !  close(iunit_YSY)
+    !end if
+    count = count + 1
+    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+    !print *, 'ZZZZ2', t * 2.418884326505e-5, 'ps', dv_evcoef_reconcile
+    !stop
+    !if (t * 2.418884326505e-5 > 0.002) then
+    !  stop
+    !end if
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
+    print *, 'ZZZZZZalphanorm', dznrm2(num_filter, dv_alpha_reconcile, 1)
+    call normalize_vector(num_filter, dv_alpha_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    deallocate(YSY_filtered_suppress)
+  end subroutine reconcile_from_alpha_matrix_suppress_old
+
+
+  subroutine reconcile_from_alpha_matrix_suppress(num_filter, t, suppress_constant, &
+       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+    complex(kind(0d0)), intent(in) :: dv_alpha(:)
+    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(num_filter)
+    real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum, dv_suppress_factor_copy(num_filter)
+    real(8) :: dv_suppress_factor2(num_filter), suppress_factor_sum2
+    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
+    complex(kind(0d0)) :: dv_evcoef_amplitude(num_filter), dv_evcoef_amplitude_reconcile(num_filter)
+    real(8), allocatable :: ENE_suppress(:, :), YSY_filtered_suppress(:, :)
+    real(8) :: work(1000), energy_normalizer
+    integer, save :: count = 0
+    character(len=50) :: filename
+    character(len=6) :: count_str
+    character(len=12) :: time_str
+    integer, parameter :: iunit_YSY = 20
+    real(8) :: dznrm2
+
+    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+    allocate(ENE_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    ENE_suppress(:, :) = 0d0
+
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
+    do j = 1, num_filter
+      do i = 1, num_filter
+        dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+      end do
+      suppress_factor_sum = sum(dv_suppress_factor)
       dv_suppress_factor(:) = dv_suppress_factor(:) / suppress_factor_sum
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
       do i = 1, num_filter
         call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
         if (myrow == rsrc .and. mycol == csrc) then
@@ -320,13 +433,178 @@ contains
         end if
       end do
     end do
+
+    !write(count_str, '(I6.6)') count
+    !write(time_str, '(F0.4)') t * 2.418884326505e-5  ! kPsecPerAu.
+    !filename = 'YSY_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+    !if (check_master()) then
+    !  open(iunit_YSY, file=trim(filename))
+    !end if
+    !call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+    !if (check_master()) then
+    !  close(iunit_YSY)
+    !end if
+
     dv_evcoef_reconcile(:) = kZero
     call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+
+    do j = 1, num_filter
+      dv_evcoef_amplitude(j) = conjg(dv_evcoef(j)) * dv_evcoef(j)
+      do i = 1, num_filter
+        if (abs(dv_evcoef_reconcile(i)) < 1d-10) then  ! αの値ではなくsmoothed deltaの方で切り落としを定める.
+          !print *, 'ZZZZ i: alphaprime0(zero), abs(alphaprime0)', i, ':', dv_evcoef_reconcile(i), abs(dv_evcoef_reconcile(i))
+          dv_suppress_factor2(i) = kZero
+        else
+          dv_suppress_factor2(i) = exp(- 1d4 * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+        end if
+      end do
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor2', dv_suppress_factor2)
+      do i = 1, num_filter
+        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        if (myrow == rsrc .and. mycol == csrc) then
+          ENE_suppress(i_local, j_local) = dv_suppress_factor2(i)
+        end if
+      end do
+    end do
+    call scale_columns_to_stochastic_matrix(YSY_filtered_desc, ENE_suppress)
+
+    !filename = 'ENEsuppress_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+    !if (check_master()) then
+    !  open(iunit_YSY, file=trim(filename))
+    !end if
+    !call pdlaprnt(num_filter, num_filter, ENE_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'ENEsuppress', &
+    !     iunit_YSY, work)
+    !if (check_master()) then
+    !  close(iunit_YSY)
+    !end if
+    count = count + 1
+
+    dv_evcoef_amplitude_reconcile(:) = kZero
+    call matvec_dd_z('No', ENE_suppress, YSY_filtered_desc, kOne, dv_evcoef_amplitude, kZero, dv_evcoef_amplitude_reconcile)
+    do i = 1, num_filter
+      if (abs(dv_evcoef_reconcile(i)) < 1d-10) then
+        !print *, 'ZZZZII1 i: alphaprime0(zero), targetamp', i, ':', &
+        !     dv_evcoef_reconcile(i), dsqrt(dreal(dv_evcoef_amplitude_reconcile(i)))
+      else
+        energy_normalizer = dsqrt(dreal(dv_evcoef_amplitude_reconcile(i))) / abs(dv_evcoef_reconcile(i))
+        !print *, 'ZZZZII2 i: alphaprime0, targetamp, normalizer', i, ':', dv_evcoef_reconcile(i), &
+        !     dsqrt(dreal(dv_evcoef_amplitude_reconcile(i))), energy_normalizer
+        dv_evcoef_reconcile(i) = dv_evcoef_reconcile(i) * energy_normalizer
+      end if
+    end do
+
     call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
+    if (check_master()) then
+      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
+           dznrm2(num_filter, dv_alpha_reconcile, 1)
+    end if
     call normalize_vector(num_filter, dv_alpha_reconcile)
     call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
-    deallocate(YSY_filtered_suppress)
+    deallocate(YSY_filtered_suppress, ENE_suppress)
   end subroutine reconcile_from_alpha_matrix_suppress
+
+
+  !subroutine reconcile_from_alpha_matrix_suppress(num_filter, t, suppress_constant, &
+  !     dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+  !     dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+  !  integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+  !  real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+  !  real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+  !  complex(kind(0d0)), intent(in) :: dv_alpha(:)
+  !  complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !
+  !  integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(num_filter)
+  !  real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum, dv_suppress_factor_copy(num_filter)
+  !  real(8) :: dv_suppress_factor2(num_filter), suppress_factor_sum2
+  !  complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
+  !  complex(kind(0d0)) :: dv_evcoef_amplitude(num_filter), dv_evcoef_amplitude_reconcile(num_filter)
+  !  real(8), allocatable :: ENE_suppress(:, :), YSY_filtered_suppress(:, :)
+  !  real(8) :: work(1000), energy_normalizer
+  !  integer, save :: count = 0
+  !  character(len=50) :: filename
+  !  character(len=6) :: count_str
+  !  character(len=12) :: time_str
+  !  integer, parameter :: iunit_YSY = 20
+  !  real(8) :: dznrm2
+  !
+  !  print *, 'ZZZZZstart', count, t * 2.418884326505e-5
+  !
+  !  call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+  !  !allocate(ENE_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+  !  allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+  !  !ENE_suppress(:, :) = 0d0
+  !
+  !  call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
+  !  do j = 1, num_filter
+  !    dv_evcoef_amplitude(j) = conjg(dv_evcoef(j)) * dv_evcoef(j)
+  !    do i = 1, num_filter
+  !      dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+  !      !dv_suppress_factor2(i) = exp(- 1d4 * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+  !    end do
+  !    !suppress_factor_sum = sum(dv_suppress_factor)
+  !    !suppress_factor_sum2 = sum(dv_suppress_factor2)
+  !    dv_suppress_factor(:) = dv_suppress_factor(:) !/ suppress_factor_sum
+  !    !dv_suppress_factor2(:) = dv_suppress_factor2(:) / suppress_factor_sum2
+  !    call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
+  !    do i = 1, num_filter
+  !      call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+  !      if (myrow == rsrc .and. mycol == csrc) then
+  !        YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+  !        !ENE_suppress(i_local, j_local) = dv_suppress_factor2(i)
+  !      end if
+  !    end do
+  !  end do
+  !  call scale_columns_to_stochastic_matrix(YSY_filtered_desc, YSY_filtered_suppress)
+  !
+  !  write(count_str, '(I6.6)') count
+  !  write(time_str, '(F0.4)') t * 2.418884326505e-5  ! kPsecPerAu.
+  !  filename = 'YSY_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+  !  if (check_master()) then
+  !    open(iunit_YSY, file=trim(filename))
+  !  end if
+  !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+  !  if (check_master()) then
+  !    close(iunit_YSY)
+  !  end if
+  !  !filename = 'ENEsuppress_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+  !  !if (check_master()) then
+  !  !  open(iunit_YSY, file=trim(filename))
+  !  !end if
+  !  !call pdlaprnt(num_filter, num_filter, ENE_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'ENEsuppress', &
+  !  !     iunit_YSY, work)
+  !  !if (check_master()) then
+  !  !  close(iunit_YSY)
+  !  !end if
+  !
+  !  count = count + 1
+  !  dv_evcoef_reconcile(:) = kZero
+  !  dv_evcoef_amplitude_reconcile(:) = kZero
+  !  call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+  !  call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, &
+  !       kOne, dv_evcoef_amplitude, kZero, dv_evcoef_amplitude_reconcile)
+  !  print *, 'ZZZ1', dv_evcoef_amplitude
+  !  print *, 'ZZZ2', dv_evcoef_amplitude_reconcile
+  !  !call matvec_dd_z('No', ENE_suppress, YSY_filtered_desc, kOne, dv_evcoef_amplitude, kZero, dv_evcoef_amplitude_reconcile)
+  !  do i = 1, num_filter
+  !    if (abs(dv_evcoef_reconcile(i)) < 1d-16) then
+  !      print *, 'ZZZZ i: alphaprime0(zero), abs(alphaprime0), targetamp(ignored)', i, ':', &
+  !           dv_evcoef_reconcile(i), abs(dv_evcoef_reconcile(i)), dsqrt(dreal(dv_evcoef_amplitude_reconcile(i)))
+  !      dv_evcoef_reconcile(i) = kZero
+  !    else
+  !      energy_normalizer = dsqrt(dreal(dv_evcoef_amplitude_reconcile(i))) / abs(dv_evcoef_reconcile(i))
+  !      print *, 'ZZZZ i: alphaprime0, targetamp, normalizer', i, ':', dv_evcoef_reconcile(i), &
+  !           dsqrt(dreal(dv_evcoef_amplitude_reconcile(i))), energy_normalizer
+  !      dv_evcoef_reconcile(i) = dv_evcoef_reconcile(i) * energy_normalizer
+  !    end if
+  !  end do
+  !
+  !  call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
+  !  print *, 'ZZZZZZalpha norm before normalization', dznrm2(num_filter, dv_alpha_reconcile, 1)
+  !  call normalize_vector(num_filter, dv_alpha_reconcile)
+  !  call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+  !  !deallocate(ENE_suppress)
+  !end subroutine reconcile_from_alpha_matrix_suppress
 
 
   subroutine set_initial_value(setting, proc, dim, structure, group_id, &

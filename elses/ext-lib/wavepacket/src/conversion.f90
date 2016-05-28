@@ -55,7 +55,7 @@ contains
     end do
   end subroutine alpha_to_eigenvector_coef
 
-  
+
   ! Same to change_basis_lcao_to_alpha except that Y and A_lcao are assumed to be real.
   subroutine change_basis_lcao_to_alpha(proc, Y, Y_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
     type(wp_process_t), intent(in) :: proc

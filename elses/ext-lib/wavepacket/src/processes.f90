@@ -162,14 +162,15 @@ contains
   end subroutine check_nan_vector
 
 
-  subroutine check_nan_matrix(xss)
+  subroutine check_nan_matrix(name, xss)
+    character(len=*), intent(in) :: name
     real(8), intent(in) :: xss(:, :)
     integer :: i, j
     do j = 1, size(xss, 2)
       do i = 1, size(xss, 1)
         if (xss(i, j) /= xss(i, j)) then
           print *, '[Error] NaN at ', i, j
-          call terminate('check_nan_matrix: detect NaN', 1)
+          call terminate('check_nan_matrix: detect NaN in ' // name, 1)
         end if
       end do
     end do
