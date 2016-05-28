@@ -11,7 +11,7 @@ module wp_linear_algebra_m
   complex(kind(0d0)) :: zdotc
   integer :: numroc, indxg2p, blacs_pnum
 
-  public :: matvec_sd_z, matvec_dd_z, matvec_dd_z2, matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
+  public :: matvec_sd_z, matvec_dd_z, matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
        get_symmetricity, print_offdiag_norm, cutoff_vector
