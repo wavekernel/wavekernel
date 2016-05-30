@@ -768,6 +768,7 @@ contains
   subroutine compute_energies(setting, proc, structure, &
        H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_charge_on_atoms, charge_factor, &
        filter_group_indices, Y_local, eigenvalues, dv_psi, dv_alpha, &
+       dv_atom_perturb, &
        H1_base, H1, H1_desc, energies)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
@@ -780,6 +781,7 @@ contains
     real(8), intent(in) :: Y_filtered(:, :), H1_base(:, :)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    real(8), intent(inout) :: dv_atom_perturb(structure%num_atoms)
     real(8), intent(out) :: H1(:, :)
     type(wp_energy_t), intent(out) :: energies
 
@@ -815,6 +817,7 @@ contains
          trim(setting%filter_mode) == 'group', filter_group_indices, Y_local, &
          0d0, setting%temperature, setting%delta_t, setting%perturb_interval, &
          dv_charge_on_atoms, charge_factor, &
+         dv_atom_perturb, &
          H1, H1_desc)
     if (trim(setting%filter_mode) == 'group') then
       H1(:, :) = H1(:, :) + H1_base(:, :)  ! Sum of distributed matrices.
@@ -889,6 +892,7 @@ contains
          state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
          state%dv_charge_on_atoms, state%charge_factor, &
          state%filter_group_indices, state%Y_local, state%dv_eigenvalues, state%dv_psi, state%dv_alpha, &
+         state%dv_atom_perturb, &
          state%H1_base, state%H1, state%H1_desc, state%energies)
   end subroutine initialize
 
@@ -899,6 +903,7 @@ contains
        dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
        H1_base, H1, H1_desc, dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
        dv_charge_on_basis, dv_charge_on_atoms, &
+       dv_atom_perturb, &
        charge_moment, energies, errors)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
@@ -914,6 +919,7 @@ contains
     complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
     real(8), intent(out) :: H1(:, :)
     real(8), intent(out) :: dv_charge_on_basis(dim), dv_charge_on_atoms(structure%num_atoms)
+    real(8), intent(inout) :: dv_atom_perturb(structure%num_atoms)
     type(wp_charge_moment_t), intent(out) :: charge_moment
     type(wp_energy_t), intent(out) :: energies
     type(wp_error_t), intent(out) :: errors
@@ -964,6 +970,7 @@ contains
     call compute_energies(setting, proc, structure, &
        H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_charge_on_atoms, charge_factor, &
        filter_group_indices, Y_local, dv_eigenvalues, dv_psi_reconcile, dv_alpha_reconcile, &
+       dv_atom_perturb, &
        H1_base, H1, H1_desc, energies)
   end subroutine re_initialize_state
 

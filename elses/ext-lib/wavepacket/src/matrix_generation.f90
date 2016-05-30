@@ -306,88 +306,72 @@ contains
   !  wtime_start = wtime_end
   !end subroutine make_H1_maxwell
   !
-  !
-  !subroutine make_H1_harmonic(proc, num_atoms, atom_indices, &
-  !         Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
-  !         is_init, is_restart_mode, &
-  !         t, temperature, delta_time, perturb_interval, &
-  !         full_vecs, full_vecs_desc, H1_alpha, H1_alpha_desc)
-  !  type(wp_process_t), intent(in) :: proc
-  !  integer, intent(in) :: num_atoms, atom_indices(num_atoms + 1), filter_group_indices(:, :)
-  !  complex(kind(0d0)), intent(inout) :: full_vecs(:, :)
-  !  complex(kind(0d0)), intent(in) :: Y(:, :)
-  !  type(wp_local_matrix_t), intent(in) :: Y_local(:)
-  !  logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
-  !  integer, intent(in) :: Y_desc(desc_size), full_vecs_desc(desc_size), H1_alpha_desc(desc_size)
-  !  real(8), intent(in) :: t, temperature, delta_time, perturb_interval
-  !  complex(kind(0d0)), intent(out) :: H1_alpha(:, :)
-  !
-  !  integer :: dim, atom, nprow, npcol, myprow, mypcol, prow_own, pcol_own, i, j, ierr
-  !  integer :: seed = 10  ! Static variable.
-  !  real(8) :: phase, energy, wtime_start, wtime_end, random_val(num_atoms), val
-  !  complex(kind(0d0)), allocatable :: H1_lcao_diag(:)
-  !  logical :: to_refresh
-  !  integer :: indxg2p, indxg2l
-  !
-  !  wtime_start = mpi_wtime()
-  !  call blacs_gridinfo(proc%context, nprow, npcol, myprow, mypcol)
-  !  ! Temporary implementation. Perturbation term is not inherited in restart_mode now.
-  !  to_refresh = (is_init .and. .not. is_restart_mode) .or. &
-  !       t < floor((t + delta_time) / perturb_interval) * perturb_interval - 1d-10
-  !
-  !  dim = Y_desc(rows_)
-  !  allocate(H1_lcao_diag(dim))
-  !  H1_lcao_diag(:) = kZero
-  !  pcol_own = indxg2p(col_atom_perturb, full_vecs_desc(block_col_), 0, full_vecs_desc(csrc_), npcol)
-  !
-  !  if (check_master()) then
-  !    do atom = 1, num_atoms
-  !      call wp_random_number(seed, val)  ! 0 <= phase < 1
-  !      random_val(atom) = val
-  !    end do
-  !  end if
-  !  call mpi_bcast(random_val, num_atoms, mpi_double_precision, g_wp_master_pnum, mpi_comm_world, ierr)
-  !
-  !  do atom = 1, num_atoms
-  !    prow_own = indxg2p(atom, full_vecs_desc(block_row_), 0, full_vecs_desc(rsrc_), nprow)
-  !    if (myprow == prow_own .and. mypcol == pcol_own) then
-  !      i = indxg2l(atom, full_vecs_desc(block_row_), 0, 0, nprow)
-  !      j = indxg2l(col_atom_perturb, full_vecs_desc(block_col_), 0, 0, npcol)
-  !      if (to_refresh) then
-  !        energy = temperature * (sin(random_val(atom) * 2d0 * kPi) ** 2d0 - 0.5)
-  !        full_vecs(i, j) = cmplx(energy, 0d0, kind(0d0))
-  !      end if
-  !      H1_lcao_diag(atom_indices(atom) : atom_indices(atom + 1) - 1) = full_vecs(i, j)
-  !    end if
-  !  end do
-  !
-  !  wtime_end = mpi_wtime()
-  !  call add_event('make_H1_harmonic:set_diag', wtime_end - wtime_start)
-  !  wtime_start = wtime_end
-  !
-  !  call zgsum2d(proc%context, 'Row', ' ', dim, 1, H1_lcao_diag, dim, 0, pcol_own)
-  !  if (myprow == 0 .and. mypcol == pcol_own) then
-  !    call zgebs2d(proc%context, 'All', ' ', dim, 1, H1_lcao_diag, dim)
-  !  else
-  !    call zgebr2d(proc%context, 'All', ' ', dim, 1, H1_lcao_diag, dim, 0, pcol_own)
-  !  end if
-  !
-  !  wtime_end = mpi_wtime()
-  !  call add_event('make_H1_harmonic:sum_and_broadcast', wtime_end - wtime_start)
-  !  wtime_start = wtime_end
-  !
-  !  if (is_group_filter_mode) then
-  !    call change_basis_lcao_diag_to_alpha_group_filter_real(proc, filter_group_indices, Y_local, &
-  !         H1_lcao_diag, H1_alpha, H1_alpha_desc)
-  !  else
-  !    call change_basis_lcao_diag_to_alpha_real(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
-  !  end if
-  !
-  !  wtime_end = mpi_wtime()
-  !  call add_event('make_H1_harmonic:change_basis', wtime_end - wtime_start)
-  !end subroutine make_H1_harmonic
 
-  
+  subroutine make_H1_harmonic(proc, structure, Y, Y_desc, &
+       is_group_filter_mode, filter_group_indices, Y_local, &
+       is_init, is_restart_mode, &
+       t, temperature, delta_time, perturb_interval, &
+       dv_atom_perturb, &
+       H1_alpha, H1_alpha_desc)
+    type(wp_process_t), intent(in) :: proc
+    type(wp_structure_t), intent(in) :: structure
+    integer, intent(in) :: filter_group_indices(:, :)
+    real(8), intent(in) :: Y(:, :)
+    type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
+    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
+    real(8), intent(in) :: t, temperature, delta_time, perturb_interval
+    real(8), intent(inout) :: dv_atom_perturb(:)
+    real(8), intent(out) :: H1_alpha(:, :)
+
+    integer :: dim, atom, nprow, npcol, myprow, mypcol, prow_own, pcol_own, i, j, ierr
+    integer :: seed = 10  ! Static variable.
+    real(8) :: phase, energy, wtime_start, wtime_end, random_val(structure%num_atoms), val
+    real(8) :: H1_lcao_diag(Y_desc(rows_))
+    logical :: to_refresh
+    integer :: indxg2p, indxg2l
+
+    wtime_start = mpi_wtime()
+    call blacs_gridinfo(proc%context, nprow, npcol, myprow, mypcol)
+    ! Temporary implementation. Perturbation term is not inherited in restart_mode now.
+    to_refresh = (is_init .and. .not. is_restart_mode) .or. &
+         t < floor((t + delta_time) / perturb_interval) * perturb_interval - 1d-10
+
+    dim = Y_desc(rows_)
+    H1_lcao_diag(:) = 0d0
+
+    if (check_master()) then
+      do atom = 1, structure%num_atoms
+        call wp_random_number(seed, val)  ! 0 <= phase < 1
+        random_val(atom) = val
+      end do
+    end if
+    call mpi_bcast(random_val, structure%num_atoms, mpi_double_precision, g_wp_master_pnum, mpi_comm_world, ierr)
+
+    do atom = 1, structure%num_atoms
+      if (to_refresh) then
+        energy = temperature * (sin(random_val(atom) * 2d0 * kPi) ** 2d0 - 0.5)
+        dv_atom_perturb(atom) = energy
+      end if
+      H1_lcao_diag(structure%atom_indices(atom) : structure%atom_indices(atom + 1) - 1) = dv_atom_perturb(atom)
+    end do
+
+    wtime_end = mpi_wtime()
+    call add_event('make_H1_harmonic:set_diag', wtime_end - wtime_start)
+    wtime_start = wtime_end
+
+    if (is_group_filter_mode) then
+      call change_basis_lcao_diag_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
+           H1_lcao_diag, H1_alpha, H1_alpha_desc)
+    else
+      call change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
+    end if
+
+    wtime_end = mpi_wtime()
+    call add_event('make_H1_harmonic:change_basis', wtime_end - wtime_start)
+  end subroutine make_H1_harmonic
+
+
   !subroutine make_H1_multistep(proc, Y, Y_desc, H_multistep, H_desc, &
   !     is_group_filter_mode, filter_group_indices, Y_local, &
   !     H1_alpha, H1_alpha_desc)
@@ -412,6 +396,7 @@ contains
        is_group_filter_mode, filter_group_indices, Y_local, &
        t, temperature, delta_time, perturb_interval, &
        charge_on_atoms, charge_factor, &
+       dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
     type(wp_process_t), intent(in) :: proc
     character(*), intent(in) :: h1_type
@@ -426,6 +411,7 @@ contains
     type(wp_charge_factor_t), intent(in) :: charge_factor
     real(8), intent(in) :: charge_on_atoms(structure%num_atoms)
     logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
+    real(8), intent(inout) :: dv_atom_perturb(:)
     real(8), intent(out) :: H1_alpha(:, :)
 
     if (trim(h1_type) == 'diag') then
@@ -444,16 +430,17 @@ contains
            charge_on_atoms, charge_factor, &
            H1_alpha, H1_alpha_desc)
     !else if (trim(h1_type) == 'maxwell') then
-    !  call make_H1_maxwell(proc, num_atoms, atom_indices, atom_elements, &
-    !       Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
+    !  call make_H1_maxwell(proc, structure, Y, Y_desc, &
+    !       is_group_filter_mode, filter_group_indices, Y_local, &
     !       is_init, is_restart_mode, temperature, delta_time, &
-    !       full_vecs, full_vecs_desc, H1_alpha, H1_alpha_desc)
-    !else if (trim(h1_type) == 'harmonic') then
-    !  call make_H1_harmonic(proc, num_atoms, atom_indices, &
-    !       Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
-    !       is_init, is_restart_mode, &
-    !       t, temperature, delta_time, perturb_interval, &
-    !       full_vecs, full_vecs_desc, H1_alpha, H1_alpha_desc)
+    !       H1_alpha, H1_alpha_desc)
+    else if (trim(h1_type) == 'harmonic') then
+      call make_H1_harmonic(proc, structure, Y, Y_desc, &
+           is_group_filter_mode, filter_group_indices, Y_local, &
+           is_init, is_restart_mode, &
+           t, temperature, delta_time, perturb_interval, &
+           dv_atom_perturb, &
+           H1_alpha, H1_alpha_desc)
     else
       stop 'unknown H1 function type (fail in command line option parsing)'
     end if

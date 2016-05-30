@@ -317,7 +317,8 @@ contains
            state%H1_desc, state%H1, state%H1_base, &
            state%filter_group_indices, state%Y_local, state%charge_factor, &
            state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
-           state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_eigenvalues, &
+           state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_atom_perturb, &
+           state%dv_eigenvalues, &
            state%charge_moment, state%energies, state%errors, state%eigenstate_ipratios, &
            to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
       call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
@@ -659,8 +660,8 @@ contains
        H1_desc, H1, H1_base, &
        filter_group_indices, Y_local, charge_factor, &
        dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
-       dv_charge_on_basis, dv_charge_on_atoms, dv_eigenvalues, &
-       charge_moment, energies, errors, eigenstate_ipratios, &
+       dv_charge_on_basis, dv_charge_on_atoms, dv_atom_perturb, &
+       dv_eigenvalues, charge_moment, energies, errors, eigenstate_ipratios, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
     integer, intent(in) :: dim, group_id(:, :), filter_group_id(:, :)
     type(wp_process_t), intent(in) :: proc
@@ -676,6 +677,7 @@ contains
     real(8), intent(inout) :: dv_eigenvalues(:), Y_filtered(:, :)
     real(8), intent(out) :: Y(:, :), YSY_filtered(:, :), H1(:, :), H1_base(:, :)
     real(8), intent(out) :: dv_charge_on_basis(:), dv_charge_on_atoms(:)
+    real(8), intent(inout) :: dv_atom_perturb(:)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
     type(wp_local_matrix_t), allocatable, intent(out) :: Y_local(:)
@@ -773,6 +775,7 @@ contains
          dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
          H1_base, H1, H1_desc, dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
          dv_charge_on_basis, dv_charge_on_atoms, &
+         dv_atom_perturb, &
          charge_moment, energies, errors)
     call add_timer_event('read_next_input_step_with_basis_replace', 're_initialize_from_lcao_coef', wtime)
   end subroutine read_next_input_step_with_basis_replace
@@ -823,6 +826,7 @@ contains
            trim(setting%filter_mode) == 'group', state%filter_group_indices, state%Y_local, &
            state%t, setting%temperature, setting%delta_t, setting%perturb_interval, &
            state%dv_charge_on_atoms, state%charge_factor, &
+           state%dv_atom_perturb, &
            state%H1, state%H1_desc)
       call add_timer_event('make_matrix_step_forward', 'make_matrix_H1_not_multistep', wtime)
 
