@@ -101,7 +101,8 @@ def write_xyz(elements, xyz_coordinates, fp):
 
 def add_step(state, extracted_types, split_dir, is_little_endian,
              num_filter, xyz, group_info, ts, tb_energy, nl_energy, total_energy,
-             means, msds, ipratios, psi_pratios, alpha_pratios,
+             means, msds, ipratios, tb_energy_deviations,
+             psi_pratios, alpha_pratios,
              charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max, alphas):
     # Common.
     ts.append(state["time"])
@@ -122,6 +123,7 @@ def add_step(state, extracted_types, split_dir, is_little_endian,
             print "msd error 1: ", msd[3], msd_total_recalculated
         means.append(mean)
         msds.append(msd)
+        tb_energy_deviations.append(state["TB_energy_deviation"])
         ipratios.append(state["psi"]["ipratio"])
     # Charge on groups
     if "group" in extracted_types:
@@ -171,6 +173,7 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
     means = []
     msds = []
     ipratios = []
+    tb_energy_deviations = []
     # Alpha
     fst_filter = wavepacket_out["setting"]["fst_filter"]
     num_filter = wavepacket_out["setting"]["end_filter"] - fst_filter + 1
@@ -211,7 +214,8 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
                     add_step(state, extracted_types, split_dir, is_little_endian,
                              num_filter, xyz, group_info,
                              ts, tb_energy, nl_energy, total_energy,
-                             means, msds, ipratios, psi_pratios, alpha_pratios,
+                             means, msds, ipratios, tb_energy_deviations,
+                             psi_pratios, alpha_pratios,
                              charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max,
                              alphas)
     else:
@@ -254,7 +258,8 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
         result_charge_moment = {"ts": ts,
                                 "means": means,
                                 "msds": msds,
-                                "ipratios": ipratios}
+                                "ipratios": ipratios,
+                                "tb_energy_deviations": tb_energy_deviations}
         filename_charge_moment = header + "_charge_moment.json"
         with open(filename_charge_moment, "w") as fp:
             json.dump(result_charge_moment, fp, indent=2)
