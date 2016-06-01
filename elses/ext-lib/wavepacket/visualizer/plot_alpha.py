@@ -65,14 +65,14 @@ def plot(alpha_calc, weight_max, time_start, time_end,
     plotted_indices.update(map(lambda alpha: alpha["i"], alphas_max_is_over_threshold))
 
     #max_eigenvalue = max(map(lambda alpha: alpha["eigenvalue"], alphas))
-    pylab.plot([], [], label="index(energy [a.u.], Mean X [$\AA$], MSD [$\AA^2$])", color="white")
+    pylab.plot([], [], label="index(energy [a.u.], Mean Z [$\AA$], MSD [$\AA^2$])", color="white")
     if to_print_eigenstates:
-        print "# index, energy [a.u.], Mean X [angstrom], MSD [angstrom^2]"
+        print "# index, energy [a.u.], Mean Z [angstrom], MSD [angstrom^2]"
     for alpha in alphas:
         if alpha["i"] in plotted_indices:
             plotted = (alpha["i"],
                        alpha["eigenvalue"],
-                       alpha["mean"][0] * kAngstromPerAu,  # Mean of X axis.
+                       alpha["mean"][2] * kAngstromPerAu,  # Mean of Z axis.
                        alpha["msd"][3] * kAngstrom2PerAu2)  # Total MSD.
             pylab.plot(ts,
                        alpha["weights"][start_index : end_index],

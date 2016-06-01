@@ -12,7 +12,7 @@ def plot(wavepacket_out, wavepacket_out_path, highlight_i, mean_min, mean_max, m
     eigenvalues = condition['eigenvalues']
     eigenstate_msds = condition['eigenstate_msd_total']
     eigenstate_msds = map(lambda x: x * kAngstrom2PerAu2, eigenstate_msds)
-    eigenstate_means = condition['eigenstate_mean_x']
+    eigenstate_means = condition['eigenstate_mean_z']
     eigenstate_means = map(lambda x: x * kAngstromPerAu, eigenstate_means)
 
     if energy_min is None:
@@ -44,7 +44,7 @@ def plot(wavepacket_out, wavepacket_out_path, highlight_i, mean_min, mean_max, m
     # Recollect data in the new limit and reset the graph.
     data_mainplot = []
     if to_print:
-        print '# Index, Energy, Mean X, MSD'
+        print '# Index, Energy, Mean Z, MSD'
     for (i, energy, mean, msd) in zip(indices, eigenvalues, eigenstate_means, eigenstate_msds):
         if energy_min <= energy and energy <= energy_max and \
            mean_min <= mean and mean <= mean_max and \
@@ -86,7 +86,7 @@ def plot(wavepacket_out, wavepacket_out_path, highlight_i, mean_min, mean_max, m
 
     if title is None:
         title = wavepacket_out_path
-    pylab.xlabel('Mean X [$\AA$]')
+    pylab.xlabel('Mean Z [$\AA$]')
     pylab.ylabel('MSD [$\AA^2$]')
     pylab.title(title)
 

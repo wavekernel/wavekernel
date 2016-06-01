@@ -38,9 +38,9 @@ if __name__=="__main__":
     #pylab.scatter(eigenvalues, log_pratios, facecolors='none', edgecolors='black', linewidth=0.5, label="Eigenstate")
     pylab.scatter(eigenvalues, pratios, facecolors='none', edgecolors='black', linewidth=0.5, label="Eigenstate")
     #pylab.scatter(eigenvalues[homo_index], log_pratios[homo_index], facecolors='none', edgecolors='b', linewidth=1.5, label="HOMO")
-    i = 1266
-    pylab.scatter(eigenvalues[i], pratios[i], facecolors='none', edgecolors='b', linewidth=1.5, label=str(i+1))
-    i = 1255
-    pylab.scatter(eigenvalues[i], pratios[i], facecolors='none', edgecolors='r', linewidth=1.5, label=str(i+1))
+    #i = 1266
+    #pylab.scatter(eigenvalues[i], pratios[i], facecolors='none', edgecolors='b', linewidth=1.5, label=str(i+1))
+    #i = 1255
+    #pylab.scatter(eigenvalues[i], pratios[i], facecolors='none', edgecolors='r', linewidth=1.5, label=str(i+1))
     pylab.legend(loc="upper left")
     pylab.savefig(title + "_pr.png")

@@ -9,7 +9,7 @@ module wp_state_m
   implicit none
 
   type wp_state_t
-    type(sparse_mat) :: H_sparse, S_sparse, H_multistep_sparse, S_multistep_sparse
+    type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, H_multistep_sparse, S_multistep_sparse
     type(wp_structure_t) :: structure
     type(wp_energy_t) :: energies
     type(wp_error_t) :: errors

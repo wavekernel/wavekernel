@@ -11,7 +11,8 @@ module wp_linear_algebra_m
   complex(kind(0d0)) :: zdotc
   integer :: numroc, indxg2p, blacs_pnum
 
-  public :: matvec_sd_z, matvec_dd_z, matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
+  public :: matvec_sd_z, matvec_dd_z, matvec_dd_z2, matvec_time_evolution_by_matrix_replace, &
+       matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
        get_symmetricity, print_offdiag_norm, cutoff_vector
@@ -106,6 +107,106 @@ contains
     call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
     call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
   end subroutine matvec_dd_z
+
+  ! Compuet y <- alpha * A * x + beta * y.
+  subroutine matvec_dd_z2(trans, A, A_desc, alpha, dv_x, beta, dv_y)
+    character(len=*), intent(in) :: trans
+    real(8), intent(in) :: A(:, :)
+    integer, intent(in) :: A_desc(desc_size)
+    complex(kind(0d0)), intent(in) :: alpha, beta, dv_x(:)
+    complex(kind(0d0)), intent(inout) :: dv_y(:)
+
+    integer :: i, j, m, n, nprow, npcol, myrow, mycol, li, lj, pi, pj, ierr
+    real(8) :: elem
+    complex(kind(0d0)), allocatable :: dv_Ax(:), dv_Ax_recv(:)
+
+    call check_nan_vector('matvec_dd_z input real', dreal(dv_x))
+    call check_nan_vector('matvec_dd_z input imag', aimag(dv_x))
+
+    call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
+    if (trans(1 : 1) == 'T') then
+      m = A_desc(cols_)
+      n = A_desc(rows_)
+    else
+      m = A_desc(rows_)
+      n = A_desc(cols_)
+    end if
+    allocate(dv_Ax(m), dv_Ax_recv(m))
+    dv_Ax(:) = kZero
+    dv_Ax_recv(:) = kZero
+    if (trans(1 : 1) == 'T') then
+      do i = 1, m
+        do j = 1, n
+          call infog2l(j, i, A_desc, nprow, npcol, myrow, mycol, li, lj, pi, pj)
+          if (myrow == pi .and. mycol == pj) then
+            elem = A(li, lj)
+            dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
+          end if
+        end do
+      end do
+    else
+      do i = 1, m
+        do j = 1, n
+          call infog2l(i, j, A_desc, nprow, npcol, myrow, mycol, li, lj, pi, pj)
+          if (myrow == pi .and. mycol == pj) then
+            elem = A(li, lj)
+            dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
+            !if (abs(elem) >= 1e-2) then
+            !  print *, 'ZZZZA', i, j, elem
+            !end if
+            if (abs(elem * dv_x(j)) >= 5e-3) then
+              print *, 'ZZZZB', i, '<-', j, 'mat: ', elem, 'vec: ', dv_x(j), 'abscont: ', abs(elem * dv_x(j)), &
+                   'cont: ', elem * dv_x(j)
+            end if
+          end if
+        end do
+      end do
+    end if
+    call mpi_allreduce(dv_Ax, dv_Ax_recv, m, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
+    dv_y(:) = alpha * dv_Ax_recv(:) + beta * dv_y(:)
+
+    call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
+    call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
+  end subroutine matvec_dd_z2
+
+
+  subroutine matvec_time_evolution_by_matrix_replace(proc, delta_t, &
+       H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
+       dv_psi_in, dv_psi_out)
+    type(wp_process_t), intent(in) :: proc
+    real(8), intent(in) :: delta_t
+    type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
+    complex(kind(0d0)), intent(in) :: dv_psi_in(H_sparse%size)
+    complex(kind(0d0)), intent(out) :: dv_psi_out(H_sparse%size)
+
+    integer :: dim, desc(desc_size), lwork, liwork, ierr, i
+    integer, allocatable :: iwork(:)
+    real(8) :: eigenvalues(H_sparse%size), lwork_real
+    real(8), allocatable :: H0(:, :), H1(:, :), Hdiff(:, :), Eigenvectors(:, :), work(:)
+    complex(kind(0d0)) :: dv_psi_work(H_sparse%size)
+
+    dim = H_sparse%size
+    call setup_distributed_matrix_real('H0', proc, dim, dim, desc, H0, .true.)
+    call setup_distributed_matrix_real('H1', proc, dim, dim, desc, H1, .true.)
+    call setup_distributed_matrix_real('Hdiff', proc, dim, dim, desc, Hdiff, .true.)
+    call setup_distributed_matrix_real('V', proc, dim, dim, desc, Eigenvectors, .true.)
+    call distribute_global_sparse_matrix_wp(H_sparse_prev, desc, H0)
+    call distribute_global_sparse_matrix_wp(H_sparse, desc, H1)
+    Hdiff(:, :) = -1d0 * (H1(:, :) - H0(:, :)) * delta_t / 2.0
+    call pdsyevd('V', 'L', dim, Hdiff, 1, 1, desc, eigenvalues, Eigenvectors, 1, 1, desc, &
+         lwork_real, -1, liwork, 0, ierr)
+    lwork = ceiling(lwork_real)
+    allocate(work(lwork), iwork(liwork))
+    call pdsyevd('V', 'L', dim, Hdiff, 1, 1, desc, eigenvalues, Eigenvectors, 1, 1, desc, &
+         work, lwork, iwork, liwork, ierr)
+    dv_psi_work(:) = kZero
+    dv_psi_out(:) = kZero
+    call matvec_dd_z('T', Eigenvectors, desc, kOne, dv_psi_in, kZero, dv_psi_work)
+    do i = 1, dim
+      dv_psi_work(i) = dv_psi_work(i) * exp(kImagUnit * eigenvalues(i))
+    end do
+    call matvec_dd_z('N', Eigenvectors, desc, kOne, dv_psi_work, kZero, dv_psi_out)
+  end subroutine matvec_time_evolution_by_matrix_replace
 
 
   subroutine matvec_nearest_orthonormal_matrix(A, A_desc, dv_x, dv_y, B)

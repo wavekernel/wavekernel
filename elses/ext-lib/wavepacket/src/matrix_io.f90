@@ -12,7 +12,8 @@ module wp_matrix_io_m
   end type sparse_mat
 
   private
-  public :: get_dimension, read_matrix_file, set_sparse_matrix_identity, print_matrix, sparse_mat, destroy_sparse_mat
+  public :: get_dimension, read_matrix_file, set_sparse_matrix_identity, print_matrix, sparse_mat, &
+       destroy_sparse_mat, copy_sparse_matrix
 
 contains
 
@@ -253,4 +254,23 @@ contains
       write(str_out, '(A, A, A)') str_in(: first - 1), trim(num_str), trim(str_in(first + last + 2 :))
     end if
   end subroutine fill_integer_format
+
+
+  subroutine copy_sparse_matrix(matrix_in, matrix_out)
+    type(sparse_mat), intent(in) :: matrix_in
+    type(sparse_mat), intent(out) :: matrix_out
+
+    matrix_out%size = matrix_in%size
+    matrix_out%num_non_zeros = matrix_in%num_non_zeros
+    if (allocated(matrix_out%value)) then
+      deallocate(matrix_out%value)
+    end if
+    if (allocated(matrix_out%suffix)) then
+      deallocate(matrix_out%suffix)
+    end if
+    allocate(matrix_out%value(size(matrix_in%value, 1)))
+    allocate(matrix_out%suffix(size(matrix_in%suffix, 1), size(matrix_in%suffix, 2)))
+    matrix_out%value(:) = matrix_in%value(:)
+    matrix_out%suffix(:, :) = matrix_in%suffix(:, :)
+  end subroutine copy_sparse_matrix
 end module wp_matrix_io_m

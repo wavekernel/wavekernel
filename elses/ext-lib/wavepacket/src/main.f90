@@ -111,6 +111,8 @@ program main
       ! The step to be read is 'input_step + 1', not 'input_step + 2' because XYZ information is not interpolated.
       call read_bcast_structure(state%dim, setting, state%input_step + 1, state%structure)
       if (setting%to_replace_basis) then
+        call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
+        call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
         call read_bcast_matrix_files(state%dim, setting, state%input_step + 1, state%H_sparse, state%S_sparse)
       else
         call read_bcast_matrix_files(state%dim, setting, state%input_step + 1, &

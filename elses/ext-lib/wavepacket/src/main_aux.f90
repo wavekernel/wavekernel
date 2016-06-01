@@ -312,7 +312,8 @@ contains
     if (setting%to_replace_basis) then
       call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
            state%group_id, state%filter_group_id, state%t, state%structure, &
-           state%H_sparse, state%S_sparse, state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
+           state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
+           state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
            state%YSY_filtered_desc, state%YSY_filtered, &
            state%H1_desc, state%H1, state%H1_base, &
            state%filter_group_indices, state%Y_local, state%charge_factor, &
@@ -656,7 +657,8 @@ contains
 
 
   subroutine read_next_input_step_with_basis_replace(dim, setting, proc, group_id, filter_group_id, t, structure, &
-       H_sparse, S_sparse, Y_desc, Y, Y_filtered_desc, Y_filtered, YSY_filtered_desc, YSY_filtered, &
+       H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
+       Y_desc, Y, Y_filtered_desc, Y_filtered, YSY_filtered_desc, YSY_filtered, &
        H1_desc, H1, H1_base, &
        filter_group_indices, Y_local, charge_factor, &
        dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
@@ -670,7 +672,7 @@ contains
     type(wp_structure_t), intent(in) :: structure
     type(wp_charge_factor_t), intent(in) :: charge_factor
     integer, allocatable, intent(inout) :: filter_group_indices(:, :)
-    type(sparse_mat), intent(in) :: H_sparse, S_sparse
+    type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
     integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
     integer, intent(in) :: H1_desc(desc_size), desc_eigenvectors(desc_size)
     ! value of last step is needed for offdiag norm calculation.
@@ -769,7 +771,7 @@ contains
     ! so the time for conversion between LCAO coefficient and eigenstate expansion
     ! is t - setting%delta_t, not t.
     call re_initialize_state(setting, proc, dim, t - setting%delta_t, structure, charge_factor, &
-         H_sparse, S_sparse, &  !full_vecs, full_vecs_desc, filtered_vecs, filtered_vecs_desc, &
+         H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
          Y_filtered, Y_filtered_desc, &
          YSY_filtered, YSY_filtered_desc, &
          dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &

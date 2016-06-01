@@ -7,12 +7,12 @@ def plot(pratio_extract, title, fig_path):
     pylab.rcParams['font.size'] = 16
 
     ts = map(lambda t: t * kPsecPerAu, pratio_extract['ts'])
-    
+
     pylab.xlabel('Time [ps]')
     pylab.ylabel('Pratio')
 
     mark_size = 7
-    pylab.plot(ts, pratio_extract['psi_pratios'], '+', label='psi', ms=mark_size)
+    #pylab.plot(ts, pratio_extract['psi_pratios'], '+', label='psi', ms=mark_size)
     pylab.plot(ts, pratio_extract['alpha_pratios'], '+', label='alpha', ms=mark_size)
 
     pylab.legend(loc='upper left')
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('pratio_extract_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('-t', metavar='TITLE', dest='title', type=str, default="",
-                        help='')    
+                        help='')
     args = parser.parse_args()
 
     if args.title == "":

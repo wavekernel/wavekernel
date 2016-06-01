@@ -302,6 +302,8 @@ contains
 
     if (setting%to_replace_basis) then
       ! step = input_step + 1 (call set_sample_matrices(dim, setting, input_step + 1, H_sparse, S_sparse))
+      call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
+      call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
       call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(1), state%H_sparse)
       call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(2), state%S_sparse)
 
