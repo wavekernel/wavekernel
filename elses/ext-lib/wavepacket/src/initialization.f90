@@ -775,6 +775,36 @@ contains
   end subroutine compute_charges
 
 
+  subroutine compute_tightbinding_energy(num_filter, dv_alpha, eigenvalues, energies)
+    integer, intent(in) :: num_filter
+    real(8), intent(in) :: eigenvalues(num_filter)
+    complex(kind(0d0)), intent(in) :: dv_alpha(num_filter)
+    ! Because this subroutine does not determine all fields of energies,
+    ! intent(in) is needed to save the undetermined fields.
+    type(wp_energy_t), intent(inout) :: energies
+
+    integer :: i
+    real(8) :: dv_alpha_squared(num_filter), alpha_norm
+    ! Function.
+    real(8) :: dznrm2
+
+    alpha_norm = dznrm2(num_filter, dv_alpha, 1)
+    do i = 1, num_filter
+      dv_alpha_squared(i) = (abs(dv_alpha(i)) / alpha_norm) ** 2d0
+    end do
+    energies%tightbinding = 0d0
+    energies%tightbinding_deviation = 0d0
+    do i = 1, num_filter
+      energies%tightbinding = energies%tightbinding + dv_alpha_squared(i) * eigenvalues(i)
+    end do
+    do i = 1, num_filter
+      energies%tightbinding_deviation = energies%tightbinding_deviation + &
+           dv_alpha_squared(i) * (eigenvalues(i) - energies%tightbinding) ** 2d0
+    end do
+    energies%tightbinding_deviation = sqrt(energies%tightbinding_deviation)
+  end subroutine compute_tightbinding_energy
+
+
   subroutine compute_energies(setting, proc, structure, &
        H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_charge_on_atoms, charge_factor, &
        filter_group_indices, Y_local, eigenvalues, dv_psi, dv_alpha, &
@@ -795,30 +825,15 @@ contains
     real(8), intent(out) :: H1(:, :)
     type(wp_energy_t), intent(out) :: energies
 
-    integer :: dim, num_filter, i
-    real(8) :: dv_alpha_squared(setting%num_filter), alpha_norm
+    integer :: dim, num_filter
     complex(kind(0d0)) :: energy_tmp, dv_h_psi(Y_filtered_desc(rows_)), dv_evcoef(Y_filtered_desc(cols_))
     ! Functions.
-    real(8) :: dznrm2
     complex(kind(0d0)) :: zdotc
 
     dim = Y_filtered_desc(rows_)
     num_filter = Y_filtered_desc(cols_)
 
-    alpha_norm = dznrm2(num_filter, dv_alpha, 1)
-    do i = 1, num_filter
-      dv_alpha_squared(i) = (abs(dv_alpha(i)) / alpha_norm) ** 2d0
-    end do
-    energies%tightbinding = 0d0
-    energies%tightbinding_deviation = 0d0
-    do i = 1, setting%num_filter
-      energies%tightbinding = energies%tightbinding + dv_alpha_squared(i) * eigenvalues(i)
-    end do
-    do i = 1, setting%num_filter
-      energies%tightbinding_deviation = energies%tightbinding_deviation + &
-           dv_alpha_squared(i) * (eigenvalues(i) - energies%tightbinding) ** 2d0
-    end do
-    energies%tightbinding_deviation = sqrt(energies%tightbinding_deviation)
+    call compute_tightbinding_energy(num_filter, dv_alpha, eigenvalues, energies)
 
     call make_H1(proc, setting%h1_type, structure, &
          S_sparse, Y_filtered, Y_filtered_desc, &
