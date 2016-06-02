@@ -432,16 +432,16 @@ contains
       end do
     end do
 
-    write(count_str, '(I6.6)') count
-    write(time_str, '(F0.4)') t * 2.418884326505e-5  ! kPsecPerAu.
-    filename = 'YSYsuppressed_' // count_str // '_' // trim(time_str) // 'ps.mtx'
-    if (check_master()) then
-      open(iunit_YSY, file=trim(filename))
-    end if
-    call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
-    if (check_master()) then
-      close(iunit_YSY)
-    end if
+    !write(count_str, '(I6.6)') count
+    !write(time_str, '(F0.4)') t * 2.418884326505e-5  ! kPsecPerAu.
+    !filename = 'YSYsuppressed_' // count_str // '_' // trim(time_str) // 'ps.mtx'
+    !if (check_master()) then
+    !  open(iunit_YSY, file=trim(filename))
+    !end if
+    !call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+    !if (check_master()) then
+    !  close(iunit_YSY)
+    !end if
 
     dv_evcoef_reconcile(:) = kZero
     print *, '------------------ ZZZZstart', t * 2.418884326505d-5, 'ps ------------------'
