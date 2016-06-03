@@ -122,6 +122,7 @@ contains
 
     call check_nan_vector('matvec_dd_z input real', dreal(dv_x))
     call check_nan_vector('matvec_dd_z input imag', aimag(dv_x))
+    call check_nan_matrix('matvec_dd_z input matrix', A)
 
     call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
     if (trans(1 : 1) == 'T') then
