@@ -77,7 +77,7 @@ def plot(alpha_calc, weight_max, time_start, time_end,
             pylab.plot(ts,
                        alpha["weights"][start_index : end_index],
                        "-",
-                       label="%d (%.10f, %.1f, %.1f)" % plotted)
+                       label="%d (%.7f, %.1f, %.1f)" % plotted)
             if to_print_eigenstates:
                 print "%d %f %f %f" % plotted
     pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., mode="expand")
