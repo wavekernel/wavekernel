@@ -587,6 +587,8 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_cutoff' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
          trim(setting%re_initialize_method) == 'minimize_alpha_error')) then
       stop 'unknown state re-initialization method'
     end if
@@ -661,6 +663,10 @@ contains
         print *, 'vector_suppress_constant: ', setting%suppress_constant
       else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress') then
         print *, 'matrix_suppress_constant: ', setting%suppress_constant
+      else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_orthogonal') then
+        print *, 'matrix_suppress_constant: ', setting%suppress_constant
+      else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_adaptive') then
+        print *, 'adaptive_matrix_suppress_constant: ', setting%suppress_constant
       end if
     else
       print *, 'to_replace_basis: false'

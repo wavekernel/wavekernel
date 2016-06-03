@@ -515,6 +515,111 @@ contains
   end subroutine reconcile_from_alpha_matrix_suppress
 
 
+  subroutine reconcile_from_alpha_matrix_suppress_orthogonal(num_filter, t, suppress_constant, &
+       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+    complex(kind(0d0)), intent(in) :: dv_alpha(:)
+    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
+    real(8) :: dv_suppress_factor(num_filter)
+    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
+    real(8), allocatable :: YSY_filtered_orthogonal(:, :), YSY_filtered_suppress(:, :)
+    real(8) :: dznrm2
+
+    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+    allocate(YSY_filtered_orthogonal(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    YSY_filtered_orthogonal(:, :) = 0d0
+
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
+    do j = 1, num_filter
+      do i = 1, num_filter
+        dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+      end do
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress_orthogonal dv_suppress_factor', dv_suppress_factor)
+      do i = 1, num_filter
+        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        if (myrow == rsrc .and. mycol == csrc) then
+          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+        end if
+      end do
+    end do
+
+    dv_evcoef_reconcile(:) = kZero
+    call matvec_nearest_orthonormal_matrix(YSY_filtered_suppress, YSY_filtered_desc, &
+         dv_evcoef, dv_evcoef_reconcile, YSY_filtered_orthogonal)
+
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
+    if (check_master()) then
+      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] reconcile_from_alpha_matrix_suppress_orthogonal() : evcoef norm before normalization ', &
+           dznrm2(num_filter, dv_alpha_reconcile, 1)
+    end if
+    call normalize_vector(num_filter, dv_alpha_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    deallocate(YSY_filtered_suppress, YSY_filtered_orthogonal)
+  end subroutine reconcile_from_alpha_matrix_suppress_orthogonal
+
+
+  subroutine reconcile_from_alpha_matrix_suppress_adaptive(num_filter, t, suppress_constant, &
+       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+    complex(kind(0d0)), intent(in) :: dv_alpha(:)
+    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
+    real(8) :: dv_suppress_factor(num_filter)
+    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
+    real(8), allocatable :: YSY_filtered_suppress(:, :)
+    type(wp_energy_t) :: energies
+
+    real(8) :: suppress_exponent
+    real(8), parameter :: relax_constant_for_suppression = 1d-3
+    ! Function.
+    real(8) :: dznrm2
+
+    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+
+    call compute_tightbinding_energy(num_filter, dv_alpha, dv_eigenvalues, energies)
+
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
+    do j = 1, num_filter
+      do i = 1, num_filter
+        suppress_exponent = suppress_constant / (energies%tightbinding_deviation + relax_constant_for_suppression)
+        dv_suppress_factor(i) = exp(- suppress_exponent * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+      end do
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
+      do i = 1, num_filter
+        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        if (myrow == rsrc .and. mycol == csrc) then
+          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+        end if
+      end do
+    end do
+
+    dv_evcoef_reconcile(:) = kZero
+    call matvec_dd_z2('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
+    if (check_master()) then
+      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
+           dznrm2(num_filter, dv_alpha_reconcile, 1)
+    end if
+    call normalize_vector(num_filter, dv_alpha_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    deallocate(YSY_filtered_suppress)
+  end subroutine reconcile_from_alpha_matrix_suppress_adaptive
+
+
   !subroutine reconcile_from_alpha_matrix_suppress(num_filter, t, suppress_constant, &
   !     dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
   !     dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
@@ -975,6 +1080,14 @@ contains
            dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
       call reconcile_from_alpha_matrix_suppress(setting%num_filter, t, setting%suppress_constant, &
+           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+           dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal') then
+      call reconcile_from_alpha_matrix_suppress_orthogonal(setting%num_filter, t, setting%suppress_constant, &
+           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+           dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive') then
+      call reconcile_from_alpha_matrix_suppress_adaptive(setting%num_filter, t, setting%suppress_constant, &
            dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
            dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_alpha_error') then
