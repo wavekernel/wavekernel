@@ -108,7 +108,7 @@ def plot_charge_moment(charge_moment,
     pylab.twinx()
 
     if to_plot_tb_energy_deviation:
-        pylab.ylabel('TB energy deviation [$\AA^2$]', color='red')
+        pylab.ylabel('TB energy deviation [$\AA$]', color='red')
         pylab.plot(ts, tb_energy_deviations, '+', color='red', label='TB energy dev')
         if energy_min is None:
             energy_min = pylab.ylim()[0]
