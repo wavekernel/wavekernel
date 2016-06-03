@@ -102,14 +102,20 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('-p', action='store_true', dest='to_print_eigenstates',
                         default=False, help='')
+    parser.add_argument('-o', metavar='OUT', dest='fig_path', type=str, default=None,
+                        help='')
 
     args = parser.parse_args()
 
-    fig_path = re.sub("(_alpha)?\.[^.]+$", "", args.alpha_calc_path) + "_alpha.png"
     if args.title == "":
         title = args.alpha_calc_path
     else:
         title = args.title
+
+    if args.fig_path is None:
+        fig_path = re.sub("(_alpha)?\.[^.]+$", "", args.alpha_calc_path) + "_alpha.png"
+    else:
+        fig_path = args.fig_path
 
     with open(args.alpha_calc_path, "r") as fp:
         alpha_calc = json.load(fp)

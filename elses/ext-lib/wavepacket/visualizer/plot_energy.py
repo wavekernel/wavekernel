@@ -37,13 +37,19 @@ def read_plain_extracted(fp):
     maximum = max(maximum, max(total_energy))
     return {'ts': ts, 'isamrs': isamrs, 'max_eigenvalue': maximum, 'min_eigenvalue': minimum, 'tb_energy': tb_energy, 'nl_energy': nl_energy, 'total_energy': total_energy}
 
-def plot(energy_calc, energy_min, energy_max, title, fig_path):
+def plot(energy_calc, time_start, time_end, energy_min, energy_max, title, fig_path):
     if max(energy_calc['ts']) * kPsecPerAu < 0.001:
         ts = map(lambda t: t * kPsecPerAu * 1000, energy_calc['ts'])
         pylab.xlabel('Time [fs]')
     else:
         ts = map(lambda t: t * kPsecPerAu, energy_calc['ts'])
         pylab.xlabel('Time [ps]')
+
+    if time_start is None:
+        time_start = min(ts)
+    if time_end is None:
+        time_end = max(ts)
+    pylab.xlim(time_start, time_end)
 
     min_eigenvalue = energy_calc['min_eigenvalue']
     max_eigenvalue = energy_calc['max_eigenvalue']
@@ -79,6 +85,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('energy_calc_path', metavar='JSON', type=str,
                         help='')
+    parser.add_argument('-s', metavar='TIME_START', dest='time_start', type=float, default=None,
+                        help='')
+    parser.add_argument('-e', metavar='TIME_END', dest='time_end', type=float, default=None,
+                        help='')
     parser.add_argument('--energy-min', metavar='ENERGY_MIN', dest='energy_min',
                         type=float, default=None, help='')
     parser.add_argument('--energy-max', metavar='ENERGY_MAX', dest='energy_max',
@@ -87,6 +97,8 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--plain', action='store_true', dest='is_plain_extracted_mode',
                         default=False, help='')
+    parser.add_argument('-o', metavar='OUT', dest='fig_path', type=str, default=None,
+                        help='')
     args = parser.parse_args()
 
     if args.title == "":
@@ -94,10 +106,14 @@ if __name__ == '__main__':
     else:
         title = args.title
 
-    fig_path = re.sub('(_energy)?\.[^.]+$', '', args.energy_calc_path) + '_energy.png'
+    if args.fig_path is None:
+        fig_path = re.sub('(_energy)?\.[^.]+$', '', args.energy_calc_path) + '_energy.png'
+    else:
+        fig_path = args.fig_path
+
     with open(args.energy_calc_path, 'r') as fp:
         if args.is_plain_extracted_mode:
             energy_calc = read_plain_extracted(fp)
         else:
             energy_calc = json.load(fp)
-    plot(energy_calc, args.energy_min, args.energy_max, title, fig_path)
+    plot(energy_calc, args.time_start, args.time_end, args.energy_min, args.energy_max, title, fig_path)

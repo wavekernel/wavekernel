@@ -175,6 +175,8 @@ if __name__ == '__main__':
                         help='')  # in ps.
     parser.add_argument('--plain', action='store_true', dest='is_plain_extracted_mode',
                         default=False, help='')
+    parser.add_argument('-o', metavar='OUT', dest='fig_path', type=str, default=None,
+                        help='')
     args = parser.parse_args()
 
     assert(not (args.is_plain_extracted_mode and args.msd_axis != 'total'))
@@ -183,8 +185,12 @@ if __name__ == '__main__':
         title = args.charge_moment_calc_path
     else:
         title = args.title
-    fig_path = re.sub(r'(_charge_moment)?\.[^.]+$', '', args.charge_moment_calc_path) + \
-               '_charge_moment_msd.png'
+
+    if args.fig_path is None:
+        fig_path = re.sub(r'(_charge_moment)?\.[^.]+$', '', args.charge_moment_calc_path) + \
+                   '_charge_moment_msd.png'
+    else:
+        fig_path = args.fig_path
 
     with open(args.charge_moment_calc_path, 'r') as fp:
         if args.is_plain_extracted_mode:
