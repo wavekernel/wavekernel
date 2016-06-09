@@ -105,6 +105,7 @@ contains
     allocate(state%dv_eigenvalues(n), state%dv_ipratios(n))
     allocate(state%eigenstate_mean(3, n), state%eigenstate_msd(4, n))
     allocate(state%eigenstate_ipratios(setting%num_filter))
+    allocate(state%fsons(1))
   end subroutine allocate_dv_vectors
 
 
@@ -622,34 +623,35 @@ contains
     end if
 
     ! Create whole output fson object.
-    state%output => fson_value_create()
-    state%output%value_type = TYPE_OBJECT
-    call add_setting_json(setting, proc, state%output)
+    state%fsons(1)%output => fson_value_create()
+    state%fsons(1)%output%value_type = TYPE_OBJECT
+    call add_setting_json(setting, proc, state%fsons(1)%output)
     if (check_master()) then
       call add_condition_json(state%dim, setting, state%structure, state%errors, &
            state%group_id, state%filter_group_id, &
-           state%dv_eigenvalues, state%eigenstate_mean, state%eigenstate_msd, state%dv_ipratios, state%output)
+           state%dv_eigenvalues, state%eigenstate_mean, state%eigenstate_msd, state%dv_ipratios, &
+           state%fsons(1)%output)
       open(iunit_header, file=trim(add_postfix_to_filename(setting%output_filename, '_header')))
-      call fson_print(iunit_header, state%output)
+      call fson_print(iunit_header, state%fsons(1)%output)
       close(iunit_header)
     end if
 
-    state%states => fson_value_create()
-    call fson_set_name('states', state%states)
-    state%states%value_type = TYPE_ARRAY
+    state%fsons(1)%states => fson_value_create()
+    call fson_set_name('states', state%fsons(1)%states)
+    state%fsons(1)%states%value_type = TYPE_ARRAY
     state%structures => fson_value_create()
     call fson_set_name('structures', state%structures)
     state%structures%value_type = TYPE_ARRAY
 
     if (setting%is_output_split) then
-      state%split_files_metadata => fson_value_create()
-      call fson_set_name('split_files_metadata', state%split_files_metadata)
-      state%split_files_metadata%value_type = TYPE_ARRAY
+      state%fsons(1)%split_files_metadata => fson_value_create()
+      call fson_set_name('split_files_metadata', state%fsons(1)%split_files_metadata)
+      state%fsons(1)%split_files_metadata%value_type = TYPE_ARRAY
       if (setting%is_restart_mode) then
         do i = 1, size(setting%restart_split_files_metadata)
           split_files_metadata_elem => fson_value_create()
           call fson_set_as_string(trim(setting%restart_split_files_metadata(i)), split_files_metadata_elem)
-          call fson_value_add(state%split_files_metadata, split_files_metadata_elem)
+          call fson_value_add(state%fsons(1)%split_files_metadata, split_files_metadata_elem)
         end do
       end if
     end if
@@ -978,16 +980,16 @@ contains
            state%energies, state%dv_alpha, state%dv_psi, &
            state%dv_charge_on_basis, state%dv_charge_on_atoms, state%charge_moment, &
            setting%h1_type, state%dv_atom_speed, state%dv_atom_perturb, &
-           is_after_matrix_replace, state%states)
+           is_after_matrix_replace, state%fsons(1)%states)
       state%total_state_count = state%total_state_count + 1
       if (setting%is_output_split) then
-        states_count = fson_value_count(state%states)
+        states_count = fson_value_count(state%fsons(1)%states)
         ! 'i + setting%output_interval' in the next condition expression is
         ! the next step that satisfies 'mod(i, setting%output_interval) == 0'.
         if (states_count >= setting%num_steps_per_output_split .or. &
              setting%delta_t * (state%i + setting%output_interval) >= setting%limit_t) then
-          call output_split_states(setting, state%total_state_count, state%states, &
-               state%structures, state%split_files_metadata)
+          call output_split_states(setting, state%total_state_count, state%fsons(1)%states, &
+               state%structures, state%fsons(1)%split_files_metadata)
           ! Reset json array of states.
           ! Back up the last structure.
           allocate(atom_coordinates_backup(3, state%structure%num_atoms))
@@ -998,13 +1000,13 @@ contains
           call fson_path_get(last_structure, 'coordinates_y', atom_coordinates_backup(2, :))
           call fson_path_get(last_structure, 'coordinates_z', atom_coordinates_backup(3, :))
           ! Destroy jsons.
-          call fson_destroy(state%states)
+          call fson_destroy(state%fsons(1)%states)
           call fson_destroy(state%structures)
-          state%states => fson_value_create()
+          state%fsons(1)%states => fson_value_create()
           state%structures => fson_value_create()
-          call fson_set_name('states', state%states)
+          call fson_set_name('states', state%fsons(1)%states)
           call fson_set_name('structures', state%structures)
-          state%states%value_type = TYPE_ARRAY
+          state%fsons(1)%states%value_type = TYPE_ARRAY
           state%structures%value_type = TYPE_ARRAY
           ! Write the last atomic structure to make the split file independent from others.
           call add_structure_json(t_backup, input_step_backup, state)

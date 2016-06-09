@@ -141,7 +141,7 @@ program main
     state%t = setting%delta_t * state%i
   end do
 
-  call output_fson_and_destroy(setting, state%output, state%split_files_metadata, &
-       state%states, state%structures, state%wtime_total)
+  call output_fson_and_destroy(setting, state%fsons(1)%output, state%fsons(1)%split_files_metadata, &
+       state%fsons(1)%states, state%structures, state%wtime_total)
   call mpi_finalize(state%ierr)
 end program main

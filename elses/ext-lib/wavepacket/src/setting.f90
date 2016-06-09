@@ -20,11 +20,13 @@ module wp_setting_m
          vector_cutoff_residual = 0d0, suppress_constant = 0d0
     ! Special value of alpha_delta_index: 0 -> HOMO
     integer :: alpha_delta_index = 1, num_steps_per_output_split = 100
+    integer, allocatable :: alpha_delta_multiple_indices(:)
     integer :: fst_filter = 0, num_filter  ! fst_filter = 0 means not being set.
     integer :: num_group_filter_from_homo = 1
     ! These values have different meaning due to init_type.
     integer :: localize_start, localize_end
     integer :: output_interval = 1, restart_step_num, restart_total_states_count, restart_input_step
+    integer :: num_multiple_initials = 1
     logical :: is_atom_indices_enabled = .false., to_multiply_phase_factor = .false., &
          is_output_split = .false., to_use_precomputed_eigenpairs = .false., &
          is_group_id_used = .false., is_overlap_ignored = .false., is_restart_mode = .false., &
@@ -101,6 +103,33 @@ contains
   end subroutine read_charge_factor_for_atoms
 
 
+  subroutine read_alpha_delta_multiple_indices(argv, alpha_delta_multiple_indices)
+    character(len=*), intent(in) :: argv
+    integer, allocatable, intent(out) :: alpha_delta_multiple_indices
+
+    integer :: i, pos_rel, pos_abs, buf(10000), j
+
+    pos_abs = 1
+    i = 0
+    do
+      pos_rel = index(argv(pos_abs :), ',')
+      if (pos_rel == 0) then
+        exit
+      else
+        i = i + 1
+        read (argv(pos_abs : pos_abs + pos_rel - 1), *) buf(i)
+        pos_abs = pos_abs + pos_rel
+      end if
+    end do
+
+    if (allocated(alpha_delta_multiple_indices)) then
+      stop
+    end if
+    allocate(alpha_delta_multiple_indices(i))
+    alpha_delta_multiple_indices(1 : i) = buf(1 : i)
+  end subroutine read_alpha_delta_multiple_indices
+
+
   subroutine read_setting(setting)
     type(wp_setting_t), intent(out) :: setting
 
@@ -130,6 +159,11 @@ contains
             else
               read(argv, *) setting%alpha_delta_index
             end if
+            index_arg = index_arg + 2
+          else if (trim(setting%init_type) == 'alpha_delta_multiple') then
+            call getarg(index_arg + 2, argv)
+            call read_alpha_delta_multiple_indices(argv, setting%alpha_delta_multiple_indices)
+            num_multiple_initials = size(setting%alpha_delta_multiple_indices, 1)
             index_arg = index_arg + 2
           else if (trim(setting%init_type) == 'alpha_gauss') then
             index_arg = index_arg + 1
@@ -592,6 +626,11 @@ contains
          trim(setting%re_initialize_method) == 'minimize_alpha_error')) then
       stop 'unknown state re-initialization method'
     end if
+
+    if (num_multiple_initials > 1 .and. .not. &
+         (trim(h1_type) == 'zero' .or. trim(h1_type) == 'maxwell' .or. trim(h1_type) == 'harmonic')) then
+      stop 'specified h1 type does not support multiple initials'
+    end if
   end subroutine verify_setting
 
 
@@ -707,6 +746,10 @@ contains
     else
       print *, 'to_print_amplitude: false'
     end if
+    print *, 'num_multiple_initials: ', setting%num_multiple_initials
+    if (allocated(setting%alpha_delta_multiple_indices)) then
+      print *, 'alpha_delta_multiple_indices: ', alpha_delta_multiple_indices(:)
+    end if
   end subroutine print_setting
 
 
@@ -714,7 +757,7 @@ contains
     use mpi
     integer, intent(in) :: root
     type(wp_setting_t), intent(inout) :: setting
-    integer, parameter :: num_real = 17, num_integer = 15, num_logical = 10, num_character = 16
+    integer, parameter :: num_real = 17, num_integer = 16, num_logical = 10, num_character = 16
     real(8) :: buf_real(num_real)
     integer :: buf_integer(num_integer), my_rank, ierr, size_psi, size_split_files_metadata, size_atom_speed, size_atom_perturb
     logical :: buf_logical(num_logical)
@@ -766,6 +809,12 @@ contains
         buf_integer(11 : 14) = 0
       end if
       buf_integer(15) = setting%num_group_filter_from_homo
+      buf_integer(16) = setting%num_multiple_initials
+      if (allocated(setting%alpha_delta_multiple_indices)) then
+        buf_integer(17) = size(setting%alpha_delta_multiple_indices, 1)
+      else
+        buf_integer(17) = 0
+      end if
       buf_logical(1) = setting%is_atom_indices_enabled
       buf_logical(2) = setting%to_multiply_phase_factor
       buf_logical(3) = setting%is_output_split
@@ -807,12 +856,16 @@ contains
     else
       allocate(setting%restart_psi(size_psi), setting%restart_split_files_metadata(size_split_files_metadata), &
            setting%restart_atom_speed(size_atom_speed), setting%restart_atom_perturb(size_atom_perturb))
+      if (buf_integer(17) > 0) then
+        allocate(setting%alpha_delta_multiple_indices(buf_integer(17)))
+      end if
     end if
     call mpi_bcast(setting%restart_psi, size_psi, mpi_double_complex, root, mpi_comm_world, ierr)
     call mpi_bcast(buf_character, 1024 * (num_character + size_split_files_metadata), mpi_character, &
          root, mpi_comm_world, ierr)
     call mpi_bcast(setting%restart_atom_speed, size_atom_speed, mpi_double_precision, root, mpi_comm_world, ierr)
     call mpi_bcast(setting%restart_atom_perturb, size_atom_perturb, mpi_double_precision, root, mpi_comm_world, ierr)
+    call mpi_bcast(setting%alpha_delta_multiple_indices, buf_integer(17), mpi_integer, root, mpi_comm_world, ierr)
     if (my_rank /= root) then
       setting%delta_t = buf_real(1)
       setting%limit_t = buf_real(2)
