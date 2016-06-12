@@ -93,7 +93,7 @@ OBJS-ELSES = \
 	elses-xml-sax-data-sync-matom.o elses-qm-chk-allocated.o elses-md-virial-pressure.o elses-la-eigen-solver-main.o \
 	elses-gid-initial.o elses-gid-basic-routines.o elses-gid-constraint.o elses-lib-read-w-comment.o elses-lib-read-w-split.o \
 	elses-ext-atom-info.o elses-ext-matrix-data.o elses-ext-test-quantum-dynamics.o \
-	elses-la-matvec-dstm-crs.o elses-la-matvec-dstm-dens.o elses-la-matvec-dstm-bcrs.o elses-la-matvec-dstm-sss.o elses-qm-dstm-reordering.o 
+	elses-la-matvec-dstm-crs.o elses-la-matvec-dstm-dens.o elses-la-matvec-dstm-bcrs.o elses-la-matvec-dstm-sss.o elses-qm-dstm-reordering.o
 
 
 #elses-xml-selftest: elses-xml-selftest.o $(OBJS-XML)
@@ -102,11 +102,13 @@ OBJS-ELSES = \
 
 elses: $(OBJS-XML) $(OBJS-NRL) $(OBJS-ELSES)
 	$(F90) $(LDFLAGS) $(OBJS-XML) $(OBJS-NRL) $(OBJS-ELSES) $(LIBS-XML) $(LIBS-EXT) $(LIBS) -o $@
+	mkdir -p $(BINDIR)
 	cp $@ $(BINDIR)
 
 .PHONY: clean dep etags ctree
 clean:
 	@rm -f *.exe *.o *.mod *~ Nrl/*.o Nrl/*.mod Nrl/*~ $(TARGET)
+	mkdir -p $(BINDIR)
 	@rm -f $(BINDIR)/elses*
 
 dep:
