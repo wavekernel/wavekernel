@@ -6,7 +6,7 @@ module wp_atom_m
 
   private
   public :: wp_structure_t, read_structure, multiply_phase_factors, &
-       make_dummy_structure, read_group_id, read_group_id_header, print_group_id, &
+       make_dummy_structure, read_group_id, read_group_id_header, make_dummy_group_id, print_group_id, &
        bcast_structure, bcast_group_id, lcao_index_to_atom_index
 
   type wp_structure_t
@@ -173,6 +173,19 @@ contains
   end subroutine read_group_id_header
 
 
+  subroutine make_dummy_group_id(num_atoms, group_id)
+    integer, intent(in) :: num_atoms
+    integer, allocatable, intent(out) :: group_id(:, :)
+    integer :: i
+
+    allocate(group_id(num_atoms + 1, 1))
+    group_id(1, 1) = num_atoms
+    do i = 1, num_atoms
+      group_id(i + 1, 1) = i
+    end do
+  end subroutine make_dummy_group_id
+
+
   subroutine print_group_id(group_id)
     integer, intent(in) :: group_id(:, :)
     integer :: num_groups, i, j
@@ -187,7 +200,7 @@ contains
     end do
   end subroutine print_group_id
 
-  
+
   ! bcast_atom_indices
   subroutine bcast_structure(root, structure)
     integer, intent(in) :: root

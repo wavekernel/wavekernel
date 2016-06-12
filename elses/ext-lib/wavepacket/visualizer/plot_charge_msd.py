@@ -73,6 +73,10 @@ def plot_charge_moment(charge_moment,
         b = (-x_bar * xy_bar + xx_bar * y_bar) / (xx_bar - x_bar ** 2.0)
         ts_new = map(lambda xy: xy[0], xys)
         ys_hat = map(lambda t: a * t + b, ts_new)
+        intercept_relative_error = abs((b - xys[0][1]) / xys[0][1])
+        rmse = pylab.sqrt(sum(map(lambda xy: (xy[1] - a * xy[0] - b) ** 2.0, xys)) / n)
+        print 'b, y[0], intercept_relative_error: ', b, xys[0][1], intercept_relative_error
+        print 'RMSE [Å]: ', rmse
         print 'diffusion coefficient [Å^2 / ps]: ', a / 2.0
         print 'diffusion coefficient [cm^2 / s]: ', a / 2.0 * 1e-4
         # '1.0' = [e]
@@ -104,11 +108,17 @@ def plot_charge_moment(charge_moment,
         pylab.text(time_start + (time_end - time_start) * 0.01,
                    msd_min + (msd_max - msd_min) * 0.94,
                    str(mbt) + ' [cm^2 K / V s]')
+        pylab.text(time_start + (time_end - time_start) * 0.01,
+                   msd_min + (msd_max - msd_min) * 0.9,
+                   'intercept_relative_error ' + str(intercept_relative_error))
+        pylab.text(time_start + (time_end - time_start) * 0.01,
+                   msd_min + (msd_max - msd_min) * 0.86,
+                   'rmse ' + str(rmse))
 
     pylab.twinx()
 
     if to_plot_tb_energy_deviation:
-        pylab.ylabel('TB energy deviation [$\AA$]', color='red')
+        pylab.ylabel('TB energy deviation [a.u.]', color='red')
         pylab.plot(ts, tb_energy_deviations, '+', color='red', label='TB energy dev')
         if energy_min is None:
             energy_min = pylab.ylim()[0]

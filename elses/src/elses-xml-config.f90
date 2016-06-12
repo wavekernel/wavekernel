@@ -2000,6 +2000,7 @@ contains
 
       ! get nodes for initializatin config
       calc%wave_packet%init_type = ""  ! default setting
+      calc%wave_packet%alpha_delta_multiple_indices_str = ""  ! default setting
       calc%wave_packet%alpha_delta_index = -1  ! dummy value
       calc%wave_packet%phase_factor_coef = 0d0  ! default setting
       calc%wave_packet%to_multiply_phase_factor = .false.  ! default setting
@@ -2024,7 +2025,12 @@ contains
         if( associated(work_node3) ) then
           value = getChildValue(work_node3)
           read(unit=value,fmt=*) calc%wave_packet%localize_potential_depth
-        end if        
+        end if
+        ! get <alpha_delta_multiple_indices> node
+        work_node3 => getFirstElementByTagName(work_node2,"alpha_delta_multiple_indices")
+        if( associated(work_node3) ) then
+          calc%wave_packet%alpha_delta_multiple_indices_str = getChildValue(work_node3)
+        end if
         ! get <alpha_delta_min_x> node
         work_node2 => getFirstElementByTagName(work_node1,"alpha_delta_min_x")
         if( associated(work_node2) ) then

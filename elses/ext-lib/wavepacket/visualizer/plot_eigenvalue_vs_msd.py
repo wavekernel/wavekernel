@@ -10,15 +10,11 @@ def plot(wavepacket_out, wavepacket_out_path, to_show_msd, highlight_i, energy_m
     eigenstate_msd = map(lambda x: x * kAngstrom2PerAu2, eigenstate_msd)
     fst_filter = wavepacket_out['setting']['fst_filter']
 
+    pylab.figure(figsize=(16, 12))
+
     if is_log:
         pylab.yscale('log')
     pylab.plot(eigenvalues, eigenstate_msd, 'o')
-
-    if to_label:
-        j = fst_filter
-        for x, y in zip(eigenvalues, eigenstate_msd):
-            pylab.text(x, y, str(j))
-            j += 1
 
     if not highlight_i is None:
         j = highlight_i - fst_filter
@@ -46,6 +42,14 @@ def plot(wavepacket_out, wavepacket_out_path, to_show_msd, highlight_i, energy_m
     yticks_new.extend([ymin, ymax])
     pylab.yticks(yticks_new)
     pylab.ylim(ymin, ymax)  # limit setting again is needed.
+
+    pylab.rcParams.update({'font.size': 10})
+    if to_label:
+        j = fst_filter
+        for x, y in zip(eigenvalues, eigenstate_msd):
+            if energy_min <= x <= energy_max and ymin <= y <= ymax:
+                pylab.text(x, y, str(j))
+            j += 1
 
 #    num_points = len(filter(
 #        lambda (x, y): energy_min <= x and x <= energy_max and ymin <= y and y <= ymax,

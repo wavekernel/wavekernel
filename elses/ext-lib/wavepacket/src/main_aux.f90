@@ -94,17 +94,20 @@ contains
     type(wp_setting_t), intent(in) :: setting
     type(wp_state_t), intent(inout) :: state
 
-    integer :: n, a
+    integer :: n, a, m
 
     n = setting%num_filter
     a = state%structure%num_atoms
-    allocate(state%dv_alpha(n), state%dv_psi(state%dim), state%dv_alpha_next(n), state%dv_psi_next(state%dim))
-    allocate(state%dv_alpha_reconcile(n), state%dv_psi_reconcile(state%dim))
+    m = setting%num_multiple_initials
+    allocate(state%dv_alpha(n, m), state%dv_psi(state%dim, m), state%dv_alpha_next(n, m), state%dv_psi_next(state%dim, m))
+    allocate(state%dv_alpha_reconcile(n, m), state%dv_psi_reconcile(state%dim, m))
     allocate(state%dv_atom_perturb(a), state%dv_atom_speed(a))
-    allocate(state%dv_charge_on_basis(state%dim), state%dv_charge_on_atoms(a))
+    allocate(state%dv_charge_on_basis(state%dim, m), state%dv_charge_on_atoms(a, m))
+    allocate(state%charge_moment(m), state%energies(m), state%errors(m))
     allocate(state%dv_eigenvalues(n), state%dv_ipratios(n))
     allocate(state%eigenstate_mean(3, n), state%eigenstate_msd(4, n))
     allocate(state%eigenstate_ipratios(setting%num_filter))
+    allocate(state%fsons(m))
   end subroutine allocate_dv_vectors
 
 
@@ -305,29 +308,32 @@ contains
     !type(wp_energy_t), intent(out) :: energies
     !type(wp_error_t), intent(out) :: errors
 
+    integer :: j
     real(8) :: wtime
 
     wtime = mpi_wtime()
 
     if (setting%to_replace_basis) then
-      call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
-           state%group_id, state%filter_group_id, state%t, state%structure, &
-           state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
-           state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
-           state%YSY_filtered_desc, state%YSY_filtered, &
-           state%H1_desc, state%H1, state%H1_base, &
-           state%filter_group_indices, state%Y_local, state%charge_factor, &
-           state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
-           state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_atom_perturb, &
-           state%dv_eigenvalues, &
-           state%charge_moment, state%energies, state%errors, state%eigenstate_ipratios, &
-           to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
-      call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
-      if (check_master()) then
-        write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-             '] psi error after re-initialization is ', state%errors%absolute, &
-             ' (absolute) and ', state%errors%relative, ' (relative)'
-      end if
+      do j = 1, setting%num_multiple_initials
+        call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
+             state%group_id, state%filter_group_id, state%t, state%structure, &
+             state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
+             state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
+             state%YSY_filtered_desc, state%YSY_filtered, &
+             state%H1_desc, state%H1, state%H1_base, &
+             state%filter_group_indices, state%Y_local, state%charge_factor, &
+             state%dv_psi(:, j), state%dv_alpha(:, j), state%dv_psi_reconcile(:, j), state%dv_alpha_reconcile(:, j), &
+             state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), state%dv_atom_perturb, &
+             state%dv_eigenvalues, &
+             state%charge_moment(j), state%energies(j), state%errors(j), state%eigenstate_ipratios, &
+             to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
+        call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
+        if (check_master()) then
+          write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+               '] psi error after re-initialization is ', state%errors(j)%absolute, &
+               ' (absolute) and ', state%errors(j)%relative, ' (relative)'
+        end if
+      end do
     else
       ! implementation may be incorrect
       call read_next_input_step_matrix(setting, &
@@ -381,12 +387,17 @@ contains
   end subroutine read_bcast_structure
 
 
-  subroutine read_bcast_group_id(filename, group_id)
-    character(len=*), intent(in) :: filename
+  subroutine read_bcast_group_id(setting, num_atoms, group_id)
+    type(wp_setting_t), intent(in) :: setting
+    integer, intent(in) :: num_atoms
     integer, allocatable, intent(out) :: group_id(:, :)
 
     if (check_master()) then
-      call read_group_id(trim(filename), group_id)
+      if (setting%is_group_id_used) then
+        call read_group_id(trim(setting%group_id_filename), group_id)
+      else
+        call make_dummy_group_id(num_atoms, group_id)
+      end if
     end if
     call bcast_group_id(g_wp_master_pnum, group_id)
   end subroutine read_bcast_group_id
@@ -613,7 +624,7 @@ contains
     !real(8), intent(in) :: eigenstate_mean(3, setting%num_filter), eigenstate_msd(4, setting%num_filter)
     !real(8), intent(in) :: dv_eigenvalues(:), dv_ipratios(:)
     !type(fson_value), pointer, intent(out) :: output, states, structures, split_files_metadata
-    integer :: i, master_prow, master_pcol, iunit_header
+    integer :: i, j, master_prow, master_pcol, iunit_header
     type(fson_value), pointer :: split_files_metadata_elem
 
     if (check_master()) then
@@ -621,38 +632,42 @@ contains
            '] prepare_json(): start'
     end if
 
-    ! Create whole output fson object.
-    state%output => fson_value_create()
-    state%output%value_type = TYPE_OBJECT
-    call add_setting_json(setting, proc, state%output)
-    if (check_master()) then
-      call add_condition_json(state%dim, setting, state%structure, state%errors, &
-           state%group_id, state%filter_group_id, &
-           state%dv_eigenvalues, state%eigenstate_mean, state%eigenstate_msd, state%dv_ipratios, state%output)
-      open(iunit_header, file=trim(add_postfix_to_filename(setting%output_filename, '_header')))
-      call fson_print(iunit_header, state%output)
-      close(iunit_header)
-    end if
-
-    state%states => fson_value_create()
-    call fson_set_name('states', state%states)
-    state%states%value_type = TYPE_ARRAY
-    state%structures => fson_value_create()
-    call fson_set_name('structures', state%structures)
-    state%structures%value_type = TYPE_ARRAY
-
-    if (setting%is_output_split) then
-      state%split_files_metadata => fson_value_create()
-      call fson_set_name('split_files_metadata', state%split_files_metadata)
-      state%split_files_metadata%value_type = TYPE_ARRAY
-      if (setting%is_restart_mode) then
-        do i = 1, size(setting%restart_split_files_metadata)
-          split_files_metadata_elem => fson_value_create()
-          call fson_set_as_string(trim(setting%restart_split_files_metadata(i)), split_files_metadata_elem)
-          call fson_value_add(state%split_files_metadata, split_files_metadata_elem)
-        end do
+    do j = 1, setting%num_multiple_initials
+      ! Create whole output fson object.
+      state%fsons(j)%output => fson_value_create()
+      state%fsons(j)%output%value_type = TYPE_OBJECT
+      call add_setting_json(setting, proc, j, state%fsons(j)%output)
+      if (check_master()) then
+        call add_condition_json(state%dim, setting, state%structure, state%errors(j), &
+             state%group_id, state%filter_group_id, &
+             state%dv_eigenvalues, state%eigenstate_mean, state%eigenstate_msd, state%dv_ipratios, &
+             state%fsons(j)%output)
+        open(iunit_header, file=trim(add_postfix_to_filename(setting%output_filename, '_header')))
+        call fson_print(iunit_header, state%fsons(j)%output)
+        close(iunit_header)
       end if
-    end if
+
+      state%fsons(j)%states => fson_value_create()
+      call fson_set_name('states', state%fsons(j)%states)
+      state%fsons(j)%states%value_type = TYPE_ARRAY
+      state%structures => fson_value_create()
+      call fson_set_name('structures', state%structures)
+      state%structures%value_type = TYPE_ARRAY
+
+      if (setting%is_output_split) then
+        state%fsons(j)%split_files_metadata => fson_value_create()
+        call fson_set_name('split_files_metadata', state%fsons(j)%split_files_metadata)
+        state%fsons(j)%split_files_metadata%value_type = TYPE_ARRAY
+        if (setting%is_restart_mode) then
+          call terminate('prepare_json: restart mode is not supported now', 1)
+          !do i = 1, size(setting%restart_split_files_metadata)
+          !  split_files_metadata_elem => fson_value_create()
+          !  call fson_set_as_string(trim(setting%restart_split_files_metadata(i)), split_files_metadata_elem)
+          !  call fson_value_add(state%fsons(j)%split_files_metadata, split_files_metadata_elem)
+          !end do
+        end if
+      end if
+    end do
   end subroutine prepare_json
 
 
@@ -801,6 +816,17 @@ contains
   end subroutine read_next_input_step_matrix
 
 
+  subroutine post_process_after_matrix_replace(setting, state)
+    type(wp_setting_t), intent(in) :: setting
+    type(wp_state_t), intent(inout) :: state
+
+    state%dv_psi(1 : state%dim, :) = state%dv_psi_reconcile(1 : state%dim, :)
+    state%dv_alpha(1 : setting%num_filter, :) = state%dv_alpha_reconcile(1 : setting%num_filter, :)
+    state%input_step = state%input_step + 1
+    state%t_last_replace = state%t
+  end subroutine post_process_after_matrix_replace
+
+
   subroutine make_matrix_step_forward(setting, proc, state)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
@@ -818,20 +844,22 @@ contains
     !type(wp_local_matrix_t), intent(in) :: Y_local(:)
     !complex(kind(0d0)) :: dv_alpha(:), dv_alpha_next(:)
 
+    integer :: j
     real(8) :: multistep_mix_ratio, wtime
 
     wtime = mpi_wtime()
 
     if (trim(setting%h1_type) == 'zero' .and. trim(setting%filter_mode) /= 'group') then  ! Skip time evolution calculation.
-      state%dv_alpha_next(:) = state%dv_alpha(:)
+      state%dv_alpha_next(:, :) = state%dv_alpha(:, :)
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
     else
       ! H_multistep1 is not referenced.
+      ! dv_charge_on_atoms must not be referenced when setting%num_multiple_initials > 1.
       call make_H1(proc, trim(setting%h1_type), state%structure, &
            state%S_sparse, state%Y_filtered, state%Y_filtered_desc, .false., setting%is_restart_mode, &
            trim(setting%filter_mode) == 'group', state%filter_group_indices, state%Y_local, &
            state%t, setting%temperature, setting%delta_t, setting%perturb_interval, &
-           state%dv_charge_on_atoms, state%charge_factor, &
+           state%dv_charge_on_atoms(:, 1), state%charge_factor, &
            state%dv_atom_perturb, &
            state%H1, state%H1_desc)
       call add_timer_event('make_matrix_step_forward', 'make_matrix_H1_not_multistep', wtime)
@@ -851,9 +879,11 @@ contains
       call add_timer_event('make_matrix_step_forward', 'make_matrix_A', wtime)
 
       ! Note that step_forward destroys A.
-      call step_forward(setting%time_evolution_mode, state%A, state%A_desc, setting%delta_t, &
-           state%dv_alpha, state%dv_alpha_next)
-      call add_timer_event('make_matrix_step_forward', 'step_forward', wtime)
+      do j = 1, setting%num_multiple_initials
+        call step_forward(setting%time_evolution_mode, state%A, state%A_desc, setting%delta_t, &
+             state%dv_alpha(:, j), state%dv_alpha_next(:, j))
+        call add_timer_event('make_matrix_step_forward', 'step_forward', wtime)
+      end do
     end if
   end subroutine make_matrix_step_forward
 
@@ -873,7 +903,7 @@ contains
     !type(wp_charge_moment_t), intent(out) :: charge_moment
     !type(wp_energy_t), intent(out) :: energies
 
-    integer :: num_filter
+    integer :: num_filter, j
     real(8) :: wtime
     real(8) :: dv_charge_on_basis(state%dim), dv_charge_on_atoms(state%structure%num_atoms)
     complex(kind(0d0)) :: dv_evcoef(state%Y_filtered_desc(cols_)), energy_tmp
@@ -882,39 +912,41 @@ contains
 
     num_filter = state%Y_filtered_desc(cols_)
 
-    call alpha_to_lcao_coef(state%Y_filtered, state%Y_filtered_desc, state%dv_eigenvalues, &
-         state%t, state%dv_alpha_next, state%dv_psi)
-    call add_timer_event('step_forward_post_process', 'alpha_to_lcao_coef', wtime)
+    do j = 1, setting%num_multiple_initials
+      call alpha_to_lcao_coef(state%Y_filtered, state%Y_filtered_desc, state%dv_eigenvalues, &
+           state%t, state%dv_alpha_next(:, j), state%dv_psi(:, j))
+      call add_timer_event('step_forward_post_process', 'alpha_to_lcao_coef', wtime)
 
-    call get_mulliken_charges_on_basis(state%dim, state%S_sparse, state%dv_psi, dv_charge_on_basis)
-    call add_timer_event('step_forward_post_process', 'get_mulliken_charges_on_basis', wtime)
+      call get_mulliken_charges_on_basis(state%dim, state%S_sparse, state%dv_psi(:, j), dv_charge_on_basis)
+      call add_timer_event('step_forward_post_process', 'get_mulliken_charges_on_basis', wtime)
 
-    call get_mulliken_charges_on_atoms(state%dim, state%structure, state%S_sparse, &
-         state%dv_psi, dv_charge_on_atoms)
-    call add_timer_event('step_forward_post_process', 'get_mulliken_charges_on_atoms', wtime)
+      call get_mulliken_charges_on_atoms(state%dim, state%structure, state%S_sparse, &
+           state%dv_psi(:, j), dv_charge_on_atoms)
+      call add_timer_event('step_forward_post_process', 'get_mulliken_charges_on_atoms', wtime)
 
-    call get_mulliken_charge_coordinate_moments(state%structure, dv_charge_on_atoms, state%charge_moment)
-    call add_timer_event('step_forward_post_process', 'get_mulliken_charge_coordinate_moments', wtime)
+      call get_mulliken_charge_coordinate_moments(state%structure, dv_charge_on_atoms, state%charge_moment(j))
+      call add_timer_event('step_forward_post_process', 'get_mulliken_charge_coordinate_moments', wtime)
 
-    call get_A_sparse_inner_product(state%dim, state%H_sparse, state%dv_psi, state%dv_psi, energy_tmp)
-    state%energies%tightbinding = truncate_imag(energy_tmp)
-    call alpha_to_eigenvector_coef(num_filter, state%dv_eigenvalues, state%t, state%dv_alpha_next, dv_evcoef)
+      call get_A_sparse_inner_product(state%dim, state%H_sparse, state%dv_psi(:, j), state%dv_psi(:, j), energy_tmp)
+      state%energies(j)%tightbinding = truncate_imag(energy_tmp)
+      call alpha_to_eigenvector_coef(num_filter, state%dv_eigenvalues, state%t, state%dv_alpha_next(:, j), dv_evcoef)
 
-    if (trim(setting%h1_type) == 'charge_overlap') then
-      call get_charge_overlap_energy(state%structure, state%charge_factor, &
-           state%dv_charge_on_atoms, state%energies%nonlinear)
-    else
-      call get_A_inner_product(num_filter, state%H1, state%H1_desc, dv_evcoef, dv_evcoef, energy_tmp)
-      state%energies%nonlinear = truncate_imag(energy_tmp)
-      if (trim(setting%h1_type) == 'charge') then
-        state%energies%nonlinear = state%energies%nonlinear / 2d0
+      if (trim(setting%h1_type) == 'charge_overlap') then
+        call get_charge_overlap_energy(state%structure, state%charge_factor, &
+             state%dv_charge_on_atoms(:, j), state%energies(j)%nonlinear)
+      else
+        call get_A_inner_product(num_filter, state%H1, state%H1_desc, dv_evcoef, dv_evcoef, energy_tmp)
+        state%energies(j)%nonlinear = truncate_imag(energy_tmp)
+        if (trim(setting%h1_type) == 'charge') then
+          state%energies(j)%nonlinear = state%energies(j)%nonlinear / 2d0
+        end if
       end if
-    end if
-    state%energies%total = state%energies%tightbinding + state%energies%nonlinear
-    call add_timer_event('step_forward_post_process', 'compute_energy', wtime)
+      state%energies(j)%total = state%energies(j)%tightbinding + state%energies(j)%nonlinear
+      call add_timer_event('step_forward_post_process', 'compute_energy', wtime)
 
-    state%dv_alpha(:) = state%dv_alpha_next(:)
-    call add_timer_event('step_forward_post_process', 'move_alpha_between_time_steps', wtime)
+      state%dv_alpha(:, j) = state%dv_alpha_next(:, j)
+      call add_timer_event('step_forward_post_process', 'move_alpha_between_time_steps', wtime)
+    end do
   end subroutine step_forward_post_process
 
 
@@ -964,7 +996,7 @@ contains
     !type(fson_value), pointer, intent(inout) :: split_files_metadata, states, structures
 
     real(8) :: wtime
-    integer :: master_prow, master_pcol, states_count, input_step_backup
+    integer :: master_prow, master_pcol, states_count, input_step_backup, j
     real(8), allocatable :: atom_coordinates_backup(:, :)
     real(8) :: t_backup
     type(fson_value), pointer :: last_structure
@@ -974,20 +1006,25 @@ contains
     call add_timer_event('save_state', 'gather_matrix_to_save_state', wtime)
 
     if (check_master()) then
-      call add_state_json(state%dim, setting%num_filter, state%structure, state%i, state%t, state%input_step, &
-           state%energies, state%dv_alpha, state%dv_psi, &
-           state%dv_charge_on_basis, state%dv_charge_on_atoms, state%charge_moment, &
-           setting%h1_type, state%dv_atom_speed, state%dv_atom_perturb, &
-           is_after_matrix_replace, state%states)
+      do j = 1, setting%num_multiple_initials
+        call add_state_json(state%dim, setting%num_filter, state%structure, &
+             state%i, state%t, state%input_step, &
+             state%energies(j), state%dv_alpha(:, j), state%dv_psi(:, j), &
+             state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), state%charge_moment(j), &
+             setting%h1_type, state%dv_atom_speed, state%dv_atom_perturb, &
+             is_after_matrix_replace, state%fsons(j)%states)
+      end do
       state%total_state_count = state%total_state_count + 1
       if (setting%is_output_split) then
-        states_count = fson_value_count(state%states)
+        states_count = fson_value_count(state%fsons(1)%states)  ! states_count is same on all initials.
         ! 'i + setting%output_interval' in the next condition expression is
         ! the next step that satisfies 'mod(i, setting%output_interval) == 0'.
         if (states_count >= setting%num_steps_per_output_split .or. &
              setting%delta_t * (state%i + setting%output_interval) >= setting%limit_t) then
-          call output_split_states(setting, state%total_state_count, state%states, &
-               state%structures, state%split_files_metadata)
+          do j = 1, setting%num_multiple_initials
+            call output_split_states(setting, state%total_state_count, j, state%fsons(j)%states, &
+                 state%structures, state%fsons(j)%split_files_metadata)
+          end do
           ! Reset json array of states.
           ! Back up the last structure.
           allocate(atom_coordinates_backup(3, state%structure%num_atoms))
@@ -997,14 +1034,16 @@ contains
           call fson_path_get(last_structure, 'coordinates_x', atom_coordinates_backup(1, :))
           call fson_path_get(last_structure, 'coordinates_y', atom_coordinates_backup(2, :))
           call fson_path_get(last_structure, 'coordinates_z', atom_coordinates_backup(3, :))
-          ! Destroy jsons.
-          call fson_destroy(state%states)
+          ! Reset jsons.
+          do j = 1, setting%num_multiple_initials
+            call fson_destroy(state%fsons(j)%states)
+            state%fsons(j)%states => fson_value_create()
+            call fson_set_name('states', state%fsons(j)%states)
+            state%fsons(j)%states%value_type = TYPE_ARRAY
+          end do
           call fson_destroy(state%structures)
-          state%states => fson_value_create()
           state%structures => fson_value_create()
-          call fson_set_name('states', state%states)
           call fson_set_name('structures', state%structures)
-          state%states%value_type = TYPE_ARRAY
           state%structures%value_type = TYPE_ARRAY
           ! Write the last atomic structure to make the split file independent from others.
           call add_structure_json(t_backup, input_step_backup, state)
@@ -1015,9 +1054,10 @@ contains
   end subroutine save_state
 
 
-  subroutine output_split_states(setting, total_state_count, states, structures, split_files_metadata)
+  subroutine output_split_states(setting, total_state_count, multiple_initial_index, states, &
+       structures, split_files_metadata)
     type(wp_setting_t), intent(in) :: setting
-    integer, intent(in) :: total_state_count
+    integer, intent(in) :: total_state_count, multiple_initial_index
     type(fson_value), pointer, intent(in) :: states, structures
     type(fson_value), pointer, intent(inout) :: split_files_metadata
 
@@ -1033,8 +1073,13 @@ contains
     wtime = mpi_wtime()
 
     states_count = fson_value_count(states)
-    filename = add_numbers_to_filename(setting%output_filename, &
-         total_state_count - states_count + 1, total_state_count)
+    if (setting%num_multiple_initials == 1) then
+      filename = add_numbers_to_filename(setting%output_filename, &
+           total_state_count - states_count + 1, total_state_count)
+    else
+      filename = add_numbers_to_filename_multiple_initial(setting%output_filename, multiple_initial_index, &
+           total_state_count - states_count + 1, total_state_count)
+    end if
     call get_simulation_ranges(states, min_time, max_time, min_step_num, max_step_num, &
          min_input_step, max_input_step)
     metadata => fson_value_create()
@@ -1110,12 +1155,15 @@ contains
   end subroutine output_split_states
 
 
-  subroutine output_fson_and_destroy(setting, output, split_files_metadata, states, structures, wtime_total)
+  subroutine output_fson_and_destroy(setting, multiple_initial_index, output, split_files_metadata, &
+       states, structures, wtime_total)
     type(wp_setting_t), intent(in) :: setting
+    integer, intent(in) :: multiple_initial_index
     type(fson_value), pointer, intent(inout) :: output, split_files_metadata, states, structures
     real(8), intent(inout) :: wtime_total
 
     integer :: iunit_master
+    character(len=1024) :: actual_output_filename
     real(8) :: wtime
 
     wtime = mpi_wtime()
@@ -1131,15 +1179,21 @@ contains
       call add_timer_event('main', 'write_states_to_fson', wtime)
       call add_timer_event('main', 'total', wtime_total)
 
-      if (trim(setting%output_filename) /= '-') then
+      if (setting%num_multiple_initials == 1) then
+        actual_output_filename = setting%output_filename
+      else
+        actual_output_filename = add_number_to_filename(setting%output_filename, multiple_initial_index)
+      end if
+
+      if (trim(actual_output_filename) /= '-') then
         iunit_master = 11
-        open(iunit_master, file=setting%output_filename)
+        open(iunit_master, file=actual_output_filename)
       else
         iunit_master = 6
       end if
       call fson_events_add(output)
       call fson_print(iunit_master, output)
-      if (trim(setting%output_filename) /= '-') then
+      if (trim(actual_output_filename) /= '-') then
         close(iunit_master)
       end if
     end if
