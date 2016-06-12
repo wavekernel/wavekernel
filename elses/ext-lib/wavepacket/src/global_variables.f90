@@ -4,7 +4,7 @@ module wp_global_variables_m
   integer :: g_wp_block_size = 64, g_wp_master_pnum = 0
   real(8) :: g_wp_mpi_wtime_init = 0d0
 
-  character(*), parameter :: kVersion = '20160513'
+  character(*), parameter :: kVersion = '20160613'
   real(8), parameter :: kAuPerAngstrom = 1.8897259885789d0
   real(8), parameter :: kMassCarbon = 2.1874661e4  ! [a.u. (mass)]
   real(8), parameter :: kMassHydrogen = 1.8371526e3  ! [a.u. (mass)]
