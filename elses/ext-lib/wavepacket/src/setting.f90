@@ -6,7 +6,7 @@ module wp_setting_m
   implicit none
 
   private
-  public :: wp_setting_t, read_setting, inherit_setting, fill_filtering_setting, &
+  public :: wp_setting_t, read_alpha_delta_multiple_indices, read_setting, inherit_setting, fill_filtering_setting, &
        verify_setting, print_setting, bcast_setting, print_help
 
   type wp_setting_t
@@ -103,20 +103,22 @@ contains
   end subroutine read_charge_factor_for_atoms
 
 
-  subroutine read_alpha_delta_multiple_indices(argv, alpha_delta_multiple_indices)
+  subroutine read_alpha_delta_multiple_indices(argv, alpha_delta_multiple_indices, num_multiple_initials)
     character(len=*), intent(in) :: argv
-    integer, allocatable, intent(out) :: alpha_delta_multiple_indices
+    integer, allocatable, intent(out) :: alpha_delta_multiple_indices(:)
+    integer, intent(out) :: num_multiple_initials
 
     integer :: i, pos_rel, pos_abs, buf(10000), j
 
     pos_abs = 1
     i = 0
     do
+      i = i + 1
       pos_rel = index(argv(pos_abs :), ',')
       if (pos_rel == 0) then
+        read (argv(pos_abs :), *) buf(i)
         exit
       else
-        i = i + 1
         read (argv(pos_abs : pos_abs + pos_rel - 1), *) buf(i)
         pos_abs = pos_abs + pos_rel
       end if
@@ -127,6 +129,7 @@ contains
     end if
     allocate(alpha_delta_multiple_indices(i))
     alpha_delta_multiple_indices(1 : i) = buf(1 : i)
+    num_multiple_initials = i
   end subroutine read_alpha_delta_multiple_indices
 
 
@@ -162,8 +165,8 @@ contains
             index_arg = index_arg + 2
           else if (trim(setting%init_type) == 'alpha_delta_multiple') then
             call getarg(index_arg + 2, argv)
-            call read_alpha_delta_multiple_indices(argv, setting%alpha_delta_multiple_indices)
-            num_multiple_initials = size(setting%alpha_delta_multiple_indices, 1)
+            call read_alpha_delta_multiple_indices(argv, setting%alpha_delta_multiple_indices, &
+                 setting%num_multiple_initials)
             index_arg = index_arg + 2
           else if (trim(setting%init_type) == 'alpha_gauss') then
             index_arg = index_arg + 1
@@ -627,9 +630,15 @@ contains
       stop 'unknown state re-initialization method'
     end if
 
-    if (num_multiple_initials > 1 .and. .not. &
-         (trim(h1_type) == 'zero' .or. trim(h1_type) == 'maxwell' .or. trim(h1_type) == 'harmonic')) then
+    if (setting%num_multiple_initials > 1 .and. .not. &
+         (trim(setting%h1_type) == 'zero' .or. &
+         trim(setting%h1_type) == 'maxwell' .or. &
+         trim(setting%h1_type) == 'harmonic')) then
       stop 'specified h1 type does not support multiple initials'
+    end if
+
+    if (setting%num_multiple_initials > 1 .and. .not. setting%is_output_split) then
+      stop 'multiple initials mode must be used with output split'
     end if
   end subroutine verify_setting
 
@@ -748,7 +757,7 @@ contains
     end if
     print *, 'num_multiple_initials: ', setting%num_multiple_initials
     if (allocated(setting%alpha_delta_multiple_indices)) then
-      print *, 'alpha_delta_multiple_indices: ', alpha_delta_multiple_indices(:)
+      print *, 'alpha_delta_multiple_indices: ', setting%alpha_delta_multiple_indices(:)
     end if
   end subroutine print_setting
 
@@ -757,7 +766,7 @@ contains
     use mpi
     integer, intent(in) :: root
     type(wp_setting_t), intent(inout) :: setting
-    integer, parameter :: num_real = 17, num_integer = 16, num_logical = 10, num_character = 16
+    integer, parameter :: num_real = 17, num_integer = 17, num_logical = 10, num_character = 16
     real(8) :: buf_real(num_real)
     integer :: buf_integer(num_integer), my_rank, ierr, size_psi, size_split_files_metadata, size_atom_speed, size_atom_perturb
     logical :: buf_logical(num_logical)
@@ -865,7 +874,9 @@ contains
          root, mpi_comm_world, ierr)
     call mpi_bcast(setting%restart_atom_speed, size_atom_speed, mpi_double_precision, root, mpi_comm_world, ierr)
     call mpi_bcast(setting%restart_atom_perturb, size_atom_perturb, mpi_double_precision, root, mpi_comm_world, ierr)
-    call mpi_bcast(setting%alpha_delta_multiple_indices, buf_integer(17), mpi_integer, root, mpi_comm_world, ierr)
+    if (buf_integer(17) > 0) then
+      call mpi_bcast(setting%alpha_delta_multiple_indices, buf_integer(17), mpi_integer, root, mpi_comm_world, ierr)
+    end if
     if (my_rank /= root) then
       setting%delta_t = buf_real(1)
       setting%limit_t = buf_real(2)
@@ -895,6 +906,7 @@ contains
       setting%restart_total_states_count = buf_integer(9)
       setting%restart_input_step = buf_integer(10)
       setting%num_group_filter_from_homo = buf_integer(15)
+      setting%num_multiple_initials = buf_integer(16)
       setting%is_atom_indices_enabled = buf_logical(1)
       setting%to_multiply_phase_factor = buf_logical(2)
       setting%is_output_split = buf_logical(3)

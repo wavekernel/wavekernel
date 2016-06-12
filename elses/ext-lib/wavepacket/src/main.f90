@@ -7,7 +7,7 @@ program main
   type(wp_state_t) :: state
   ! Dummy variables velow are not used from this main.f90.
   real(8) :: dummy_eigenvalues(1), dummy_eigenvectors(1, 1)
-  integer :: dummy_desc_eigenvectors(desc_size)
+  integer :: dummy_desc_eigenvectors(desc_size), j
 
   ! Functions.
   integer :: iargc
@@ -34,11 +34,11 @@ program main
 
   call read_bcast_structure(state%dim, setting, 1, state%structure)
   ! Group ids are fixed through the whole simulation.
-  if (setting%is_group_id_used) then
-    call read_bcast_group_id(setting%group_id_filename, state%group_id)
-  end if
+
+  call read_bcast_group_id(setting, state%structure%num_atoms, state%group_id)
   if (trim(setting%filter_mode) == 'group') then
-    call read_bcast_group_id(setting%filter_group_filename, state%filter_group_id)
+    call read_group_id(trim(setting%filter_group_filename), state%filter_group_id)
+    call bcast_group_id(g_wp_master_pnum, state%filter_group_id)
   end if
   call add_timer_event('main', 'read_bcast_atom_indices_and_coordinates', state%wtime)
 
@@ -121,10 +121,7 @@ program main
 
       call set_aux_matrices_for_multistep(setting, proc, &
            .false., dummy_eigenvalues, dummy_desc_eigenvectors, dummy_eigenvectors, state)
-      state%dv_psi(1 : state%dim) = state%dv_psi_reconcile(1 : state%dim)
-      state%dv_alpha(1 : setting%num_filter) = state%dv_alpha_reconcile(1 : setting%num_filter)
-      state%input_step = state%input_step + 1
-      state%t_last_replace = state%t
+      call post_process_after_matrix_replace(setting, state)
 
       call add_structure_json(state%t, state%input_step, state)
 
@@ -141,7 +138,9 @@ program main
     state%t = setting%delta_t * state%i
   end do
 
-  call output_fson_and_destroy(setting, state%fsons(1)%output, state%fsons(1)%split_files_metadata, &
-       state%fsons(1)%states, state%structures, state%wtime_total)
+  do j = 1, setting%num_multiple_initials
+    call output_fson_and_destroy(setting, j, state%fsons(j)%output, state%fsons(j)%split_files_metadata, &
+         state%fsons(j)%states, state%structures, state%wtime_total)
+  end do
   call mpi_finalize(state%ierr)
 end program main

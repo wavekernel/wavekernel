@@ -145,6 +145,13 @@ contains
     else
       setting%alpha_delta_index = config%calc%wave_packet%alpha_delta_index
     end if
+    if (setting%init_type == 'alpha_delta_multiple') then
+      if (trim(config%calc%wave_packet%alpha_delta_multiple_indices_str) == "") then
+        config%calc%wave_packet%alpha_delta_multiple_indices_str = "1"  ! Set default value.
+      end if
+      call read_alpha_delta_multiple_indices(config%calc%wave_packet%alpha_delta_multiple_indices_str, &
+           setting%alpha_delta_multiple_indices, setting%num_multiple_initials)
+    end if
     setting%to_multiply_phase_factor = config%calc%wave_packet%to_multiply_phase_factor
     setting%phase_factor_coef = config%calc%wave_packet%phase_factor_coef
     setting%localize_potential_depth = config%calc%wave_packet%localize_potential_depth
@@ -323,10 +330,7 @@ contains
          .true., eigenvalues, desc_eigenvectors, eigenvectors, state)
     call add_timer_event('main', 'set_aux_matrices_for_multistep', state%wtime)
 
-    state%dv_psi(1 : state%dim) = state%dv_psi_reconcile(1 : state%dim)
-    state%dv_alpha(1 : setting%num_filter) = state%dv_alpha_reconcile(1 : setting%num_filter)
-    state%input_step = state%input_step + 1
-    state%t_last_replace = state%t
+    call post_process_after_matrix_replace(setting, state)
 
     call add_structure_json(state%t, state%input_step, state)
 

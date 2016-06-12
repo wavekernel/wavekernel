@@ -221,8 +221,10 @@ contains
       end if
       call wavepacket_main(proc, setting, state)  ! Compute wavepacket dynamics while atoms are fixed.
       if (final_iteration .or. setting%delta_t * (state%i + 1) >= setting%limit_t) then
-        call output_fson_and_destroy(setting, state%fsons(1)%output, state%fsons(1)%split_files_metadata, &
-             state%fsons(1)%states, state%structures, state%wtime_total)
+        do j = 1, setting%num_multiple_initials
+          call output_fson_and_destroy(setting, j, state%fsons(j)%output, state%fsons(j)%split_files_metadata, &
+               state%fsons(j)%states, state%structures, state%wtime_total)
+        end do
         is_wavepacket_end = .true.  ! output_fson_and_destroy is called only once.
       end if
     end if

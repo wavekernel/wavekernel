@@ -20,9 +20,10 @@ module wp_output_m
 
 contains
 
-  subroutine add_setting_json(setting, proc, output)
+  subroutine add_setting_json(setting, proc, multiple_initial_index, output)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
+    integer, intent(in) :: multiple_initial_index
     type(fson_value), pointer, intent(inout) :: output
 
     type(fson_value), pointer :: setting_in_fson, setting_elem
@@ -132,6 +133,12 @@ contains
       call fson_set_name('alpha_delta_index', setting_elem)
       setting_elem%value_type = TYPE_INTEGER
       setting_elem%value_integer = setting%alpha_delta_index
+      call fson_value_add(setting_in_fson, setting_elem)
+    else if (trim(setting%init_type) == 'alpha_delta_multiple') then
+      setting_elem => fson_value_create()
+      call fson_set_name('alpha_delta_multiple_index', setting_elem)
+      setting_elem%value_type = TYPE_INTEGER
+      setting_elem%value_integer = setting%alpha_delta_multiple_indices(multiple_initial_index)
       call fson_value_add(setting_in_fson, setting_elem)
     else if (trim(setting%init_type) == 'alpha_file') then
       setting_elem => fson_value_create()

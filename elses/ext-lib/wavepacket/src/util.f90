@@ -3,7 +3,8 @@ module wp_util_m
 
   private
   public :: wp_energy_t, wp_error_t, index_to_coordinate, truncate_imag, &
-       add_numbers_to_filename, add_postfix_to_filename, &
+       add_number_to_filename, add_numbers_to_filename, add_numbers_to_filename_multiple_initial, &
+       add_postfix_to_filename, &
        remove_directory_from_filename, read_vector, wp_random_number, comb_sort
 
   type wp_energy_t
@@ -52,6 +53,46 @@ contains
            '-' // n_end_str // filename_base(index_last_dot : len_trim(filename_base))
     end if
   end function add_numbers_to_filename
+
+
+  function add_number_to_filename(filename_base, n) result(filename)
+    character(*), intent(in) :: filename_base
+    integer, intent(in) :: n
+    character(len=len_trim(filename_base)+7) :: filename
+    character(len=6) :: n_str
+    integer :: index_last_dot
+
+    write(n_str, '(I6.6)') n
+    index_last_dot = index(filename_base, '.', back=.true.)
+
+    if (index_last_dot == 0) then
+      filename = filename_base // '_' // n_str
+    else
+      filename = filename_base(1 : index_last_dot - 1) // '_' // n_str // &
+           filename_base(index_last_dot : len_trim(filename_base))
+    end if
+  end function add_number_to_filename
+
+
+  function add_numbers_to_filename_multiple_initial(filename_base, multiple_initial_index, n_begin, n_end) result(filename)
+    character(*), intent(in) :: filename_base
+    integer, intent(in) :: multiple_initial_index, n_begin, n_end
+    character(len=len_trim(filename_base)+21) :: filename
+    character(len=6) :: multiple_initial_index_str, n_begin_str, n_end_str
+    integer :: index_last_dot
+
+    write(multiple_initial_index_str, '(I6.6)') multiple_initial_index
+    write(n_begin_str, '(I6.6)') n_begin
+    write(n_end_str, '(I6.6)') n_end
+    index_last_dot = index(filename_base, '.', back=.true.)
+
+    if (index_last_dot == 0) then
+      filename = filename_base // '_' // multiple_initial_index_str // '_' // n_begin_str // '-' // n_end_str
+    else
+      filename = filename_base(1 : index_last_dot - 1) // '_' // multiple_initial_index_str // '_' // n_begin_str // &
+           '-' // n_end_str // filename_base(index_last_dot : len_trim(filename_base))
+    end if
+  end function add_numbers_to_filename_multiple_initial
 
 
   function add_postfix_to_filename(filename_base, postfix) result(filename)

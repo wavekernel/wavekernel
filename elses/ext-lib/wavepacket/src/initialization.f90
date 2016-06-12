@@ -732,8 +732,8 @@ contains
     type(wp_structure_t), intent(in) :: structure
     integer, intent(in) :: Y_filtered_desc(desc_size)
     real(8), intent(in) :: Y_filtered(:, :)
-    complex(kind(0d0)), intent(out) :: dv_psi(:), dv_alpha(:)
-    type(wp_error_t), intent(out) :: errors
+    complex(kind(0d0)), intent(out) :: dv_psi(:, :), dv_alpha(:, :)
+    type(wp_error_t), intent(out) :: errors(:)
 
     integer :: nprow, npcol, myrow, mycol
     real(8) :: min_msd, eigenvalues(dim)
@@ -763,7 +763,13 @@ contains
       if (trim(setting%init_type) == 'alpha_delta') then
         actual_alpha_delta_index = get_actual_alpha_delta_index(setting, &
              dim, localized_indices, setting%alpha_delta_index)
-        call make_initial_psi_delta(dim, actual_alpha_delta_index - setting%fst_filter + 1, dv_alpha)
+        call make_initial_psi_delta(dim, actual_alpha_delta_index - setting%fst_filter + 1, dv_alpha(:, 1))
+      else if (trim(setting%init_type) == 'alpha_delta_multiple') then
+        do i = 1, setting%num_multiple_initials
+          actual_alpha_delta_index = get_actual_alpha_delta_index(setting, &
+               dim, localized_indices, setting%alpha_delta_multiple_indices(i))
+          call make_initial_psi_delta(dim, actual_alpha_delta_index - setting%fst_filter + 1, dv_alpha(:, i))
+        end do
       !else if (trim(setting%init_type) == 'alpha_gauss') then
       !  call make_initial_psi_gauss(filtered_vecs, filtered_vecs_desc, col_alpha)
       !else if (trim(setting%init_type) == 'alpha_file') then
@@ -791,12 +797,14 @@ contains
       else
         stop 'unknown initialization method (fail in command line option parsing)'
       end if
-      ! \alpha のノルムはプログラムがうまく動いていれば保存されるはずなので規格化は最初の一度のみ行う.
-      ! 1 =: \Psi^\dagger S \Psi = c^\dagger Y^\dagger S Y c = ||c||^2 = ||\alpha||^2
-      call normalize_vector(setting%num_filter, dv_alpha)
-      ! フィルターした後の状態の重ね合わせで \psi を決めているのでこの時点では
-      ! \psi に対するエラーは存在しない.
-      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, 0d0, dv_alpha, dv_psi)
+      do i = 1, setting%num_multiple_initials
+        ! \alpha のノルムはプログラムがうまく動いていれば保存されるはずなので規格化は最初の一度のみ行う.
+        ! 1 =: \Psi^\dagger S \Psi = c^\dagger Y^\dagger S Y c = ||c||^2 = ||\alpha||^2
+        call normalize_vector(setting%num_filter, dv_alpha(:, i))
+        ! フィルターした後の状態の重ね合わせで \psi を決めているのでこの時点では
+        ! \psi に対するエラーは存在しない.
+        call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, 0d0, dv_alpha(:, i), dv_psi(:, i))
+      end do
       if (setting%to_multiply_phase_factor) then
         call terminate('not implemented', 49)
       !  ! LCAO -> (phase factor multiplication) -> LCAO -> alpha -> (normalize) ->
@@ -808,8 +816,10 @@ contains
       !       full_vecs, full_vecs_desc, filtered_vecs, filtered_vecs_desc)
       !  call get_filtering_errors(dim, full_vecs, full_vecs_desc, absolute_filter_error, relative_filter_error)
       else
-        errors%absolute = 0d0
-        errors%relative = 0d0
+        do i = 1, setting%num_multiple_initials
+          errors(i)%absolute = 0d0
+          errors(i)%relative = 0d0
+        end do
       end if
     else if (trim(setting%init_type) == 'local_alpha_delta' .or. &
       trim(setting%init_type) == 'local_alpha_delta_group') then
@@ -1010,20 +1020,26 @@ contains
            '] initialize() : compute charges form initial value'
     end if
 
-    call compute_charges(state%dim, state%structure, state%S_sparse, &
-         state%dv_psi, state%dv_charge_on_basis, state%dv_charge_on_atoms, state%charge_moment)
+    do i = 1, setting%num_multiple_initials
+      call compute_charges(state%dim, state%structure, state%S_sparse, &
+           state%dv_psi(:, i), state%dv_charge_on_basis(:, i), state%dv_charge_on_atoms(:, i), &
+           state%charge_moment(i))
+    end do
 
     if (check_master()) then
       write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
            '] initialize() : compute energies form initial value'
     end if
 
-    call compute_energies(setting, proc, state%structure, &
-         state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
-         state%dv_charge_on_atoms, state%charge_factor, &
-         state%filter_group_indices, state%Y_local, state%dv_eigenvalues, state%dv_psi, state%dv_alpha, &
-         state%dv_atom_perturb, &
-         state%H1_base, state%H1, state%H1_desc, state%energies)
+    do i = 1, setting%num_multiple_initials
+      call compute_energies(setting, proc, state%structure, &
+           state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
+           state%dv_charge_on_atoms(:, i), state%charge_factor, &
+           state%filter_group_indices, state%Y_local, state%dv_eigenvalues, &
+           state%dv_psi(:, i), state%dv_alpha(:, i), &
+           state%dv_atom_perturb, &
+           state%H1_base, state%H1, state%H1_desc, state%energies(i))
+    end do
   end subroutine initialize
 
 
