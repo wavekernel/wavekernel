@@ -32,7 +32,10 @@ def plot_charge_moment(charge_moment,
                        is_raw_mode, title, fig_path):
     #font = {'size': 20}
     #matplotlib.rc('font', **font)
-    pylab.figure(figsize=(10, 7.5))
+    fig = pylab.figure(figsize=(10, 7.5))
+    # Cancel axis offset.
+    ax = fig.gca()
+    ax.ticklabel_format(useOffset=False)
     axis_name_to_num = {'x': 0, 'y': 1, 'z': 2, 'total': 3}
     msd_axis_num = axis_name_to_num[msd_axis]
     mean_axis_num = axis_name_to_num[mean_axis]
@@ -58,32 +61,36 @@ def plot_charge_moment(charge_moment,
     if to_show_diffusion_coef and not is_fs_mode:
         xys = zip(ts, msds)
         xys = filter(lambda xy: time_start_diffusion <= xy[0] and xy[0] < time_end_diffusion, xys)
-        n = float(len(xys))
+        n = len(xys)
         x_bar = y_bar = xy_bar = xx_bar = 0.0
         for (x, y) in xys:
             x_bar += x
             y_bar += y
             xy_bar += x * y
             xx_bar += x ** 2.0
-        x_bar /= n
-        y_bar /= n
-        xy_bar /= n
-        xx_bar /= n
+        x_bar /= float(n)
+        y_bar /= float(n)
+        xy_bar /= float(n)
+        xx_bar /= float(n)
         a = (xy_bar - x_bar * y_bar) / (xx_bar - x_bar ** 2.0)
         b = (-x_bar * xy_bar + xx_bar * y_bar) / (xx_bar - x_bar ** 2.0)
         ts_new = map(lambda xy: xy[0], xys)
         ys_hat = map(lambda t: a * t + b, ts_new)
-        intercept_relative_error = abs((b - xys[0][1]) / xys[0][1])
-        rmse = pylab.sqrt(sum(map(lambda xy: (xy[1] - a * xy[0] - b) ** 2.0, xys)) / n)
-        print 'b, y[0], intercept_relative_error: ', b, xys[0][1], intercept_relative_error
-        print 'RMSE [Å]: ', rmse
+        intercept_relative_error_left = abs((b - xys[0][1]) / xys[0][1])
+        intercept_relative_error_right = abs((a * xys[-1][0] + b - xys[-1][1]) / xys[-1][1])
+        rmse = pylab.sqrt(sum(map(lambda xy: (xy[1] - a * xy[0] - b) ** 2.0, xys)) / float(n))
+        print 'T0, T1: ', xys[0][0], xys[-1][0]
+        print 'a T0 + b, y(T0), IRE(0): ', b, xys[0][1], intercept_relative_error_left
+        print 'a T1 + b, y(T1), IRE(1): ', \
+            a * xys[-1][0] + b, xys[0][1], intercept_relative_error_right
+        print 'RMSE [Å^2]: ', rmse
         print 'diffusion coefficient [Å^2 / ps]: ', a / 2.0
         print 'diffusion coefficient [cm^2 / s]: ', a / 2.0 * 1e-4
         # '1.0' = [e]
         # 'kBoltzmann * 1.0' = [V / K]
         mbt = a / 2.0 * 1e-4 / (kBoltzmann * 1.0)
         print 'mobility * temperature [cm^2 K / V s]', mbt
-        pylab.plot(ts_new, ys_hat, color='green')
+        pylab.plot(ts_new[0:n:n-1], ys_hat[0:n:n-1], 'x-', color='green', markersize=10)
 
     pylab.ylabel('MSD ' + msd_axis + ' [$\AA^2$]', color='blue')
     pylab.plot(ts, msds, '+', markeredgecolor='blue', label='MSD ' + msd_axis,
@@ -110,12 +117,18 @@ def plot_charge_moment(charge_moment,
                    str(mbt) + ' [cm^2 K / V s]')
         pylab.text(time_start + (time_end - time_start) * 0.01,
                    msd_min + (msd_max - msd_min) * 0.9,
-                   'intercept_relative_error ' + str(intercept_relative_error))
+                   'IRE(0) ' + str(intercept_relative_error_left))
         pylab.text(time_start + (time_end - time_start) * 0.01,
                    msd_min + (msd_max - msd_min) * 0.86,
-                   'rmse ' + str(rmse))
+                   'IRE(1) ' + str(intercept_relative_error_right))
+        pylab.text(time_start + (time_end - time_start) * 0.01,
+                   msd_min + (msd_max - msd_min) * 0.82,
+                   'RMSE ' + str(rmse) + ' [$\AA^2$]')
 
     pylab.twinx()
+    # Cancel axis offset.
+    ax = fig.gca()
+    ax.ticklabel_format(useOffset=False)
 
     if to_plot_tb_energy_deviation:
         pylab.ylabel('TB energy deviation [a.u.]', color='red')
