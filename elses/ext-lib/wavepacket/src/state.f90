@@ -17,25 +17,15 @@ module wp_state_m
     type(wp_structure_t) :: structure
     type(wp_energy_t), allocatable :: energies(:)
     type(wp_error_t), allocatable :: errors(:)
-    !type(wp_energy_t) :: energies
-    !type(wp_error_t) :: errors
-    !
     integer :: dim, i, ierr, input_step
     real(8) :: t, t_last_replace
     complex(kind(0d0)), allocatable :: dv_alpha(:, :), dv_psi(:, :), dv_alpha_next(:, :), dv_psi_next(:, :)
     complex(kind(0d0)), allocatable :: dv_alpha_reconcile(:, :), dv_psi_reconcile(:, :)
-    !complex(kind(0d0)), allocatable :: dv_alpha(:), dv_psi(:), dv_alpha_next(:), dv_psi_next(:)
-    !complex(kind(0d0)), allocatable :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
-    !
     real(8), allocatable :: dv_atom_perturb(:), dv_atom_speed(:)
     real(8), allocatable :: dv_charge_on_basis(:, :), dv_charge_on_atoms(:, :)
-    !real(8), allocatable :: dv_charge_on_basis(:), dv_charge_on_atoms(:)
-    !
     real(8), allocatable :: dv_eigenvalues(:), dv_ipratios(:), eigenstate_mean(:, :), eigenstate_msd(:, :)
     real(8), allocatable :: eigenstate_ipratios(:)
     type(wp_charge_moment_t), allocatable :: charge_moment(:)
-    !type(wp_charge_moment_t) :: charge_moment
-    !
     type(wp_charge_factor_t) :: charge_factor
     real(8) :: wtime_total, wtime
     integer, allocatable :: group_id(:, :), filter_group_id(:, :), filter_group_indices(:, :)

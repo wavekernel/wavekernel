@@ -325,6 +325,7 @@ contains
            state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_atom_perturb, &
            state%dv_eigenvalues, &
            state%charge_moment, state%energies, state%errors, state%eigenstate_ipratios, &
+           state%eigenstate_mean, state%eigenstate_msd, &
            to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
       call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
       if (check_master()) then
@@ -679,6 +680,7 @@ contains
        dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
        dv_charge_on_basis, dv_charge_on_atoms, dv_atom_perturb, &
        dv_eigenvalues, charge_moment, energies, errors, eigenstate_ipratios, &
+       eigenstate_mean, eigenstate_msd, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
     integer, intent(in) :: dim, group_id(:, :), filter_group_id(:, :)
     type(wp_process_t), intent(in) :: proc
@@ -702,6 +704,7 @@ contains
     type(wp_energy_t), intent(out) :: energies(:)
     type(wp_error_t), intent(out) :: errors(:)
     real(8), intent(out) :: eigenstate_ipratios(:)
+    real(8), intent(out) :: eigenstate_mean(:, :), eigenstate_msd(:, :)
     logical, intent(in) :: to_use_precomputed_eigenpairs
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
 
@@ -776,10 +779,7 @@ contains
     !call set_H1_base(setting, proc, filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
     !call add_timer_event('read_next_input_step_with_basis_replace', 'set_H1_base', wtime)
 
-    !call get_msd_of_eigenstates(proc, dim, num_atoms, atom_indices, atom_coordinates, &
-    !     S, S_desc, Y_filtered, Y_filtered_desc, &
-    !     full_vecs, full_vecs_desc, filtered_vecs, filtered_vecs_desc)
-    !call get_msd_of_eigenstates(structure, S_sparse, Y_filtered, Y_filtered_desc, means_all, msds_all)
+    call get_msd_of_eigenstates(structure, S_sparse, Y_filtered, Y_filtered_desc, eigenstate_mean, eigenstate_msd)
     call add_timer_event('read_next_input_step_with_basis_replace', 'get_msd_of_eigenstates (skipped)', wtime)
 
     !call get_ipratio_of_eigenstates(Y_filtered, Y_filtered_desc, ipratios)
