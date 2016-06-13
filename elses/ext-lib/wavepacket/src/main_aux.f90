@@ -314,26 +314,26 @@ contains
     wtime = mpi_wtime()
 
     if (setting%to_replace_basis) then
-      do j = 1, setting%num_multiple_initials
-        call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
-             state%group_id, state%filter_group_id, state%t, state%structure, &
-             state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
-             state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
-             state%YSY_filtered_desc, state%YSY_filtered, &
-             state%H1_desc, state%H1, state%H1_base, &
-             state%filter_group_indices, state%Y_local, state%charge_factor, &
-             state%dv_psi(:, j), state%dv_alpha(:, j), state%dv_psi_reconcile(:, j), state%dv_alpha_reconcile(:, j), &
-             state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), state%dv_atom_perturb, &
-             state%dv_eigenvalues, &
-             state%charge_moment(j), state%energies(j), state%errors(j), state%eigenstate_ipratios, &
-             to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
-        call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
-        if (check_master()) then
+      call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
+           state%group_id, state%filter_group_id, state%t, state%structure, &
+           state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
+           state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
+           state%YSY_filtered_desc, state%YSY_filtered, &
+           state%H1_desc, state%H1, state%H1_base, &
+           state%filter_group_indices, state%Y_local, state%charge_factor, &
+           state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
+           state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_atom_perturb, &
+           state%dv_eigenvalues, &
+           state%charge_moment, state%energies, state%errors, state%eigenstate_ipratios, &
+           to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
+      call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
+      if (check_master()) then
+        do j = 1, setting%num_multiple_initials
           write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
                '] psi error after re-initialization is ', state%errors(j)%absolute, &
                ' (absolute) and ', state%errors(j)%relative, ' (relative)'
-        end if
-      end do
+        end do
+      end if
     else
       ! implementation may be incorrect
       call read_next_input_step_matrix(setting, &
@@ -693,19 +693,19 @@ contains
     ! value of last step is needed for offdiag norm calculation.
     real(8), intent(inout) :: dv_eigenvalues(:), Y_filtered(:, :)
     real(8), intent(out) :: Y(:, :), YSY_filtered(:, :), H1(:, :), H1_base(:, :)
-    real(8), intent(out) :: dv_charge_on_basis(:), dv_charge_on_atoms(:)
+    real(8), intent(out) :: dv_charge_on_basis(:, :), dv_charge_on_atoms(:, :)
     real(8), intent(inout) :: dv_atom_perturb(:)
-    complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
-    complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
+    complex(kind(0d0)), intent(in) :: dv_psi(:, :), dv_alpha(:, :)
+    complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:, :), dv_alpha_reconcile(:, :)
     type(wp_local_matrix_t), allocatable, intent(out) :: Y_local(:)
-    type(wp_charge_moment_t), intent(out) :: charge_moment
-    type(wp_energy_t), intent(out) :: energies
-    type(wp_error_t), intent(out) :: errors
+    type(wp_charge_moment_t), intent(out) :: charge_moment(:)
+    type(wp_energy_t), intent(out) :: energies(:)
+    type(wp_error_t), intent(out) :: errors(:)
     real(8), intent(out) :: eigenstate_ipratios(:)
     logical, intent(in) :: to_use_precomputed_eigenpairs
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
 
-    integer :: end_filter, S_desc(desc_size), SY_desc(desc_size)
+    integer :: end_filter, S_desc(desc_size), SY_desc(desc_size), j
     real(8) :: dv_eigenvalues_prev(setting%num_filter)
     real(8), allocatable :: eigenstate_charges(:, :), S(:, :), SY(:, :)
     real(8) :: wtime
@@ -789,15 +789,17 @@ contains
     ! Time step was incremented after the last calculation of alpha,
     ! so the time for conversion between LCAO coefficient and eigenstate expansion
     ! is t - setting%delta_t, not t.
-    call re_initialize_state(setting, proc, dim, t - setting%delta_t, structure, charge_factor, &
-         H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
-         Y_filtered, Y_filtered_desc, &
-         YSY_filtered, YSY_filtered_desc, &
-         dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
-         H1_base, H1, H1_desc, dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
-         dv_charge_on_basis, dv_charge_on_atoms, &
-         dv_atom_perturb, &
-         charge_moment, energies, errors)
+    do j = 1, setting%num_multiple_initials
+      call re_initialize_state(setting, proc, dim, t - setting%delta_t, structure, charge_factor, &
+           H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
+           Y_filtered, Y_filtered_desc, &
+           YSY_filtered, YSY_filtered_desc, &
+           dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
+           H1_base, H1, H1_desc, dv_psi(:, j), dv_alpha(:, j), dv_psi_reconcile(:, j), dv_alpha_reconcile(:, j), &
+           dv_charge_on_basis(:, j), dv_charge_on_atoms(:, j), &
+           dv_atom_perturb, &
+           charge_moment(j), energies(j), errors(j))
+    end do
     call add_timer_event('read_next_input_step_with_basis_replace', 're_initialize_from_lcao_coef', wtime)
   end subroutine read_next_input_step_with_basis_replace
 
