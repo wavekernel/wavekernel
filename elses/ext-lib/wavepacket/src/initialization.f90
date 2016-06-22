@@ -580,23 +580,37 @@ contains
     real(8), allocatable :: YSY_filtered_suppress(:, :)
     type(wp_energy_t) :: energies
 
-    real(8) :: suppress_exponent
-    real(8), parameter :: relax_constant_for_suppression = 1d-3
+    integer, save :: count = 0
+    character(len=100) :: filename
+    character(len=6) :: count_str
+    character(len=12) :: time_str
+    character(len=12) :: suppress_str
+    integer, parameter :: iunit_YSY = 20
+    real(8) :: energy_diff, work(1000)
+    real(8), parameter :: relax_constant_for_suppression = 1d-6
+    real(8) :: energy_mean(Y_filtered_desc(cols_)), energy_dev(Y_filtered_desc(cols_))
     ! Function.
     real(8) :: dznrm2
 
     call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
     allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
 
-    call compute_tightbinding_energy(num_filter, dv_alpha, dv_eigenvalues, energies)
+    call get_moment_for_each_column(dv_eigenvalues, YSY_filtered_desc, YSY_filtered, energy_mean, energy_dev)
+    call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_mean', energy_mean)
+    call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_dev', energy_dev)
 
     call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
     do j = 1, num_filter
       do i = 1, num_filter
-        suppress_exponent = suppress_constant / (energies%tightbinding_deviation + relax_constant_for_suppression)
-        dv_suppress_factor(i) = exp(- suppress_exponent * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+        energy_diff = dv_eigenvalues(i) - energy_mean(j)
+        dv_suppress_factor(i) = exp(- suppress_constant * &
+             (energy_diff / (energy_dev(j) + relax_constant_for_suppression)) ** 2d0)
+        !if (dv_suppress_factor(i) > 1e-100) then
+        !  print *, 'ZZZZZZ', j, i, suppress_constant, energy_mean(j), energy_diff, &
+        !       energy_dev(j), dv_suppress_factor(i)
+        !end if
       end do
-      call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive dv_suppress_factor', dv_suppress_factor)
       do i = 1, num_filter
         call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
         if (myrow == rsrc .and. mycol == csrc) then
@@ -604,6 +618,29 @@ contains
         end if
       end do
     end do
+
+    !write(count_str, '(I6.6)') count
+    !if (mod(count, 6) == 0) then
+    !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
+    !  write(suppress_str, '(F0.5)') suppress_constant
+    !  filename = 'YSY_' // trim(count_str) // '_' // trim(suppress_str) // '_' //  trim(time_str) // 'ps.mtx'
+    !  if (check_master()) then
+    !    open(iunit_YSY, file=trim(filename))
+    !  end if
+    !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+    !  if (check_master()) then
+    !    close(iunit_YSY)
+    !  end if
+    !  filename = 'YSYsuppressed_' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
+    !  if (check_master()) then
+    !    open(iunit_YSY, file=trim(filename))
+    !  end if
+    !  call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSYf', iunit_YSY, work)
+    !  if (check_master()) then
+    !    close(iunit_YSY)
+    !  end if
+    !end if
+    !count = count + 1
 
     dv_evcoef_reconcile(:) = kZero
     call matvec_dd_z2('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)

@@ -15,7 +15,7 @@ module wp_linear_algebra_m
        matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
-       get_symmetricity, print_offdiag_norm, cutoff_vector
+       get_symmetricity, print_offdiag_norm, cutoff_vector, get_moment_for_each_column
 
 contains
 
@@ -155,10 +155,10 @@ contains
             !if (abs(elem) >= 1e-2) then
             !  print *, 'ZZZZA', i, j, elem
             !end if
-            if (abs(elem * dv_x(j)) >= 5e-3) then
-              print *, 'ZZZZB', i, '<-', j, 'mat: ', elem, 'vec: ', dv_x(j), 'abscont: ', abs(elem * dv_x(j)), &
-                   'cont: ', elem * dv_x(j)
-            end if
+            !if (abs(elem * dv_x(j)) >= 5e-3) then
+            !  print *, 'ZZZZB', i, '<-', j, 'mat: ', elem, 'vec: ', dv_x(j), 'abscont: ', abs(elem * dv_x(j)), &
+            !       'cont: ', elem * dv_x(j)
+            !end if
           end if
         end do
       end do
@@ -655,4 +655,36 @@ contains
       vec_out(vec_indices(i)) = kZero
     end do
   end subroutine cutoff_vector
+
+
+  subroutine get_moment_for_each_column(fs, X_desc, X, mean, dev)
+    integer, intent(in) :: X_desc(desc_size)
+    real(8), intent(in) :: fs(X_desc(rows_)), X(:, :)
+    real(8), intent(out) :: mean(X_desc(cols_)), dev(X_desc(cols_))
+
+    integer :: i, j, ierr
+    real(8) :: column_buf(X_desc(rows_)), column(X_desc(rows_)), normalizer
+
+    mean(:) = 0d0
+    dev(:) = 0d0
+    do j = 1, X_desc(cols_)
+      column_buf(:) = 0d0
+      column(:) = 0d0
+      do i = 1, X_desc(rows_)
+        call pdelget('Self', ' ', column_buf(i), X, i, j, X_desc)
+        column_buf(i) = column_buf(i) ** 2d0
+      end do
+      call mpi_allreduce(column_buf, column, X_desc(rows_), mpi_real8, mpi_sum, mpi_comm_world, ierr)
+      normalizer = sum(column)
+      !print *, 'ZZZZZZnormal', normalizer
+      column(:) = column(:) / normalizer
+      do i = 1, X_desc(rows_)
+        mean(j) = mean(j) + fs(i) * column(i)
+      end do
+      do i = 1, X_desc(rows_)
+        dev(j) = dev(j) + (fs(i) - mean(j)) ** 2d0 * column(i)
+      end do
+      dev(j) = dsqrt(dev(j))
+    end do
+  end subroutine get_moment_for_each_column
 end module wp_linear_algebra_m
