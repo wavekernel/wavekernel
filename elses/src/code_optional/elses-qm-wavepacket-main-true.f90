@@ -141,7 +141,7 @@ contains
       setting%init_type = trim(config%calc%wave_packet%init_type)
     end if
     if (config%calc%wave_packet%alpha_delta_index <= 0) then  ! Set default value.
-      setting%alpha_delta_index = setting%num_filter - setting%fst_filter + 1
+      setting%alpha_delta_index = setting%fst_filter + setting%num_filter - 1
     else
       setting%alpha_delta_index = config%calc%wave_packet%alpha_delta_index
     end if
