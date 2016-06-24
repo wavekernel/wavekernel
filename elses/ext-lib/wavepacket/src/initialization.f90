@@ -2,6 +2,7 @@ module wp_initialization_m
   use mpi
   use wp_descriptor_parameters_m
   use wp_distribute_matrix_m
+  use wp_global_variables_m
   use wp_processes_m
   use wp_atom_m
   use wp_charge_m
@@ -587,10 +588,16 @@ contains
     character(len=12) :: suppress_str
     integer, parameter :: iunit_YSY = 20
     real(8) :: energy_diff, work(1000)
-    real(8), parameter :: relax_constant_for_suppression = 1d-6
+    real(8), parameter :: relax_constant_for_suppression = 1d-10
     real(8) :: energy_mean(Y_filtered_desc(cols_)), energy_dev(Y_filtered_desc(cols_))
     ! Function.
     real(8) :: dznrm2
+
+    if (check_master()) then
+      write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] reconcile_from_alpha_matrix_suppress_adaptive() : start for time ', t, ' au, ', &
+           t * kPsecPerAu, ' ps'
+    end if
 
     call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
     allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))

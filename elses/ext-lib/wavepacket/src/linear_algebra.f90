@@ -686,5 +686,12 @@ contains
       end do
       dev(j) = dsqrt(dev(j))
     end do
+
+    if (check_master()) then
+      do j = 1, X_desc(cols_)
+        write (0, '(A, F16.6, A, I0, 2E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+             '] get_moment_for_each_column() : j, mean, dev : ', j, mean(j), dev(j)
+      end do
+    end if
   end subroutine get_moment_for_each_column
 end module wp_linear_algebra_m
