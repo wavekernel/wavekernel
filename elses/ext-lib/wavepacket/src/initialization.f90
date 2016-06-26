@@ -613,7 +613,6 @@ contains
       call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_mean', energy_mean)
       call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_dev', energy_dev)
 
-      call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
       do j = 1, num_filter
         do i = 1, num_filter
           energy_diff = dv_eigenvalues(i) - energy_mean(j)
@@ -657,6 +656,7 @@ contains
       !count = count + 1
     end if
 
+    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
     dv_evcoef_reconcile(:) = kZero
     call matvec_dd_z2('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
 
