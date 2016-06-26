@@ -668,9 +668,10 @@ contains
   end subroutine add_state_json
 
 
-  subroutine add_structure_json(t, input_step, state)
+  subroutine add_structure_json(t, input_step, to_calculate_eigenstate_moment_every_step, state)
     real(8), intent(in) :: t
     integer, intent(in) :: input_step
+    logical, intent(in) :: to_calculate_eigenstate_moment_every_step
     type(wp_state_t), intent(inout) :: state
 
     integer :: i, coord, num_filter
@@ -714,36 +715,38 @@ contains
     call fson_set_as_real_array(num_filter, state%dv_eigenvalues, structure_item)
     call fson_set_name('eigenvalues', structure_item)
     call fson_value_add(structure_fson, structure_item)
-    ! Set mean coordinates of eigenstates.
-    structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_mean(1, 1 : num_filter), structure_item)
-    call fson_set_name('eigenstate_mean_x', structure_item)
-    call fson_value_add(structure_fson, structure_item)
-    structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_mean(2, 1 : num_filter), structure_item)
-    call fson_set_name('eigenstate_mean_y', structure_item)
-    call fson_value_add(structure_fson, structure_item)
-    structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_mean(3, 1 : num_filter), structure_item)
-    call fson_set_name('eigenstate_mean_z', structure_item)
-    call fson_value_add(structure_fson, structure_item)
-    ! Set MSD of eigenstates.
-    structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_msd(1, 1 : num_filter), structure_item)
-    call fson_set_name('eigenstate_msd_x', structure_item)
-    call fson_value_add(structure_fson, structure_item)
-    structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_msd(2, 1 : num_filter), structure_item)
-    call fson_set_name('eigenstate_msd_y', structure_item)
-    call fson_value_add(structure_fson, structure_item)
-    structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_msd(3, 1 : num_filter), structure_item)
-    call fson_set_name('eigenstate_msd_z', structure_item)
-    call fson_value_add(structure_fson, structure_item)
-    structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_msd(4, 1 : num_filter), structure_item)
-    call fson_set_name('eigenstate_msd_total', structure_item)
-    call fson_value_add(structure_fson, structure_item)
+    if (to_calculate_eigenstate_moment_every_step) then
+      ! Set mean coordinates of eigenstates.
+      structure_item => fson_value_create()
+      call fson_set_as_real_array(num_filter, state%eigenstate_mean(1, 1 : num_filter), structure_item)
+      call fson_set_name('eigenstate_mean_x', structure_item)
+      call fson_value_add(structure_fson, structure_item)
+      structure_item => fson_value_create()
+      call fson_set_as_real_array(num_filter, state%eigenstate_mean(2, 1 : num_filter), structure_item)
+      call fson_set_name('eigenstate_mean_y', structure_item)
+      call fson_value_add(structure_fson, structure_item)
+      structure_item => fson_value_create()
+      call fson_set_as_real_array(num_filter, state%eigenstate_mean(3, 1 : num_filter), structure_item)
+      call fson_set_name('eigenstate_mean_z', structure_item)
+      call fson_value_add(structure_fson, structure_item)
+      ! Set MSD of eigenstates.
+      structure_item => fson_value_create()
+      call fson_set_as_real_array(num_filter, state%eigenstate_msd(1, 1 : num_filter), structure_item)
+      call fson_set_name('eigenstate_msd_x', structure_item)
+      call fson_value_add(structure_fson, structure_item)
+      structure_item => fson_value_create()
+      call fson_set_as_real_array(num_filter, state%eigenstate_msd(2, 1 : num_filter), structure_item)
+      call fson_set_name('eigenstate_msd_y', structure_item)
+      call fson_value_add(structure_fson, structure_item)
+      structure_item => fson_value_create()
+      call fson_set_as_real_array(num_filter, state%eigenstate_msd(3, 1 : num_filter), structure_item)
+      call fson_set_name('eigenstate_msd_z', structure_item)
+      call fson_value_add(structure_fson, structure_item)
+      structure_item => fson_value_create()
+      call fson_set_as_real_array(num_filter, state%eigenstate_msd(4, 1 : num_filter), structure_item)
+      call fson_set_name('eigenstate_msd_total', structure_item)
+      call fson_value_add(structure_fson, structure_item)
+    end if
     ! Save all items.
     call fson_value_add(state%structures, structure_fson)
   end subroutine add_structure_json

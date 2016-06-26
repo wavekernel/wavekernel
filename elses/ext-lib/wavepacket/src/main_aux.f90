@@ -779,8 +779,10 @@ contains
     !call set_H1_base(setting, proc, filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
     !call add_timer_event('read_next_input_step_with_basis_replace', 'set_H1_base', wtime)
 
-    call get_msd_of_eigenstates(structure, S_sparse, Y_filtered, Y_filtered_desc, eigenstate_mean, eigenstate_msd)
-    call add_timer_event('read_next_input_step_with_basis_replace', 'get_msd_of_eigenstates (skipped)', wtime)
+    if (setting%to_calculate_eigenstate_moment_every_step) then
+      call get_msd_of_eigenstates(structure, S_sparse, Y_filtered, Y_filtered_desc, eigenstate_mean, eigenstate_msd)
+      call add_timer_event('read_next_input_step_with_basis_replace', 'get_msd_of_eigenstates', wtime)
+    end if
 
     !call get_ipratio_of_eigenstates(Y_filtered, Y_filtered_desc, ipratios)
     call add_timer_event('read_next_input_step_with_basis_replace', 'get_ipratio_of_eigenstates (skipped)', wtime)
@@ -1048,7 +1050,8 @@ contains
           call fson_set_name('structures', state%structures)
           state%structures%value_type = TYPE_ARRAY
           ! Write the last atomic structure to make the split file independent from others.
-          call add_structure_json(t_backup, input_step_backup, state)
+          call add_structure_json(t_backup, input_step_backup, &
+               setting%to_calculate_eigenstate_moment_every_step, state)
         end if
       end if
     end if

@@ -266,7 +266,8 @@ contains
 
     call prepare_json(setting, proc, state)
     ! add_structure_json() must be called after both of coordinates reading and prepare_json().
-    call add_structure_json(0d0, 1, state)
+    call add_structure_json(0d0, 1, &
+         setting%to_calculate_eigenstate_moment_every_step, state)
     call add_timer_event('main', 'prepare_json', state%wtime)
 
     if (check_master()) then
@@ -332,7 +333,8 @@ contains
 
     call post_process_after_matrix_replace(setting, state)
 
-    call add_structure_json(state%t, state%input_step, state)
+    call add_structure_json(state%t, state%input_step, &
+         setting%to_calculate_eigenstate_moment_every_step, state)
 
     ! re-save state after matrix replacement.
       call save_state(setting, .true., state)
