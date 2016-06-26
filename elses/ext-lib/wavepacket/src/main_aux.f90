@@ -792,7 +792,7 @@ contains
     ! so the time for conversion between LCAO coefficient and eigenstate expansion
     ! is t - setting%delta_t, not t.
     do j = 1, setting%num_multiple_initials
-      call re_initialize_state(setting, proc, dim, t - setting%delta_t, structure, charge_factor, &
+      call re_initialize_state(setting, proc, dim, t - setting%delta_t, structure, charge_factor, j == 1, &
            H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
            Y_filtered, Y_filtered_desc, &
            YSY_filtered, YSY_filtered_desc, &

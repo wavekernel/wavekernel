@@ -567,9 +567,11 @@ contains
 
 
   subroutine reconcile_from_alpha_matrix_suppress_adaptive(num_filter, t, suppress_constant, &
+       is_first_in_multiple_initials, &
        dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
        dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
     integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    logical, intent(in) :: is_first_in_multiple_initials
     real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
     real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
     complex(kind(0d0)), intent(in) :: dv_alpha(:)
@@ -578,7 +580,7 @@ contains
     integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
     real(8) :: dv_suppress_factor(num_filter)
     complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
-    real(8), allocatable :: YSY_filtered_suppress(:, :)
+    real(8), allocatable, save :: YSY_filtered_suppress(:, :)
     type(wp_energy_t) :: energies
 
     integer, save :: count = 0
@@ -600,54 +602,60 @@ contains
     end if
 
     call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
-    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
 
-    call get_moment_for_each_column(dv_eigenvalues, YSY_filtered_desc, YSY_filtered, energy_mean, energy_dev)
-    call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_mean', energy_mean)
-    call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_dev', energy_dev)
+    if (is_first_in_multiple_initials) then
+      if (allocated(YSY_filtered_suppress)) then
+        deallocate(YSY_filtered_suppress)
+      end if
+      allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
 
-    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
-    do j = 1, num_filter
-      do i = 1, num_filter
-        energy_diff = dv_eigenvalues(i) - energy_mean(j)
-        dv_suppress_factor(i) = exp(- suppress_constant * &
-             (energy_diff / (energy_dev(j) + relax_constant_for_suppression)) ** 2d0)
-        !if (dv_suppress_factor(i) > 1e-100) then
-        !  print *, 'ZZZZZZ', j, i, suppress_constant, energy_mean(j), energy_diff, &
-        !       energy_dev(j), dv_suppress_factor(i)
-        !end if
+      call get_moment_for_each_column(dv_eigenvalues, YSY_filtered_desc, YSY_filtered, energy_mean, energy_dev)
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_mean', energy_mean)
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_dev', energy_dev)
+
+      call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
+      do j = 1, num_filter
+        do i = 1, num_filter
+          energy_diff = dv_eigenvalues(i) - energy_mean(j)
+          dv_suppress_factor(i) = exp(- suppress_constant * &
+               (energy_diff / (energy_dev(j) + relax_constant_for_suppression)) ** 2d0)
+          !if (dv_suppress_factor(i) > 1e-100) then
+          !  print *, 'ZZZZZZ', j, i, suppress_constant, energy_mean(j), energy_diff, &
+          !       energy_dev(j), dv_suppress_factor(i)
+          !end if
+        end do
+        call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive dv_suppress_factor', dv_suppress_factor)
+        do i = 1, num_filter
+          call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+          if (myrow == rsrc .and. mycol == csrc) then
+            YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+          end if
+        end do
       end do
-      call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive dv_suppress_factor', dv_suppress_factor)
-      do i = 1, num_filter
-        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
-        if (myrow == rsrc .and. mycol == csrc) then
-          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
-        end if
-      end do
-    end do
 
-    !write(count_str, '(I6.6)') count
-    !if (mod(count, 6) == 0) then
-    !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
-    !  write(suppress_str, '(F0.5)') suppress_constant
-    !  filename = 'YSY_' // trim(count_str) // '_' // trim(suppress_str) // '_' //  trim(time_str) // 'ps.mtx'
-    !  if (check_master()) then
-    !    open(iunit_YSY, file=trim(filename))
-    !  end if
-    !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
-    !  if (check_master()) then
-    !    close(iunit_YSY)
-    !  end if
-    !  filename = 'YSYsuppressed_' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
-    !  if (check_master()) then
-    !    open(iunit_YSY, file=trim(filename))
-    !  end if
-    !  call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSYf', iunit_YSY, work)
-    !  if (check_master()) then
-    !    close(iunit_YSY)
-    !  end if
-    !end if
-    !count = count + 1
+      !write(count_str, '(I6.6)') count
+      !if (mod(count, 6) == 0) then
+      !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
+      !  write(suppress_str, '(F0.5)') suppress_constant
+      !  filename = 'YSY_' // trim(count_str) // '_' // trim(suppress_str) // '_' //  trim(time_str) // 'ps.mtx'
+      !  if (check_master()) then
+      !    open(iunit_YSY, file=trim(filename))
+      !  end if
+      !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+      !  if (check_master()) then
+      !    close(iunit_YSY)
+      !  end if
+      !  filename = 'YSYsuppressed_' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
+      !  if (check_master()) then
+      !    open(iunit_YSY, file=trim(filename))
+      !  end if
+      !  call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSYf', iunit_YSY, work)
+      !  if (check_master()) then
+      !    close(iunit_YSY)
+      !  end if
+      !end if
+      !count = count + 1
+    end if
 
     dv_evcoef_reconcile(:) = kZero
     call matvec_dd_z2('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
@@ -660,7 +668,6 @@ contains
     end if
     call normalize_vector(num_filter, dv_alpha_reconcile)
     call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
-    deallocate(YSY_filtered_suppress)
   end subroutine reconcile_from_alpha_matrix_suppress_adaptive
 
 
@@ -1087,7 +1094,7 @@ contains
   end subroutine initialize
 
 
-  subroutine re_initialize_state(setting, proc, dim, t, structure, charge_factor, &
+  subroutine re_initialize_state(setting, proc, dim, t, structure, charge_factor, is_first_in_multiple_initials, &
        H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, Y_filtered, Y_filtered_desc, &
        YSY_filtered, YSY_filtered_desc, &
        dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
@@ -1099,6 +1106,7 @@ contains
     type(wp_process_t), intent(in) :: proc
     type(wp_structure_t), intent(in) :: structure
     type(wp_charge_factor_t), intent(in) :: charge_factor
+    logical, intent(in) :: is_first_in_multiple_initials
     integer, intent(in) :: dim, filter_group_indices(:, :)
     real(8), intent(in) :: t, dv_eigenvalues_prev(setting%num_filter), dv_eigenvalues(setting%num_filter)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
@@ -1148,6 +1156,7 @@ contains
            dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive') then
       call reconcile_from_alpha_matrix_suppress_adaptive(setting%num_filter, t, setting%suppress_constant, &
+           is_first_in_multiple_initials, &
            dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
            dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_alpha_error') then
