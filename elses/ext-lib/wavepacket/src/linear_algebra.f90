@@ -63,6 +63,7 @@ contains
     complex(kind(0d0)), intent(inout) :: dv_y(:)
 
     integer :: i, j, m, n, nprow, npcol, myrow, mycol, li, lj, pi, pj, ierr
+    integer :: mb, nb, brow, bcol, bi, bj, ml, nl, li1, li2, lj1, lj2
     real(8) :: elem
     complex(kind(0d0)), allocatable :: dv_Ax(:), dv_Ax_recv(:)
 
@@ -81,23 +82,47 @@ contains
     dv_Ax(:) = kZero
     dv_Ax_recv(:) = kZero
     if (trans(1 : 1) == 'T') then
-      do i = 1, m
-        do j = 1, n
-          call infog2l(j, i, A_desc, nprow, npcol, myrow, mycol, li, lj, pi, pj)
-          if (myrow == pi .and. mycol == pj) then
-            elem = A(li, lj)
-            dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
-          end if
+      mb = A_desc(block_col_)
+      nb = A_desc(block_row_)
+      brow = (numroc(m, mb, mycol, A_desc(csrc_), npcol) - 1) / mb + 1
+      bcol = (numroc(n, nb, myrow, A_desc(rsrc_), nprow) - 1) / nb + 1
+      do bi = 1, brow
+        do bj = 1, bcol
+          i = mb * (npcol * (bi - 1) + mycol) + 1
+          j = nb * (nprow * (bj - 1) + myrow) + 1
+          ml = min(mb, m - i + 1)
+          nl = min(nb, n - j + 1)
+          li1 = mb * (bi - 1) + 1
+          li2 = li1 + ml - 1
+          lj1 = nb * (bj - 1) + 1
+          lj2 = lj1 + nl - 1
+          do li = li1, li2
+            do lj = lj1, lj2
+              dv_Ax(i + li - li1) = dv_Ax(i + li - li1) + A(lj, li) * dv_x(j + lj - lj1)
+            end do
+          end do
         end do
       end do
     else
-      do i = 1, m
-        do j = 1, n
-          call infog2l(i, j, A_desc, nprow, npcol, myrow, mycol, li, lj, pi, pj)
-          if (myrow == pi .and. mycol == pj) then
-            elem = A(li, lj)
-            dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
-          end if
+      mb = A_desc(block_row_)
+      nb = A_desc(block_col_)
+      brow = (numroc(m, mb, myrow, A_desc(rsrc_), nprow) - 1) / mb + 1
+      bcol = (numroc(n, nb, mycol, A_desc(csrc_), npcol) - 1) / nb + 1
+      do bi = 1, brow
+        do bj = 1, bcol
+          i = mb * (nprow * (bi - 1) + myrow) + 1
+          j = nb * (npcol * (bj - 1) + mycol) + 1
+          ml = min(mb, m - i + 1)
+          nl = min(nb, n - j + 1)
+          li1 = mb * (bi - 1) + 1
+          li2 = li1 + ml - 1
+          lj1 = nb * (bj - 1) + 1
+          lj2 = lj1 + nl - 1
+          do li = li1, li2
+            do lj = lj1, lj2
+              dv_Ax(i + li - li1) = dv_Ax(i + li - li1) + A(li, lj) * dv_x(j + lj - lj1)
+            end do
+          end do
         end do
       end do
     end if
