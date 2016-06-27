@@ -11,7 +11,7 @@ module wp_linear_algebra_m
   complex(kind(0d0)) :: zdotc
   integer :: numroc, indxg2p, blacs_pnum
 
-  public :: matvec_sd_z, matvec_dd_z, matvec_dd_z2, matvec_time_evolution_by_matrix_replace, &
+  public :: matvec_sd_z, matvec_dd_z, matvec_time_evolution_by_matrix_replace, &
        matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
@@ -69,6 +69,7 @@ contains
 
     call check_nan_vector('matvec_dd_z input real', dreal(dv_x))
     call check_nan_vector('matvec_dd_z input imag', aimag(dv_x))
+    call check_nan_matrix('matvec_dd_z input matrix', A)
 
     call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
     if (trans(1 : 1) == 'T') then
@@ -132,68 +133,6 @@ contains
     call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
     call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
   end subroutine matvec_dd_z
-
-  ! Compuet y <- alpha * A * x + beta * y.
-  subroutine matvec_dd_z2(trans, A, A_desc, alpha, dv_x, beta, dv_y)
-    character(len=*), intent(in) :: trans
-    real(8), intent(in) :: A(:, :)
-    integer, intent(in) :: A_desc(desc_size)
-    complex(kind(0d0)), intent(in) :: alpha, beta, dv_x(:)
-    complex(kind(0d0)), intent(inout) :: dv_y(:)
-
-    integer :: i, j, m, n, nprow, npcol, myrow, mycol, li, lj, pi, pj, ierr
-    real(8) :: elem
-    complex(kind(0d0)), allocatable :: dv_Ax(:), dv_Ax_recv(:)
-
-    call check_nan_vector('matvec_dd_z input real', dreal(dv_x))
-    call check_nan_vector('matvec_dd_z input imag', aimag(dv_x))
-    call check_nan_matrix('matvec_dd_z input matrix', A)
-
-    call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
-    if (trans(1 : 1) == 'T') then
-      m = A_desc(cols_)
-      n = A_desc(rows_)
-    else
-      m = A_desc(rows_)
-      n = A_desc(cols_)
-    end if
-    allocate(dv_Ax(m), dv_Ax_recv(m))
-    dv_Ax(:) = kZero
-    dv_Ax_recv(:) = kZero
-    if (trans(1 : 1) == 'T') then
-      do i = 1, m
-        do j = 1, n
-          call infog2l(j, i, A_desc, nprow, npcol, myrow, mycol, li, lj, pi, pj)
-          if (myrow == pi .and. mycol == pj) then
-            elem = A(li, lj)
-            dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
-          end if
-        end do
-      end do
-    else
-      do i = 1, m
-        do j = 1, n
-          call infog2l(i, j, A_desc, nprow, npcol, myrow, mycol, li, lj, pi, pj)
-          if (myrow == pi .and. mycol == pj) then
-            elem = A(li, lj)
-            dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
-            !if (abs(elem) >= 1e-2) then
-            !  print *, 'ZZZZA', i, j, elem
-            !end if
-            !if (abs(elem * dv_x(j)) >= 5e-3) then
-            !  print *, 'ZZZZB', i, '<-', j, 'mat: ', elem, 'vec: ', dv_x(j), 'abscont: ', abs(elem * dv_x(j)), &
-            !       'cont: ', elem * dv_x(j)
-            !end if
-          end if
-        end do
-      end do
-    end if
-    call mpi_allreduce(dv_Ax, dv_Ax_recv, m, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
-    dv_y(:) = alpha * dv_Ax_recv(:) + beta * dv_y(:)
-
-    call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
-    call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
-  end subroutine matvec_dd_z2
 
 
   subroutine matvec_time_evolution_by_matrix_replace(proc, delta_t, &

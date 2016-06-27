@@ -446,7 +446,7 @@ contains
 
     dv_evcoef_reconcile(:) = kZero
     print *, '------------------ ZZZZstart', t * 2.418884326505d-5, 'ps ------------------'
-    call matvec_dd_z2('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
     !print *, 'Energy correction X', dv_evcoef
     !print *, 'Energy correction Y', dv_evcoef_reconcile
     !
@@ -658,7 +658,7 @@ contains
 
     call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
     dv_evcoef_reconcile(:) = kZero
-    call matvec_dd_z2('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
 
     call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
     if (check_master()) then
