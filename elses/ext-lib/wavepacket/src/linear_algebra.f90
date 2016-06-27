@@ -27,9 +27,10 @@ contains
     complex(kind(0d0)), intent(in) :: alpha, beta, dv_x(A%size)
     complex(kind(0d0)), intent(inout) :: dv_y(A%size)
 
-    integer :: n, i, j
+    integer, parameter :: block_size = 32
+    integer :: n, i, j, rank, size, num_blocks, b, bl, n1, n2, ierr
     real(8) :: elem, wtime_start
-    complex(kind(0d0)) :: dv_Ax(A%size)
+    complex(kind(0d0)) :: dv_Ax(A%size), dv_Ax_recv(A%size)
 
     wtime_start = mpi_wtime()
 
@@ -40,17 +41,28 @@ contains
     call check_nan_vector('matvec_sd_z input real', dreal(dv_x))
     call check_nan_vector('matvec_sd_z input imag', aimag(dv_x))
 
+    call mpi_comm_rank(mpi_comm_world, rank, ierr)
+    call mpi_comm_size(mpi_comm_world, size, ierr)
+    num_blocks = (numroc(A%num_non_zeros, block_size, rank, 0, size) - 1) / block_size + 1
+
     dv_Ax(:) = kZero
-    do n = 1, A%num_non_zeros
-      i = A%suffix(1, n)
-      j = A%suffix(2, n)
-      elem = A%value(n)
-      dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
-      if (i /= j) then
-        dv_Ax(j) = dv_Ax(j) + elem * dv_x(i)
-      end if
+    do b = 1, num_blocks
+      n1 = block_size * (size * (b - 1) + rank) + 1
+      n2 = min(n1 + block_size - 1, A%num_non_zeros)
+      do n = n1, n2
+        elem = A%value(n)
+        i = A%suffix(1, n)
+        j = A%suffix(2, n)
+        dv_Ax(i) = dv_Ax(i) + elem * dv_x(j)
+        if (i /= j) then
+          dv_Ax(j) = dv_Ax(j) + elem * dv_x(i)
+        end if
+      end do
     end do
-    dv_y(:) = beta * dv_y(:) + dv_Ax(:)
+
+    dv_Ax_recv(:) = kZero
+    call mpi_allreduce(dv_Ax, dv_Ax_recv, A%size, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
+    dv_y(:) = beta * dv_y(:) + dv_Ax_recv(:)
 
     call check_nan_vector('matvec_sd_z output real', dreal(dv_y))
     call check_nan_vector('matvec_sd_z output imag', aimag(dv_y))
