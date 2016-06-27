@@ -1,6 +1,7 @@
 module wp_linear_algebra_m
   use wp_descriptor_parameters_m
   use wp_distribute_matrix_m
+  use wp_event_logger_m
   use wp_processes_m
   use wp_global_variables_m
   use wp_util_m
@@ -27,8 +28,10 @@ contains
     complex(kind(0d0)), intent(inout) :: dv_y(A%size)
 
     integer :: n, i, j
-    real(8) :: elem
+    real(8) :: elem, wtime_start
     complex(kind(0d0)) :: dv_Ax(A%size)
+
+    wtime_start = mpi_wtime()
 
     if (trans(1 : 1) == 'T') then
       call terminate('not implemented', 83)
@@ -51,6 +54,7 @@ contains
 
     call check_nan_vector('matvec_sd_z output real', dreal(dv_y))
     call check_nan_vector('matvec_sd_z output imag', aimag(dv_y))
+    call add_event('matvec_sd_z', mpi_wtime() - wtime_start)
   end subroutine matvec_sd_z
 
 
@@ -64,9 +68,10 @@ contains
 
     integer :: i, j, m, n, nprow, npcol, myrow, mycol, li, lj, pi, pj, ierr
     integer :: mb, nb, brow, bcol, bi, bj, ml, nl, li1, li2, lj1, lj2
-    real(8) :: elem
+    real(8) :: elem, wtime_start
     complex(kind(0d0)), allocatable :: dv_Ax(:), dv_Ax_recv(:)
 
+    wtime_start = mpi_wtime()
     call check_nan_vector('matvec_dd_z input real', dreal(dv_x))
     call check_nan_vector('matvec_dd_z input imag', aimag(dv_x))
     call check_nan_matrix('matvec_dd_z input matrix', A)
@@ -132,6 +137,7 @@ contains
 
     call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
     call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
+    call add_event('matvec_dd_z', mpi_wtime() - wtime_start)
   end subroutine matvec_dd_z
 
 
