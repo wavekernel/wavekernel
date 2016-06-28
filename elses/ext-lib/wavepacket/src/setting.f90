@@ -31,7 +31,7 @@ module wp_setting_m
          is_output_split = .false., to_use_precomputed_eigenpairs = .false., &
          is_group_id_used = .false., is_overlap_ignored = .false., is_restart_mode = .false., &
          is_binary_output_mode = .false., is_multistep_input_mode = .false., is_reduction_mode = .false., &
-         to_replace_basis = .true., to_calculate_eigenstate_moment_every_step = .false.
+         to_calculate_eigenstate_moment_every_step = .false.
     character(len=1024) :: &
          filename_hamiltonian = '', &
          filename_overlap = '', &
@@ -350,8 +350,6 @@ contains
           index_arg = index_arg + 1
         case ('-reduce')
           setting%is_reduction_mode = .true.
-        case ('-no-replace-basis')
-          setting%to_replace_basis = .false.
         case ('-re-init')
           call getarg(index_arg + 1, setting%re_initialize_method)
           index_arg = index_arg + 1
@@ -702,22 +700,17 @@ contains
     else
       print *, 'is_reduction_mode: false'
     end if
-    if (setting%to_replace_basis) then
-      print *, 'to_replace_basis: true'
-      print *, 're_initialize_method: ', trim(setting%re_initialize_method)
-      if (setting%re_initialize_method == 'minimize_lcao_error_cutoff') then
-        print *, 'vector_cutoff_residual: ', setting%vector_cutoff_residual
-      else if (setting%re_initialize_method == 'minimize_lcao_error_suppress') then
-        print *, 'vector_suppress_constant: ', setting%suppress_constant
-      else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress') then
-        print *, 'matrix_suppress_constant: ', setting%suppress_constant
-      else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_orthogonal') then
-        print *, 'matrix_suppress_constant: ', setting%suppress_constant
-      else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_adaptive') then
-        print *, 'adaptive_matrix_suppress_constant: ', setting%suppress_constant
-      end if
-    else
-      print *, 'to_replace_basis: false'
+    print *, 're_initialize_method: ', trim(setting%re_initialize_method)
+    if (setting%re_initialize_method == 'minimize_lcao_error_cutoff') then
+      print *, 'vector_cutoff_residual: ', setting%vector_cutoff_residual
+    else if (setting%re_initialize_method == 'minimize_lcao_error_suppress') then
+      print *, 'vector_suppress_constant: ', setting%suppress_constant
+    else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress') then
+      print *, 'matrix_suppress_constant: ', setting%suppress_constant
+    else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_orthogonal') then
+      print *, 'matrix_suppress_constant: ', setting%suppress_constant
+    else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_adaptive') then
+      print *, 'adaptive_matrix_suppress_constant: ', setting%suppress_constant
     end if
     print *, 'output_filename: ', trim(setting%output_filename)
     if (setting%is_atom_indices_enabled) then
@@ -766,7 +759,7 @@ contains
     use mpi
     integer, intent(in) :: root
     type(wp_setting_t), intent(inout) :: setting
-    integer, parameter :: num_real = 17, num_integer = 17, num_logical = 10, num_character = 16
+    integer, parameter :: num_real = 17, num_integer = 17, num_logical = 9, num_character = 16
     real(8) :: buf_real(num_real)
     integer :: buf_integer(num_integer), my_rank, ierr, size_psi, size_split_files_metadata, size_atom_speed, size_atom_perturb
     logical :: buf_logical(num_logical)
@@ -833,7 +826,6 @@ contains
       buf_logical(7) = setting%is_restart_mode
       buf_logical(8) = setting%is_multistep_input_mode
       buf_logical(9) = setting%is_reduction_mode
-      buf_logical(10) = setting%to_replace_basis
     end if
     call mpi_bcast(buf_real, num_real, mpi_double_precision, root, mpi_comm_world, ierr)
     call mpi_bcast(buf_integer, num_integer, mpi_integer, root, mpi_comm_world, ierr)
@@ -916,7 +908,6 @@ contains
       setting%is_restart_mode = buf_logical(7)
       setting%is_multistep_input_mode = buf_logical(8)
       setting%is_reduction_mode = buf_logical(9)
-      setting%to_replace_basis = buf_logical(10)
       setting%filename_hamiltonian  = buf_character(1)
       setting%filename_overlap = buf_character(2)
       setting%output_filename = buf_character(3)

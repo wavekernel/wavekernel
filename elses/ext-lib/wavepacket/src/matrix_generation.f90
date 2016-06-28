@@ -372,25 +372,6 @@ contains
   end subroutine make_H1_harmonic
 
 
-  !subroutine make_H1_multistep(proc, Y, Y_desc, H_multistep, H_desc, &
-  !     is_group_filter_mode, filter_group_indices, Y_local, &
-  !     H1_alpha, H1_alpha_desc)
-  !  type(wp_process_t), intent(in) :: proc
-  !  complex(kind(0d0)), intent(in) :: Y(:, :), H_multistep(:, :)
-  !  type(wp_local_matrix_t), intent(in) :: Y_local(:)
-  !  integer, intent(in) :: Y_desc(desc_size), H_desc(desc_size), H1_alpha_desc(desc_size), filter_group_indices(:, :)
-  !  logical, intent(in) :: is_group_filter_mode
-  !  complex(kind(0d0)), intent(out) :: H1_alpha(:, :)
-  !
-  !  if (is_group_filter_mode) then
-  !    call change_basis_lcao_to_alpha_group_filter_real(proc, filter_group_indices, Y_local, &
-  !         H_multistep, H_desc, H1_alpha, H1_alpha_desc)
-  !  else
-  !    call change_basis_lcao_to_alpha_real(proc, Y, Y_desc, H_multistep, H_desc, H1_alpha, H1_alpha_desc)
-  !  end if
-  !end subroutine make_H1_multistep
-
-
   subroutine make_H1(proc, h1_type, structure, &
        S_sparse, Y, Y_desc, is_init, is_restart_mode, &
        is_group_filter_mode, filter_group_indices, Y_local, &

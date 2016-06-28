@@ -13,7 +13,7 @@ module wp_state_m
   end type wp_fson_values_for_state_t
 
   type wp_state_t
-    type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, H_multistep_sparse, S_multistep_sparse
+    type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
     type(wp_structure_t) :: structure
     type(wp_energy_t), allocatable :: energies(:)
     type(wp_error_t), allocatable :: errors(:)
@@ -40,7 +40,6 @@ module wp_state_m
     real(8), allocatable :: YSY_filtered(:, :)  ! n x n
     real(8), allocatable :: H1(:, :), H1_base(:, :)  ! n x n
     complex(kind(0d0)), allocatable :: A(:, :)  ! n x n
-    real(8), allocatable :: H1_multistep(:, :)
     integer :: Y_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
     integer :: H1_desc(desc_size), A_desc(desc_size)
   end type wp_state_t

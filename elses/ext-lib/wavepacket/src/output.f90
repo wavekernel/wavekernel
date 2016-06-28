@@ -339,27 +339,25 @@ contains
     call fson_value_add(setting_in_fson, setting_elem)
 
     ! Set re-initialize settings
-    if (setting%to_replace_basis) then
+    setting_elem => fson_value_create()
+    call fson_set_name('re_initialize_method', setting_elem)
+    call fson_set_as_string(trim(setting%re_initialize_method), setting_elem)
+    call fson_value_add(setting_in_fson, setting_elem)
+    if (setting%re_initialize_method == 'minimize_lcao_error_cutoff') then
       setting_elem => fson_value_create()
-      call fson_set_name('re_initialize_method', setting_elem)
-      call fson_set_as_string(trim(setting%re_initialize_method), setting_elem)
+      call fson_set_name('vector_cutoff_residual', setting_elem)
+      setting_elem%value_type = TYPE_REAL
+      setting_elem%value_real = setting%vector_cutoff_residual
       call fson_value_add(setting_in_fson, setting_elem)
-      if (setting%re_initialize_method == 'minimize_lcao_error_cutoff') then
-        setting_elem => fson_value_create()
-        call fson_set_name('vector_cutoff_residual', setting_elem)
-        setting_elem%value_type = TYPE_REAL
-        setting_elem%value_real = setting%vector_cutoff_residual
-        call fson_value_add(setting_in_fson, setting_elem)
-      else if (setting%re_initialize_method == 'minimize_lcao_error_suppress' .or. &
-        setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress' .or. &
-        setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
-        setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_adaptive') then
-        setting_elem => fson_value_create()
-        call fson_set_name('suppress_constant', setting_elem)
-        setting_elem%value_type = TYPE_REAL
-        setting_elem%value_real = setting%suppress_constant
-        call fson_value_add(setting_in_fson, setting_elem)
-      end if
+    else if (setting%re_initialize_method == 'minimize_lcao_error_suppress' .or. &
+         setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress' .or. &
+         setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
+         setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_adaptive') then
+      setting_elem => fson_value_create()
+      call fson_set_name('suppress_constant', setting_elem)
+      setting_elem%value_type = TYPE_REAL
+      setting_elem%value_real = setting%suppress_constant
+      call fson_value_add(setting_in_fson, setting_elem)
     end if
 
     call fson_value_add(output, setting_in_fson)

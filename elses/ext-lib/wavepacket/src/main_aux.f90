@@ -120,7 +120,6 @@ contains
     !integer, intent(out) :: Y_desc(desc_size), Y_filtered_desc(desc_size)
     !integer, intent(out) :: H1_desc(desc_size), A_desc(desc_size)
     !real(8), allocatable, intent(out) :: Y(:, :)  ! m x m
-    !real(8), allocatable, intent(out) :: H1_multistep(:, :)
     !real(8), allocatable, intent(out) :: Y_filtered(:, :)  ! m x n
     !real(8), allocatable, intent(out) :: H1(:, :), H1_base(:, :)
     !complex(kind(0d0)), allocatable, intent(out) :: A(:, :)  ! n x n
@@ -133,10 +132,6 @@ contains
 
     if (setting%is_reduction_mode) then
       call terminate('setup_distributed_matrices: reduction mode is not implemented in this version', 1)
-    end if
-    if (.not. setting%to_replace_basis) then
-      call setup_distributed_matrix_real('H1_multistep', proc, &
-           setting%num_filter, setting%num_filter, state%H1_desc, state%H1_multistep, .true.)
     end if
     call setup_distributed_matrix_real('Y', proc, state%dim, state%dim, state%Y_desc, state%Y, .true.)
     call setup_distributed_matrix_real('Y_filtered', proc, &
@@ -192,7 +187,7 @@ contains
     type(wp_state_t), intent(inout) :: state
     ! The commented out parameters below are in 'state'.
     !type(wp_structure_t), intent(in) :: structure
-    !type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_multistep_sparse, S_multistep_sparse
+    !type(sparse_mat), intent(in) :: H_sparse, S_sparse
     !integer, intent(in) :: H1_desc(desc_size), Y_desc(desc_size), Y_filtered_desc(desc_size)
     !integer, intent(in) :: filter_group_id(:, :)
     !real(8), intent(out) :: Y(:, :), Y_filtered(:, :), H1_base(:, :), dv_eigenvalues(:), dv_ipratios(:)
@@ -271,15 +266,6 @@ contains
   end subroutine set_aux_matrices
 
 
-  !subroutine set_aux_matrices_for_multistep(dim, setting, proc, filter_group_id, t, structure, charge_factor, &
-  !         H_sparse, S_sparse, Y_desc, Y, Y_filtered_desc, Y_filtered, &
-  !         H_multistep_sparse, S_multistep_sparse, &
-  !         H1_desc, H1, H1_base, H1_multistep, &
-  !         filter_group_indices, Y_local, &
-  !         dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
-  !         dv_charge_on_basis, dv_charge_on_atoms, dv_eigenvalues, &
-  !         charge_moment, energies, errors, &
-  !         to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
   subroutine set_aux_matrices_for_multistep(setting, proc, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, state)
     type(wp_setting_t), intent(in) :: setting
@@ -295,11 +281,9 @@ contains
     !type(wp_charge_factor_t), intent(in) :: charge_factor
     !integer, allocatable, intent(inout) :: filter_group_indices(:, :)
     !type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    !type(sparse_mat), intent(inout) :: H_multistep_sparse, S_multistep_sparse
     !integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), H1_desc(desc_size)
     !real(8), intent(inout) :: Y_filtered(:, :)  ! value of last step is needed for offdiag norm calculation.
     !real(8), intent(out) :: Y(:, :), H1(:, :), H1_base(:, :)
-    !real(8), intent(out) :: H1_multistep(:, :)
     !complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     !complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
     !real(8), intent(out) :: dv_charge_on_basis(:), dv_charge_on_atoms(:), dv_eigenvalues(:)
@@ -313,40 +297,26 @@ contains
 
     wtime = mpi_wtime()
 
-    if (setting%to_replace_basis) then
-      call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
-           state%group_id, state%filter_group_id, state%t, state%structure, &
-           state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
-           state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
-           state%YSY_filtered_desc, state%YSY_filtered, &
-           state%H1_desc, state%H1, state%H1_base, &
-           state%filter_group_indices, state%Y_local, state%charge_factor, &
-           state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
-           state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_atom_perturb, &
-           state%dv_eigenvalues, &
-           state%charge_moment, state%energies, state%errors, state%eigenstate_ipratios, &
-           state%eigenstate_mean, state%eigenstate_msd, &
-           to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
-      call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
-      if (check_master()) then
-        do j = 1, setting%num_multiple_initials
-          write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-               '] psi error after re-initialization is ', state%errors(j)%absolute, &
-               ' (absolute) and ', state%errors(j)%relative, ' (relative)'
-        end do
-      end if
-    else
-      ! implementation may be incorrect
-      call read_next_input_step_matrix(setting, &
-           state%S_multistep_sparse, &
-           state%filter_group_indices)
-      call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_matrix', wtime)
-      !H_multistep(:, :) = H_multistep(:, :) - H(:, :)  ! sparse matrix subtract is not implemented
-      !call make_H1_multistep(proc, Y_filtered, Y_filtered_desc, H_multistep, H_desc, &
-      !     trim(setting%filter_mode) == 'group', filter_group_indices, Y_local, &
-      !     H1_multistep, H1_desc)
-      call terminate('set_aux_matrices_for_multistep:make_H1_multistep not implemented in this version', 1)
-      call add_timer_event('set_aux_matrices_for_multistep', 'make_H1_multistep', wtime)
+    call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
+         state%group_id, state%filter_group_id, state%t, state%structure, &
+         state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
+         state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
+         state%YSY_filtered_desc, state%YSY_filtered, &
+         state%H1_desc, state%H1, state%H1_base, &
+         state%filter_group_indices, state%Y_local, state%charge_factor, &
+         state%dv_psi, state%dv_alpha, state%dv_psi_reconcile, state%dv_alpha_reconcile, &
+         state%dv_charge_on_basis, state%dv_charge_on_atoms, state%dv_atom_perturb, &
+         state%dv_eigenvalues, &
+         state%charge_moment, state%energies, state%errors, state%eigenstate_ipratios, &
+         state%eigenstate_mean, state%eigenstate_msd, &
+         to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
+    call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
+    if (check_master()) then
+      do j = 1, setting%num_multiple_initials
+        write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+             '] psi error after re-initialization is ', state%errors(j)%absolute, &
+             ' (absolute) and ', state%errors(j)%relative, ' (relative)'
+      end do
     end if
   end subroutine set_aux_matrices_for_multistep
 
@@ -843,13 +813,13 @@ contains
     !integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size), A_desc(desc_size)
     !real(8), intent(in) :: t, dv_charge_on_atoms(:), dv_eigenvalues(:)
     !complex(kind(0d0)), intent(inout) :: A(:, :)
-    !real(8), intent(inout) :: H1(:, :), H1_base(:, :), H1_multistep(:, :)
+    !real(8), intent(inout) :: H1(:, :), H1_base(:, :)
     !real(8), intent(in) :: Y_filtered(:, :)
     !type(wp_local_matrix_t), intent(in) :: Y_local(:)
     !complex(kind(0d0)) :: dv_alpha(:), dv_alpha_next(:)
 
     integer :: j
-    real(8) :: multistep_mix_ratio, wtime
+    real(8) :: wtime
 
     wtime = mpi_wtime()
 
@@ -857,7 +827,6 @@ contains
       state%dv_alpha_next(:, :) = state%dv_alpha(:, :)
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
     else
-      ! H_multistep1 is not referenced.
       ! dv_charge_on_atoms must not be referenced when setting%num_multiple_initials > 1.
       call make_H1(proc, trim(setting%h1_type), state%structure, &
            state%S_sparse, state%Y_filtered, state%Y_filtered_desc, .false., setting%is_restart_mode, &
@@ -867,10 +836,6 @@ contains
            state%dv_atom_perturb, &
            state%H1, state%H1_desc)
       call add_timer_event('make_matrix_step_forward', 'make_matrix_H1_not_multistep', wtime)
-
-      if (.not. setting%to_replace_basis) then
-        state%H1(:, :) = state%H1(:, :) + state%H1_multistep(:, :)  ! Sum of distributed matrices.
-      end if
 
       if (trim(setting%filter_mode) == 'group') then
         state%H1(:, :) = state%H1(:, :) + state%H1_base(:, :)  ! Sum of distributed matrices.

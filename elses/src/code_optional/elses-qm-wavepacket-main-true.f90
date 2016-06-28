@@ -207,7 +207,6 @@ contains
     setting%is_atom_indices_enabled = .true.
     setting%is_group_id_used = num_groups > 0 .and. allocated(num_group_mem) .and. allocated(group_mem)
     setting%is_multistep_input_mode = .true.
-    setting%to_replace_basis = .true.
   end subroutine copy_settings_from_elses_config_xml
 
 
@@ -250,12 +249,6 @@ contains
     state%charge_factor%charge_factor_common = setting%charge_factor_common
     state%charge_factor%charge_factor_H = setting%charge_factor_H
     state%charge_factor%charge_factor_C = setting%charge_factor_C
-
-    if (trim(setting%h1_type) == 'multistep') then
-      ! step = 2
-      call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(1), state%H_multistep_sparse)
-      call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(2), state%S_multistep_sparse)
-    end if
 
     call set_aux_matrices(state%dim, setting, proc, state, &
          .true., eigenvalues, desc_eigenvectors, eigenvectors)
@@ -312,19 +305,11 @@ contains
     call read_structure_from_ELSES_config(state%structure)
     call add_timer_event('main', 'read_atom_indices_and_coordinates_from_ELSES_config', state%wtime)
 
-    if (setting%to_replace_basis) then
-      ! step = input_step + 1 (call set_sample_matrices(dim, setting, input_step + 1, H_sparse, S_sparse))
-      call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
-      call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
-      call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(1), state%H_sparse)
-      call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(2), state%S_sparse)
-
-      if (trim(setting%h1_type) == 'multistep') then
-        stop 'matrix interpolation is not supported when called from ELSES'
-      end if
-    else
-      stop 'basis replace mode must be used when called from ELSES'
-    end if
+    ! step = input_step + 1 (call set_sample_matrices(dim, setting, input_step + 1, H_sparse, S_sparse))
+    call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
+    call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
+    call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(1), state%H_sparse)
+    call convert_sparse_matrix_data_real_type_to_wp_sparse(matrix_data(2), state%S_sparse)
     call add_timer_event('main', 'convert_sparse_matrix_data_real_type_to_wp_sparse', state%wtime)
 
     call set_aux_matrices_for_multistep(setting, proc, &
