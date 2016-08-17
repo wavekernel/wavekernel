@@ -63,6 +63,9 @@ contains
 
     dv_Ax_recv(:) = kZero
     call mpi_allreduce(dv_Ax, dv_Ax_recv, A%size, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
+    if (beta == kZero) then
+      dv_y(:) = kZero
+    end if
     dv_y(:) = beta * dv_y(:) + dv_Ax_recv(:)
 
     call check_nan_vector('matvec_sd_z output real', dreal(dv_y))
@@ -146,6 +149,10 @@ contains
       end do
     end if
     call mpi_allreduce(dv_Ax, dv_Ax_recv, m, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
+
+    if (beta == kZero) then
+      dv_y(:) = kZero
+    end if
     dv_y(:) = alpha * dv_Ax_recv(:) + beta * dv_y(:)
 
     call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
