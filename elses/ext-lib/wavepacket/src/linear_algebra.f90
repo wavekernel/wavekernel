@@ -16,7 +16,8 @@ module wp_linear_algebra_m
        matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
-       get_symmetricity, print_offdiag_norm, cutoff_vector, get_moment_for_each_column
+       get_symmetricity, print_offdiag_norm, cutoff_vector, get_moment_for_each_column, &
+       add_diag
 
 contains
 
@@ -567,6 +568,21 @@ contains
     symmetricity = pdlange('Frobenius', m, n, B, 1, 1, A_desc, 0) * sqrt(2d0)
     deallocate(B)
   end subroutine get_symmetricity
+
+
+  subroutine add_diag(X_desc, X, diag)
+    integer, intent(in) :: X_desc(desc_size)
+    complex(kind(0d0)) :: X(:, :)
+    complex(kind(0d0)) :: diag, elem
+    integer :: m, n, i, j
+
+    m = X_desc(rows_)
+    n = X_desc(cols_)
+    do i = 1, min(m, n)
+      call pzelget('Self', ' ', elem, X, i, i, X_desc)
+      call pzelset(X, i, i, X_desc, elem + diag)
+    end do
+  end subroutine add_diag
 
 
   subroutine print_offdiag_norm(name, X, X_desc)
