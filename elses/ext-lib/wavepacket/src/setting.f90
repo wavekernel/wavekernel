@@ -227,7 +227,7 @@ contains
             read(argv, *) setting%temperature
             setting%temperature = setting%temperature * kAuPerKelvin
             index_arg = index_arg + 2
-          else if (trim(setting%h1_type) == 'harmonic') then
+          else if (trim(setting%h1_type) == 'harmonic' .or. trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
             call getarg(index_arg + 2, argv)
             i = index(argv, ',')
             if (i == 0) then
@@ -445,7 +445,7 @@ contains
     else if (trim(setting%h1_type) == 'maxwell') then
       call fson_path_get(setting_fson, 'temperature', setting%temperature)
       setting%temperature = setting%temperature * kAuPerKelvin
-    else if (trim(setting%h1_type) == 'harmonic') then
+    else if (trim(setting%h1_type) == 'harmonic' .or. trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
       call fson_path_get(setting_fson, 'temperature', setting%temperature)
       setting%temperature = setting%temperature * kAuPerKelvin
       call fson_path_get(setting_fson, 'perturb_interval', setting%perturb_interval)
@@ -513,7 +513,7 @@ contains
         value_fson => fson_value_get(atom_speed_fson, i)
         call fson_path_get(value_fson, '', setting%restart_atom_speed(i))
       end do
-    else if (trim(setting%h1_type) == 'harmonic') then
+    else if (trim(setting%h1_type) == 'harmonic' .or. trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
       atom_perturb_fson => fson_value_get(last_state_fson, 'atom_perturb')
       allocate(setting%restart_atom_perturb(fson_value_count(atom_perturb_fson)))
       do i = 1, fson_value_count(atom_perturb_fson)
@@ -631,7 +631,8 @@ contains
     if (setting%num_multiple_initials > 1 .and. .not. &
          (trim(setting%h1_type) == 'zero' .or. &
          trim(setting%h1_type) == 'maxwell' .or. &
-         trim(setting%h1_type) == 'harmonic')) then
+         trim(setting%h1_type) == 'harmonic' .or. &
+         trim(setting%h1_type) == 'harmonic_for_nn_exciton')) then
       stop 'specified h1 type does not support multiple initials'
     end if
 
@@ -667,6 +668,9 @@ contains
       print '(A, E26.16e3)', ' temperature: ', setting%temperature / kAuPerKelvin
       print '(A, E26.16e3)', ' kAccelRatio: ', kAccelRatio
     else if (trim(setting%h1_type) == 'harmonic') then
+      print '(A, E26.16e3)', ' temperature: ', setting%temperature / kAuPerKelvin
+      print '(A, E26.16e3)', ' perturb_interval: ', setting%perturb_interval
+    else if (trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
       print '(A, E26.16e3)', ' temperature: ', setting%temperature / kAuPerKelvin
       print '(A, E26.16e3)', ' perturb_interval: ', setting%perturb_interval
     end if
@@ -802,7 +806,7 @@ contains
         else
           buf_integer(13) = 0
         end if
-        if (trim(setting%h1_type) == 'harmonic') then
+        if (trim(setting%h1_type) == 'harmonic' .or. trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
           buf_integer(14) = size(setting%restart_atom_perturb)
         else
           buf_integer(14) = 0
