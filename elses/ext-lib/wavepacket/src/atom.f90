@@ -7,7 +7,7 @@ module wp_atom_m
   private
   public :: wp_structure_t, read_structure, multiply_phase_factors, &
        make_dummy_structure, read_group_id, read_group_id_header, make_dummy_group_id, print_group_id, &
-       bcast_structure, bcast_group_id, lcao_index_to_atom_index
+       bcast_structure, bcast_group_id, lcao_index_to_atom_index, print_structure
 
   type wp_structure_t
     integer :: num_atoms
@@ -259,4 +259,18 @@ contains
     end do
     atom_index = a
   end subroutine lcao_index_to_atom_index
+
+
+  subroutine print_structure(structure, iunit)
+    type(wp_structure_t), intent(in) :: structure
+    integer, intent(in) :: iunit
+
+    integer :: i
+
+    write(iunit, *) structure%num_atoms
+    write(iunit, *) structure%atom_indices
+    do i = 1, structure%num_atoms
+      write(iunit, *) structure%atom_coordinates(:, i)
+    end do
+  end subroutine print_structure
 end module wp_atom_m
