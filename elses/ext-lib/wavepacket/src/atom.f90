@@ -69,7 +69,7 @@ contains
         atom_valence = 4
       else
         print *, 'unknown atom name!!! ', structure%atom_elements(i)
-        stop
+        atom_valence = 1
       end if
       structure%atom_indices(i + 1) = structure%atom_indices(i) + atom_valence
     end do
