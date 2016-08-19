@@ -31,7 +31,7 @@ module wp_setting_m
          is_output_split = .false., to_use_precomputed_eigenpairs = .false., &
          is_group_id_used = .false., is_overlap_ignored = .false., is_restart_mode = .false., &
          is_binary_output_mode = .false., is_multistep_input_mode = .false., is_reduction_mode = .false., &
-         to_calculate_eigenstate_moment_every_step = .false.
+         to_calculate_eigenstate_moment_every_step = .true.
     character(len=1024) :: &
          filename_hamiltonian = '', &
          filename_overlap = '', &
