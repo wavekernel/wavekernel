@@ -888,7 +888,6 @@ contains
 
     integer :: num_filter, j
     real(8) :: wtime
-    real(8) :: dv_charge_on_basis(state%dim), dv_charge_on_atoms(state%structure%num_atoms)
     complex(kind(0d0)) :: dv_evcoef(state%Y_filtered_desc(cols_)), energy_tmp
 
     wtime = mpi_wtime()
@@ -900,14 +899,15 @@ contains
            state%t, state%dv_alpha_next(:, j), state%dv_psi(:, j))
       call add_timer_event('step_forward_post_process', 'alpha_to_lcao_coef', wtime)
 
-      call get_mulliken_charges_on_basis(state%dim, state%S_sparse, state%dv_psi(:, j), dv_charge_on_basis)
+      call get_mulliken_charges_on_basis(state%dim, state%S_sparse, state%dv_psi(:, j), state%dv_charge_on_basis(:, j))
       call add_timer_event('step_forward_post_process', 'get_mulliken_charges_on_basis', wtime)
 
       call get_mulliken_charges_on_atoms(state%dim, state%structure, state%S_sparse, &
-           state%dv_psi(:, j), dv_charge_on_atoms)
+           state%dv_psi(:, j), state%dv_charge_on_atoms(:, j))
       call add_timer_event('step_forward_post_process', 'get_mulliken_charges_on_atoms', wtime)
 
-      call get_mulliken_charge_coordinate_moments(state%structure, dv_charge_on_atoms, state%charge_moment(j))
+      call get_mulliken_charge_coordinate_moments(state%structure, state%dv_charge_on_atoms(:, j), &
+           state%charge_moment(j))
       call add_timer_event('step_forward_post_process', 'get_mulliken_charge_coordinate_moments', wtime)
 
       call get_A_sparse_inner_product(state%dim, state%H_sparse, state%dv_psi(:, j), state%dv_psi(:, j), energy_tmp)
