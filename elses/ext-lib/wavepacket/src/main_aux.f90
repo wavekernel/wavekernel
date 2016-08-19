@@ -724,7 +724,8 @@ contains
     dv_eigenvalues_prev(:) = dv_eigenvalues(:)
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
-         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive') then
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
       call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
       call distribute_global_sparse_matrix_wp(S_sparse, S_desc, S)
       call setup_distributed_matrix_real('SY', proc, dim, setting%num_filter, SY_desc, SY)
@@ -761,7 +762,8 @@ contains
 
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
-         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive') then
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
       call pdgemm('Trans', 'No', setting%num_filter, setting%num_filter, dim, 1d0, &
            Y_filtered, 1, 1, Y_filtered_desc, &
            SY, 1, 1, SY_desc, &
