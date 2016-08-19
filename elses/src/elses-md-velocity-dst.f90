@@ -10,6 +10,7 @@ module M_md_velocity_dst
   implicit none
   real(8), allocatable :: vel_dst(:,:)    ! DIFFERENT AMONG NODES !!
   real(8), allocatable :: pos_dst(:,:)    ! DIFFERENT AMONG NODES !!
+  integer, allocatable :: iflag_dst(:)    ! DIFFERENT AMONG NODES !!
   integer :: atm_index_ini, atm_index_fin, noa_dst ! DIFFERENT AMONG NODES !!
 !                ----> determined in copy_velocity_to_vel_dst
   integer :: noa_mobile   ! number of mobile atoms. determined in copy_velocity_to_vel_dst 
@@ -72,6 +73,11 @@ module M_md_velocity_dst
         write(*,*)'ALLOC ERROR:copy_velocity_to_vel_dst'
         stop
       endif
+      allocate(iflag_dst(noa_dst), stat=ierr) 
+      if (ierr /= 0) then
+        write(*,*)'ALLOC ERROR:copy_velocity_to_vel_dst'
+        stop
+      endif
     endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -107,6 +113,7 @@ module M_md_velocity_dst
         vel_dst(1,dst_atm_index)=velx(atm_index)
         vel_dst(2,dst_atm_index)=vely(atm_index)
         vel_dst(3,dst_atm_index)=velz(atm_index)
+        iflag_dst(dst_atm_index)=iflag(atm_index)
       enddo
     else
       velx(:)=0.0d0
@@ -252,6 +259,7 @@ module M_md_velocity_dst
     real(8) :: kinetic_energy_wrk
     real(8) :: mpi_elapse_time
     real(8) :: timer_now, timer_prev
+    real(8) :: iflag_d
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -346,19 +354,20 @@ module M_md_velocity_dst
       sc2=1.0d0-0.5d0*vhbold
 
 !$omp  parallel default(none) &
-!$omp& shared  (iflag, amm, foi, foiold, vel_dst) &
-!$omp& private (dst_atm_index, atm_index, ddvel) &
+!$omp& shared  (iflag_dst, amm, foi, foiold, vel_dst) &
+!$omp& private (dst_atm_index, atm_index, ddvel, iflag_d) &
 !$omp& firstprivate (atm_index_ini, atm_index_fin, noa_dst) &
 !$omp& firstprivate (sc1, sc2, ax, ay, az, dtmd2) 
 !$omp  do schedule(static)
       do dst_atm_index=1,noa_dst
         atm_index = atm_index_ini - 1 + dst_atm_index
-        ddvel=dble(iflag(atm_index))*(0.5d0*dtmd2*amm(atm_index)*(foi(atm_index,1)+foiold(atm_index,1))/ax)
-        vel_dst(1,dst_atm_index)=sc1*(sc2*vel_dst(1,dst_atm_index)+ddvel)
-        ddvel=dble(iflag(atm_index))*(0.5d0*dtmd2*amm(atm_index)*(foi(atm_index,2)+foiold(atm_index,2))/ay)
-        vel_dst(2,dst_atm_index)=sc1*(sc2*vel_dst(2,dst_atm_index)+ddvel)
-        ddvel=dble(iflag(atm_index))*(0.5d0*dtmd2*amm(atm_index)*(foi(atm_index,3)+foiold(atm_index,3))/az)
-        vel_dst(3,dst_atm_index)=sc1*(sc2*vel_dst(3,dst_atm_index)+ddvel)
+        iflag_d = dble(iflag_dst(dst_atm_index))
+        ddvel=0.5d0*dtmd2*amm(atm_index)*(foi(atm_index,1)+foiold(atm_index,1))/ax
+        vel_dst(1,dst_atm_index)=sc1*(sc2*vel_dst(1,dst_atm_index)+ddvel)*iflag_d
+        ddvel=0.5d0*dtmd2*amm(atm_index)*(foi(atm_index,2)+foiold(atm_index,2))/ay
+        vel_dst(2,dst_atm_index)=sc1*(sc2*vel_dst(2,dst_atm_index)+ddvel)*iflag_d
+        ddvel=0.5d0*dtmd2*amm(atm_index)*(foi(atm_index,3)+foiold(atm_index,3))/az
+        vel_dst(3,dst_atm_index)=sc1*(sc2*vel_dst(3,dst_atm_index)+ddvel)*iflag_d
       enddo
 !$omp end do
 !$omp end parallel
@@ -413,7 +422,7 @@ module M_md_velocity_dst
     endif
     timer_prev=timer_now
 !
-    ekion=e_kin/dble(noav)
+    ekion=e_kin/dble(noa_mobile)
     tempk=2.d0/3.d0*ekion
     if(i_verbose >= 1)then
       if (log_unit > 0) write(log_unit,*) 'ekion per noa (a.u.)= ', ekion
@@ -421,7 +430,7 @@ module M_md_velocity_dst
       if (log_unit > 0) write(log_unit,*) 'ekion per noa (Kelv)= ', ekion*ev4au*ev2kel
       if (log_unit > 0) write(log_unit,*) 'tempk,tempk0,ratio  = ',  tempk,tempk0,dble(tempk/tempk0)
     endif 
-    eki=ekion*dble(noav)
+    eki=ekion*dble(noa_mobile)
     e_kin=eki
 !
     call mpi_wrapper_wtime(timer_now)
@@ -447,7 +456,7 @@ module M_md_velocity_dst
 !
     if ((ivelini /= 1) .and. (inose /= 0)) then
 !
-       pkin2=3.0d0*dble(noav)*tempk0
+       pkin2=3.0d0*dble(noa_mobile)*tempk0
        x=vhbold/dtmd+0.5d0*dtmd*amq*(2.0d0*eki+2.0d0*eki3-2.0d0*pkin2)
        err=vhb-x*dtmd
        if(i_verbose >= 1)then
@@ -708,9 +717,9 @@ module M_md_velocity_dst
 !
       ekion=e_kin
       pkin=2.0d0*ekion
-      pkin2=3.0d0*dble(noav)*tempk0
+      pkin2=3.0d0*dble(noa_mobile)*tempk0
 !
-      pkin2=3.0d0*dble(noav)*tempk0
+      pkin2=3.0d0*dble(noa_mobile)*tempk0
       dthb=vhb+0.5d0*dtmd2*amq*(pkin-pkin2)
       thb=thb+dthb
 !
@@ -837,13 +846,14 @@ module M_md_velocity_dst
 !
     ekion=e_kin
     pkin=2.0d0*ekion
-    pkin2=3.0d0*dble(noa)*tempk0
+    pkin2=3.0d0*dble(noa_mobile)*tempk0
 !     
 !      ekion : kinetic energy in a.u. : T = \sum_I 0.5 M_I (V_I)^2
 !
     dsum=0.0d0
     ac0=1.0d0-0.5d0*dtmd*x0
-!$omp  parallel default(shared) &
+!$omp  parallel default(none) &
+!$omp& shared  (iflag_dst, foi, foiold, amm, vel_dst) &
 !$omp& private (dst_atm_index, atm_index) &
 !$omp& private (accex, accey, accez) &
 !$omp& private (velx2, vely2, velz2) &
@@ -853,6 +863,7 @@ module M_md_velocity_dst
 !$omp& reduction (+ : dsum) 
 !$omp  do schedule(static)
     do dst_atm_index=1,noa_dst
+       if ( iflag_dst(dst_atm_index) == 0 ) cycle
        atm_index = atm_index_ini - 1 + dst_atm_index
        accex=(foi(atm_index,1)+foiold(atm_index,1))*amm(atm_index)
        accey=(foi(atm_index,2)+foiold(atm_index,2))*amm(atm_index)
@@ -985,6 +996,7 @@ module M_md_velocity_dst
     use elses_mod_sim_cell,   only : noa, ax, ay, az   !(unchanged)
     use elses_mod_md_dat,     only : dtmd              !(unchanged)
     use elses_mod_mass,       only : amm               !(unchanged)
+    use elses_mod_iflag,      only : iflag             !(unchanged)
     implicit none
     real(8)                       :: total_momentum(3)
     real(8)                       :: d_px, d_py, d_pz
@@ -1027,7 +1039,7 @@ module M_md_velocity_dst
     d_pz = total_momentum(3)/dble(noa_mobile)*dtmd/az
 !
 !$omp  parallel default(none) &
-!$omp& shared  (amm, vel_dst) &
+!$omp& shared  (amm, vel_dst, iflag) &
 !$omp& private (dst_atm_index, atm_index) &
 !$omp& firstprivate (atm_index_ini, atm_index_fin, noa_dst) &
 !$omp& firstprivate (mass_inv, d_px, d_py, d_pz) 
@@ -1035,9 +1047,9 @@ module M_md_velocity_dst
     do dst_atm_index=1,noa_dst
       atm_index = atm_index_ini - 1 + dst_atm_index
       mass_inv=amm(atm_index)
-      vel_dst(1,dst_atm_index)=vel_dst(1,dst_atm_index)-d_px*mass_inv
-      vel_dst(2,dst_atm_index)=vel_dst(2,dst_atm_index)-d_py*mass_inv
-      vel_dst(3,dst_atm_index)=vel_dst(3,dst_atm_index)-d_pz*mass_inv
+      vel_dst(1,dst_atm_index)=(vel_dst(1,dst_atm_index)-d_px*mass_inv)*dble(iflag(atm_index))
+      vel_dst(2,dst_atm_index)=(vel_dst(2,dst_atm_index)-d_py*mass_inv)*dble(iflag(atm_index))
+      vel_dst(3,dst_atm_index)=(vel_dst(3,dst_atm_index)-d_pz*mass_inv)*dble(iflag(atm_index))
     enddo      
 !$omp end do
 !$omp end parallel

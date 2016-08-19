@@ -729,133 +729,13 @@ module M_md_save_struct
 ! Get atomic number from element name
 !
   subroutine get_atomic_num(element_name, atom_num)
+    use M_lib_element_database, only : get_atomic_num_new => get_atomic_num
     character(len=*), intent(in) :: element_name
     integer,          intent(out) :: atom_num
 !
-    atom_num=-1
-    select case(trim(element_name))
-    case('H')
-       atom_num=1
-    case('He')
-       atom_num=2
-    case('Li')
-       atom_num=3
-    case('Be')
-       atom_num=4
-    case('B')
-       atom_num=5
-    case('C')
-       atom_num=6
-    case('N')
-       atom_num=7
-    case('O')
-       atom_num=8
-    case('F')
-       atom_num=9
-    case('Ne')
-       atom_num=10
-    case('Na')
-       atom_num=11
-    case('Mg')
-       atom_num=12
-    case('Al')
-       atom_num=13
-    case('Si')
-       atom_num=14
-    case('P')
-       atom_num=15
-    case('S')
-       atom_num=16
-    case('Cl')
-       atom_num=17
-    case('Ar')
-       atom_num=18
-    case('K')
-       atom_num=19
-    case('Ca')
-       atom_num=20
-    case('Sc')
-       atom_num=21
-    case('Ti')
-       atom_num=22
-    case('V')
-       atom_num=23
-    case('Cr')
-       atom_num=24
-    case('Mn')
-       atom_num=25
-    case('Fe')
-       atom_num=26
-    case('Co')
-       atom_num=27
-    case('Ni')
-       atom_num=28
-    case('Cu')
-       atom_num=29
-    case('Zn')
-       atom_num=30
-    case('Ga')
-       atom_num=31
-    case('Ge')
-       atom_num=32
-    case('As')
-       atom_num=33
-    case('Se')
-       atom_num=34
-    case('Br')
-       atom_num=35
-    case('Kr')
-       atom_num=36
-    case('Rb')
-       atom_num=37
-    case('Sr')
-       atom_num=38
-    case('Y')
-       atom_num=39
-    case('Zr')
-       atom_num=40
-    case('Nb')
-       atom_num=41
-    case('Mb')
-       atom_num=42
-    case('Tc')
-       atom_num=43
-    case('Ru')
-       atom_num=44
-    case('Rh')
-       atom_num=45
-    case('Pd')
-       atom_num=46
-    case('Ag')
-       atom_num=47
-    case('Cd')
-       atom_num=48
-    case('In')
-       atom_num=49
-    case('Sn')
-       atom_num=50
-    case('Sb')
-       atom_num=51
-    case('Te')
-       atom_num=52
-    case('I')
-       atom_num=53
-    case('Xe')
-       atom_num=54
-    case('Cs')
-       atom_num=55
-    case('Ba')
-       atom_num=56
-    case('Pt')
-       atom_num=78
-    case('Au')
-       atom_num=79
-    case default
-       write(*,*)'ERROR:get_atom_num:Unsupported element name'
-       write(*,*)' element_name=',trim(element_name)
-       stop
-    end select
-!    
+    call get_atomic_num_new(element_name, atom_num)
+    return
+!
   end subroutine get_atomic_num
 !
 end module M_md_save_struct

@@ -110,6 +110,8 @@ contains
     select case(name)
       case('structure_history')
        in_structure_history = .true.
+       write(*,*)'ERROR(XML-SAX):<structure_history> was found in the XML file and is not supported'
+       stop
 !
       case('structure')
        in_structure = .true.
@@ -463,7 +465,7 @@ contains
           if (tag_dump) write(*,'(a,f20.10)')'INFO-XML-SAX:cell length Lc [au] =',config%system%structure%unitcell%vectorC(3)
           if (tag_dump) write(*,'(a,2f20.10)')'INFO-XML-SAX:cell length Lc [au]2=',value_wrk3, unit_conv
         case default 
-          write(*,*)'Error(XML-SAC):Too many unit cell vectors' 
+          write(*,*)'Error(XML-SAX):Too many unit cell vectors' 
           stop
       end select
     endif  

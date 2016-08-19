@@ -180,15 +180,33 @@ module M_ini_load_vatom
          stop
        endif   
 !
+!      if (allocated(iflag)) then
+!        if( atom%motion == "free" ) then
+!           iflag(j)=1
+!        else
+!           iflag(j)=0
+!           if (log_unit > 0 ) then
+!             write(log_unit,'(a,i15)') 'INFO:fixed atom: j=',j
+!           endif   
+!        end if
+!      endif  
+!         
        if (allocated(iflag)) then
-         if( atom%motion == "free" ) then
-            iflag(j)=1
-         else
-            iflag(j)=0
-            if (log_unit > 0 ) then
-              write(log_unit,'(a,i15)') 'INFO:fixed atom: j=',j
-            endif   
-         end if
+         select case (atom%motion)
+           case ("free") 
+             iflag(j)=1
+!            if (log_unit > 0 ) then
+!              write(log_unit,'(a,i15)') 'INFO:free  atom: j=',j
+!            endif   
+           case ("fixed") 
+             iflag(j)=0
+             if (log_unit > 0 ) then
+               write(log_unit,'(a,i15)') 'INFO:fixed atom: j=',j
+             endif   
+           case default
+             write(*,*) 'ERROR:: atom id, motion=',j, trim(atom%motion)
+             stop
+         end select
        endif  
 !         
        if( atom%velocity_set ) then

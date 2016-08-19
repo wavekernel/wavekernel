@@ -253,7 +253,17 @@ contains
        end if
        AtomParameter(i)%load_xml_file = Load_XML
        ! *** tentative implementation ***
-       if( .not. Load_XML ) call load_default(AtomParameter(i),elem_name(i))
+       if( .not. Load_XML ) then 
+         if (config%system%structure%velement(i)%filecheck) then
+           if (log_unit > 0) then 
+             write(log_unit,*) 'ERROR:element XML file is missing : element name=',trim(elem_name(i))
+           endif
+           write(*,*)'ERROR:element XML file is missing : element name=',trim(elem_name(i))
+           stop
+         else
+           call load_default(AtomParameter(i),elem_name(i))
+         endif
+       endif
        call setDefaultElecConf(AtomParameter(i),elem_name(i))
 
        if( genoMethod /= genoICON ) call renormalizeDoubleZeta(AtomParameter(i))

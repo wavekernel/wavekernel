@@ -22,6 +22,9 @@ contains
     logical :: flag_for_save
 !   logical :: append_mode
     logical :: final_write
+    character(len=1024) :: filename_wrk
+    character(len=1024) :: filename_basic
+    character(len=1024) :: chara_wrk
 !
     if (i_verbose >= 1) then
 !     write(*,*)'@@ save_restart_xml'
@@ -57,9 +60,18 @@ contains
       if (log_unit > 0) write(log_unit,*)'flag_for_save=',flag_for_save
     endif  
 !
+    filename_basic=trim(adjustL(config%output%restart%filename))
+    if (config%output%restart%mode == "sequential" ) then
+      write(chara_wrk, '(i8.8)') config%system%structure%mdstep
+      filename_basic=filename_basic(1:lenf-4)//'_step'//trim(adjustl(chara_wrk))//'.xml'
+      filename_basic=trim(adjustL(filename_basic))
+    endif
+!
+    if (log_unit > 0) write(log_unit,*)'filename_restart=', trim(adjustL(filename_basic))
+!
     if( flag_for_save ) then
        call save_restart_xml_main( config%system%structure, &
-&                 config%output%restart%filename, final_write)
+&                 filename_basic, final_write)
     end if
 !
 !
@@ -123,7 +135,7 @@ contains
         stop
       endif   
       max_stg_index = ( config%output%restart%number_of_split_files - 1 ) / nprocs
-      write(*,*)'split_output:max_stg_index=',max_stg_index
+      if (log_unit > 0) write(log_unit,*) 'split_output:max_stg_index=',max_stg_index
     endif
 !
     if (i_verbose >= 1) then

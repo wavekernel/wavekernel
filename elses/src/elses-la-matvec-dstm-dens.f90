@@ -124,8 +124,7 @@ module M_la_matvec_dens
     vect_out(:)=0.0d0
     if (use_blas) then 
       n=size(vect_in,1)
-      !call dgemv('N', n, n, alpha, mat_data, n, vect_in, 1, beta, vect_out,1) 
-      call dsymv('U', n, alpha, mat_data, n, vect_in, 1, beta, vect_out, 1) 
+      call dsymv('U', n, alpha, mat_data, n, vect_in, 1, beta, vect_out, 1)
     else
       vect_out=matmul(mat_data, vect_in)
     endif

@@ -6,6 +6,8 @@ module M_md_velocity_routines
 !
   use M_config           ! (unchanged)
   use M_qm_domain,      only : i_verbose
+  integer :: noa_mobile ! set in calc_kinetic_energy
+
   private
 ! public :: set_zero_velocity_for_fixed_atoms
   public :: calc_kinetic_energy
@@ -17,41 +19,6 @@ module M_md_velocity_routines
 !
   contains
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  @@ Set zero velocity for fixed atoms (NOT USED, NOW)
-!
-  !! Copyright (C) ELSES. 2007-2016 all rights reserved
-  subroutine set_zero_velocity_for_fixed_atoms
-    use elses_mod_sim_cell,   only : noa              !(unchanged)
-    use elses_mod_vel,        only : velx, vely, velz !(CHANGED)
-    use elses_mod_iflag,      only : iflag            !(unchanged)
-!
-    implicit none
-    logical :: velocity_is_allocated
-    integer lu
-!
-    lu = config%calc%distributed%log_unit
-!
-    velocity_is_allocated = .true.
-    if (allocated(velx) .eqv. .false.) velocity_is_allocated = .false.
-    if (allocated(vely) .eqv. .false.) velocity_is_allocated = .false.
-    if (allocated(velz) .eqv. .false.) velocity_is_allocated = .false.
-!
-    if (.not. velocity_is_allocated) return
-!
-    if (sum(iflag(:)) == noa) return
-!
-    if (lu > 0) then
-      write(lu, '(a)') '@@ set_zero_velocity_for_fixed_atoms'
-    endif
-!
-    velx(:)=velx(:)*abs(iflag(:))
-    vely(:)=vely(:)*abs(iflag(:))
-    velz(:)=velz(:)*abs(iflag(:))
-!
-  end subroutine set_zero_velocity_for_fixed_atoms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -308,9 +275,12 @@ module M_md_velocity_routines
     real(8)                       :: d_px, d_py, d_pz
     real(8)                       :: dddx, dddy, dddz
     real(8)                       :: mass
+    integer lu
+!
+    lu = config%calc%distributed%log_unit
 !
     if (i_verbose >= 1) then
-      write(6,*)' @@ Adjust velocity so that (total momemtum) = 0'
+      if (lu > 0) write(lu,*)' @@ Adjust velocity so that (total momemtum) = 0 : adjust_velocity'
     endif
 !   
     call calc_total_momentum(total_momentum)
@@ -322,15 +292,17 @@ module M_md_velocity_routines
     dddz=total_momentum(3)/total_momentum_abs(3)
 !
     if (i_verbose >= 1) then
-      write(*,*)'(befor) total P_x =',total_momentum(1), dabs(dddx)
-      write(*,*)'(befor) total P_y =',total_momentum(2), dabs(dddy)
-      write(*,*)'(befor) total P_z =',total_momentum(3), dabs(dddz)
+      if (lu > 0) then
+        write(lu,*)'(befor) total P_x =',total_momentum(1), dabs(dddx)
+        write(lu,*)'(befor) total P_y =',total_momentum(2), dabs(dddy)
+        write(lu,*)'(befor) total P_z =',total_momentum(3), dabs(dddz)
+      endif
     endif
 !
-    noac=sum(iflag(1:noa))
+    noac=noa_mobile
 !
     if (i_verbose >= 1) then
-      write(6,*)' (the number of the movable atoms) =',noac
+      if (lu > 0) write(lu,*)' (the number of the movable atoms) =',noac
     endif
 !
     if (noac <= 0) then
@@ -348,9 +320,9 @@ module M_md_velocity_routines
     do js=1,noa
       if (iflag(js) == 1) then
         mass=1.0d0/amm(js)
-        velx(js)=velx(js)-d_px*dtmd/ax/mass
-        vely(js)=vely(js)-d_py*dtmd/ay/mass
-        velz(js)=velz(js)-d_pz*dtmd/az/mass
+        velx(js)=(velx(js)-d_px*dtmd/ax/mass)*dble(iflag(js))
+        vely(js)=(vely(js)-d_py*dtmd/ay/mass)*dble(iflag(js))
+        velz(js)=(velz(js)-d_pz*dtmd/az/mass)*dble(iflag(js))
       endif    
     enddo      
 !$omp end do
@@ -363,9 +335,11 @@ module M_md_velocity_routines
     dddz=total_momentum(3)/total_momentum_abs(3)
 !
     if (i_verbose >= 1) then
-      write(*,*)'(after) total P_x =',total_momentum(1), dabs(dddx)
-      write(*,*)'(after) total P_y =',total_momentum(2), dabs(dddy)
-      write(*,*)'(after) total P_z =',total_momentum(3), dabs(dddz)
+      if (lu > 0) then
+        write(lu,*)'(after) total P_x =',total_momentum(1), dabs(dddx)
+        write(lu,*)'(after) total P_y =',total_momentum(2), dabs(dddy)
+        write(lu,*)'(after) total P_z =',total_momentum(3), dabs(dddz)
+      endif
     endif
 !
   end subroutine adjust_velocity
@@ -405,7 +379,14 @@ module M_md_velocity_routines
     logical :: forced_initialization 
     logical :: parameter_checking
 !
-    forced_initialization = .true.
+    noa_mobile=sum(iflag(1:noa))
+!
+    if (config%calc%distributed%dst_bench_mode) then
+       forced_initialization = .true.
+    else
+       forced_initialization = .false.
+    endif
+!
     parameter_checking    = .false.
 !
     lu = config%calc%distributed%log_unit
@@ -465,7 +446,7 @@ module M_md_velocity_routines
 !
       myrank=0
 !
-      tempk=2.d0/3.d0*kinetic_energy/dble(noa)
+      tempk=2.d0/3.d0*kinetic_energy/dble(noa_mobile)
 !
       if(i_verbose >= 1) then
         if (lu > 0) write(lu,*) 'tempk (a.u., eV)= ', tempk, tempk*ev4au
@@ -514,7 +495,7 @@ module M_md_velocity_routines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
     call calc_kinetic_energy(kinetic_energy)
-    tempk=2.d0/3.d0*kinetic_energy/dble(noa)
+    tempk=2.d0/3.d0*kinetic_energy/dble(noa_mobile)
     tempr=tempk/tempk0
 !
     if(i_verbose >= 1) then
@@ -528,7 +509,7 @@ module M_md_velocity_routines
     call adjust_velocity    
 !
     call calc_kinetic_energy(kinetic_energy)
-    tempk=2.d0/3.d0*kinetic_energy/dble(noa)
+    tempk=2.d0/3.d0*kinetic_energy/dble(noa_mobile)
     tempr=tempk/tempk0
 !
     if(i_verbose >= 1) then
@@ -552,13 +533,11 @@ module M_md_velocity_routines
     velz(:)=velz(:)/tempr
 !
 !   do ioa=1, noa
-!      velx(ioa)=velx(ioa)/tempr
-!      vely(ioa)=vely(ioa)/tempr
-!      velz(ioa)=velz(ioa)/tempr
+!     if (lu > 0) write(lu,*) 'velx,y,z=', ioa, velx(ioa), vely(ioa), velz(ioa)
 !   enddo   
 !
     call calc_kinetic_energy(kinetic_energy)
-    tempk=2.d0/3.d0*kinetic_energy/dble(noa)
+    tempk=2.d0/3.d0*kinetic_energy/dble(noa_mobile)
     tempr=tempk/tempk0
 !
     if(i_verbose >= 1) then
@@ -595,7 +574,7 @@ module M_md_velocity_routines
     use M_lib_random_num, only : rndini, rndu
     implicit none
     integer iseed, jinit30, myrank, ioa, js, mm
-    integer noac, iflagd
+!   integer noac, iflagd
     real(8) dtmd2, sig, sum, rnd
     real(8) vxsum, vysum, vzsum, ekion, tempk, tempr
     real(8) tempk0
@@ -611,7 +590,7 @@ module M_md_velocity_routines
       if (lu > 0) then
         write(lu,*)'@@ set_velocity_from_maxwell'
         write(lu,*)' temperature[au]:tempk0=',tempk0
-        write(lu,*)'  NOA =',noa
+        write(lu,*)'  noa_mobile =',noa_mobile
       endif
     endif
 !

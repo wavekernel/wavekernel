@@ -327,9 +327,19 @@ module M_qm_domain_dst
     endif
 !
     if (rcut_book_wrk > 0.5d0*min(ax,ay,az)) then
-      write(*,*)'ERROR:Too large r_cut_book: =',rcut_book_wrk
-      stop
-    endif   
+      if ( i_pbc_x + i_pbc_y + i_pbc_z /= 0 ) then
+        write(*,*)'ERROR:Too large r_cut_book: =',rcut_book_wrk
+        write(*,*)'ERROR: (rcut_book_wrk > 0.5d0*min(ax,ay,az))'
+        write(*,*)'  i_pbcx,y,z=', i_pbc_x, i_pbc_y, i_pbc_z
+        stop
+      else
+        if (log_unit > 0) then
+          write(log_unit,*)'WARNING:Large r_cut_book ? : =',rcut_book_wrk
+          write(log_unit,*)'WARANIG: (rcut_book_wrk > 0.5d0*min(ax,ay,az))'
+          write(log_unit,*)'  i_pbcx,y,z=', i_pbc_x, i_pbc_y, i_pbc_z
+        endif
+      endif   
+    endif
 !
     if ((num_atom_list_min < 1) .or. (num_atom_list_min > noav)) then
       write(*,*)'ERROR; num_atom_list_min =', num_atom_list_min
@@ -356,7 +366,9 @@ module M_qm_domain_dst
 !
     if (i_verbose >= 1) then
       if (atm_index < 5) then
-       write(*,*)' length of prebooking list=', atm_index, length_of_list, num_atom_list_min
+       if (log_unit > 0) then
+         write(log_unit,*)' length of prebooking list=', atm_index, length_of_list, num_atom_list_min
+       endif
       endif
     endif
 !

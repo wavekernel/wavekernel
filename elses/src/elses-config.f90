@@ -26,6 +26,8 @@ module M_element
      character(len=8)   :: name
      type(classic_type) :: classic
      type(quantum_type) :: quantum
+     logical            :: filecheck
+     logical            :: filecheck_set
   end type element_type
 !contains
   ! print <element> data
@@ -308,7 +310,7 @@ module M_config
      character(len=16)   :: scheme
      character(len=64)   :: eigen_mpi_scheme
      integer             :: projection
-     integer             :: projection_list_length 
+     integer             :: projection_list_length
 !                              = -1 : dummy setting (when the tag is missing)
 !                              = -2 : default setting (when the tag appears as <tag> default </tag>)
 !                              = -3 : 'full' setting (when the tag appears as <tag> full </tag>)
@@ -390,7 +392,7 @@ module M_config
      integer               :: log_unit
      logical               :: root_node
      logical               :: use_mpi_barrier
-     character(len=20)     :: mat_vec_mode  
+     character(len=20)     :: mat_vec_mode
      logical               :: mat_vec_const_num_orbital
      integer               :: mat_vec_max_num_orbital
      logical               :: mat_vec_switch_bcrs
@@ -488,6 +490,20 @@ module M_config
      integer             :: level_highest
   end type file_type
 
+  type :: file_restart_type
+     logical             :: set
+     character(len=64)   :: dirname
+     character(len=64)   :: filename
+     character(len=64)   :: mode
+     character(len=8)    :: history
+     integer             :: interval
+     character(len=8)    :: append_mode
+     logical             :: first_write
+     logical             :: split
+     integer             :: number_of_split_files
+     logical             :: atom_id_is_added
+  end type file_restart_type
+
   type :: file_matrix_type
      logical             :: set
      character(len=64)   :: filename
@@ -500,7 +516,7 @@ module M_config
 
   type :: output_type
      type(file_type)     :: main
-     type(file_type)     :: restart
+     type(file_restart_type)     :: restart
      type(file_type)     :: position
      type(file_type)     :: wavefunction
      type(file_type)     :: wfn_charge
@@ -672,7 +688,7 @@ contains
     distributed%micro_cell_booking%search_range(:) = -1
 !
     distributed%mat_vec_mode              = "default"
-    distributed%mat_vec_const_num_orbital = .false. 
+    distributed%mat_vec_const_num_orbital = .false.
     distributed%mat_vec_max_num_orbital   = -1
     distributed%mat_vec_switch_bcrs       = .false.
 !

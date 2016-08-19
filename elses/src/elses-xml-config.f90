@@ -590,6 +590,13 @@ contains
     document_node => parsefile(filename)
     call normalize(document_node)
 
+    ! detectt <structure_history> node for abort
+    structure_node => getFirstElementByTagName(document_node,"structure_history")
+
+    if( associated(structure_node) ) then
+       call XML_error("ERROR:<structure_history> was found in the XML file and is not supported")
+    endif
+
     ! get <structure> node
     structure_node => getFirstElementByTagName(document_node,"structure")
 
@@ -1269,6 +1276,7 @@ contains
 !
     character(len=8)       :: name
     character(len=64)      :: model, filename
+    character(len=64)      :: filecheck
 !
     integer              :: i_verbose, log_unit
     real(8)              :: time_wrk, time_wrk_prev, time_period
@@ -1412,7 +1420,25 @@ contains
 !
     ! get <element> node, additional procedures only in SAX mode
 !
-    if (system%structure%parser == "sax") then
+    if (system%structure%parser /= "sax") then
+      do i = 1, system%structure%nelement
+        filecheck = getAttribute(item(velement_node,i-1), "filecheck")
+        if (filecheck == '') then
+          system%structure%velement(i)%filecheck_set = .false.
+          system%structure%velement(i)%filecheck     = .false.
+        else
+          system%structure%velement(i)%filecheck_set = .true.
+          if (trim(filecheck) == "on") then
+            system%structure%velement(i)%filecheck   = .true.
+          else
+            system%structure%velement(i)%filecheck   = .false.
+          endif
+        endif
+        if (system%structure%velement(i)%filecheck) then
+          if (log_unit >  0) write(log_unit, '(a,a)')'INFO-XML-DOM:Optional tag detected : element file check:', trim(name)
+        endif
+      enddo
+    else
       if (log_unit >  0) write(log_unit, '(a,i5)') 'nelement is set to be:nelement=',system%structure%nelement
       allocate (config%system%structure%velement(system%structure%nelement), stat=ierr )
       if (ierr /= 0) then
@@ -1422,12 +1448,27 @@ contains
       do i = 1, system%structure%nelement
         name = getAttribute(item(velement_node,i-1), "name")
         filename = getAttribute(item(velement_node,i-1), "filename")
+        filecheck = getAttribute(item(velement_node,i-1), "filecheck")
         model = getAttribute(item(velement_node,i-1), "model")
         if (name == '') then
           write(*,*) 'ERROR(minnsing element name)'
           stop
         else
           system%structure%velement(i)%name=name
+        endif
+        if (filecheck == '') then
+          system%structure%velement(i)%filecheck_set = .false.
+          system%structure%velement(i)%filecheck     = .false.
+        else
+          system%structure%velement(i)%filecheck_set = .true.
+          if (trim(filecheck) == "on") then
+            system%structure%velement(i)%filecheck   = .true.
+          else
+            system%structure%velement(i)%filecheck   = .false.
+          endif
+        endif
+        if (system%structure%velement(i)%filecheck) then
+          if (log_unit >  0) write(log_unit, '(a,a)')'INFO-XML-SAX:Optional tag detected : element file check:', trim(name)
         endif
         if (filename == '') then
           write(*,*) 'ERROR(minnsing element filename)'
@@ -3070,13 +3111,14 @@ contains
     output%restart%append_mode = "off"
     if( .not. associated(node) ) then
        output%restart%set = .false.
+       output%restart%mode = "not_set"
        output%restart%filename = trim(config%option%output_dir)//"restart.xml"
        output%restart%interval = -1
        output%restart%split    = .false.
        output%restart%atom_id_is_added  = .false.
        output%restart%number_of_split_files  = -1
     else
-       call file_load( output%restart, node )
+       call file_restart_load( output%restart, node )
     end if
 
     ! get <wavefunction> node
@@ -3294,6 +3336,111 @@ contains
 
     return
   end subroutine file_load
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! parse <restart> node
+  !! Copyright (C) ELSES. 2007-2016 all rights reserved
+  subroutine file_restart_load( file, file_node )
+    implicit none
+    type(file_restart_type), intent(out) :: file
+    type(fnode), pointer :: file_node
+
+!   type(fnode), pointer :: node
+    character(len=256)   :: value
+    integer              :: log_unit
+
+    log_unit=config%calc%distributed%log_unit
+
+    ! get directory name attribute
+    value=getAttribute(file_node,"dirname")
+    file%dirname=adjustL(value)
+
+    ! get filename attribute
+    value=getAttribute(file_node,"filename")
+    file%filename=trim(config%option%output_dir)//adjustL(value)
+
+    ! get mode attribute
+    file%mode = "not_set"
+    value=getAttribute(file_node,"mode")
+    if( value /= "" ) then 
+      file%mode = trim(adjustL(value))
+      if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:mode in restart tag=',trim(file%mode)
+    endif
+!
+    ! get history attribute
+    value=getAttribute(file_node,"history")
+    file%history = adjustL(value)
+    if( file%history == "" ) file%history = "last"
+
+    ! get interval attribute
+    value = getAttribute(file_node,"interval")
+    if( value /= "" ) then
+       read(unit=value,fmt=*) file%interval
+    end if
+
+    ! get append_mode attribute
+    value=getAttribute(file_node,"append_mode")
+    file%append_mode = adjustL(value)
+    if ( file%append_mode == "" ) then 
+       file%append_mode = "off"
+    else
+      if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:append mode in restart tag=',trim(file%append_mode)
+    endif
+!
+!   ! get cell_info attribute  (For xyz-formatted position file)
+!   value=getAttribute(file_node,"cell_info")
+!   file%cell_info = adjustL(value)
+!   if( file%cell_info == "" ) then
+!     file%cell_info = "off"
+!   else
+!     if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:cell_info=',trim(file%cell_info)
+!   endif
+!
+    ! get split attribute
+    value = getAttribute(file_node,"split")
+    if ( value == "on" ) then
+      file%split= .true.
+      if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:split=',file%split
+    else
+      file%split= .false.
+    endif
+
+    ! get number_of_split_files attribute
+    value = getAttribute(file_node,"number_of_split_files")
+    if( value /= "" ) then
+       read(unit=value,fmt=*) file%number_of_split_files
+    end if
+
+    ! get atom_id_is_added attribute
+    value=getAttribute(file_node,"atom_id_is_added")
+    if ( value == "on" ) then
+      file%atom_id_is_added = .true.
+      if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:atom_id_is_added=',file%atom_id_is_added
+    else
+      file%atom_id_is_added = .false.
+    endif
+
+    file%set = .true.
+!
+!   ! get lowest_level attribute
+!   value = getAttribute(file_node,"level_lowest")
+!   if( value /= "" ) then
+!     read(unit=value,fmt=*) file%level_lowest
+!     if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:wavefunction/level_lowest   =', &
+!&                                     file%level_lowest
+!    end if
+!
+!    ! get highest_level attribute
+!    value = getAttribute(file_node,"level_highest")
+!    if( value /= "" ) then
+!      read(unit=value,fmt=*) file%level_highest
+!      if (log_unit>0) write(log_unit,*)'INFO-XML:optional attirbute:wavefunction/level_highest  =', &
+!&                                     file%level_highest
+!    end if
+
+    return
+  end subroutine file_restart_load
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

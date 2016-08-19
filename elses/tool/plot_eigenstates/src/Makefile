@@ -26,7 +26,7 @@ F77 ?= $(FC)
 .f.o:
 	$(F77) -c $(FFLAGS) $< -o $@
 
-OBJS = elses-generate-cubefile.o
+OBJS = elses-generate-cubefile.o elses-lib-math-cubic-harmonics.o elses-lib-sto-radial-func.o
 
 elses-generate-cubefile: $(OBJS)
 	$(F90) $(LDFLAGS) $(OBJS) $(LIBS) -o $@

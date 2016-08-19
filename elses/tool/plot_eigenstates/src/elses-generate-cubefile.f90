@@ -707,14 +707,18 @@ contains
 !
   subroutine output_cubefile(sign_inversion, absolute_value, r_cut_wrk)
 
+    use M_lib_cubic_harmonics, only : cubic_harmonics_func_mod ! function
+    use M_lib_sto_radial_func, only : sto_radial_func_mod      ! function
+!
     implicit none
     logical, intent(in) :: sign_inversion
     logical, intent(in) :: absolute_value
     real(8), intent(in) :: r_cut_wrk ! cutoff for plot in au
 !
     integer :: i,j,k,atom_index,orbital_index,wf_index,mesh_index
+    integer :: principal_num, orbital_kind, ierr
     real(8) :: x,y,z,l,m,n,r
-    real(8) :: sto
+    real(8) :: sto, sto_rad, cubic_harm
     real(8), parameter :: pi=3.14159265358979323
     real(8) :: zeta,zeta2,c1,c2,f
     real(8) :: wf !!! amplitude of wave function
@@ -812,7 +816,8 @@ contains
 !$omp  parallel default(shared) &
 !$omp& private (atom_index, orbital_index, wf_index) &
 !$omp& private (dx, dy, dz, r, l, m, n) &
-!$omp& private (sto, zeta, zeta2, c1, c2, f) &
+!$omp& private (sto, zeta, zeta2, c1, c2, sto_rad, cubic_harm) &
+!$omp& private (principal_num) &
 !$omp& reduction (+ : wf)
 !$omp  do schedule(static)
              do atom_index=1,natom
@@ -839,23 +844,8 @@ contains
                    if (r > r_cut_wrk) cycle
                  endif
 !
-!                if(r < 1e-10) then
-!                  r=0.0d0
-!                  l=0.0d0
-!                  m=0.0d0
-!                  n=0.0d0
-!                else
-!                  l=dx/r
-!                  m=dy/r
-!                  n=dz/r
-!                end if
+!!!! Now, the visualization of f and higher orbital is not supported.
 !
-!                write(*,'("r=",F)') r
-!                write(*,'("(l,m,n)=",3F)') l,m,n
-
-!!!! Until now, the visualization of the 4d orbital and higher orbital
-!!!! was not implemented
-
                 do orbital_index=1, atom_info(atom_index)%num_val_orb
 
                    wf_index=wf_index_list(orbital_index, atom_index)
@@ -866,121 +856,10 @@ contains
                    c1=atom_info(atom_index)%c1(orbital_index)
                    c2=atom_info(atom_index)%c2(orbital_index)
 
-                   if(c2 == 0d0) then
-                      c1=1.0d0
-                      f=1.0d0
-                   else
-                      f=sqrt(c1*c1+c2*c2+2.0d0*c1*c2* &
-                           (4*zeta*zeta2/(zeta+zeta2)**2.0d0)**(7.0d0/2.0d0))
-                   end if
-
-                   if(atom_info(atom_index)%principal(orbital_index)==1) then
-                       sto=1.0d0/sqrt(pi)/f* &
-                            (c1*(zeta**(3.0d0/2.0d0))*exp(-zeta*r) &
-                            +c2*(zeta2**(3.0d0/2.0d0))*exp(-zeta2*r))
-!                       write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                   else if(atom_info(atom_index)%principal(orbital_index)==2) then
-                      if(orbital_index==1) then
-                         sto=1.0/sqrt(3.0d0*pi)/f*r* &
-                              (c1*(zeta**(5.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(5.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2,"  sto=",F)') orbital_index,sto
-                      else if(orbital_index==2) then
-                         sto=1.0/sqrt(pi)/f*l* &
-                              (c1*(zeta**(5.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(5.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2,"  sto=",F)') orbital_index,sto
-                      else if(orbital_index==3) then
-                         sto=1.0/sqrt(pi)/f*m* &
-                              (c1*(zeta**(5.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(5.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2,"  sto=",F)') orbital_index,sto
-                      else if(orbital_index==4) then
-                         sto=1.0/sqrt(pi)/f*n* &
-                              (c1*(zeta**(5.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(5.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2,"  sto=",F)') orbital_index,sto
-                      end if
-                   else if(atom_info(atom_index)%principal(orbital_index)==3) then
-                      if(orbital_index==1) then
-                         sto=2.0d0/3.0d0/sqrt(10.0d0*pi)/f*(r**2)* &
-                              (c1*(zeta**(7.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(7.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==2) then
-                         sto=1.0d0/sqrt(15.0d0*pi)/f*r*l* &
-                              (c1*(zeta**(7.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(7.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==3) then
-                         sto=1.0d0/sqrt(15.0d0*pi)/f*r*m* &
-                              (c1*(zeta**(7.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(7.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==4) then
-                         sto=1.0d0/sqrt(15.0d0*pi)/f*r*n* &
-                              (c1*(zeta**(7.0d0/2.0d0))*exp(-zeta*r) &
-                              +c2*(zeta2**(7.0d0/2.0d0))*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==5) then
-                         sto=1.0d0/sqrt(6.0d0*pi)*2.0d0/f*l*m* &
-                             (c1*zeta**(7.0d0/2.0d0)*exp(-zeta*r) &
-                             +c2*zeta2**(7.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==6) then
-                         sto=1.0d0/sqrt(6.0d0*pi)*2.0d0*m*n* &
-                             (c1*zeta**(7.0d0/2.0d0)*exp(-zeta*r) &
-                             +c2*zeta2**(7.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==7) then
-                         sto=1.0d0/sqrt(6.0d0*pi)*2.0d0*n*l* &
-                             (c1*zeta**(7.0d0/2.0d0)*exp(-zeta*r) &
-                             +c2*zeta2**(7.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==8) then
-                         sto=1.0d0/sqrt(6.0d0*pi)*(l*l-m*m)* &
-                             (c1*zeta**(7.0d0/2.0d0)*exp(-zeta*r) &
-                             +c2*zeta2**(7.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==9) then
-                         sto=1.0d0/sqrt(6.0d0*pi)*(3*n*n-r*r)/sqrt(3.0d0)* &
-                             (c1*zeta**(7.0d0/2.0d0)*exp(-zeta*r) &
-                             +c2*zeta2**(7.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("orbital_index=",I2," sto=",F)') orbital_index,sto
-                      end if
-                   else if(atom_info(atom_index)%principal(orbital_index)==4) then
-                      if(orbital_index==1) then
-                         sto=1.0d0/sqrt(105.0d0)/f*r**3.0d0* &
-                              (c1*zeta**(9.0d0/2.0d0)*exp(-zeta*r) &
-                              +c2*zeta2**(9.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("n=4 orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==2) then
-                         sto=1.0d0/sqrt(35.0d0*pi)/f*l*r**2.0d0* &
-                              (c1*zeta**(9.0d0/2.0d0)*exp(-zeta*r) &
-                              +c2*zeta2**(9.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("n=4 orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==3) then
-                         sto=1.0d0/sqrt(35.0d0*pi)/f*m*r**2.0d0* &
-                              (c1*zeta**(9.0d0/2.0d0)*exp(-zeta*r) &
-                              +c2*zeta2**(9.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("n=4 orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else if(orbital_index==4) then
-                         sto=1.0d0/sqrt(35.0d0*pi)/f*n*r**2.0d0* &
-                              (c1*zeta**(9.0d0/2.0d0)*exp(-zeta*r) &
-                              +c2*zeta2**(9.0d0/2.0d0)*exp(-zeta2*r))
-!                         write(*,'("n=4 orbital_index=",I2," sto=",F)') orbital_index,sto
-                      else
-                         write(*,'("!!! ERROR !!! Unexpected orbital is included")')
-                         stop
-                      end if
-                   else
-                      write(*,'("!!! ERROR !!! Unexpected orbital is included")')
-                      stop
-                   end if
-
-!                   write(*,'("wf_index=",I10)') wf_index
-!                   write(*,'("atmp(",I10,",",I10,")=",F)') wf_index,level_index, &
-!                   atmp(wf_index,level_index)
+                   principal_num=atom_info(atom_index)%principal(orbital_index)
+                   sto_rad=sto_radial_func_mod(r, zeta, zeta2, c1, c2, principal_num, orbital_index)
+                   cubic_harm=cubic_harmonics_func_mod(l, m, n, orbital_index)
+                   sto=sto_rad*cubic_harm
 
                    if (absolute_value) sto=dabs(sto)
                    wf=wf+sto*atmp(wf_index,level_index)

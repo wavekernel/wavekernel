@@ -41,6 +41,8 @@ module M_xml_compat_chk
       endif
     endif
 !
+    call check_xml_compat_restart
+!
     if (config%calc%distributed%set) then
       call check_xml_compat_dst
     else
@@ -51,6 +53,56 @@ module M_xml_compat_chk
 !
   end subroutine check_xml_compat
 !
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  subroutine check_xml_compat_restart
+!
+    implicit none
+    integer i_v, lu
+    integer ierr
+!
+    i_v = config%option%verbose
+    lu  = config%calc%distributed%log_unit
+!
+    if (config%output%restart%append_mode /= "") then
+      if (lu > 0) write(lu,'(a)') 'WARNING-XML: A legacy attribute of append_mode was found in restart tag'
+      if (lu > 0) write(lu,'(a)') 'WARNING-XML: Please use the attribute of mode="append", in stead'
+    endif
+!
+    if (config%output%restart%append_mode == "on") then
+      config%output%restart%mode = "append"
+      config%output%restart%append_mode = "on"
+    endif
+!
+    select case(config%output%restart%mode)
+      case ("not_set", "default")
+        config%output%restart%mode = "overwrite"
+        config%output%restart%append_mode = "off"
+      case ("overwrite")
+      case ("append")
+          config%output%restart%append_mode = "on"
+      case ("sequential")
+        if (config%output%restart%append_mode == "on") then
+          write(*,*)'ERROR:(check_xml_compat)incompatible settings in restart tag'
+          write(*,*)'    mode        = ', trim(config%output%restart%mode)
+          write(*,*)'    append_mode = ', trim(config%output%restart%append_mode)
+          stop
+        endif
+      case default
+        write(*,*)'ERROR:(check_xml_compat)unknown mode in restart tag'
+        write(*,*)'    mode = ', trim(config%output%restart%mode)
+        if (lu > 0) write(lu,*)'ERROR:(check_xml_compat)unknown mode in restart tag'
+        if (lu > 0) write(lu,*)'    mode = ', trim(config%output%restart%mode)
+        stop
+    end select
+!
+    if (i_v >= 1) then
+      if (lu > 0) write(lu,*) 'INFO:restart%mode        =', trim(config%output%restart%mode)
+      if (lu > 0) write(lu,*) 'INFO:restart%append_mode =', trim(config%output%restart%append_mode)
+    endif
+!
+  end subroutine check_xml_compat_restart
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccc
