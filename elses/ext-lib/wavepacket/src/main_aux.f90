@@ -213,6 +213,9 @@ contains
            '] set_aux_matrices() start '
     end if
 
+    call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
+    call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
+
     if (to_use_precomputed_eigenpairs) then
       if (size(eigenvalues, 1) /= state%dim) then
         call terminate('wrong size of eigenvalues', 1)
