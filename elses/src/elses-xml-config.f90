@@ -2112,7 +2112,8 @@ contains
         else if ( trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_suppress" .or. &
              trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_matrix_suppress" .or. &
              trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_matrix_suppress_orthogonal" .or. &
-             trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_matrix_suppress_adaptive" ) then
+             trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_matrix_suppress_adaptive" .or. &
+             trim(calc%wave_packet%re_initialize_method) == "minimize_lcao_error_matrix_suppress_select" ) then
           work_node3 => getFirstElementByTagName(work_node2,"suppress_const")
           if( associated(work_node3) ) then
             value = getChildValue(work_node3)

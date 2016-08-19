@@ -201,6 +201,8 @@ contains
           setting%suppress_constant = config%calc%wave_packet%suppress_constant
         else if (trim(setting%re_initialize_method) == "minimize_lcao_error_matrix_suppress_adaptive") then
           setting%suppress_constant = config%calc%wave_packet%suppress_constant
+        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_matrix_suppress_select") then
+          setting%suppress_constant = config%calc%wave_packet%suppress_constant
         end if
     end if
     ! Settings that automatically determined when called from ELSES.

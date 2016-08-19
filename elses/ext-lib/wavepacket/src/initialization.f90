@@ -561,6 +561,176 @@ contains
 
 
 
+  subroutine reconcile_from_alpha_matrix_suppress_select(num_filter, t, suppress_constant, &
+       is_first_in_multiple_initials, &
+       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    logical, intent(in) :: is_first_in_multiple_initials
+    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+    complex(kind(0d0)), intent(in) :: dv_alpha(:)
+    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, max_index_in_col, max_index_in_row
+    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
+    real(8), allocatable, save :: YSY_filtered_select(:, :), YSY_filtered_orthogonal(:, :)
+    integer, allocatable, save :: col_to_max_index_in_col(:), row_to_max_index_in_row(:)
+    integer :: tmp_max_index(2), ierr
+    real(8) :: col_vector_local(num_filter, 1), row_vector_local(1, num_filter), suppress_factor, norm
+
+    integer, save :: count = 0
+    character(len=100) :: filename
+    character(len=6) :: count_str
+    character(len=12) :: time_str
+    character(len=12) :: suppress_str
+    integer, parameter :: iunit_YSY = 20
+    real(8) :: energy_diff, energy_diff_prev, energy_diff_diff, work(1000)
+    ! Function.
+    integer :: blacs_pnum
+    real(8) :: dznrm2
+
+    if (check_master()) then
+      write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] reconcile_from_alpha_matrix_suppress_select() : start for time ', t, ' au, ', &
+           t * kPsecPerAu, ' ps'
+    end if
+
+    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+
+    if (is_first_in_multiple_initials) then
+      print *, 'ZZZZZZZX'
+      if (allocated(YSY_filtered_select)) then
+        deallocate(YSY_filtered_select)
+      end if
+      if (allocated(YSY_filtered_orthogonal)) then
+        deallocate(YSY_filtered_orthogonal)
+      end if
+      allocate(YSY_filtered_select(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+      allocate(YSY_filtered_orthogonal(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+      YSY_filtered_select(:, :) = YSY_filtered(:, :)
+      YSY_filtered_orthogonal(:, :) = 0d0
+
+      if (allocated(col_to_max_index_in_col)) then
+        deallocate(col_to_max_index_in_col)
+      end if
+      if (allocated(row_to_max_index_in_row)) then
+        deallocate(row_to_max_index_in_row)
+      end if
+      allocate(col_to_max_index_in_col(num_filter), row_to_max_index_in_row(num_filter))
+
+      do j = 1, num_filter
+        call gather_matrix_real_part(YSY_filtered, YSY_filtered_desc, 1, j, num_filter, 1, &
+             0, 0, col_vector_local)
+        if (myrow == 0 .and. mycol == 0) then
+          tmp_max_index = maxloc(abs(col_vector_local))
+          col_to_max_index_in_col(j) = tmp_max_index(1)
+        end if
+      end do
+      do i = 1, num_filter
+        call gather_matrix_real_part(YSY_filtered, YSY_filtered_desc, i, 1, 1, num_filter, &
+             0, 0, row_vector_local)
+        if (myrow == 0 .and. mycol == 0) then
+          tmp_max_index = maxloc(abs(row_vector_local))
+          row_to_max_index_in_row(i) = tmp_max_index(2)
+        end if
+      end do
+      call mpi_bcast(col_to_max_index_in_col, num_filter, mpi_integer, 0, mpi_comm_world, ierr)
+      call mpi_bcast(row_to_max_index_in_row, num_filter, mpi_integer, 0, mpi_comm_world, ierr)
+      print *, 'ZZZZZZcol_to_max_index_in_col ', col_to_max_index_in_col
+      print *, 'ZZZZZZrow_to_max_index_in_row ', row_to_max_index_in_row
+
+      do j = 1, num_filter
+        do i = 1, num_filter
+          max_index_in_col = col_to_max_index_in_col(j)
+          max_index_in_row = row_to_max_index_in_row(i)
+          if (i /= max_index_in_col .or. j /= max_index_in_row) then
+            call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+            if (myrow == rsrc .and. mycol == csrc) then
+              energy_diff = dv_eigenvalues(i) - dv_eigenvalues(max_index_in_col)
+              energy_diff_prev = dv_eigenvalues_prev(max_index_in_row) - dv_eigenvalues_prev(j)
+              energy_diff_diff = abs(energy_diff - energy_diff_prev)
+              !if (abs(i - max_index_in_col) > 3) then
+              !  suppress_factor = 0d0
+              !else
+              if (i == max_index_in_col) then
+                suppress_factor = 1d0 / abs(YSY_filtered_select(i_local, j_local))
+              else
+                if (energy_diff_diff < 1d-16 .or. suppress_constant / energy_diff_diff > 37d0) then
+                  suppress_factor = 0d0
+                else
+                  suppress_factor = exp(- suppress_constant / energy_diff_diff)
+                end if
+              end if
+              YSY_filtered_select(i_local, j_local) = YSY_filtered_select(i_local, j_local) * suppress_factor
+            end if
+          end if
+        end do
+        !call pdnrm2(num_filter, norm, YSY_filtered_select, 1, j, YSY_filtered_desc, 1)
+        !call infog2l(1, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        !call mpi_bcast(norm, 1, mpi_double_precision, blacs_pnum(YSY_filtered_desc(context_), rsrc, csrc), &
+        !     mpi_comm_world, ierr)
+        !print *, 'ZZZZZZZZYSY_filtered_select_norm', j, norm
+        !if (norm >= 1d-16) then
+        !  call pdscal(num_filter, 1d0 / norm, YSY_filtered_select, 1, j, YSY_filtered_desc, 1)
+        !end if
+      end do
+    end if
+
+    !write(count_str, '(I6.6)') count
+    !if (mod(count, 6) == 0) then
+    !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
+    !  write(suppress_str, '(F0.5)') suppress_constant
+    !  filename = 'YSY' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
+    !  if (check_master()) then
+    !    open(iunit_YSY, file=trim(filename))
+    !  end if
+    !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+    !  if (check_master()) then
+    !    close(iunit_YSY)
+    !  end if
+    !  filename = 'YSYselect' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
+    !  if (check_master()) then
+    !    open(iunit_YSY, file=trim(filename))
+    !  end if
+    !  call pdlaprnt(num_filter, num_filter, YSY_filtered_select, 1, 1, YSY_filtered_desc, 0, 0, 'YSYs', iunit_YSY, work)
+    !  if (check_master()) then
+    !    close(iunit_YSY)
+    !  end if
+    !end if
+    !count = count + 1
+    !!stop
+
+    dv_evcoef_reconcile(:) = kZero
+    !call matvec_nearest_orthonormal_matrix(YSY_filtered_select, YSY_filtered_desc, &
+    !     dv_evcoef, dv_evcoef_reconcile, YSY_filtered_orthogonal)
+    call matvec_dd_z('No', YSY_filtered_select, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
+
+    print *, 'ZZZZTT', row_to_max_index_in_row
+    do i = 1, num_filter
+      j = row_to_max_index_in_row(i)
+      if (abs(dv_alpha(j)) > 1d-16) then
+        dv_alpha_reconcile(i) = abs(dv_alpha_reconcile(i))! * (dv_alpha(j) / abs(dv_alpha(j)))
+      end if
+    end do
+
+    if (check_master()) then
+      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm before normalization ', &
+           dznrm2(num_filter, dv_alpha_reconcile, 1)
+    end if
+    if (dznrm2(num_filter, dv_alpha_reconcile, 1) < 1d-16) then
+      if (check_master()) then
+        write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+             '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm missing'
+      end if
+      dv_alpha_reconcile(:) = dv_alpha(:)
+    end if
+
+    call normalize_vector(num_filter, dv_alpha_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+  end subroutine reconcile_from_alpha_matrix_suppress_select
+
 
   subroutine set_initial_value(setting, proc, dim, structure, group_id, &
        H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
@@ -950,6 +1120,11 @@ contains
            is_first_in_multiple_initials, &
            dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
            dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
+      call reconcile_from_alpha_matrix_suppress_select(setting%num_filter, t, setting%suppress_constant, &
+           is_first_in_multiple_initials, &
+           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+           dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_alpha_error') then
       dv_alpha_reconcile(:) = dv_alpha(:)
       call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)

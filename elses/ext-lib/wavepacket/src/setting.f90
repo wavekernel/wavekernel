@@ -624,6 +624,7 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select' .or. &
          trim(setting%re_initialize_method) == 'minimize_alpha_error')) then
       stop 'unknown state re-initialization method'
     end if
@@ -715,6 +716,8 @@ contains
       print *, 'matrix_suppress_constant: ', setting%suppress_constant
     else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_adaptive') then
       print *, 'adaptive_matrix_suppress_constant: ', setting%suppress_constant
+    else if (setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_select') then
+      print *, 'select_matrix_suppress_constant: ', setting%suppress_constant
     end if
     print *, 'output_filename: ', trim(setting%output_filename)
     if (setting%is_atom_indices_enabled) then
