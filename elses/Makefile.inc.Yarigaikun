@@ -29,7 +29,7 @@ OBJS-XML = $(SRCDIR)/elses-xml-config.o $(SRCDIR)/elses-config.o\
  $(SRCDIR)/elses-xml-sax-handler.o $(SRCDIR)/elses-xml-sax-parser.o
 
 # Dummy setting for LIBS-EXT
-LIBS-EXT = -L$(TOPDIR)/ext-lib -lwavepacket -lEigenTest
+LIBS-EXT = -L$(TOPDIR)/ext-lib -lwavepacket -leigenkernel
 
 # For gfortran with Eigen Engine
 FC = mpif90
