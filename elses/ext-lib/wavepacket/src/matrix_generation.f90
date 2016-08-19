@@ -14,7 +14,7 @@ module wp_matrix_generation_m
   implicit none
 
   private
-  public :: make_H1, make_A
+  public :: make_H1, make_A, aux_make_H1_harmonic_for_nn_exciton
 
 contains
 
@@ -372,6 +372,51 @@ contains
   end subroutine make_H1_harmonic
 
 
+  subroutine aux_make_H1_harmonic_for_nn_exciton(dv_atom_perturb, temperature, to_refresh, &
+       t, t_last_refresh, num_sites, H1_lcao_diag)
+    integer, intent(in) :: num_sites
+    real(8), intent(in) :: t, temperature
+    real(8), intent(inout) :: dv_atom_perturb(:), t_last_refresh
+    real(8), intent(out) :: H1_lcao_diag(:)
+    logical, intent(in) :: to_refresh
+
+    integer :: site, e_or_h, ierr
+    integer :: seed = 10  ! Static variable.
+    real(8) :: energy, random_val(num_sites * 2), val
+
+    H1_lcao_diag(:) = 0d0
+
+    if (to_refresh) then
+      t_last_refresh = t
+      if (check_master()) then
+        do site = 1, num_sites
+          do e_or_h = 1, 2
+            call wp_random_number(seed, val)  ! 0 <= phase < 1
+            random_val((site - 1) * 2 + e_or_h) = val
+          end do
+        end do
+      end if
+      call mpi_bcast(random_val, num_sites * 2, mpi_double_precision, &
+           g_wp_master_pnum, mpi_comm_world, ierr)
+
+      do site = 1, num_sites
+        do e_or_h = 1, 2
+          energy = temperature * (sin(random_val((site - 1) * 2 + e_or_h) * 2d0 * kPi) ** 2d0 - 0.5)
+          dv_atom_perturb((site - 1) * 2 + e_or_h) = energy
+        end do
+      end do
+    end if
+
+    do site = 1, num_sites
+      H1_lcao_diag((site - 1) * 3 + 1) = dv_atom_perturb((site - 1) * 2 + 1) + dv_atom_perturb((site - 1) * 2 + 2)
+      if (site < num_sites) then
+        H1_lcao_diag((site - 1) * 3 + 2) = dv_atom_perturb((site - 1) * 2 + 1) + dv_atom_perturb(site * 2 + 2)
+        H1_lcao_diag((site - 1) * 3 + 3) = dv_atom_perturb(site * 2 + 1) + dv_atom_perturb((site - 1) * 2 + 2)
+      end if
+    end do
+  end subroutine aux_make_H1_harmonic_for_nn_exciton
+
+
   subroutine make_H1_harmonic_for_nn_exciton(proc, structure, Y, Y_desc, &
        is_group_filter_mode, filter_group_indices, Y_local, &
        is_init, is_restart_mode, &
@@ -389,49 +434,18 @@ contains
     real(8), intent(inout) :: dv_atom_perturb(:)
     real(8), intent(out) :: H1_alpha(:, :)
 
-    integer :: dim, site, e_or_h, nprow, npcol, myprow, mypcol, prow_own, pcol_own, i, j, ierr
-    integer :: seed = 10  ! Static variable.
-    real(8) :: phase, energy, wtime_start, wtime_end, random_val(structure%num_atoms), val
+    real(8) :: wtime_start, wtime_end
     real(8) :: H1_lcao_diag(Y_desc(rows_))
     logical :: to_refresh
-    integer :: indxg2p, indxg2l
     real(8), save :: t_last_refresh = -1d100
 
     wtime_start = mpi_wtime()
-    call blacs_gridinfo(proc%context, nprow, npcol, myprow, mypcol)
     ! Temporary implementation. Perturbation term is not inherited in restart_mode now.
     to_refresh = (is_init .and. .not. is_restart_mode) .or. &
          (t - t_last_refresh >= perturb_interval)
 
-    dim = Y_desc(rows_)
-    H1_lcao_diag(:) = 0d0
-
-    if (to_refresh) then
-      t_last_refresh = t
-      if (check_master()) then
-        do site = 1, structure%num_atoms / 3
-          do e_or_h = 1, 2
-            call wp_random_number(seed, val)  ! 0 <= phase < 1
-            random_val((site - 1) * 2 + e_or_h) = val
-          end do
-        end do
-      end if
-      call mpi_bcast(random_val, structure%num_atoms / 3 * 2, mpi_double_precision, &
-           g_wp_master_pnum, mpi_comm_world, ierr)
-
-      do site = 1, structure%num_atoms / 3
-        do e_or_h = 1, 2
-          energy = temperature * (sin(random_val((site - 1) * 2 + e_or_h) * 2d0 * kPi) ** 2d0 - 0.5)
-          dv_atom_perturb((site - 1) * 2 + e_or_h) = energy
-        end do
-      end do
-    end if
-
-    do site = 1, structure%num_atoms / 3
-      H1_lcao_diag((site - 1) * 3 + 1) = dv_atom_perturb((site - 1) * 2 + 1) + dv_atom_perturb((site - 1) * 2 + 2)
-      H1_lcao_diag((site - 1) * 3 + 2) = dv_atom_perturb((site - 1) * 2 + 1) + dv_atom_perturb(site * 2 + 2)
-      H1_lcao_diag((site - 1) * 3 + 3) = dv_atom_perturb(site * 2 + 1) + dv_atom_perturb((site - 1) * 2 + 2)
-    end do
+    call aux_make_H1_harmonic_for_nn_exciton(dv_atom_perturb, temperature, to_refresh, &
+         t, t_last_refresh, structure%num_atoms / 3, H1_lcao_diag)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_harmonic_for_nn_exciton:set_diag', wtime_end - wtime_start)

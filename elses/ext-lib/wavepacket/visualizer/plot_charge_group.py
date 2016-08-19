@@ -75,6 +75,11 @@ def plot_charge_group(charge_group, to_plot_msd_contribution, time_start, time_e
                 pylab.text(group_start, text_ys[0], "time [ps]: " + str(charge["t"] * kPsecPerAu))#, fontsize=24)
                 pylab.text(group_start, text_ys[1], "MSD [$\AA^2$]: " + str(charge["m"] * kAngstrom2PerAu2))#, fontsize=24)
                 pylab.text(group_start, text_ys[2], "IPRatio: " + str(charge["i"]))#, fontsize=24)
+                if 'd' in charge:
+                    pylab.twinx()
+                    pylab.ylabel('diag(H)')
+                    pylab.bar(range(group_start, group_end + 1),
+                              charge['d'][group_start - 1 : group_end], align="center", log=is_log_mode, color='red', alpha=0.3)
                 str_j = str(j)
                 pylab.savefig(os.path.join(out_dir,
                                            "0" * (6 - len(str_j)) + str_j + ".png"))

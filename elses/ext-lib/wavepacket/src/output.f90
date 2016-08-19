@@ -505,7 +505,7 @@ contains
 
   subroutine add_state_json(dim, num_filter, structure, i, t, input_step, &
        energies, dv_alpha, dv_psi, dv_charges_on_basis, dv_charges_on_atoms, charge_moment, &
-       h1_type, dv_atom_speed, dv_atom_perturb, is_after_matrix_replace, &
+       h1_type, dv_atom_speed, dv_atom_perturb, is_after_matrix_replace, H_sparse, &
        states)
     integer, intent(in) :: dim, num_filter, i, input_step
     type(wp_structure_t), intent(in) :: structure
@@ -517,6 +517,7 @@ contains
     real(8), intent(in) :: dv_atom_speed(dim), dv_atom_perturb(dim)
     character(len=*), intent(in) :: h1_type
     logical, intent(in) :: is_after_matrix_replace
+    type(sparse_mat), intent(in) :: H_sparse
 
     type(fson_value), pointer, intent(inout) :: states
 
@@ -524,6 +525,7 @@ contains
     real(8) :: norm_alpha, wtime_start, wtime_end
     external :: dznrm2
     double precision :: dznrm2
+    real(8) :: diag(dim)
 
     wtime_start = mpi_wtime()
 
@@ -612,6 +614,17 @@ contains
       allocate(state_elem)
       call fson_set_as_real_array(structure%num_atoms, dv_atom_perturb(1:structure%num_atoms), state_elem)
       call fson_set_name('atom_perturb', state_elem)
+      call fson_value_add(state, state_elem)
+    else if (trim(h1_type) == 'harmonic_for_nn_exciton') then
+      allocate(state_elem)
+      call fson_set_as_real_array(structure%num_atoms / 3 * 2, &
+           dv_atom_perturb(1 : structure%num_atoms / 3 * 2), state_elem)
+      call fson_set_name('atom_perturb', state_elem)
+      call fson_value_add(state, state_elem)
+      call sparse_matrix_to_diag(H_sparse, diag)
+      allocate(state_elem)
+      call fson_set_as_real_array(dim, diag, state_elem)
+      call fson_set_name('H_diag', state_elem)
       call fson_value_add(state, state_elem)
     end if
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import argparse, json, sys, re, os, datetime, struct
+import argparse, json, sys, re, os, datetime, struct, copy
 kAuPerAngstrom = 1.8897259885789
 kSizeOfReal = 8
 
@@ -99,7 +99,7 @@ def write_xyz(elements, xyz_coordinates, fp):
             s = '%s %.6f %.6f %.6f\n' % (e, x * ANGSTROM_PER_AU, y * ANGSTROM_PER_AU, z * ANGSTROM_PER_AU)
             fp.write(s)
 
-def add_step(state, extracted_types, split_dir, is_little_endian,
+def add_step(setting, state, extracted_types, split_dir, is_little_endian,
              num_filter, xyz, group_info, ts, tb_energy, nl_energy, total_energy,
              means, msds, ipratios, tb_energy_deviations,
              psi_pratios, alpha_pratios,
@@ -133,12 +133,28 @@ def add_step(state, extracted_types, split_dir, is_little_endian,
         msd_contributions_on_groups_max["val"] = max(msd_contributions_on_groups_max["val"], max(msd_contributions_on_groups))
         if abs(msd[3] - sum(msd_contributions_on_groups)) / msd[3] > 1e-4:
             print "msd error 2: ", msd[3], sum(msd_contributions_on_groups)
-        charges_on_groups_all.append({"n": state["step_num"],
-                                      "t": state["time"],
-                                      "ch": charges_on_groups,
-                                      "co": msd_contributions_on_groups,
-                                      "m": msd[3],
-                                      "i": state["psi"]["ipratio"]})
+        if setting["h1_type"] == "harmonic_for_nn_exciton":
+            diag = copy.deepcopy(state["H_diag"])
+            num_sites = len(diag) / 3
+            for site in range(num_sites):
+                diag[site * 3] += state["atom_perturb"][site * 2] + state["atom_perturb"][site * 2 + 1]
+                if site < num_sites - 1:
+                    diag[site * 3 + 1] += state["atom_perturb"][site * 2] + state["atom_perturb"][(site + 1) * 2 + 1]
+                    diag[site * 3 + 2] += state["atom_perturb"][(site + 1) * 2] + state["atom_perturb"][site * 2 + 1]
+            charges_on_groups_all.append({"n": state["step_num"],
+                                          "t": state["time"],
+                                          "ch": charges_on_groups,
+                                          "co": msd_contributions_on_groups,
+                                          "m": msd[3],
+                                          "i": state["psi"]["ipratio"],
+                                          "d": diag})
+        else:
+            charges_on_groups_all.append({"n": state["step_num"],
+                                          "t": state["time"],
+                                          "ch": charges_on_groups,
+                                          "co": msd_contributions_on_groups,
+                                          "m": msd[3],
+                                          "i": state["psi"]["ipratio"]})
     # Alpha
     if "alpha" in extracted_types:
         alpha_real = get_real_array(split_dir, is_little_endian, state["alpha"]["real"])
@@ -156,6 +172,7 @@ def add_step(state, extracted_types, split_dir, is_little_endian,
         alpha_pratios.append(1.0 / state["alpha"]["ipratio"])
 
 def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little_endian, start_time):
+    setting = wavepacket_out["setting"]
     cond = wavepacket_out["condition"]
     # Common.
     dim = cond["dim"]
@@ -211,7 +228,7 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
                     if state["input_step"] > last_input_step:
                         xyz_coordinates.append(xyz)
                         last_input_step += 1
-                    add_step(state, extracted_types, split_dir, is_little_endian,
+                    add_step(setting, state, extracted_types, split_dir, is_little_endian,
                              num_filter, xyz, group_info,
                              ts, tb_energy, nl_energy, total_energy,
                              means, msds, ipratios, tb_energy_deviations,
@@ -225,7 +242,7 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
                 if state["input_step"] > last_input_step:
                     xyz_coordinates.append(xyz)
                     last_input_step += 1
-                add_step(state, extracted_types, '', is_little_endian,
+                add_step(setting, state, extracted_types, '', is_little_endian,
                          num_filter, xyz, group_info,
                          ts, tb_energy, nl_energy, total_energy,
                          means, msds, ipratios, psi_pratios, alpha_pratios,
@@ -241,7 +258,7 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
                                "msd_contributions_on_groups_max": msd_contributions_on_groups_max["val"]}
         filename_charge_group = header + "_charge_group.json"
         with open(filename_charge_group, "w") as fp:
-            json.dump(result_charge_group, fp)
+            json.dump(result_charge_group, fp, indent=2)
 
     if "energy" in extracted_types:
         result_energy = {"min_eigenvalue": min(eigenvalues),

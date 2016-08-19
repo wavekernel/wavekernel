@@ -396,12 +396,26 @@ contains
     real(8), allocatable :: H(:, :), S(:, :), Y_sub(:, :), Y_filtered_last(:, :), SY(:, :), YSY(:, :)
     real(8), allocatable ::  eigenvalues_sub(:)
 
+    ! For harmonic_for_nn_exciton.
+    real(8) :: dv_atom_perturb(structure%num_atoms / 3 * 2), t_last_refresh, H1_lcao_diag(dim)
+
     wtime = mpi_wtime()
 
     call setup_distributed_matrix_real('H', proc, dim, dim, H_desc, H, .true.)
     call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
     call distribute_global_sparse_matrix_wp(H_sparse, H_desc, H)
     call distribute_global_sparse_matrix_wp(S_sparse, S_desc, S)
+
+    if (trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
+      ! Add perturbation term for Hamiltonian to get non-degenerated eigenstates.
+      ! Now refreshing atom perturbation is forced. It may cause problem when multiple input mode.
+      call aux_make_H1_harmonic_for_nn_exciton(dv_atom_perturb, setting%temperature, .true., &
+           0d0, t_last_refresh, structure%num_atoms / 3, H1_lcao_diag)
+      do i = 1, dim
+        call pdelget('Self', ' ', elem, H, i, i, H_desc)
+        call pdelset(H, i, i, H_desc, elem + H1_lcao_diag(i))
+      end do
+    end if
 
     if (setting%to_use_precomputed_eigenpairs .or. setting%filter_mode == 'all') then  ! Temporary condition.
       allocate(Y_filtered_last(size(Y_filtered, 1), size(Y_filtered, 2)), &
@@ -981,7 +995,7 @@ contains
              state%energies(j), state%dv_alpha(:, j), state%dv_psi(:, j), &
              state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), state%charge_moment(j), &
              setting%h1_type, state%dv_atom_speed, state%dv_atom_perturb, &
-             is_after_matrix_replace, state%fsons(j)%states)
+             is_after_matrix_replace, state%H_sparse, state%fsons(j)%states)
       end do
       state%total_state_count = state%total_state_count + 1
       if (setting%is_output_split) then

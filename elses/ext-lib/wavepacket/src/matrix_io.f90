@@ -13,7 +13,7 @@ module wp_matrix_io_m
 
   private
   public :: get_dimension, read_matrix_file, set_sparse_matrix_identity, print_matrix, sparse_mat, &
-       destroy_sparse_mat, copy_sparse_matrix
+       destroy_sparse_mat, copy_sparse_matrix, sparse_matrix_to_diag
 
 contains
 
@@ -273,4 +273,19 @@ contains
     matrix_out%value(:) = matrix_in%value(:)
     matrix_out%suffix(:, :) = matrix_in%suffix(:, :)
   end subroutine copy_sparse_matrix
+
+
+  subroutine sparse_matrix_to_diag(A, diag)
+    type(sparse_mat), intent(in) :: A
+    real(8), intent(out) :: diag(A%size)
+
+    integer :: i, j
+
+    do i = 1, A%num_non_zeros
+      j = A%suffix(1, i)
+      if (j == A%suffix(2, i)) then
+        diag(j) = A%value(i)
+      end if
+    end do
+  end subroutine sparse_matrix_to_diag
 end module wp_matrix_io_m
