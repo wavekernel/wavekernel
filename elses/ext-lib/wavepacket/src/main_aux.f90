@@ -854,14 +854,64 @@ contains
     !type(wp_local_matrix_t), intent(in) :: Y_local(:)
     !complex(kind(0d0)) :: dv_alpha(:), dv_alpha_next(:)
 
-    integer :: j
-    real(8) :: wtime
+    integer :: j, i
+    real(8) :: wtime, norm
+    real(8), allocatable :: Sw(:, :)
+    complex(kind(0d0)), allocatable :: SP1(:, :), SP2(:, :), psi(:, :), SP1psi(:, :)
+    integer, allocatable :: SP2IPIV(:)
+    complex(kind(0d0)), allocatable :: Spsi(:)
+    integer :: psi_desc(desc_size), desc(desc_size), ierr
+    complex(kind(0d0)) :: dot
+    complex(kind(0d0)) :: zdotc
+    real(8) :: dznrm2
 
     wtime = mpi_wtime()
 
     if (trim(setting%h1_type) == 'zero' .and. trim(setting%filter_mode) /= 'group') then  ! Skip time evolution calculation.
       state%dv_alpha_next(:, :) = state%dv_alpha(:, :)
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
+    else if (trim(setting%h1_type) == 'zero_sparse' .and. trim(setting%filter_mode) /= 'group') then
+      call make_matrices_for_sparse(proc, setting%delta_t, setting%multistep_input_read_interval, &
+           state%t, state%t_last_replace, &
+           state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
+           SP1, SP2, SP2IPIV, Sw, desc)
+      allocate(Spsi(state%dim))
+      do j = 1, setting%num_multiple_initials
+        call matvec_dd_z('No', Sw, desc, kOne, state%dv_psi(:, j), kZero, Spsi)
+        dot = zdotc(state%dim, state%dv_psi(:, j), 1, Spsi, 1)
+        norm = sqrt(truncate_imag(dot))
+        !print *, 'ZZZZZZnormBefore', j, norm
+      end do
+      call setup_distributed_matrix_complex('psi', proc, state%dim, setting%num_multiple_initials, &
+           psi_desc, psi)
+      call setup_distributed_matrix_complex('SP1psi', proc, state%dim, setting%num_multiple_initials, &
+           psi_desc, SP1psi)
+      call distribute_matrix_complex(proc%context, 0, 0, state%dim, state%dv_psi, psi_desc, psi)
+      !print *, 'ZZZZZZZZZZZZA1', psi(1:20,1)
+
+      call pzgemm('No', 'No', state%dim, setting%num_multiple_initials, state%dim, kOne, &
+           SP1, 1, 1, desc, &
+           psi, 1, 1, psi_desc, &
+           kZero, &
+           SP1psi, 1, 1, psi_desc)
+      !print *, 'ZZZZZZZZZZZZA', SP1psi(1:20,1)
+      call pzgetrs('No', state%dim, setting%num_multiple_initials, SP2, 1, 1, desc, SP2IPIV, &
+           SP1psi, 1, 1, psi_desc, ierr)
+      !print *, 'ZZZZZZZZZZZZB', SP1psi(1:20,1)
+      call gather_matrix_complex_with_pzgemr2d(proc%context, psi_desc, SP1psi, &
+           0, 0, state%dim, state%dv_psi_next)
+
+      do j = 1, setting%num_multiple_initials
+        call matvec_dd_z('No', Sw, desc, kOne, state%dv_psi_next(:, j), kZero, Spsi)
+        dot = zdotc(state%dim, state%dv_psi_next(:, j), 1, Spsi, 1)
+        norm = sqrt(truncate_imag(dot))
+        !print *, 'ZZZZZZnorm', j, norm
+        if (norm > 1d-16) then
+          state%dv_psi_next(:, j) = state%dv_psi_next(:, j) / norm
+        end if
+      end do
+      call mpi_bcast(state%dv_psi_next, state%dim * setting%num_multiple_initials, mpi_double_complex, &
+           g_wp_master_pnum, mpi_comm_world, ierr)
     else
       ! dv_charge_on_atoms must not be referenced when setting%num_multiple_initials > 1.
       call make_H1(proc, trim(setting%h1_type), state%structure, &
@@ -893,6 +943,52 @@ contains
   end subroutine make_matrix_step_forward
 
 
+  subroutine make_matrices_for_sparse(proc, delta_t, multistep_input_read_interval, t, t_last_replace, &
+       H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
+       SP1, SP2, SP2IPIV, Sw, desc)
+    type(wp_process_t) :: proc
+    real(8) :: delta_t, t, multistep_input_read_interval, t_last_replace, t_next, weight
+    type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
+    complex(kind(0d0)), allocatable :: SP1(:, :), SP2(:, :)
+    integer, allocatable :: SP2IPIV(:), SpIPIV(:)
+    real(8), allocatable :: H0(:, :), H1(:, :), S0(:, :), S1(:, :), Sw(:, :)
+    complex(kind(0d0)), allocatable :: Hp(:, :), Sp(:, :)
+    integer :: desc(desc_size), ierr, dim, m, n
+
+    dim = H_sparse%size
+    if (multistep_input_read_interval > 0d0) then
+      weight = (t - t_last_replace) / multistep_input_read_interval
+    else
+      weight = 0d0
+    end if
+    !print *, 'ZZZZZZZZZZZZZzweight', weight
+    call setup_distributed_matrix_real('H0', proc, dim, dim, desc, H0, .true.)
+    call setup_distributed_matrix_real('H1', proc, dim, dim, desc, H1, .true.)
+    call setup_distributed_matrix_real('S0', proc, dim, dim, desc, S0, .true.)
+    call setup_distributed_matrix_real('S1', proc, dim, dim, desc, S1, .true.)
+    call distribute_global_sparse_matrix_wp(H_sparse_prev, desc, H0)
+    call distribute_global_sparse_matrix_wp(H_sparse, desc, H1)
+    call distribute_global_sparse_matrix_wp(S_sparse_prev, desc, S0)
+    call distribute_global_sparse_matrix_wp(S_sparse, desc, S1)
+    m = size(H0, 1)
+    n = size(H0, 2)
+    allocate(Hp(m, n), Sp(m, n), SP1(m, n), SP2(m, n), Sw(m, n), &
+         SpIPIV(dim), SP2IPIV(dim))
+    Hp(:, :) = dcmplx(weight * H1(:, :) + (1d0 - weight) * H0(:, :), 0d0)
+    Sw(:, :) = weight * S1(:, :) + (1d0 - weight) * S0(:, :)
+    Sp(:, :) = dcmplx(Sw, 0d0)
+
+    call pzgetrf(dim, dim, Sp, 1, 1, desc, SpIPIV, ierr)
+    call pzgetrs('No', dim, dim, Sp, 1, 1, desc, SpIPIV, Hp, 1, 1, desc, ierr)
+    SP1(:, :) = -kImagUnit * delta_t * 0.5d0 * Hp(:, :)
+    call add_diag(desc, SP1, kOne)
+
+    SP2(:, :) = kImagUnit * delta_t * 0.5d0 * Hp(:, :)
+    call add_diag(desc, SP2, kOne)
+    call pzgetrf(dim, dim, SP2, 1, 1, desc, SP2IPIV, ierr)
+  end subroutine make_matrices_for_sparse
+
+
   subroutine step_forward_post_process(setting, proc, state)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
@@ -918,9 +1014,15 @@ contains
     num_filter = state%Y_filtered_desc(cols_)
 
     do j = 1, setting%num_multiple_initials
-      call alpha_to_lcao_coef(state%Y_filtered, state%Y_filtered_desc, state%dv_eigenvalues, &
-           state%t, state%dv_alpha_next(:, j), state%dv_psi(:, j))
-      call add_timer_event('step_forward_post_process', 'alpha_to_lcao_coef', wtime)
+      if (trim(setting%h1_type) == 'zero_sparse' .and. trim(setting%filter_mode) /= 'group') then
+        call lcao_coef_to_alpha(state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
+             state%dv_eigenvalues, state%t, state%dv_psi_next(:, j), state%dv_alpha_next(:, j))
+        state%dv_psi(:, j) = state%dv_psi_next(:, j)
+      else
+        call alpha_to_lcao_coef(state%Y_filtered, state%Y_filtered_desc, &
+             state%dv_eigenvalues, state%t, state%dv_alpha_next(:, j), state%dv_psi(:, j))
+        call add_timer_event('step_forward_post_process', 'alpha_to_lcao_coef', wtime)
+      end if
 
       call get_mulliken_charges_on_basis(state%dim, state%S_sparse, state%dv_psi(:, j), state%dv_charge_on_basis(:, j))
       call add_timer_event('step_forward_post_process', 'get_mulliken_charges_on_basis', wtime)

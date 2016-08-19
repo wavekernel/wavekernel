@@ -215,7 +215,8 @@ contains
           is_init_type_specified = .true.
         case ('h')
           call getarg(index_arg + 1, setting%h1_type)
-          if (trim(setting%h1_type) == 'diag' .or. trim(setting%h1_type) == 'zero') then
+          if (trim(setting%h1_type) == 'diag' .or. trim(setting%h1_type) == 'zero' .or. &
+               trim(setting%h1_type) == 'zero_sparse') then
             index_arg = index_arg + 1
           else if (trim(setting%h1_type) == 'charge' .or. trim(setting%h1_type) == 'charge_overlap') then
             call getarg(index_arg + 2, argv)
@@ -631,6 +632,7 @@ contains
 
     if (setting%num_multiple_initials > 1 .and. .not. &
          (trim(setting%h1_type) == 'zero' .or. &
+         trim(setting%h1_type) == 'zero_sparse' .or. &
          trim(setting%h1_type) == 'maxwell' .or. &
          trim(setting%h1_type) == 'harmonic' .or. &
          trim(setting%h1_type) == 'harmonic_for_nn_exciton')) then
