@@ -210,7 +210,7 @@ contains
 
     if (check_master()) then
       write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-           '] set_eigenpairs() start '
+           '] set_aux_matrices() start '
     end if
 
     if (to_use_precomputed_eigenpairs) then
