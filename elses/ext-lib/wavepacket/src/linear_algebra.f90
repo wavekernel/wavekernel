@@ -271,7 +271,7 @@ contains
     real(8), intent(out) :: Y(:, :)
 
     integer :: lwork_pdsyngst, lwork, lrwork, liwork, info, trilwmin
-    integer :: nb, np, nq
+    integer :: nb, npg, npe, nqe
     integer :: H2_desc(desc_size), L_desc(desc_size)
     integer, allocatable :: iwork(:)
     real(8) :: scale
@@ -290,14 +290,16 @@ contains
     call pdgemr2d(dim, dim, S, origin, origin, S_desc, L, 1, 1, L_desc, S_desc(context_))
 
     ! Workspace for pdsyngst
-    nb = H2_desc(block_row_)
-    np = numroc(dim, nb, 0, 0, proc%n_procs_row)
-    lwork_pdsyngst = 3 * np * nb + nb * nb
+    nb = H_desc(block_col_)
+    npg = numroc(dim, nb, 0, 0, proc%n_procs_row)
+    lwork_pdsyngst = 3 * npg * nb + nb * nb
     ! Workspace for pdsyevd
-    np = numroc(dim, nb, proc%my_proc_row, 0, proc%n_procs_row)
-    nq = numroc(dim, nb, proc%my_proc_col, 0, proc%n_procs_col)
-    trilwmin = 2 * dim + max(nb * (np + 1), 3 * nb)
-    lwork = max(1 + 6 * dim + 2 * np * nq, trilwmin) + 2 * dim
+    npe = numroc(dim, nb, proc%my_proc_row, 0, proc%n_procs_row)
+    nqe = numroc(dim, nb, proc%my_proc_col, 0, proc%n_procs_col)
+    trilwmin = 3 * dim + max(nb * (npe + 1), 3 * nb)
+    lwork = max(1 + 6 * dim + 2 * npe * nqe, trilwmin) + 2 * dim
+    ! Temporary implementation. Under some unknown condition, pdormtr in pdsyevd fails due to small lwork.
+    lwork = (lwork + 1000) * 2
     liwork = 7 * dim + 8 * proc%n_procs_col + 2
     allocate(work_pdsyngst(lwork_pdsyngst), work(lwork), iwork(liwork), stat=info)
     if (info /= 0) then
