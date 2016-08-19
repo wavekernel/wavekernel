@@ -76,6 +76,7 @@ def plot(energy_calc, time_start, time_end, energy_min, energy_max, title, fig_p
     pylab.plot(ts, line_max_eigenvalue, label='max energy')
 
     pylab.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
+    pylab.grid(True)
     pylab.subplots_adjust(right=0.65)
     #pylab.legend(loc='upper right')
     pylab.title(title)

@@ -17,6 +17,8 @@ def plot(pratio_extract, time_start, time_end, title, fig_path):
     pylab.xlabel('Time [ps]')
     pylab.ylabel('Pratio')
 
+    pylab.grid(True)
+
     mark_size = 7
     #pylab.plot(ts, pratio_extract['psi_pratios'], '+', label='psi', ms=mark_size)
     pylab.plot(ts, pratio_extract['alpha_pratios'], '+', label='alpha', ms=mark_size)

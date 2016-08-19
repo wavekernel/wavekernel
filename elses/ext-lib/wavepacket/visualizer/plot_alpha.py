@@ -52,6 +52,7 @@ def plot(alpha_calc, weight_max, time_start, time_end,
         pylab.xlabel("Time [ps]")
     pylab.ylabel("Weight")
     pylab.title(title)
+    pylab.grid(True)
 
     plotted_indices = set()
     for alpha in alphas:

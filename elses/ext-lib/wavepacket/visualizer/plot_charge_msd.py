@@ -93,6 +93,7 @@ def plot_charge_moment(charge_moment,
         pylab.plot(ts_new[0:n:n-1], ys_hat[0:n:n-1], 'x-', color='green', markersize=10)
 
     pylab.ylabel('MSD ' + msd_axis + ' [$\AA^2$]', color='blue')
+    pylab.grid(True)
     pylab.plot(ts, msds, '+', markeredgecolor='blue', label='MSD ' + msd_axis,
                markerfacecolor='none')
 
