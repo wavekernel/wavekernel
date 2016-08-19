@@ -229,7 +229,8 @@ contains
     else
       call set_eigenpairs(state%dim, setting, proc, state%filter_group_id, state%structure, &
            state%H_sparse, state%S_sparse, state%Y_desc, state%Y, &
-           state%dv_eigenvalues, state%Y_filtered_desc, state%Y_filtered, state%filter_group_indices)
+           state%dv_eigenvalues, state%Y_filtered_desc, state%Y_filtered, state%filter_group_indices, &
+           state%H1_lcao_sparse_charge_overlap)
     end if
     call add_timer_event('set_aux_matrices', 'set_eigenpairs', wtime)
 
@@ -309,7 +310,8 @@ contains
          state%dv_eigenvalues, &
          state%charge_moment, state%energies, state%errors, state%eigenstate_ipratios, &
          state%eigenstate_mean, state%eigenstate_msd, &
-         to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
+         to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, &
+         state%H1_lcao_sparse_charge_overlap)
     call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
     if (check_master()) then
       do j = 1, setting%num_multiple_initials
@@ -375,13 +377,14 @@ contains
 
 
   subroutine set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, Y_desc, Y, &
-       dv_eigenvalues_filtered, Y_filtered_desc, Y_filtered, filter_group_indices)
+       dv_eigenvalues_filtered, Y_filtered_desc, Y_filtered, filter_group_indices, &
+       H1_lcao_sparse_charge_overlap)
     integer, intent(in) :: dim
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
     integer, intent(in) :: filter_group_id(:, :)
     type(wp_structure_t), intent(in) :: structure
-    type(sparse_mat), intent(in) :: H_sparse, S_sparse
+    type(sparse_mat), intent(in) :: H_sparse, S_sparse, H1_lcao_sparse_charge_overlap
     integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size)
     integer, allocatable, intent(out) :: filter_group_indices(:, :)
     real(8), intent(out) :: dv_eigenvalues_filtered(:)
@@ -390,11 +393,11 @@ contains
     integer :: i, j, num_groups, atom_min, atom_max, index_min, index_max, dim_sub, Y_sub_desc(desc_size)
     integer :: homo_level, filter_lowest_level, base_index_of_group, sum_dim_sub
     integer :: H_desc(desc_size), S_desc(desc_size)
-    real(8) ::  Y(:, :), elem
+    real(8) :: Y(:, :), elem
     real(8) :: dv_eigenvalues(dim), wtime
     integer :: YSY_desc(desc_size)
     real(8), allocatable :: H(:, :), S(:, :), Y_sub(:, :), Y_filtered_last(:, :), SY(:, :), YSY(:, :)
-    real(8), allocatable ::  eigenvalues_sub(:)
+    real(8), allocatable :: H1_lcao_charge_overlap(:, :)
 
     ! For harmonic_for_nn_exciton.
     real(8) :: dv_atom_perturb(structure%num_atoms / 3 * 2), t_last_refresh, H1_lcao_diag(dim)
@@ -415,6 +418,15 @@ contains
         call pdelget('Self', ' ', elem, H, i, i, H_desc)
         call pdelset(H, i, i, H_desc, elem + H1_lcao_diag(i))
       end do
+    else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
+      if (check_master()) then
+        write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+             '] set_eigenpairs() : add charge overlap type Hamiltonian perturbation of previous step'
+      end if
+      call setup_distributed_matrix_real('H1_lcao_charge_overlap', proc, dim, dim, &
+           H_desc, H1_lcao_charge_overlap, .true.)
+      call distribute_global_sparse_matrix_wp(H1_lcao_sparse_charge_overlap, H_desc, H1_lcao_charge_overlap)
+      H(:, :) = H(:, :) + H1_lcao_charge_overlap(:, :)  ! distributed sum.
     end if
 
     if (setting%to_use_precomputed_eigenpairs .or. setting%filter_mode == 'all') then  ! Temporary condition.
@@ -532,6 +544,9 @@ contains
     end if
 
     deallocate(H, S)
+    if (allocated(H1_lcao_charge_overlap)) then
+      deallocate(H1_lcao_charge_overlap)
+    end if
   end subroutine set_eigenpairs
 
 
@@ -665,7 +680,8 @@ contains
        dv_charge_on_basis, dv_charge_on_atoms, dv_atom_perturb, &
        dv_eigenvalues, charge_moment, energies, errors, eigenstate_ipratios, &
        eigenstate_mean, eigenstate_msd, &
-       to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
+       to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, &
+       H1_lcao_sparse_charge_overlap)
     integer, intent(in) :: dim, group_id(:, :), filter_group_id(:, :)
     type(wp_process_t), intent(in) :: proc
     type(wp_setting_t), intent(in) :: setting
@@ -673,7 +689,7 @@ contains
     type(wp_structure_t), intent(in) :: structure
     type(wp_charge_factor_t), intent(in) :: charge_factor
     integer, allocatable, intent(inout) :: filter_group_indices(:, :)
-    type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
+    type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, H1_lcao_sparse_charge_overlap
     integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
     integer, intent(in) :: H1_desc(desc_size), desc_eigenvectors(desc_size)
     ! value of last step is needed for offdiag norm calculation.
@@ -735,7 +751,8 @@ contains
            desc_eigenvectors(context_))
     else
       call set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, Y_desc, Y, &
-           dv_eigenvalues, Y_filtered_desc, Y_filtered, filter_group_indices)
+           dv_eigenvalues, Y_filtered_desc, Y_filtered, filter_group_indices, &
+           H1_lcao_sparse_charge_overlap)
     end if
     call add_timer_event('read_next_input_step_with_basis_replace', 'set_eigenpairs', wtime)
 
@@ -846,7 +863,7 @@ contains
            state%S_sparse, state%Y_filtered, state%Y_filtered_desc, .false., setting%is_restart_mode, &
            trim(setting%filter_mode) == 'group', state%filter_group_indices, state%Y_local, &
            state%t, setting%temperature, setting%delta_t, setting%perturb_interval, &
-           state%dv_charge_on_atoms(:, 1), state%charge_factor, &
+           state%dv_charge_on_basis(:, 1), state%dv_charge_on_atoms(:, 1), state%charge_factor, &
            state%dv_atom_perturb, &
            state%H1, state%H1_desc)
       call add_timer_event('make_matrix_step_forward', 'make_matrix_H1_not_multistep', wtime)
@@ -871,8 +888,9 @@ contains
   end subroutine make_matrix_step_forward
 
 
-  subroutine step_forward_post_process(setting, state)
+  subroutine step_forward_post_process(setting, proc, state)
     type(wp_setting_t), intent(in) :: setting
+    type(wp_process_t), intent(in) :: proc
     type(wp_state_t), intent(inout) :: state
     ! The commented out parameters below are in 'state'.
     !integer, intent(in) :: dim
@@ -910,22 +928,13 @@ contains
            state%charge_moment(j))
       call add_timer_event('step_forward_post_process', 'get_mulliken_charge_coordinate_moments', wtime)
 
-      call get_A_sparse_inner_product(state%dim, state%H_sparse, state%dv_psi(:, j), state%dv_psi(:, j), energy_tmp)
-      state%energies(j)%tightbinding = truncate_imag(energy_tmp)
-      call alpha_to_eigenvector_coef(num_filter, state%dv_eigenvalues, state%t, state%dv_alpha_next(:, j), dv_evcoef)
-
-      if (trim(setting%h1_type) == 'charge_overlap') then
-        call get_charge_overlap_energy(state%structure, state%charge_factor, &
-             state%dv_charge_on_atoms(:, j), state%energies(j)%nonlinear)
-      else
-        call get_A_inner_product(num_filter, state%H1, state%H1_desc, dv_evcoef, dv_evcoef, energy_tmp)
-        state%energies(j)%nonlinear = truncate_imag(energy_tmp)
-        if (trim(setting%h1_type) == 'charge') then
-          state%energies(j)%nonlinear = state%energies(j)%nonlinear / 2d0
-        end if
-      end if
-      state%energies(j)%total = state%energies(j)%tightbinding + state%energies(j)%nonlinear
-      call add_timer_event('step_forward_post_process', 'compute_energy', wtime)
+      call compute_energies(setting, proc, state%structure, &
+           state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
+           state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), state%charge_factor, &
+           state%filter_group_indices, state%Y_local, state%dv_eigenvalues, &
+           state%dv_psi(:, j), state%dv_alpha(:, j), &
+           state%dv_atom_perturb, &
+           state%H1_base, state%H1, state%H1_desc, state%energies(j))
 
       state%dv_alpha(:, j) = state%dv_alpha_next(:, j)
       call add_timer_event('step_forward_post_process', 'move_alpha_between_time_steps', wtime)

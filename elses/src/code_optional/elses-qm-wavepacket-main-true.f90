@@ -375,7 +375,7 @@ contains
       call make_matrix_step_forward(setting, proc, state)
       call add_timer_event('main', 'make_matrix_step_forward', state%wtime)
 
-      call step_forward_post_process(setting, state)
+      call step_forward_post_process(setting, proc, state)
       call add_timer_event('main', 'step_forward_post_process', state%wtime)
 
       state%i = state%i + 1

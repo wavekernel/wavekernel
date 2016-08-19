@@ -14,7 +14,7 @@ module wp_matrix_generation_m
   implicit none
 
   private
-  public :: make_H1, make_A, aux_make_H1_harmonic_for_nn_exciton
+  public :: make_H1, make_A, aux_make_H1_charge_with_overlap, aux_make_H1_harmonic_for_nn_exciton
 
 contains
 
@@ -111,55 +111,78 @@ contains
   end subroutine make_H1_charge_on_atoms
 
 
-  subroutine make_H1_charge_with_overlap(proc, structure, S_sparse, Y, Y_desc, &
-       is_group_filter_mode, filter_group_indices, Y_local, &
-       charge_on_atoms, charge_factor, &
-       H1_alpha, H1_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
+  subroutine aux_make_H1_charge_with_overlap(structure, S_sparse, &
+       charge_on_basis, charge_on_atoms, charge_factor, H1_lcao_sparse)
     type(wp_structure_t), intent(in) :: structure
-    integer, intent(in) :: filter_group_indices(:, :)
     type(sparse_mat), intent(in) :: S_sparse
-    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
-    real(8), intent(in) :: Y(:, :), charge_on_atoms(structure%num_atoms)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
-    logical, intent(in) :: is_group_filter_mode
+    real(8), intent(in) :: charge_on_basis(:), charge_on_atoms(structure%num_atoms)
     type(wp_charge_factor_t), intent(in) :: charge_factor
-    real(8), intent(out) :: H1_alpha(:, :)
+    type(sparse_mat), intent(inout) :: H1_lcao_sparse
 
-    integer :: i, j, k, dim, num_filter, atom_i, atom_j, i1, i2, j1, j2
-    integer :: nprow, npcol, myrow, mycol, i_local, j_local, pi, pj, ierr
+    integer :: i, j, k, atom_i, atom_j, ierr
     real(8) :: overlap_factor, overlap_factor_i, overlap_factor_j, wtime_start, wtime_end
-    type(sparse_mat) :: H1_lcao_sparse
     integer :: S_desc(desc_size)
 
-    wtime_start = mpi_wtime()
-
-    dim = Y_desc(rows_)
-    num_filter = Y_desc(cols_)
-
+    if (allocated(H1_lcao_sparse%value)) then
+      deallocate(H1_lcao_sparse%value)
+    end if
+    if (allocated(H1_lcao_sparse%suffix)) then
+      deallocate(H1_lcao_sparse%suffix)
+    end if
     H1_lcao_sparse%size = S_sparse%size
     H1_lcao_sparse%num_non_zeros = S_sparse%num_non_zeros
     allocate(H1_lcao_sparse%value(S_sparse%num_non_zeros), H1_lcao_sparse%suffix(2, S_sparse%num_non_zeros))
     H1_lcao_sparse%value(:) = S_sparse%value(:)
     H1_lcao_sparse%suffix(:, :) = S_sparse%suffix(:, :)
 
-    wtime_end = mpi_wtime()
-    call add_event('make_H1_charge_with_overlap:copy_overlap', wtime_end - wtime_start)
-    wtime_start = wtime_end
+    !wtime_end = mpi_wtime()
+    !call add_event('make_H1_charge_with_overlap:copy_overlap', wtime_end - wtime_start)
+    !wtime_start = wtime_end
 
-    call blacs_pcoord(Y_desc(context_), g_wp_master_pnum, pi, pj)
-
-    call blacs_gridinfo(S_desc(context_), nprow, npcol, myrow, mycol)
     do k = 1, H1_lcao_sparse%num_non_zeros
       i = H1_lcao_sparse%suffix(1, k)
       j = H1_lcao_sparse%suffix(2, k)
       call lcao_index_to_atom_index(structure, i, atom_i)
       call lcao_index_to_atom_index(structure, j, atom_j)
-      overlap_factor_i = - 0.5d0 * charge_on_atoms(atom_i) * get_charge_factor(atom_i, structure, charge_factor)
-      overlap_factor_j = - 0.5d0 * charge_on_atoms(atom_j) * get_charge_factor(atom_j, structure, charge_factor)
+      ! For diagonal terms (i == j), sum two -0.5d0 -> -1d0
+      if (.false.) then
+        overlap_factor_i = - 0.5d0 * charge_on_basis(i) * get_charge_factor(atom_i, structure, charge_factor)
+        overlap_factor_j = - 0.5d0 * charge_on_basis(j) * get_charge_factor(atom_j, structure, charge_factor)
+      else
+        overlap_factor_i = - 0.5d0 * charge_on_atoms(atom_i) * get_charge_factor(atom_i, structure, charge_factor)
+        overlap_factor_j = - 0.5d0 * charge_on_atoms(atom_j) * get_charge_factor(atom_j, structure, charge_factor)
+      end if
       overlap_factor = overlap_factor_i + overlap_factor_j
       H1_lcao_sparse%value(k) = overlap_factor * H1_lcao_sparse%value(k)
     end do
+  end subroutine aux_make_H1_charge_with_overlap
+
+
+  subroutine make_H1_charge_with_overlap(proc, structure, S_sparse, Y, Y_desc, &
+       is_group_filter_mode, filter_group_indices, Y_local, &
+       charge_on_basis, charge_on_atoms, charge_factor, &
+       H1_alpha, H1_alpha_desc)
+    type(wp_process_t), intent(in) :: proc
+    type(wp_structure_t), intent(in) :: structure
+    integer, intent(in) :: filter_group_indices(:, :)
+    type(sparse_mat), intent(in) :: S_sparse
+    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
+    real(8), intent(in) :: Y(:, :), charge_on_basis(:), charge_on_atoms(structure%num_atoms)
+    type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    logical, intent(in) :: is_group_filter_mode
+    type(wp_charge_factor_t), intent(in) :: charge_factor
+    real(8), intent(out) :: H1_alpha(:, :)
+
+    integer :: i, j, k, dim, num_filter, atom_i, atom_j, i1, i2, j1, j2
+    integer :: nprow, npcol, myrow, mycol, i_local, j_local, ierr
+    real(8) :: overlap_factor, overlap_factor_i, overlap_factor_j, wtime_start, wtime_end
+    type(sparse_mat) :: H1_lcao_sparse
+
+    wtime_start = mpi_wtime()
+    num_filter = Y_desc(cols_)
+
+    call aux_make_H1_charge_with_overlap(structure, S_sparse, &
+         charge_on_basis, charge_on_atoms, charge_factor, H1_lcao_sparse)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_charge_with_overlap:multiply_overlap_by_charge', wtime_end - wtime_start)
@@ -467,7 +490,7 @@ contains
        S_sparse, Y, Y_desc, is_init, is_restart_mode, &
        is_group_filter_mode, filter_group_indices, Y_local, &
        t, temperature, delta_time, perturb_interval, &
-       charge_on_atoms, charge_factor, &
+       charge_on_basis, charge_on_atoms, charge_factor, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
     type(wp_process_t), intent(in) :: proc
@@ -481,7 +504,7 @@ contains
     integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
     type(wp_charge_factor_t), intent(in) :: charge_factor
-    real(8), intent(in) :: charge_on_atoms(structure%num_atoms)
+    real(8), intent(in) :: charge_on_basis(:), charge_on_atoms(structure%num_atoms)
     logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
     real(8), intent(inout) :: dv_atom_perturb(:)
     real(8), intent(out) :: H1_alpha(:, :)
@@ -499,7 +522,7 @@ contains
     else if (trim(h1_type) == 'charge_overlap') then
       call make_H1_charge_with_overlap(proc, structure, S_sparse, Y, Y_desc, &
            is_group_filter_mode, filter_group_indices, Y_local, &
-           charge_on_atoms, charge_factor, &
+           charge_on_basis, charge_on_atoms, charge_factor, &
            H1_alpha, H1_alpha_desc)
     !else if (trim(h1_type) == 'maxwell') then
     !  call make_H1_maxwell(proc, structure, Y, Y_desc, &

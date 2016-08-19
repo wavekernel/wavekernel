@@ -13,7 +13,7 @@ module wp_state_m
   end type wp_fson_values_for_state_t
 
   type wp_state_t
-    type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
+    type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, H1_lcao_sparse_charge_overlap
     type(wp_structure_t) :: structure
     type(wp_energy_t), allocatable :: energies(:)
     type(wp_error_t), allocatable :: errors(:)

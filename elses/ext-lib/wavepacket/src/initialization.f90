@@ -16,7 +16,7 @@ module wp_initialization_m
   implicit none
 
   private
-  public :: initialize, re_initialize_state, clear_offdiag_blocks
+  public :: initialize, re_initialize_state, clear_offdiag_blocks, reconcile_from_lcao_coef, compute_energies
 
 contains
 
@@ -972,7 +972,8 @@ contains
 
 
   subroutine compute_energies(setting, proc, structure, &
-       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_charge_on_atoms, charge_factor, &
+       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
+       dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
        filter_group_indices, Y_local, eigenvalues, dv_psi, dv_alpha, &
        dv_atom_perturb, &
        H1_base, H1, H1_desc, energies)
@@ -983,7 +984,7 @@ contains
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
     integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size)
     type(wp_charge_factor_t), intent(in) :: charge_factor
-    real(8), intent(in) :: dv_charge_on_atoms(structure%num_atoms), eigenvalues(:)
+    real(8), intent(in) :: dv_charge_on_basis(:), dv_charge_on_atoms(structure%num_atoms), eigenvalues(:)
     real(8), intent(in) :: Y_filtered(:, :), H1_base(:, :)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     type(wp_local_matrix_t), intent(in) :: Y_local(:)
@@ -993,6 +994,7 @@ contains
 
     integer :: dim, num_filter
     complex(kind(0d0)) :: energy_tmp, dv_h_psi(Y_filtered_desc(rows_)), dv_evcoef(Y_filtered_desc(cols_))
+    type(sparse_mat) :: H1_lcao_sparse_charge_overlap
     ! Functions.
     complex(kind(0d0)) :: zdotc
 
@@ -1007,7 +1009,7 @@ contains
          setting%is_restart_mode, &
          trim(setting%filter_mode) == 'group', filter_group_indices, Y_local, &
          0d0, setting%temperature, setting%delta_t, setting%perturb_interval, &
-         dv_charge_on_atoms, charge_factor, &
+         dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
          dv_atom_perturb, &
          H1, H1_desc)
     if (trim(setting%filter_mode) == 'group') then
@@ -1085,7 +1087,7 @@ contains
     do i = 1, setting%num_multiple_initials
       call compute_energies(setting, proc, state%structure, &
            state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
-           state%dv_charge_on_atoms(:, i), state%charge_factor, &
+           state%dv_charge_on_basis(:, i), state%dv_charge_on_atoms(:, i), state%charge_factor, &
            state%filter_group_indices, state%Y_local, state%dv_eigenvalues, &
            state%dv_psi(:, i), state%dv_alpha(:, i), &
            state%dv_atom_perturb, &
@@ -1187,7 +1189,8 @@ contains
     end if
 
     call compute_energies(setting, proc, structure, &
-       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_charge_on_atoms, charge_factor, &
+       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
+       dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
        filter_group_indices, Y_local, dv_eigenvalues, dv_psi_reconcile, dv_alpha_reconcile, &
        dv_atom_perturb, &
        H1_base, H1, H1_desc, energies)

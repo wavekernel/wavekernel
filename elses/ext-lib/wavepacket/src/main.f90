@@ -129,7 +129,7 @@ program main
 
     call make_matrix_step_forward(setting, proc, state)
 
-    call step_forward_post_process(setting, state)
+    call step_forward_post_process(setting, proc, state)
 
     state%i = state%i + 1
     state%t = setting%delta_t * state%i
