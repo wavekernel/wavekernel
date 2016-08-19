@@ -55,11 +55,6 @@ program main
   call initialize(setting, proc, state)
   call add_timer_event('main', 'initialize', state%wtime)
 
-  call prepare_json(setting, proc, state)
-  ! add_structure_json() must be called after both of coordinates reading and prepare_json().
-  call add_structure_json(0d0, 1, &
-       setting%to_calculate_eigenstate_moment_every_step, state)
-  call add_timer_event('main', 'prepare_json', state%wtime)
   if (check_master()) then
     write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
          '] main loop start'
@@ -80,6 +75,12 @@ program main
     state%input_step = 1  ! Valid only in multiple step input mode.
   end if
   state%print_count = 1
+
+  call prepare_json(setting, proc, state)
+  ! add_structure_json() must be called after both of coordinates reading and prepare_json().
+  call add_structure_json(setting, state)
+  call add_timer_event('main', 'prepare_json', state%wtime)
+
   do
     if (check_master()) then
       if (state%t > (setting%limit_t - setting%restart_t) / 10d0 * dble(state%print_count) .or. &
@@ -119,8 +120,7 @@ program main
            .false., dummy_eigenvalues, dummy_desc_eigenvectors, dummy_eigenvectors, state)
       call post_process_after_matrix_replace(setting, state)
 
-      call add_structure_json(state%t, state%input_step, &
-           setting%to_calculate_eigenstate_moment_every_step, state)
+      call add_structure_json(setting, state)
 
       ! re-save state after matrix replacement.
       call save_state(setting, .true., state)

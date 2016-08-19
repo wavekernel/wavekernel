@@ -1145,8 +1145,7 @@ contains
           call fson_set_name('structures', state%structures)
           state%structures%value_type = TYPE_ARRAY
           ! Write the last atomic structure to make the split file independent from others.
-          call add_structure_json(t_backup, input_step_backup, &
-               setting%to_calculate_eigenstate_moment_every_step, state)
+          call add_structure_json(setting, state)
         end if
       end if
     end if

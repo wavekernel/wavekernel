@@ -191,19 +191,8 @@ contains
     ! Copy re-initializatin method setting.
     if (trim(config%calc%wave_packet%re_initialize_method) /= '') then
       setting%re_initialize_method = config%calc%wave_packet%re_initialize_method
-        if (trim(setting%re_initialize_method) == "minimize_lcao_error_cutoff") then
-          setting%vector_cutoff_residual = config%calc%wave_packet%vector_cutoff_residual
-        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_suppress") then
-          setting%suppress_constant = config%calc%wave_packet%suppress_constant
-        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_matrix_suppress") then
-          setting%suppress_constant = config%calc%wave_packet%suppress_constant
-        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_matrix_suppress_orthogonal") then
-          setting%suppress_constant = config%calc%wave_packet%suppress_constant
-        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_matrix_suppress_adaptive") then
-          setting%suppress_constant = config%calc%wave_packet%suppress_constant
-        else if (trim(setting%re_initialize_method) == "minimize_lcao_error_matrix_suppress_select") then
-          setting%suppress_constant = config%calc%wave_packet%suppress_constant
-        end if
+      setting%vector_cutoff_residual = config%calc%wave_packet%vector_cutoff_residual
+      setting%suppress_constant = config%calc%wave_packet%suppress_constant
     end if
     ! Settings that automatically determined when called from ELSES.
     setting%is_atom_indices_enabled = .true.
@@ -261,8 +250,7 @@ contains
 
     call prepare_json(setting, proc, state)
     ! add_structure_json() must be called after both of coordinates reading and prepare_json().
-    call add_structure_json(0d0, 1, &
-         setting%to_calculate_eigenstate_moment_every_step, state)
+    call add_structure_json(setting, state)
     call add_timer_event('main', 'prepare_json', state%wtime)
 
     if (check_master()) then
@@ -320,11 +308,10 @@ contains
 
     call post_process_after_matrix_replace(setting, state)
 
-    call add_structure_json(state%t, state%input_step, &
-         setting%to_calculate_eigenstate_moment_every_step, state)
+    call add_structure_json(setting, state)
 
     ! re-save state after matrix replacement.
-      call save_state(setting, .true., state)
+    call save_state(setting, .true., state)
     call add_timer_event('main', 'save_state', state%wtime)
   end subroutine wavepacket_replace_matrix
 

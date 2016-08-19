@@ -680,10 +680,8 @@ contains
   end subroutine add_state_json
 
 
-  subroutine add_structure_json(t, input_step, to_calculate_eigenstate_moment_every_step, state)
-    real(8), intent(in) :: t
-    integer, intent(in) :: input_step
-    logical, intent(in) :: to_calculate_eigenstate_moment_every_step
+  subroutine add_structure_json(setting, state)
+    type(wp_setting_t), intent(in) :: setting
     type(wp_state_t), intent(inout) :: state
 
     integer :: i, coord, num_filter
@@ -699,13 +697,13 @@ contains
     ! Save time.
     structure_item => fson_value_create()
     structure_item%value_type = TYPE_REAL
-    structure_item%value_real = t
+    structure_item%value_real = state%t
     call fson_set_name('time', structure_item)
     call fson_value_add(structure_fson, structure_item)
     ! Save input_step.
     structure_item => fson_value_create()
     structure_item%value_type = TYPE_INTEGER
-    structure_item%value_integer = input_step
+    structure_item%value_integer = state%input_step
     call fson_set_name('input_step', structure_item)
     call fson_value_add(structure_fson, structure_item)
     ! Save coordinates.
@@ -727,7 +725,7 @@ contains
     call fson_set_as_real_array(num_filter, state%dv_eigenvalues, structure_item)
     call fson_set_name('eigenvalues', structure_item)
     call fson_value_add(structure_fson, structure_item)
-    if (to_calculate_eigenstate_moment_every_step) then
+    if (setting%to_calculate_eigenstate_moment_every_step) then
       ! Set mean coordinates of eigenstates.
       structure_item => fson_value_create()
       call fson_set_as_real_array(num_filter, state%eigenstate_mean(1, 1 : num_filter), structure_item)
