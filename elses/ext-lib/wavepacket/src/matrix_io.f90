@@ -13,7 +13,7 @@ module wp_matrix_io_m
 
   private
   public :: get_dimension, read_matrix_file, set_sparse_matrix_identity, print_matrix, sparse_mat, &
-       destroy_sparse_mat, copy_sparse_matrix, sparse_matrix_to_diag
+       destroy_sparse_mat, copy_sparse_matrix, sparse_matrix_to_diag, print_sparse_matrix
 
 contains
 
@@ -288,4 +288,20 @@ contains
       end if
     end do
   end subroutine sparse_matrix_to_diag
+
+
+  subroutine print_sparse_matrix(name, matrix, iunit)
+    character(len=*), intent(in) :: name
+    type(sparse_mat), intent(in) :: matrix
+    integer, intent(in) :: iunit
+
+    integer :: i
+
+    write(iunit, '(A)') '%%MatrixMarket matrix coordinate real symmetric'
+    write(iunit, '(A)') '%'
+    write(iunit, *) matrix%size, matrix%size, matrix%num_non_zeros
+    do i = 1, matrix%num_non_zeros
+      write(iunit, *) matrix%suffix(1, i), matrix%suffix(2, i), matrix%value(i)
+    end do
+  end subroutine print_sparse_matrix
 end module wp_matrix_io_m
