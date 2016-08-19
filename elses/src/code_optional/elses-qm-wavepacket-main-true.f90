@@ -248,11 +248,6 @@ contains
     call initialize(setting, proc, state)
     call add_timer_event('main', 'initialize', state%wtime)
 
-    call prepare_json(setting, proc, state)
-    ! add_structure_json() must be called after both of coordinates reading and prepare_json().
-    call add_structure_json(setting, state)
-    call add_timer_event('main', 'prepare_json', state%wtime)
-
     if (check_master()) then
       write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
            '] main loop start'
@@ -273,6 +268,11 @@ contains
       state%input_step = 1  ! Valid only in multiple step input mode.
     end if
     state%print_count = 1
+
+    call prepare_json(setting, proc, state)
+    ! add_structure_json() must be called after both of coordinates reading and prepare_json().
+    call add_structure_json(setting, state)
+    call add_timer_event('main', 'prepare_json', state%wtime)
   end subroutine wavepacket_init
 
 
