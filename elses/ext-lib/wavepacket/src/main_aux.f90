@@ -204,6 +204,10 @@ contains
 
     wtime = mpi_wtime()
 
+    if (.not. allocated(state%group_id)) then
+      call make_dummy_group_id(state%structure%num_atoms, state%group_id)
+    end if    
+
     if (setting%is_reduction_mode) then
       call terminate('set_aux_matrices: reduction mode is not implemented in this version', 1)
     end if
