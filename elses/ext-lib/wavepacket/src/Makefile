@@ -1,3 +1,4 @@
+-include ../../../Makefile.inc
 include ../Makefile.in
 
 .PHONY: all bin lib clean dep
@@ -14,13 +15,13 @@ bin: $(BIN)
 lib: $(LIB)
 
 $(BIN): main.f90 lib
-	$(FC) $(FCFLAG) -o $@ $< $(LIB) $(LIBS)
+	$(FC) $(FFLAGS) -o $@ $< $(LIB) $(LIBS)
 
 $(OBJS_LIB_F77): %.o: %.f
-	$(FC) -c $(FCFLAG_NO_WARN) $< -o $@
+	$(FC) -c $(FFLAGS_NO_WARN) $< -o $@
 
 $(OBJS_LIB): %.o: %.f90
-	$(FC) -c $(FCFLAG) $< -o $@
+	$(FC) -c $(FFLAGS) $< -o $@
 
 $(LIB): $(OBJS_LIB) $(OBJS_LIB_F77)
 	mkdir -p `dirname $(BIN)`
