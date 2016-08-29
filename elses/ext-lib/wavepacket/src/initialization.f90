@@ -733,7 +733,7 @@ contains
 
 
   subroutine set_initial_value(setting, proc, dim, structure, group_id, &
-       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
+       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_eigenvalues, &
        dv_psi, dv_alpha, errors)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
@@ -741,7 +741,7 @@ contains
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
     type(wp_structure_t), intent(in) :: structure
     integer, intent(in) :: Y_filtered_desc(desc_size)
-    real(8), intent(in) :: Y_filtered(:, :)
+    real(8), intent(in) :: Y_filtered(:, :), dv_eigenvalues(:)
     complex(kind(0d0)), intent(out) :: dv_psi(:, :), dv_alpha(:, :)
     type(wp_error_t), intent(out) :: errors(:)
 
@@ -813,7 +813,7 @@ contains
         call normalize_vector(setting%num_filter, dv_alpha(:, i))
         ! フィルターした後の状態の重ね合わせで \psi を決めているのでこの時点では
         ! \psi に対するエラーは存在しない.
-        call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, 0d0, dv_alpha(:, i), dv_psi(:, i))
+        call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, 0d0, dv_alpha(:, i), dv_psi(:, i))
       end do
       if (setting%to_multiply_phase_factor) then
         call terminate('not implemented', 49)
@@ -1006,7 +1006,7 @@ contains
     end if
 
     call set_initial_value(setting, proc, state%dim, state%structure, state%group_id, &
-         state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
+         state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, state%dv_eigenvalues, &
          state%dv_psi, state%dv_alpha, state%errors)
 
     if (setting%is_restart_mode) then
