@@ -334,7 +334,7 @@ contains
     end do
 
     time_end = mpi_wtime()
-    call add_event('gather_matrix_part', time_end - time_start)
+    call add_event('gather_matrix_part', time_end - time_start, .false.)
   end subroutine gather_matrix_part  
 
 
