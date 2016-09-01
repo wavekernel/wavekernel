@@ -19,6 +19,7 @@ contains
 
     use M_config, only : config
     use elses_mod_file_io,      only : vacant_unit
+    use M_lib_dst_info,         only : root_node        !(unchanged)
 !   use M_io_ctrl_output_eigen, only : init_prep_for_plot_eigenstates
 
     implicit none
@@ -43,47 +44,50 @@ contains
       if (lu > 0) write(lu,*) '   output_wavefunction: lowest and highest levels=',level_range(1:2)
     endif   
 
-!   call init_prep_for_plot_eigenstates(imode)
+    if (root_node) then
+!     call init_prep_for_plot_eigenstates(imode)
 !
-!   if (imode == 0) then 
-!      if (i_verbose >= 1) then
-!        write(*,*)' skipped: output_eigenstates'
-!      endif   
-!      return
-!   endif   
+!     if (imode == 0) then
+!        if (i_verbose >= 1) then
+!          write(*,*)' skipped: output_eigenstates'
+!        endif
+!        return
+!     endif
 !
-    if (trim(filename) == '') then
-      write(*,*)' ERROR!:output_eigenstates: empty filename'
-      stop
-    endif   
+      if (trim(filename) == '') then
+        write(*,*)' ERROR!:output_eigenstates: empty filename'
+        stop
+      endif
 !
-    unit_num=vacant_unit()
-    open(unit_num,file=trim(filename))
+      unit_num=vacant_unit()
+      open(unit_num,file=trim(filename))
 !
-    write(unit_num,'(a)')'# file_format= v0.04.05'
+      write(unit_num,'(a)')'# file_format= v0.04.05'
 !
-    call output_number_of_atom
+      call output_number_of_atom
 
-    call output_cell_information
+      call output_cell_information
 
-    do i=1,config%system%structure%natom
+      do i=1,config%system%structure%natom
 
-       call output_atom_species(i)
+         call output_atom_species(i)
 
-       call output_atom_parameter(i)
+         call output_atom_parameter(i)
 
-       call output_atom_position(i)
+         call output_atom_position(i)
 
-    end do
-    
+      end do
+    end if
+
     if (no_wavefunction_wrk) then
        write(unit_num,'(a)') '# LCAO coefficients .. are not included.'
     else
       call output_coefficient(level_range)
     endif  
 
-    close(unit_num)    
-
+    if (root_node) then
+      close(unit_num)
+    end if
   end subroutine output_eigenstates
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -257,14 +261,18 @@ contains
 !
   subroutine output_coefficient(level_range)
 
+    use M_config, only : config !(unchanged )
     use elses_mod_orb2, only : n_tot_base
-    use elses_arr_eig_leg, only : atmp
+    use elses_arr_eig_leg, only : atmp, eigenvectors, desc_eigenvectors
+    use M_lib_dst_info, only : root_node        !(unchanged)
+    use M_eig_solver_center, only : gather_vector_in_matrix
 
     implicit none
     integer, intent(in) :: level_range(2)
     integer :: n_eigen_vectors
     integer :: i,j, ierr
     integer :: level_lowest, level_highest
+    real(8), allocatable :: eigenvector(:)
 !
 !   write(*,*) 'level_range(1) = ', level_range(1)
 !   write(*,*) 'level_range(2) = ', level_range(2)
@@ -297,19 +305,37 @@ contains
 !
     n_eigen_vectors = level_highest - level_lowest + 1
 !
-    write(unit_num,'(a)') '# LCAO coefficients'
-    write(unit_num,'(I10)') n_eigen_vectors
+    if (root_node) then
+      write(unit_num,'(a)') '# LCAO coefficients'
+      write(unit_num,'(I10)') n_eigen_vectors
+    end if
 !
-    if (allocated(atmp)  .eqv. .false.)  then
-      write(*,*) 'ERROR(output_coefficient): ATMP is not allocated'
-      stop
-    endif   
+    if (trim(config%calc%solver%scheme) == 'eigen_mpi') then
+      if (.not. allocated(eigenvectors)) then
+        write(*,*) 'ERROR(output_coefficient): eigenvectors is not allocated'
+        stop
+      end if
+    else
+      if (.not. allocated(atmp))  then
+        write(*,*) 'ERROR(output_coefficient): ATMP is not allocated'
+        stop
+      endif
+    end if
 
+    allocate(eigenvector(n_tot_base))
     do i=level_lowest, level_highest
-       do j=1, n_tot_base
-          write(unit_num,'(I10,F25.15,a,I10)') j, atmp(j,i), '   k=', i
-       end do
+      if (trim(config%calc%solver%scheme) == 'eigen_mpi') then
+        call gather_vector_in_matrix(eigenvectors, desc_eigenvectors, i, eigenvector)
+      else
+        eigenvector(1:n_tot_base) = atmp(1:n_tot_base,i)
+      end if
+      if (root_node) then  ! unit_num is opened only on the root node.
+        do j=1, n_tot_base
+          write(unit_num,'(I10,F25.15,a,I10)') j, eigenvector(j), '   k=', i
+        end do
+      end if
     end do
+    deallocate(eigenvector)
 
   end subroutine output_coefficient
 !

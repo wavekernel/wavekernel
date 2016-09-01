@@ -10,7 +10,7 @@ module M_eig_solver_center   ! DUMMY routines
   implicit none
 !
   private
-  public :: eig_solver_center, set_density_matrix_mpi, set_pratio_mpi
+  public :: eig_solver_center, set_density_matrix_mpi, set_pratio_mpi, gather_vector_in_matrix
 !
   contains
 !
@@ -84,6 +84,17 @@ module M_eig_solver_center   ! DUMMY routines
     write(*,*)'The external library called Eigen Engine may be required.'
   end subroutine set_density_matrix_mpi
 !
+  subroutine gather_vector_in_matrix(X, X_desc, j, X_local)
+    ! Gather the j-th column vector of the distributed matrix X (normally eigenvectors)
+    ! into the root node.
+    implicit none
+    integer, parameter :: X_desc_dummy = 1
+    real(8), intent(in) :: X(:, :)
+    integer, intent(in) :: X_desc(:), j
+    real(8), intent(out) :: X_local(X_desc_dummy)
+    write(*,*)'ERROR:DUMMY routine is called(gather_vector_in_matrix)'
+    write(*,*)'The external library called Eigen Engine may be required.'
+  end subroutine gather_vector_in_matrix
 !
 end module M_eig_solver_center
 

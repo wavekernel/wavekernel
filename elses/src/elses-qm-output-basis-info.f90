@@ -6,10 +6,79 @@ module M_output_basis
 !
   implicit none
 !
+  public :: output_basis_info
   public :: write_basis_info
 !
 contains
   
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! @@ write basis info into the specified file
+!
+  subroutine output_basis_info
+!
+    use M_config, only : config
+    use elses_mod_md_dat,       only : first_iteration, final_iteration
+    use elses_mod_file_io,      only : vacant_unit 
+!
+    implicit none
+    integer            :: unit_num, i_v, lu
+    character(len=100) :: filename_wrk
+    character(len=100) :: chara_wrk
+    logical            :: save_now
+!
+    i_v = config%option%verbose
+    lu  = config%calc%distributed%log_unit
+    save_now = .false.
+!
+    if (.not. config%output%basis_info%set ) return
+!
+    if (.not. config%calc%distributed%root_node) then
+      write(*,*)'ERROR:output_basis_info:Not root node'
+      stop
+    endif
+!
+    if (trim(adjustl(config%output%basis_info%mode)) == "not_set") then
+      config%output%basis_info%mode = "default"
+    endif
+
+    if (trim(adjustl(config%output%basis_info%mode)) == "default") then
+      config%output%basis_info%mode = "last"
+    endif
+!
+    filename_wrk=trim(adjustl(config%output%basis_info%filename))
+    if (filename_wrk == "") then
+      write(*,*)'ERROR:output_basis_info:file name missing'
+      stop
+    endif
+!
+    select case(trim(adjustl(config%output%basis_info%mode)))
+      case ("first", "initial")
+        if (first_iteration) save_now = .true.
+      case ("last", "final")
+        if (final_iteration) save_now = .true.      
+      case default
+        write(*,*)'ERROR(output_basis_info): unknown mode :', trim(adjustl(config%output%basis_info%mode))
+    end select
+!
+    if (.not. save_now) return
+!
+    if (i_v >= 1) then
+      if (lu > 0) write(lu,*)'@@@ output_basis_info:step_count, file=', & 
+&                              config%system%structure%mdstep, trim(filename_wrk)
+      if (lu > 0) write(lu,*)' mode =', trim(config%output%basis_info%mode)
+    endif
+!
+    unit_num=vacant_unit()
+    open(unit_num, file=filename_wrk, status='unknown')
+!
+    call write_basis_info(unit_num)
+!
+    write(unit_num,'(a)') '# LCAO coefficients .. are not included.'
+!
+    close(unit_num)
+!
+  end subroutine output_basis_info
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! @@ write basis info into the specified file
 !

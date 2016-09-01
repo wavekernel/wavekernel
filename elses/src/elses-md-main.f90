@@ -270,8 +270,8 @@ module M_md_main
       if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_level_mat   = ',time_wrk-time_wrk_previous
       time_wrk_previous=time_wrk 
 !
-      if (root_node) call output_for_eigen_solver
-!         ---> Plot the wavefunction and so on (only for the eigen solver)
+      call output_for_eigen_solver
+!         ---> Plot the wavefunction and so on
 !
       call get_elapse_wall_clock_time(time_wrk)
       if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:output_eigen_solv  = ',time_wrk-time_wrk_previous

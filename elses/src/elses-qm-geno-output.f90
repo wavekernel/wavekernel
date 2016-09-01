@@ -153,6 +153,7 @@ module M_qm_geno_output
     use M_output_eigenstates,   only : output_eigenstates
     use M_output_participation, only : calc_participation
     use M_qm_solver_eig_geno,   only : plot_spectrum_from_eigen  ! (routine)
+    use M_lib_dst_info,         only : root_node        !(unchanged)
     implicit none
     character(len=100) :: filename_wfn
     integer            :: log_unit
@@ -172,16 +173,17 @@ module M_qm_geno_output
     if (trim(filename_wfn) /= '') call output_eigenstates(filename_wfn)
 !
     if (final_iteration) then
-      if (i_verbose >= 1) then
-        if (trim(filename_wfn) /= '') call calc_participation
-      endif   
-    endif  
-!
-    if (final_iteration) then
+      !if (i_verbose >= 1) then  ! Comment out because i_verbose is not global and distributed operation fails.
+      if (trim(filename_wfn) /= '') call calc_participation
+      !endif
+    endif
+    if (root_node) then
+      if (final_iteration) then
         call plot_spectrum_from_eigen
-!        ---> plot LDOS from eigen states, 
-!             if they are defined (optional, eigen solver only)
-    endif   
+!          ---> plot LDOS from eigen states,
+!               if they are defined (optional, eigen solver only)
+      endif
+    end if
 !
   end subroutine output_for_eigen_solver
 !

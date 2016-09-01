@@ -3144,6 +3144,16 @@ contains
        call file_load( output%wfn_charge, node )
     end if
 
+    ! get <basis_info> node
+    node => getFirstElementByTagName(output_node,"basis_info")
+    output%basis_info%set = .false.
+    output%basis_info%mode = "not_set"
+    output%basis_info%filename = trim(config%option%output_dir)//"output_basis_information.txt"
+    output%basis_info%interval = -1
+    if ( associated(node) ) then
+       call file_load( output%basis_info, node )
+    end if
+
     ! get <position> node
     node => getFirstElementByTagName(output_node,"position")
     if( .not. associated(node) ) then
@@ -3258,6 +3268,10 @@ contains
     ! get filename attribute
     value=getAttribute(file_node,"filename")
     file%filename=trim(config%option%output_dir)//adjustL(value)
+
+    ! get mode attribute
+    value=getAttribute(file_node,"mode")
+    file%mode = trim(adjustL(value))
 
     ! get history attribute
     value=getAttribute(file_node,"history")

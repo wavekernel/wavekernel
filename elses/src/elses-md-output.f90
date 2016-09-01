@@ -41,6 +41,7 @@ module M_md_output
 !    use M_qm_output_levels,   only : qm_output_levels       !(routine)
      use M_lib_mpi_wrapper, only : mpi_wrapper_barrier_time  !(routine)
      use M_md_virial_pressure, only : plot_virial_pressure   !(routine)
+     use M_output_basis,       only : output_basis_info
 !
      implicit none
      integer :: i_global_mat
@@ -153,6 +154,11 @@ module M_md_output
        call mpi_wrapper_barrier_time(time_check)
        write(*,'(a,f20.10)')'TIME:mpi_check(out6)= ',time_check
        if (log_unit > 0) write(log_unit,'(a,f20.10)') 'TIME:mpi_check(out6)= ',time_check
+     endif
+!
+     if (config%calc%distributed%root_node) then
+        call output_basis_info
+!        --> output for basis information (optional)
      endif
 !
      call output_atom_charge

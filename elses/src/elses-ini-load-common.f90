@@ -313,7 +313,7 @@ module M_ini_load_common
 !       ----> alocate nval(nos)
 !
      imode=0
-     call elses_alloc_elem_name(nos,imode)
+     call elses_alloc_elem_name(nos)
 !       ----> alocate elem_name(nos)
 !
      call elses_alloc_awt(nos)

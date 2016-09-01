@@ -91,6 +91,7 @@ contains
     type(structure_type), intent(in) :: structure
     character(len=*),     intent(in) :: filename
     logical,              intent(in) :: final_write
+    logical, parameter :: total_number_of_atoms_is_added = .true.
     type(atom_type),         pointer :: atom
     integer :: fd
     integer :: ierr
@@ -102,6 +103,7 @@ contains
     character(len=64)   :: filename_header
     integer :: lenf
     character(len=64)   :: chara_wrk1, chara_wrk2, chara_wrk3, chara_wrk4, chara_wrk5
+    character(len=1024) :: chara_wrk_long
     integer             :: j_ini, j_fin, atom_id, group_id_wrk
     integer             :: j_tot_ini, j_tot_fin
     integer             :: split_index ! ( = 0, 1, 2..., number_of_split_files -1)
@@ -222,6 +224,15 @@ contains
       if ((i_verbose >= 1) .and. (log_unit > 0)) then 
         write(log_unit,*)'Write unitcell tag in file'
       endif 
+!
+      if (total_number_of_atoms_is_added) then
+         write(fd,*) ""
+         write(chara_wrk1, *) structure%natom
+         chara_wrk1=adjustl(chara_wrk1)
+         chara_wrk_long = ' <total_number_of_atoms> '//trim(chara_wrk1)//' </total_number_of_atoms>'
+         write(fd,'(a)') trim(chara_wrk_long)
+         write(fd,*) ""
+      endif
 !
       call unitcell_save( fd, structure%unitcell )
 !

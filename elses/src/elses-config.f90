@@ -475,6 +475,7 @@ module M_config
      logical             :: set
      character(len=64)   :: dirname
      character(len=64)   :: filename
+     character(len=64)   :: mode
      character(len=8)    :: history
      character(len=8)    :: format
      character(len=8)    :: method
@@ -525,6 +526,7 @@ module M_config
      type(file_type)     :: density_of_states
      type(file_type)     :: bond_list
      type(file_type)     :: velocity
+     type(file_type)     :: basis_info
      type(file_matrix_type) :: matrix_hamiltonian
      type(file_matrix_type) :: matrix_overlap
      type(file_matrix_type) :: eigen_level

@@ -11,7 +11,7 @@ module M_eig_solver_center
   !include 'mpif.h'
   !
   private
-  public :: eig_solver_center, set_density_matrix_mpi
+  public :: eig_solver_center, set_density_matrix_mpi, gather_vector_in_matrix
   !
 contains
   !
@@ -657,4 +657,17 @@ contains
     call mpi_wrapper_allreduce_r4(dpij)
     deallocate(f_eigenvectors, f_e_eigenvectors, l_matrix, p_matrix)
   end subroutine set_density_matrix_mpi
+
+  subroutine gather_vector_in_matrix(X, X_desc, j, X_local)
+    ! Gather the j-th column vector of the distributed matrix X (normally eigenvectors)
+    ! into the root node.
+    real(8), intent(in) :: X(:, :)
+    integer, intent(in) :: X_desc(desc_size), j
+    real(8), intent(out) :: X_local(X_desc(rows_))
+
+    real(8) :: X_local_buf(X_desc(rows_), 1)
+
+    call gather_matrix_part(X, X_desc, 1, j, X_desc(rows_), 1, 0, 0, X_local_buf)
+    X_local(:) = X_local_buf(:, 1)
+  end subroutine gather_vector_in_matrix
 end module M_eig_solver_center
