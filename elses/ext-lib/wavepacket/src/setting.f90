@@ -572,12 +572,6 @@ contains
     !  stop 'eigenvector filtering is out of index'
     !end if
 
-    if (setting%to_use_precomputed_eigenpairs .and. &
-         (trim(setting%eigenvalue_filename) == '' .or. &
-         trim(setting%eigenvector_dirname) == '')) then
-      stop 'both of --eigenval and --eigenvec must be specified'
-    end if
-
     if (trim(setting%init_type) == 'local_alpha_delta' .and. &
          setting%to_multiply_phase_factor) then
       stop '-i local_alpha_delta and -k must not be set simultaneously'
