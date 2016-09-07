@@ -8,7 +8,7 @@ module wp_conversion_m
   implicit none
 
   private
-  public :: alpha_to_lcao_coef, alpha_to_eigenvector_coef, &
+  public :: alpha_to_lcao_coef, &
        change_basis_lcao_to_alpha, &
        change_basis_lcao_to_alpha_group_filter, &
        change_basis_lcao_diag_to_alpha, &
@@ -21,39 +21,21 @@ contains
   ! Complexity: O(m n).
   !subroutine alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, full_vecs, full_vecs_desc, &
   !     filtered_vecs, filtered_vecs_desc, t, col_source, col_target)
-  subroutine alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, t, dv_alpha, dv_psi)
-    real(8), intent(in) :: Y_filtered(:, :), t
+  subroutine alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha, dv_psi)
+    real(8), intent(in) :: Y_filtered(:, :)
     integer, intent(in) :: Y_filtered_desc(desc_size)
-    real(8), intent(in) :: eigenvalues(:)
     complex(kind(0d0)), intent(in) :: dv_alpha(Y_filtered_desc(cols_))
     complex(kind(0d0)), intent(out) :: dv_psi(Y_filtered_desc(rows_))
 
     integer :: dim, num_filter
-    complex(kind(0d0)) :: dv_evcoef(Y_filtered_desc(cols_))
 
     dim = Y_filtered_desc(rows_)
     num_filter = Y_filtered_desc(cols_)
 
-    !call alpha_to_eigenvector_coef(filtered_vecs, filtered_vecs_desc, t, col_source, col_filtered_work)
-    call alpha_to_eigenvector_coef(num_filter, eigenvalues, t, dv_alpha, dv_evcoef)
-    ! b = Y c, lcao_coef <- b
+    ! psi = Y alpha
     dv_psi(:) = kZero
-    call matvec_dd_z('No', Y_filtered, Y_filtered_desc, kOne, dv_evcoef, kZero, dv_psi)
+    call matvec_dd_z('No', Y_filtered, Y_filtered_desc, kOne, dv_alpha, kZero, dv_psi)
   end subroutine alpha_to_lcao_coef
-
-
-  !subroutine alpha_to_eigenvector_coef(filtered_vecs, filtered_vecs_desc, t, col_source, col_target)
-  subroutine alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, t, dv_alpha, dv_evcoef)
-    integer, intent(in) :: num_filter
-    complex(kind(0d0)), intent(in) :: dv_alpha(num_filter)
-    complex(kind(0d0)), intent(out) :: dv_evcoef(num_filter)
-    real(8), intent(in) :: dv_eigenvalues(:), t
-    integer :: i
-
-    do i = 1, num_filter
-      dv_evcoef(i) = dv_alpha(i) * exp(- kImagUnit * dv_eigenvalues(i) * t)
-    end do
-  end subroutine alpha_to_eigenvector_coef
 
 
   ! Same to change_basis_lcao_to_alpha except that Y and A_lcao are assumed to be real.
@@ -451,14 +433,14 @@ contains
   ! Complexity: O(m^2).
   !subroutine lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, t, full_vecs, full_vecs_desc, &
   !     filtered_vecs, filtered_vecs_desc, col_source, col_target)
-  subroutine lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, eigenvalues, t, dv_psi, dv_alpha)
+  subroutine lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
     type(sparse_mat), intent(in) :: S_sparse
-    real(8), intent(in) :: Y_filtered(:, :), eigenvalues(:), t
+    real(8), intent(in) :: Y_filtered(:, :)
     integer, intent(in) :: Y_filtered_desc(desc_size)
     complex(kind(0d0)), intent(in) :: dv_psi(Y_filtered_desc(rows_))
     complex(kind(0d0)), intent(out) :: dv_alpha(Y_filtered_desc(cols_))
 
-    complex(kind(0d0)) :: dv_s_psi(Y_filtered_desc(rows_)), dv_evcoef(Y_filtered_desc(cols_))
+    complex(kind(0d0)) :: dv_s_psi(Y_filtered_desc(rows_))
     integer :: dim, num_filter
 
     dim = Y_filtered_desc(rows_)
@@ -466,10 +448,7 @@ contains
 
     ! c = Y^\dagger S \psi, \alpha <- c
     dv_s_psi(:) = kZero
-    dv_evcoef(:) = kZero
     call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)
-    call matvec_dd_z('Trans', Y_filtered, Y_filtered_desc, kOne, dv_s_psi, kZero, dv_evcoef)
-    ! 式(14)の逆(C_k から \alpha_k).
-    call alpha_to_eigenvector_coef(num_filter, eigenvalues, -t, dv_evcoef, dv_alpha)
+    call matvec_dd_z('Trans', Y_filtered, Y_filtered_desc, kOne, dv_s_psi, kZero, dv_alpha)
   end subroutine lcao_coef_to_alpha
 end module wp_conversion_m

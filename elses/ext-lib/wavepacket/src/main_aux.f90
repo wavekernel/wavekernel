@@ -206,7 +206,7 @@ contains
 
     if (.not. allocated(state%group_id)) then
       call make_dummy_group_id(state%structure%num_atoms, state%group_id)
-    end if    
+    end if
 
     if (setting%is_reduction_mode) then
       call terminate('set_aux_matrices: reduction mode is not implemented in this version', 1)
@@ -872,7 +872,11 @@ contains
     wtime = mpi_wtime()
 
     if (trim(setting%h1_type) == 'zero' .and. trim(setting%filter_mode) /= 'group') then  ! Skip time evolution calculation.
-      state%dv_alpha_next(:, :) = state%dv_alpha(:, :)
+      do j = 1, setting%num_multiple_initials
+        do i = 1, setting%num_filter
+          state%dv_alpha_next(i, j) = exp(- kImagUnit * state%dv_eigenvalues(i) * setting%delta_t) * state%dv_alpha(i, j)
+        end do
+      end do
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
     else if (trim(setting%h1_type) == 'zero_sparse' .and. trim(setting%filter_mode) /= 'group') then
       call make_matrices_for_sparse(proc, setting%delta_t, setting%multistep_input_read_interval, &
@@ -1011,7 +1015,7 @@ contains
 
     integer :: num_filter, j
     real(8) :: wtime
-    complex(kind(0d0)) :: dv_evcoef(state%Y_filtered_desc(cols_)), energy_tmp
+    complex(kind(0d0)) :: energy_tmp
 
     wtime = mpi_wtime()
 
@@ -1020,11 +1024,11 @@ contains
     do j = 1, setting%num_multiple_initials
       if (trim(setting%h1_type) == 'zero_sparse' .and. trim(setting%filter_mode) /= 'group') then
         call lcao_coef_to_alpha(state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
-             state%dv_eigenvalues, state%t, state%dv_psi_next(:, j), state%dv_alpha_next(:, j))
+             state%dv_psi_next(:, j), state%dv_alpha_next(:, j))
         state%dv_psi(:, j) = state%dv_psi_next(:, j)
       else
         call alpha_to_lcao_coef(state%Y_filtered, state%Y_filtered_desc, &
-             state%dv_eigenvalues, state%t, state%dv_alpha_next(:, j), state%dv_psi(:, j))
+             state%dv_alpha_next(:, j), state%dv_psi(:, j))
         call add_timer_event('step_forward_post_process', 'alpha_to_lcao_coef', wtime)
       end if
 

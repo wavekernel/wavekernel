@@ -562,26 +562,17 @@ contains
     real(8), intent(in) :: amplitude_print_threshold, amplitude_print_interval, delta_time
 
     integer :: i, j, num_filter
-    complex(kind(0d0)) :: zscale1(H1_eve_desc(rows_)), zscale2(H1_eve_desc(rows_))
+    complex(kind(0d0)) :: elem
     integer :: rsrc, csrc, myrow, mycol, nprow, npcol, myrank
     integer :: lrindx, lcindx, ierr
     integer :: max_amp_row, max_amp_col
     real(8) :: amp, max_amp
 
     num_filter = H1_eve_desc(rows_)
-    !A(i, j) = H1_eve(i, j) * exp(kImagUnit * (eigenvalues(i) - eigenvalues(j)) * t)
-    call pzgemr2d(num_filter, num_filter, &
-         cmplx(H1_eve, 0d0, kind(0d0)), 1, 1, H1_eve_desc, &
-         A, 1, 1, A_desc, &
-         H1_eve_desc(context_))
-
-    call mpi_comm_rank(mpi_comm_world, myrank, ierr)
-
-    zscale1(:) = exp(-kImagUnit * eigenvalues(:) * t)
-    zscale2(:) = exp(kImagUnit * eigenvalues(:) * t)
-    do j = 1, num_filter
-      call pzscal(num_filter, zscale1(j), A, 1, j, A_desc, 1)
-      call pzscal(num_filter, zscale2(j), A, j, 1, A_desc, num_filter)
+    A(:, :) = dcmplx(H1_eve(:, :), 0d0)
+    do i = 1, num_filter
+      call pzelget('Self', ' ', elem, A, i, i, A_desc)
+      call pzelset(A, i, i, A_desc, elem + dcmplx(eigenvalues(i), 0d0))
     end do
 
     ! Print information of large amplitude elements.

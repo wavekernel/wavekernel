@@ -215,45 +215,45 @@ contains
   !end subroutine get_re_initialize_errors
 
 
-  subroutine reconcile_from_lcao_coef(num_filter, t, S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
+  subroutine reconcile_from_lcao_coef(num_filter, S_sparse, Y_filtered, Y_filtered_desc, &
        dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
     integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
-    real(8), intent(in) :: t, eigenvalues(:), Y_filtered(:, :)
+    real(8), intent(in) :: Y_filtered(:, :)
     type(sparse_mat), intent(in) :: S_sparse
     complex(kind(0d0)), intent(in) :: dv_psi(:)
     complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
 
     complex(kind(0d0)) :: dv_alpha(num_filter)
 
-    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, eigenvalues, t, dv_psi, dv_alpha_reconcile)
+    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha_reconcile)
     call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
   end subroutine reconcile_from_lcao_coef
 
 
-  subroutine reconcile_from_lcao_coef_cutoff(num_filter, t, cutoff, &
-       S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
+  subroutine reconcile_from_lcao_coef_cutoff(num_filter, cutoff, &
+       S_sparse, Y_filtered, Y_filtered_desc, &
        dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
     integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
-    real(8), intent(in) :: t, cutoff, eigenvalues(:), Y_filtered(:, :)
+    real(8), intent(in) :: cutoff, Y_filtered(:, :)
     type(sparse_mat), intent(in) :: S_sparse
     complex(kind(0d0)), intent(in) :: dv_psi(:)
     complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
 
     complex(kind(0d0)) :: dv_alpha(num_filter)
 
-    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, eigenvalues, t, dv_psi, dv_alpha)
+    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
     call cutoff_vector(num_filter, cutoff, dv_alpha, dv_alpha_reconcile)
     call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
   end subroutine reconcile_from_lcao_coef_cutoff
 
 
-  subroutine reconcile_from_lcao_coef_suppress(num_filter, t, suppress_constant, &
+  subroutine reconcile_from_lcao_coef_suppress(num_filter, suppress_constant, &
        S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
        dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
     integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
-    real(8), intent(in) :: t, suppress_constant, eigenvalues(:), Y_filtered(:, :)
+    real(8), intent(in) :: suppress_constant, eigenvalues(:), Y_filtered(:, :)
     type(sparse_mat), intent(in) :: S_sparse
     complex(kind(0d0)), intent(in) :: dv_psi(:)
     complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
@@ -262,7 +262,7 @@ contains
     complex(kind(0d0)) :: dv_alpha(num_filter), diff
     real(8) :: min_abs
 
-    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, eigenvalues, t, dv_psi, dv_alpha)
+    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
     i = 0
     min_abs = -1d0
     do i = 1, num_filter
@@ -276,7 +276,7 @@ contains
       dv_alpha_reconcile(i) = dv_alpha(i) * exp(- abs(diff * suppress_constant) ** 2d0)
     end do
     call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
   end subroutine reconcile_from_lcao_coef_suppress
 
 
@@ -292,7 +292,6 @@ contains
     integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(num_filter)
     real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum, dv_suppress_factor_copy(num_filter)
     real(8) :: dv_suppress_factor2(num_filter), suppress_factor_sum2
-    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
     complex(kind(0d0)) :: dv_evcoef_amplitude(num_filter), dv_evcoef_amplitude_reconcile(num_filter)
     real(8), allocatable :: ENE_suppress(:, :), YSY_filtered_suppress(:, :)
     real(8) :: work(1000), energy_normalizer
@@ -308,7 +307,6 @@ contains
     allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
     ENE_suppress(:, :) = 0d0
 
-    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
     do j = 1, num_filter
       do i = 1, num_filter
         dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
@@ -333,9 +331,9 @@ contains
     !  close(iunit_YSY)
     !end if
 
-    dv_evcoef_reconcile(:) = kZero
+    dv_alpha_reconcile(:) = kZero
     print *, '------------------ ZZZZstart', t * 2.418884326505d-5, 'ps ------------------'
-    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
     !print *, 'Energy correction X', dv_evcoef
     !print *, 'Energy correction Y', dv_evcoef_reconcile
     !
@@ -393,14 +391,13 @@ contains
     !  end if
     !end do
 
-    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
     if (check_master()) then
       write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
            '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
            dznrm2(num_filter, dv_alpha_reconcile, 1)
     end if
     call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
     deallocate(YSY_filtered_suppress, ENE_suppress)
   end subroutine reconcile_from_alpha_matrix_suppress
 
@@ -416,7 +413,6 @@ contains
 
     integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
     real(8) :: dv_suppress_factor(num_filter)
-    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
     real(8), allocatable :: YSY_filtered_orthogonal(:, :), YSY_filtered_suppress(:, :)
     real(8) :: dznrm2
 
@@ -425,7 +421,6 @@ contains
     allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
     YSY_filtered_orthogonal(:, :) = 0d0
 
-    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
     do j = 1, num_filter
       do i = 1, num_filter
         dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
@@ -439,18 +434,17 @@ contains
       end do
     end do
 
-    dv_evcoef_reconcile(:) = kZero
+    dv_alpha_reconcile(:) = kZero
     call matvec_nearest_orthonormal_matrix(YSY_filtered_suppress, YSY_filtered_desc, &
-         dv_evcoef, dv_evcoef_reconcile, YSY_filtered_orthogonal)
+         dv_alpha, dv_alpha_reconcile, YSY_filtered_orthogonal)
 
-    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
     if (check_master()) then
       write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
            '] reconcile_from_alpha_matrix_suppress_orthogonal() : evcoef norm before normalization ', &
            dznrm2(num_filter, dv_alpha_reconcile, 1)
     end if
     call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
     deallocate(YSY_filtered_suppress, YSY_filtered_orthogonal)
   end subroutine reconcile_from_alpha_matrix_suppress_orthogonal
 
@@ -468,7 +462,6 @@ contains
 
     integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
     real(8) :: dv_suppress_factor(num_filter)
-    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
     real(8), allocatable, save :: YSY_filtered_suppress(:, :)
     type(wp_energy_t) :: energies
 
@@ -545,18 +538,16 @@ contains
       !count = count + 1
     end if
 
-    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues_prev, t, dv_alpha, dv_evcoef)
-    dv_evcoef_reconcile(:) = kZero
-    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_evcoef, kZero, dv_evcoef_reconcile)
+    dv_alpha_reconcile(:) = kZero
+    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
 
-    call alpha_to_eigenvector_coef(num_filter, dv_eigenvalues, -t, dv_evcoef_reconcile, dv_alpha_reconcile)
     if (check_master()) then
       write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
            '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
            dznrm2(num_filter, dv_alpha_reconcile, 1)
     end if
     call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
   end subroutine reconcile_from_alpha_matrix_suppress_adaptive
 
 
@@ -573,7 +564,6 @@ contains
     complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
 
     integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, max_index_in_col, max_index_in_row
-    complex(kind(0d0)) :: dv_evcoef(num_filter), dv_evcoef_reconcile(num_filter)
     real(8), allocatable, save :: YSY_filtered_select(:, :), YSY_filtered_orthogonal(:, :)
     integer, allocatable, save :: col_to_max_index_in_col(:), row_to_max_index_in_row(:)
     integer :: tmp_max_index(2), ierr
@@ -701,7 +691,7 @@ contains
     !count = count + 1
     !!stop
 
-    dv_evcoef_reconcile(:) = kZero
+    dv_alpha_reconcile(:) = kZero
     !call matvec_nearest_orthonormal_matrix(YSY_filtered_select, YSY_filtered_desc, &
     !     dv_evcoef, dv_evcoef_reconcile, YSY_filtered_orthogonal)
     call matvec_dd_z('No', YSY_filtered_select, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
@@ -728,7 +718,7 @@ contains
     end if
 
     call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
   end subroutine reconcile_from_alpha_matrix_suppress_select
 
 
@@ -745,7 +735,7 @@ contains
     complex(kind(0d0)), intent(out) :: dv_psi(:, :), dv_alpha(:, :)
     type(wp_error_t), intent(out) :: errors(:)
 
-    integer :: nprow, npcol, myrow, mycol
+    integer :: nprow, npcol, myrow, mycol, ierr
     real(8) :: min_msd, eigenvalues(dim)
     complex(kind(0d0)) :: diag_tmp, msd_temp, mean_temp
     integer :: indxg2p
@@ -813,7 +803,7 @@ contains
         call normalize_vector(setting%num_filter, dv_alpha(:, i))
         ! フィルターした後の状態の重ね合わせで \psi を決めているのでこの時点では
         ! \psi に対するエラーは存在しない.
-        call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, 0d0, dv_alpha(:, i), dv_psi(:, i))
+        call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha(:, i), dv_psi(:, i))
       end do
       if (setting%to_multiply_phase_factor) then
         call terminate('not implemented', 49)
@@ -869,19 +859,17 @@ contains
       !     full_vecs, full_vecs_desc, filtered_vecs, filtered_vecs_desc)
       !call get_filtering_errors(dim, full_vecs, full_vecs_desc, absolute_filter_error, relative_filter_error)
     else if (trim(setting%init_type) == 'lcao_file') then
-      call terminate('initialize: not implemented yet', 2)
-      !if (check_master()) then
-      !  call read_vector_real(dim, trim(setting%lcao_filename), psi)
-      !end if
+      if (check_master()) then
+        call read_vector(dim, trim(setting%lcao_filename), dv_psi)
+      end if
+      call mpi_bcast(dv_psi, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
       !if (setting%to_multiply_phase_factor) then
       !  call multiply_phase_factors(dim, num_atoms, atom_indices, atom_coordinates, &
       !       setting%phase_factor_coef, psi)
       !end if
-      !call lcao_coef_to_alpha(S, S_desc, Y, Y_desc, 0d0, full_vecs, full_vecs_desc, &
-      !     filtered_vecs, filtered_vecs_desc, col_psi, col_alpha)
-      !call normalize_vector(setting%num_filter, filtered_vecs, filtered_vecs_desc, col_alpha)
-      !call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, full_vecs, full_vecs_desc, &
-      ! filtered_vecs, filtered_vecs_desc, 0d0, col_psi)
+      call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi(:, 1), dv_alpha)
+      call normalize_vector(setting%num_filter, dv_alpha(:, 1))
+      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha(:, 1), dv_psi(:, 1))
     end if
   end subroutine set_initial_value
 
@@ -952,7 +940,7 @@ contains
     type(wp_energy_t), intent(out) :: energies
 
     integer :: dim, num_filter
-    complex(kind(0d0)) :: energy_tmp, dv_h_psi(Y_filtered_desc(rows_)), dv_evcoef(Y_filtered_desc(cols_))
+    complex(kind(0d0)) :: energy_tmp, dv_h_psi(Y_filtered_desc(rows_))
     type(sparse_mat) :: H1_lcao_sparse_charge_overlap
     ! Functions.
     complex(kind(0d0)) :: zdotc
@@ -974,12 +962,11 @@ contains
     if (trim(setting%filter_mode) == 'group') then
       H1(:, :) = H1(:, :) + H1_base(:, :)  ! Sum of distributed matrices.
     end if
-    call alpha_to_eigenvector_coef(num_filter, eigenvalues, 0d0, dv_alpha, dv_evcoef)
 
     if (trim(setting%h1_type) == 'charge_overlap') then
       call get_charge_overlap_energy(structure, charge_factor, dv_charge_on_atoms, energies%nonlinear)
     else
-      call get_A_inner_product(setting%num_filter, H1, H1_desc, dv_evcoef, dv_evcoef, energy_tmp)
+      call get_A_inner_product(setting%num_filter, H1, H1_desc, dv_alpha, dv_alpha, energy_tmp)
       energies%nonlinear = truncate_imag(energy_tmp)
       if (trim(setting%h1_type) == 'charge') then
         energies%nonlinear = energies%nonlinear / 2d0
@@ -1091,20 +1078,20 @@ contains
       call matvec_time_evolution_by_matrix_replace(proc, setting%delta_t, &
            H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
            dv_psi, dv_psi_evol)
-      call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_psi_evol, &
+      call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi_evol, &
            dv_alpha_evol)
     end if
 
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error') then
-      call reconcile_from_lcao_coef(setting%num_filter, t, &
-           S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
+      call reconcile_from_lcao_coef(setting%num_filter, &
+           S_sparse, Y_filtered, Y_filtered_desc, &
            dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_cutoff') then
-      call reconcile_from_lcao_coef_cutoff(setting%num_filter, t, setting%vector_cutoff_residual, &
-           S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
+      call reconcile_from_lcao_coef_cutoff(setting%num_filter, setting%vector_cutoff_residual, &
+           S_sparse, Y_filtered, Y_filtered_desc, &
            dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_suppress') then
-      call reconcile_from_lcao_coef_suppress(setting%num_filter, t, setting%suppress_constant, &
+      call reconcile_from_lcao_coef_suppress(setting%num_filter, setting%suppress_constant, &
            S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
            dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
@@ -1127,7 +1114,7 @@ contains
            dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_alpha_error') then
       dv_alpha_reconcile(:) = dv_alpha(:)
-      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_eigenvalues, t, dv_alpha_reconcile, dv_psi_reconcile)
+      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
     else
       call terminate('re_initialize_state: unknown re-initialization method', 1)
     end if
