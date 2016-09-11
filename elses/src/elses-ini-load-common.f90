@@ -225,12 +225,14 @@ module M_ini_load_common
 !            iflag(noa), amm(noa)
 !
      if (config%calc%mode == "matrix_generation") then
-       config%calc%solver%scheme="krylov"
-       if (i_verbose >=1) then
-        if (log_unit > 0) then
-           write(log_unit,*)'INFO:matrix generation mode: solver mode is set to ', trim(config%calc%solver%scheme)
-        endif
-       endif   
+       if (config%calc%solver%scheme == "eigen") then
+         config%calc%solver%scheme="krylov"
+         if (i_verbose >=1) then
+           if (log_unit > 0) then
+             write(log_unit,*)'INFO:matrix generation mode: solver mode is set to ', trim(config%calc%solver%scheme)
+           endif
+         endif   
+       endif
      endif   
 !
      if ((config%calc%mode == "dynamics") .or. (config%calc%mode == "conversion")) then
