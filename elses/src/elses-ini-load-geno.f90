@@ -528,13 +528,21 @@ module M_ini_load_geno
 !   No module data is modifed in this routine.
 !
   subroutine chk_input_data
+    use M_config 
     use elses_mod_sel_sys,   only : r_cut_book
     use M_qm_domain, only : ax, ay, az, i_pbc_x, i_pbc_y, i_pbc_z
+    use M_get_atom_param, only : get_orb_num ! (function)
+    use M_qm_domain,         only : nos
+    use elses_mod_elem_name,    only : elem_name
+    implicit none
+    integer :: lu
+    integer :: elem_index, orb_num
+    character(len=64) :: elem_name_wrk
 !
-!
+    lu=config%calc%distributed%log_unit
 !
     if (i_verbose >= 1) then
-       write(*,*)' @@ chk_input_data'
+      if (lu > 0) write(lu,'(a)') '@@@ chk_input_data'
     endif  
 !
     if (r_cut_book <= 1.0d-10) then
@@ -571,8 +579,19 @@ module M_ini_load_geno
     endif   
 !
     if (i_verbose >= 1) then
-       write(*,*)' ... ended successfully; chk_input_data'
+      do elem_index=1,nos
+        elem_name_wrk=trim(elem_name(elem_index))
+        orb_num=get_orb_num(elem_name_wrk)
+        if (lu > 0) write(lu,*) 'INFO:elem_name, orbital_num=', elem_index, trim(elem_name_wrk), orb_num
+      enddo
+    endif
+!
+    if (i_verbose >= 1) then
+      if (lu > 0) write(lu,*)' ... ended successfully; chk_input_data'
     endif  
+!
+!   stop 'STOP MANUALLY'
+!
 !
   end subroutine chk_input_data
 !

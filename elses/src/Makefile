@@ -46,7 +46,7 @@ OBJS-ELSES = \
 	elses-lib-phys-const.o elses-xml-get-value-with-unit.o  elses-lib-element-name.o \
 	elses-lib-db-ion-ene.o elses-lib-db-polarization.o elses-lib-db-covalent-radius.o \
 	elses-mod-01.o elses-mod-02.o elses-mod-03.o elses-mod-04.o \
-	elses-lib-math-func.o elses-lib-sort.o \
+	elses-lib-math-func.o elses-lib-sort.o elses-qm-get-atom-parameter.o \
 	elses-mod-file-io.o elses-mod-nrl.o elses-md-motion.o elses-md-booking.o elses-md-dst-cell.o elses-md-cell-change.o elses-md-constraint.o elses-md-motion-verlet.o \
 	elses-qm-geno-rest-kernal.o \
 	elses-qm-domain.o elses-qm-engine.o elses-qm-engine-nrl.o elses-qm-geno-output.o  elses-qm-engine-csc.o elses-qm-engine-csc-tb0.o \
