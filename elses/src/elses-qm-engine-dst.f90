@@ -75,6 +75,8 @@ module M_qm_engine_dst
 !
      use M_qm_domain,       only : noav
 !
+     use M_qm_dst_matrix_gene, only : qm_dst_mat_gene !(routine)
+!
      implicit none
      real(DOUBLE_PRECISION) :: dq, dq_1, x, mix_r
      integer :: ierr, i_csc_loop, jsd1, jsv2, ja1, ja2, n_csc_loop
@@ -237,6 +239,11 @@ module M_qm_engine_dst
 !
        call get_system_clock_time(time_wrk)
        time_wrk_previous=time_wrk
+!
+       if (config%calc%mode == "matrix_generation") then
+         call qm_dst_mat_gene(scheme_mode)
+         return
+       endif
 !
        call qm_solver_gkrylov_dst(scheme_mode)
 !
