@@ -6,7 +6,7 @@
 module M_00_v_info
 !
   implicit none
-  character(len=32), parameter :: version_info='ELSES version 0.06.03'
+  character(len=32), parameter :: version_info='ELSES version 0.06.04'
 !
   private
   public :: elses_00_version_info 
