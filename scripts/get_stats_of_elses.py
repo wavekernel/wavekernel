@@ -33,7 +33,7 @@ if __name__ == '__main__':
     nodes = sorted(nodes.keys())
     num_nodes = len(nodes)
     steps = sorted(steps.keys())
-    steps = filter(lambda s: s > 0, steps)
+    steps = filter(lambda s: s > 1 and s <= 5, steps)
     num_steps = len(steps)
     print 'num_nodes: ', num_nodes
     print 'steps: ', steps
