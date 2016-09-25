@@ -51,6 +51,8 @@ contains
       endif
     endif   
 !
+!   STOP 'STOP MANUALLY'
+!
     nval_max=maxval(nval)
     step_count=config%system%structure%mdstep
 !
@@ -74,6 +76,8 @@ contains
 !
 !   call mulliken
 !     ----> calculate e_num_on_atom(:),  e_num_on_basis(:)
+!
+!   STOP 'STOP MANUALLY'
 !
     allocate (initial_e_num(noav), stat=ierr)
     if (ierr /= 0) then
@@ -183,23 +187,61 @@ contains
     use M_config, only : config                     !(unchanged)
     use elses_mod_file_io,      only : vacant_unit  !(function)
     use elses_mod_md_dat,       only : itemd        !(unchanged)
+    use elses_mod_md_dat,       only : first_iteration, final_iteration !(unchanged)
     implicit none
     integer, intent(out) :: iunit
     logical, intent(out) :: flag_for_init
     character(len=*), intent(out) :: filename_wrk
+    logical              :: save_now
 !
+    save_now = .false.
     iunit=-1
-    if (itemd == 1) then
+    if (first_iteration) then
       flag_for_init = .true.
     else
       flag_for_init = .false.
     endif  
 !
+!   STOP 'STOP MANUALLY:output_setting'
+!
     if ( .not. config%output%atom_charge%set ) return
 !
-    if (mod(itemd-1,config%output%atom_charge%interval) /= 0 ) return
+    if (.not. config%calc%distributed%root_node) then
+      write(*,*)'ERROR:output_setting:Not root node'
+      stop
+    endif
+!
+    if (trim(adjustl(config%output%atom_charge%mode)) == "not_set") then
+      config%output%atom_charge%mode = "default"
+    endif
+!
+    if (trim(adjustl(config%output%atom_charge%mode)) == "default") then
+      config%output%atom_charge%mode = "last"
+    endif
 !
     filename_wrk=trim(config%output%atom_charge%filename)
+    if (filename_wrk == "") then
+      write(*,*)'ERROR:output_setting:filename missing'
+      stop
+    endif
+!
+    select case(trim(adjustl(config%output%atom_charge%mode)))
+      case ("first", "initial")
+        if (first_iteration) save_now = .true.
+      case ("last", "final")
+        if (final_iteration) save_now = .true.   
+      case ("periodic")
+        if (config%output%atom_charge%interval <= 0) then
+          write(*,*)'ERROR: output_setting:interval=', config%output%atom_charge%interval
+          stop
+        endif
+        if (mod(itemd-1,config%output%atom_charge%interval) == 0 ) save_now = .true.
+      case default
+        write(*,*)'ERROR(output_setting): unknown mode :', trim(adjustl(config%output%atom_charge%mode))
+        stop
+    end select
+!
+    if (.not. save_now) return
 !
     iunit=vacant_unit()
 !

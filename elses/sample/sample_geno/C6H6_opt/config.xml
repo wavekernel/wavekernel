@@ -30,6 +30,7 @@
   <wavefunction_charge filename="output_wfn_charge.txt" />
   <matrix_hamiltonian filename="output_hamiltonian_au.txt" mode="last" format="MatrixMarket_sym" unit="a.u." />
   <matrix_overlap     filename="output_overlap.txt" mode="last" format="MatrixMarket_sym" />
+  <atom_charge filename="output_atom_charge.txt" mode="last" />
   <eigen_level filename="output_eigen_levels.txt" mode="last" format="level_only" unit="a.u." />
 </output>
 

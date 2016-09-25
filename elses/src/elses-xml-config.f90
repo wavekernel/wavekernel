@@ -3180,15 +3180,15 @@ contains
 
     ! get <atom_charge> node
     node => getFirstElementByTagName(output_node,"atom_charge")
-    if( .not. associated(node) ) then
-       output%atom_charge%set = .false.
-       output%atom_charge%filename = trim(config%option%output_dir)//"output_atom_charge.txt"
-       output%atom_charge%interval = -1
-    else
-      call file_load( output%atom_charge, node )
-      if (log_unit>0) write(log_unit,'(a)')'INFO-XML:An optional tag is found : config%output%atom_charge'
+    output%atom_charge%set = .false.
+    output%atom_charge%mode = "not_set"
+    output%atom_charge%filename = trim(config%option%output_dir)//"output_atom_charge.txt"
+    output%atom_charge%interval = -1
+    if ( associated(node) ) then
+     call file_load( output%atom_charge, node )
+     if (log_unit>0) write(log_unit,'(a)')'INFO-XML:An optional tag is found : config%output%atom_charge'
     end if
-
+!
     ! get <atom_energy> node
     node => getFirstElementByTagName(output_node,"atom_energy")
     if( .not. associated(node) ) then

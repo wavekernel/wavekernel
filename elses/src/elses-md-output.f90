@@ -161,8 +161,10 @@ module M_md_output
 !        --> output for basis information (optional)
      endif
 !
-     call output_atom_charge
+     if (config%calc%distributed%root_node) then
+        call output_atom_charge
 !        --> output for atom charge (optional)
+     endif
 !
      call plot_virial_pressure
 !        --> plot the virial pressure (optional)
