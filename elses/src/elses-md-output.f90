@@ -32,11 +32,11 @@ module M_md_output
    subroutine elses_md_output_main
 !
      use M_config,             only : config !(unchanged)
+     use elses_mod_sim_cell,   only : noa                    !(unchanged)
      use M_output_atom_charge, only : output_atom_charge     !(routine)
      use M_output_atom_energy, only : output_atom_energy     !(routine)
      use M_qm_domain,          only : dhij, dsij, dbij, dpij !(unchanged)
      use elses_mod_file_io,    only : vacant_unit  !(function)
-     use M_config,             only : config !(unchanged)
 !    use M_qm_output_matrices, only : qm_output_matrices     !(routine)
 !    use M_qm_output_levels,   only : qm_output_levels       !(routine)
      use M_lib_mpi_wrapper, only : mpi_wrapper_barrier_time  !(routine)
@@ -52,14 +52,15 @@ module M_md_output
      logical          :: small_output
      logical          :: flag_for_init
      integer :: unit_num, ierr
+     integer, parameter :: num_atom_for_small_output=100000
      real(8) :: time_wrk, time_wrk_previous, time_check
+!
+     mpi_time_check = .false.
+     small_output = .false.
 !
      if (config%calc%distributed%set .eqv. .true.) then
        mpi_time_check = .true.
-       small_output   = .true.
-     else
-       mpi_time_check = .false.
-       small_output   = .false.
+       if (noa > num_atom_for_small_output) small_output = .true.
      endif
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -145,10 +146,16 @@ module M_md_output
 !
      call output_csc_convergence
 !
-     if (small_output) return
+     if (small_output) then 
+       if (log_unit > 0) write(log_unit,'(a,i10)') & 
+&              'INFO:small_output;num_atom for small_output=', num_atom_for_small_output
+       return
+     endif
 !
      call output_force_ave_max
 !      --> output force amplitude
+!
+!    stop 'STOP MANUALLY 1'
 !
      if (mpi_time_check) then
        call mpi_wrapper_barrier_time(time_check)
@@ -161,10 +168,14 @@ module M_md_output
 !        --> output for basis information (optional)
      endif
 !
+!    stop 'STOP MANUALLY 2'
+!
      if (config%calc%distributed%root_node) then
         call output_atom_charge
 !        --> output for atom charge (optional)
      endif
+!
+!    stop 'STOP MANUALLY 3'
 !
      call plot_virial_pressure
 !        --> plot the virial pressure (optional)

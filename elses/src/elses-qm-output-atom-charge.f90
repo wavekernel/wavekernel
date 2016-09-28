@@ -39,6 +39,7 @@ contains
     real(kind=8) :: d_sum
     character(len=100)        ::  filename_wrk
     integer :: lu, n_csc_loop
+    integer :: njsd_wrk
 !
     ict=1
     lu = config%calc%distributed%log_unit
@@ -65,7 +66,11 @@ contains
       stop
     endif   
 !
+!   STOP 'STOP MANUALLY 4'
+!
     call output_setting(unit_num, flag_for_init,filename_wrk)
+!
+!   STOP 'STOP MANUALLY 5'
 !
     if (unit_num == -1) then
       if (i_verbose >= 1) then
@@ -100,11 +105,15 @@ contains
     endif   
     atom_csc_energy_wrk(:,:)=0.0d0
 !
+!   STOP 'STOP MANUALLY 6'
+!
     call GetInitialENum(initial_e_num)
 !     ----> calculate the initial charge of the atoms
 !
     d_e_num_on_atom(:)=e_num_on_atom(:)-initial_e_num(:)
 !     ----> deviation from the initial charge
+!
+!   STOP 'STOP MANUALLY 7'
 !
     if (n_csc_loop > 0) then
       if (i_verbose >= 1) then
@@ -127,36 +136,96 @@ contains
       if (lu > 0) write(lu,'(a,f30.20)') '  sum of d_e_num_on_atom (should be zero) =',d_sum 
     endif   
 !
+!   STOP 'STOP MANUALLY 8'
+!
+    if (i_verbose >= 1) then
+      if (lu > 0) write(lu,*) 'unit_num =', unit_num
+    endif   
+!
+!   STOP 'STOP MANUALLY 8.1'
+!
     if (flag_for_init) then
        open(unit_num, file=filename_wrk)
     else
        open(unit_num, file=filename_wrk, position="append") 
     endif
 !
+    if (.not. allocated(atm_element)) then
+      write(*,*)'ERROR:not allocated:atm_element'
+      stop
+    endif
+!
+    if (.not. allocated(e_num_on_basis)) then
+      write(*,*)'ERROR:not allocated:e_num_on_basis'
+      stop
+    endif
+!
+    if (.not. allocated(initial_e_num)) then
+      write(*,*)'ERROR:not allocated:initial_e_num'
+      stop
+    endif
+!
+    if (.not. allocated(d_e_num_on_atom)) then
+      write(*,*)'ERROR:not allocated:d_e_num_on_atom'
+      stop
+    endif
+!
+    if (.not. allocated(atom_csc_energy_wrk)) then
+      write(*,*)'ERROR:not allocated:atom_csc_energy_wrk'
+      stop
+    endif
+!
+!   if (.not. allocated(njsd)) then
+!     write(*,*)'ERROR:not allocated:njsd'
+!     stop
+!   endif
+!
+!   STOP 'STOP MANUALLY 8.2'
+!
     write(unit_num,*) noav
     write(unit_num,*) " mdstep=", step_count
     do atm_index=1,noav
+       if (allocated(njsd)) then
+         njsd_wrk=njsd(atm_index,ict)
+       else
+         njsd_wrk=-1 ! dummy value
+       endif
+!      write(*,*) 'atm_index=', atm_index
        e_num_on_basis_wrk(:)=0.0d0
+!      write(*,*) 'line 1'
        nval_wrk=nval(atm_element(atm_index))
+!      write(*,*) 'line 2'
        e_num_on_basis_wrk(1:nval_wrk)=e_num_on_basis(1:nval_wrk,atm_index)
+!      write(*,*) 'line 3'
        if (nval_max <= 4) then
+!      write(*,*) 'atm_index=', atm_index
+!      write(*,*) 'element_name=', trim(element_name(atm_element(atm_index)))
+!      write(*,*) 'initial_e   =', initial_e_num(atm_index)
+!      write(*,*) 'd_e_num     =', e_num_on_atom(atm_index)
+!      write(*,*) 'csc_energy  =', atom_csc_energy_wrk(atm_index,1:2)
+!      write(*,*) 'e_num_basis_wrk =', e_num_on_basis_wrk(1)
+!      write(*,*) 'step_count  =', step_count
+!      write(*,*) 'ict         =', ict
+!      write(*,*) 'njsd_wrk    =', njsd_wrk
        write(unit_num,'(i7,a6,f10.5,f15.10,5f10.5,2i10,2f17.8)') &
 &            atm_index, trim(element_name(atm_element(atm_index))), &
 &            initial_e_num(atm_index),  d_e_num_on_atom(atm_index), &
 &            e_num_on_basis_wrk(1), sum(e_num_on_basis_wrk(2:4)), &
-&            e_num_on_basis_wrk(2:4),  njsd(atm_index,ict), step_count, &
+&            e_num_on_basis_wrk(2:4),  njsd_wrk, step_count, &
 &            atom_csc_energy_wrk(atm_index,1:2)
        else
        write(unit_num,'(i7,a6,f10.5,f15.10,11f10.5,2i10,2f17.8)') &
 &            atm_index, trim(element_name(atm_element(atm_index))), &
 &            initial_e_num(atm_index),  d_e_num_on_atom(atm_index), &
 &            e_num_on_basis_wrk(1), sum(e_num_on_basis_wrk(2:4)), sum(e_num_on_basis_wrk(5:9)), &
-&            e_num_on_basis_wrk(2:9), njsd(atm_index,ict), step_count, &
+&            e_num_on_basis_wrk(2:9), njsd_wrk, step_count, &
 &            atom_csc_energy_wrk(atm_index,1:2)
        endif   
     enddo
 !
     close(unit_num)
+!
+!   STOP 'STOP MANUALLY 9'
 !
     deallocate (initial_e_num, stat=ierr)
     if (ierr /= 0) then

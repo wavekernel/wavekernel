@@ -214,8 +214,9 @@ module M_qm_solver_gkrylov_dst
     if (n_csc_loop == 0) then
       calc_rest_part = .true.
       calc_charge = .false.
-      if (i_verbose >= 0) then 
-        if (lu>0) write(lu,*)'INFO:Tentatively, the calc_charge is off in DST, non-CSC workflow'
+      if (config%output%atom_charge%set) calc_charge = .true.
+      if (i_verbose >= 0) then
+        if (lu>0) write(lu,*)'INFO:calc_charge =', calc_charge
       endif
     else
       calc_rest_part = .false.
