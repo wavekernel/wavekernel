@@ -586,6 +586,21 @@ module M_ini_load_geno
       enddo
     endif
 !
+    if (.not. config%output%restart%set) then
+      if (config%output%position%set) then
+        write(*,*)'ERROR:Incompatible XML setting:The restart tag is required for the position tag'
+        stop
+      endif
+      if (config%output%wavefunction%set) then
+        write(*,*)'ERROR:Incompatible XML setting:The restart tag is required for the wavefunction tag'
+        stop
+      endif
+      if (config%output%atom_charge%set) then
+        write(*,*)'ERROR:Incompatible XML setting:The restart tag is required for the atom_charge tag'
+        stop
+      endif
+    endif
+!
     if (i_verbose >= 1) then
       if (lu > 0) write(lu,*)' ... ended successfully; chk_input_data'
     endif  
