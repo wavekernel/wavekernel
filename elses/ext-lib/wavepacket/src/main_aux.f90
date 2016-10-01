@@ -858,8 +858,8 @@ contains
     !type(wp_local_matrix_t), intent(in) :: Y_local(:)
     !complex(kind(0d0)) :: dv_alpha(:), dv_alpha_next(:)
 
-    integer :: j, i
-    real(8) :: wtime, norm
+    integer :: j, i, k
+    real(8) :: wtime, norm, diff_eigenvalue, damp_factor, alpha_next_norm, amplitude_after_normalize
     real(8), allocatable :: Sw(:, :)
     complex(kind(0d0)), allocatable :: SP1(:, :), SP2(:, :), psi(:, :), SP1psi(:, :)
     integer, allocatable :: SP2IPIV(:)
@@ -871,13 +871,51 @@ contains
 
     wtime = mpi_wtime()
 
-    if (trim(setting%h1_type) == 'zero' .and. trim(setting%filter_mode) /= 'group') then  ! Skip time evolution calculation.
+    if (check_master()) then
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] make_matrix_step_forward() start '
+    end if
+
+    if (trim(setting%h1_type) == 'zero' .and. trim(setting%filter_mode) /= 'group') then
+      ! Skip time evolution calculation.
       do j = 1, setting%num_multiple_initials
         do i = 1, setting%num_filter
           state%dv_alpha_next(i, j) = exp(- kImagUnit * state%dv_eigenvalues(i) * setting%delta_t) * state%dv_alpha(i, j)
         end do
       end do
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
+    else if (trim(setting%h1_type) == 'zero_damp' .and. trim(setting%filter_mode) /= 'group') then
+      ! Skip time evolution calculation.
+      do j = 1, setting%num_multiple_initials
+        if (trim(setting%init_type) == 'alpha_delta') then
+          k = setting%num_filter !setting%alpha_delta_index - setting%fst_filter + 1
+        else if (trim(setting%init_type) == 'alpha_delta_multiple') then
+          k = setting%num_filter !setting%alpha_delta_multiple_indices(j) - setting%fst_filter + 1
+        else
+          stop 'zero_damp must be used with alpha_delta or alpha_delta_multiple'
+        end if
+        do i = 1, setting%num_filter
+          diff_eigenvalue = state%dv_eigenvalues(k) - state%dv_eigenvalues(i)
+          damp_factor = abs(diff_eigenvalue) / setting%eigenstate_damp_constant
+          !print *, 'ZZZZZ zero_damp ', j, k, i, ': ', &
+          !     state%dv_eigenvalues(k), state%dv_eigenvalues(i), damp_factor * setting%delta_t
+          state%dv_alpha_next(i, j) = &
+               exp(- kImagUnit * state%dv_eigenvalues(i) * setting%delta_t) * &
+               exp(- damp_factor * setting%delta_t) * &
+               state%dv_alpha(i, j)
+        end do
+        alpha_next_norm = dznrm2(setting%num_filter, state%dv_alpha_next(:, j), 1)
+        state%dv_alpha_next(:, j) = state%dv_alpha_next(:, j) / alpha_next_norm
+        amplitude_after_normalize = abs(state%dv_alpha_next(k, j)) / abs(state%dv_alpha(k, j))
+        if (check_master()) then
+          write (0, '(A, F16.6, A, 2E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+               '] make_matrix_step_forward() t, t + dt ', state%t, state%t + setting%delta_t
+          write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+               '] make_matrix_step_forward() alpha_next_norm ', alpha_next_norm
+          write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+               '] make_matrix_step_forward()  amplitude_after_normalize', amplitude_after_normalize
+        end if
+      end do
     else if (trim(setting%h1_type) == 'zero_sparse' .and. trim(setting%filter_mode) /= 'group') then
       call make_matrices_for_sparse(proc, setting%delta_t, setting%multistep_input_read_interval, &
            state%t, state%t_last_replace, &

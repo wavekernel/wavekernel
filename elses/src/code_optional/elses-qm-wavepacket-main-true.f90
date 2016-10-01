@@ -114,6 +114,9 @@ contains
     end if
     setting%temperature = config%calc%wave_packet%temperature
     setting%perturb_interval = config%calc%wave_packet%perturb_interval
+    if (config%calc%wave_packet%eigenstate_damp_constant >= 0d0) then  ! Setting 0 will be error.
+      setting%eigenstate_damp_constant = config%calc%wave_packet%eigenstate_damp_constant
+    end if
 
     ! Copy filtering settings.
     if (config%calc%wave_packet%filter_mode == '') then  ! Set default value.

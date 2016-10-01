@@ -17,7 +17,7 @@ module wp_setting_m
          temperature, restart_t, &
          alpha_delta_min_x, alpha_delta_max_x, perturb_interval, &
          amplitude_print_threshold = -1d0, amplitude_print_interval, multistep_input_read_interval, &
-         vector_cutoff_residual = 0d0, suppress_constant = 0d0
+         vector_cutoff_residual = 0d0, suppress_constant = 0d0, eigenstate_damp_constant = 100d0
     ! Special value of alpha_delta_index: 0 -> HOMO
     integer :: alpha_delta_index = 1, num_steps_per_output_split = 100
     integer, allocatable :: alpha_delta_multiple_indices(:)
@@ -218,6 +218,10 @@ contains
           if (trim(setting%h1_type) == 'diag' .or. trim(setting%h1_type) == 'zero' .or. &
                trim(setting%h1_type) == 'zero_sparse') then
             index_arg = index_arg + 1
+          else if (trim(setting%h1_type) == 'zero_damp') then
+            call getarg(index_arg + 2, argv)
+            read(argv, *) setting%eigenstate_damp_constant
+            index_arg = index_arg + 2
           else if (trim(setting%h1_type) == 'charge' .or. trim(setting%h1_type) == 'charge_overlap') then
             call getarg(index_arg + 2, argv)
             call read_charge_factor_for_atoms(argv, setting%charge_factor_common, &
@@ -626,6 +630,7 @@ contains
 
     if (setting%num_multiple_initials > 1 .and. .not. &
          (trim(setting%h1_type) == 'zero' .or. &
+         trim(setting%h1_type) == 'zero_damp' .or. &
          trim(setting%h1_type) == 'zero_sparse' .or. &
          trim(setting%h1_type) == 'maxwell' .or. &
          trim(setting%h1_type) == 'harmonic' .or. &
@@ -635,6 +640,10 @@ contains
 
     if (setting%num_multiple_initials > 1 .and. .not. setting%is_output_split) then
       stop 'multiple initials mode must be used with output split'
+    end if
+
+    if (trim(setting%h1_type) == 'zero_damp' .and. setting%eigenstate_damp_constant <= 0d0) then
+      stop 'eigenstate damp constant must be positive'
     end if
   end subroutine verify_setting
 
@@ -657,7 +666,9 @@ contains
     end do
 
     print *, 'h1_type: ', trim(setting%h1_type)
-    if (trim(setting%h1_type(1 : 6)) == 'charge') then
+    if (trim(setting%h1_type) == 'zero_damp') then
+      print '(A, E26.16e3)', ' eigenstate_damp_constant: ', setting%eigenstate_damp_constant
+    else if (trim(setting%h1_type(1 : 6)) == 'charge') then
       print '(A, E26.16e3)', ' charge_factor_common: ', setting%charge_factor_common
       print '(A, E26.16e3)', ' charge_factor_H: ', setting%charge_factor_H
       print '(A, E26.16e3)', ' charge_factor_C: ', setting%charge_factor_C
@@ -762,7 +773,7 @@ contains
     use mpi
     integer, intent(in) :: root
     type(wp_setting_t), intent(inout) :: setting
-    integer, parameter :: num_real = 17, num_integer = 17, num_logical = 9, num_character = 16
+    integer, parameter :: num_real = 18, num_integer = 17, num_logical = 9, num_character = 16
     real(8) :: buf_real(num_real)
     integer :: buf_integer(num_integer), my_rank, ierr, size_psi, size_split_files_metadata, size_atom_speed, size_atom_perturb
     logical :: buf_logical(num_logical)
@@ -787,6 +798,7 @@ contains
       buf_real(15) = setting%charge_factor_C
       buf_real(16) = setting%vector_cutoff_residual
       buf_real(17) = setting%suppress_constant
+      buf_real(18) = setting%eigenstate_damp_constant
       buf_integer(1) = setting%alpha_delta_index
       buf_integer(2) = setting%num_steps_per_output_split
       buf_integer(3) = setting%fst_filter
@@ -890,6 +902,7 @@ contains
       setting%charge_factor_C = buf_real(15)
       setting%vector_cutoff_residual = buf_real(16)
       setting%suppress_constant = buf_real(17)
+      setting%eigenstate_damp_constant = buf_real(18)
       setting%alpha_delta_index = buf_integer(1)
       setting%num_steps_per_output_split = buf_integer(2)
       setting%fst_filter = buf_integer(3)
@@ -941,7 +954,7 @@ contains
     print *, '  -i [alpha_gauss|alpha_delta <n>|alpha_file <file>|lcao_file <file>]'
     print *, '  (cont.) -i [local_alpha_delta <i>,<j>,<k>|local_alpha_delta_group <i>,<j>,<k>]', &
          'Select state initialization method (Default: alpha_delta 1)'
-    print *, '  -h [zero|diag|charge <float>|charge_overlap <float>|maxwell <float>]'
+    print *, '  -h [zero|zero_damp <float>|diag|charge <float>|charge_overlap <float>|maxwell <float>]'
     print *, '     Select how to generate H1, perturbation term (Default: zero)'
     print *, '  -e [crank_nicolson|taylor1|taylor2|taylor3]  Select time evolution mode (Default: crank_nicolson)'
     print *, '  -f <m>,<n>  Enable eigenstate filtering using from m-th to n-th (inclusive) generalized eigenvectors'

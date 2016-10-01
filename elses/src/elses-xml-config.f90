@@ -1970,6 +1970,7 @@ contains
       calc%wave_packet%charge_factor_C = -1d0  ! dummy value
       calc%wave_packet%temperature = -1d0  ! dummy value
       calc%wave_packet%perturb_interval = -1d0  ! dummy value
+      calc%wave_packet%eigenstate_damp_constant = -1d0  ! dummy value
       work_node2 => getFirstElementByTagName(work_node1,"perturbation")
       if ( associated(work_node2) ) then
         calc%wave_packet%h1_type = getAttribute(work_node2,"type")
@@ -2002,6 +2003,12 @@ contains
         if( associated(work_node3) ) then
           value = getChildValue(work_node3)
           read(unit=value,fmt=*) calc%wave_packet%perturb_interval
+        end if
+        ! get <eigenstate_damp_constant> node
+        work_node3 => getFirstElementByTagName(work_node2,"eigenstate_damp_constant")
+        if( associated(work_node3) ) then
+          value = getChildValue(work_node3)
+          read(unit=value,fmt=*) calc%wave_packet%eigenstate_damp_constant
         end if
       end if
 
