@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import argparse, json, sys, re, os, datetime, struct
-kAuPerAngstrom = 1.8897259885789
+kAuPerAngstrom = 1.8897259885789  # Length.
+kPsecPerAu = 2.418884326505e-5  # Time.
 kSizeOfReal = 8
 
 def get_real_array(split_dir, is_little_endian, element):
@@ -40,13 +41,14 @@ def read_and_write_step(state, split_dir, is_little_endian,
     state_zipped = zip(range(fst_filter, fst_filter + num_filter), eigenvalues, means, msds, alpha_weights)
     state_zipped_innegligible = filter(lambda state: state[4] > 1e-8, state_zipped)
 
-    (alphas, eigenvalues, means, msds, alpha_weights) = map(list, zip(*state_zipped_innegligible))
+    (indices, eigenvalues, means, msds, alpha_weights) = map(list, zip(*state_zipped_innegligible))
     output = {'time': t, 'step_num': s, 'actual_msd': actual_msd,
+              'indices': indices, 'fst_filter': fst_filter, 'num_filter': num_filter,
               'eigenvalues': eigenvalues, 'means': means, 'msds': msds, 'alpha_weights': alpha_weights}
     with open('%s_%06d_alpha_distribution.json' % (header, s), 'w') as fp:
         json.dump(output, fp)
 
-def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, start_time):
+def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, start_time, time_end):
     cond = wavepacket_out['condition']
     # Common.
     dim = cond['dim']
@@ -69,6 +71,8 @@ def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, start_ti
                 input_step_info = get_input_step_info(split_dir, is_little_endian, states_split, state['input_step'])
                 read_and_write_step(state, split_dir, is_little_endian,
                                     fst_filter, num_filter, input_step_info, header)
+                if (not time_end is None) and (state['time'] * kPsecPerAu >= time_end):
+                    return
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
@@ -76,6 +80,8 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('-s', metavar='STRIDE', dest='skip_stride_num', type=int, default=1,
                         help='')
+    parser.add_argument('-e', metavar='TIME_END', dest='time_end', type=float, default=None,
+                        help='[ps]')
     parser.add_argument('--big-endian', action='store_false', dest='is_little_endian',
                         default=True, help='')
     args = parser.parse_args()
@@ -89,4 +95,4 @@ if __name__ == '__main__':
     with open(args.wavepacket_out_path, 'r') as fp:
         wavepacket_out = json.load(fp)
     calc(wavepacket_out, args.skip_stride_num, args.wavepacket_out_path,
-         args.is_little_endian, start_time)
+         args.is_little_endian, start_time, args.time_end)
