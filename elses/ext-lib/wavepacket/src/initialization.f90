@@ -294,7 +294,7 @@ contains
     real(8) :: dv_suppress_factor2(num_filter), suppress_factor_sum2
     complex(kind(0d0)) :: dv_evcoef_amplitude(num_filter), dv_evcoef_amplitude_reconcile(num_filter)
     real(8), allocatable :: ENE_suppress(:, :), YSY_filtered_suppress(:, :)
-    real(8) :: work(1000), energy_normalizer
+    real(8) :: work(1000), energy_normalizer, diff
     integer, save :: count = 0
     character(len=50) :: filename
     character(len=6) :: count_str
@@ -309,7 +309,8 @@ contains
 
     do j = 1, num_filter
       do i = 1, num_filter
-        dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+        diff = dv_eigenvalues(i) - dv_eigenvalues_prev(j)
+        dv_suppress_factor(i) = exp(- (suppress_constant * diff) ** 2d0)
       end do
       call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
       do i = 1, num_filter
