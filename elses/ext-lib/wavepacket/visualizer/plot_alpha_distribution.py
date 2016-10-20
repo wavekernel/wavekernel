@@ -43,6 +43,7 @@ def plot_points(d):
         pylab.plot([m, m], [0.0, w], 'x-', color=color)
 
 for filename in sys.argv[1 :]:
+    print 'plotting', filename
     with open(filename) as fp:
         alpha_distribution = json.load(fp)
     z_min = 0.0  # Angstrom.

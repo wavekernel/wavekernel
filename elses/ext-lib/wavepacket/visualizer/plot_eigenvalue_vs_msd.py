@@ -11,6 +11,7 @@ def plot(wavepacket_out, wavepacket_out_path, to_show_msd, highlight_i, energy_m
     fst_filter = wavepacket_out['setting']['fst_filter']
 
     pylab.figure(figsize=(16, 12))
+    pylab.grid(True)
 
     if is_log:
         pylab.yscale('log')
