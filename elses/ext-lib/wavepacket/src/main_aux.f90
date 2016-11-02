@@ -302,6 +302,15 @@ contains
 
     integer :: j
     real(8) :: wtime
+    character(len=50) :: filename
+    character(len=6) :: count_str
+    integer, save :: count = 1
+    integer, parameter :: iunit = 90
+
+    if (check_master()) then
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           '] set_aux_matrices_for_multistep() start '
+    end if
 
     wtime = mpi_wtime()
 
@@ -320,6 +329,28 @@ contains
          to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, &
          state%H1_lcao_sparse_charge_overlap)
     call add_timer_event('set_aux_matrices_for_multistep', 'read_next_input_step_with_basis_replace', wtime)
+
+    if (.false.) then
+      write(count_str, '(I6.6)') count
+      filename = 'S_' // count_str // '.mtx'
+      open(iunit, file=trim(filename))
+      call print_sparse_matrix('S', state%S_sparse, iunit)
+      close(iunit)
+      filename = 'H0_' // count_str // '.mtx'
+      open(iunit, file=trim(filename))
+      call print_sparse_matrix('H0', state%H_sparse, iunit)
+      close(iunit)
+      filename = 'H1_' // count_str // '.mtx'
+      open(iunit, file=trim(filename))
+      call print_sparse_matrix('H1', state%H1_lcao_sparse_charge_overlap, iunit)
+      close(iunit)
+      filename = 'structure_' // count_str // '.txt'
+      open(iunit, file=trim(filename))
+      call print_structure(state%structure, iunit)
+      close(iunit)
+      count = count + 1
+    end if
+
     if (check_master()) then
       do j = 1, setting%num_multiple_initials
         write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
