@@ -294,6 +294,8 @@ contains
     real(8) :: dv_suppress_factor2(num_filter), suppress_factor_sum2
     complex(kind(0d0)) :: dv_evcoef_amplitude(num_filter), dv_evcoef_amplitude_reconcile(num_filter)
     real(8), allocatable :: ENE_suppress(:, :), YSY_filtered_suppress(:, :)
+    real(8) :: ysy_ipratios(num_filter), ysy_suppress_ipratios(num_filter)
+    real(8) :: average_pratio, weighted_average_pratio, average_pratio_suppress, weighted_average_pratio_suppress
     real(8) :: work(1000), energy_normalizer, diff
     integer, save :: count = 0
     character(len=50) :: filename
@@ -320,6 +322,28 @@ contains
         end if
       end do
     end do
+
+    call get_ipratio_of_eigenstates(YSY_filtered, YSY_filtered_desc, ysy_ipratios)
+    call get_ipratio_of_eigenstates(YSY_filtered_suppress, YSY_filtered_desc, ysy_suppress_ipratios)
+    average_pratio = 0d0
+    weighted_average_pratio = 0d0
+    average_pratio_suppress = 0d0
+    weighted_average_pratio_suppress = 0d0
+    do j = 1, num_filter
+      average_pratio = average_pratio + 1d0 / ysy_ipratios(j)
+      average_pratio_suppress = average_pratio_suppress + 1d0 / ysy_suppress_ipratios(j)
+      weighted_average_pratio = weighted_average_pratio + (abs(dv_alpha(j)) ** 2d0) / ysy_ipratios(j)
+      weighted_average_pratio_suppress = weighted_average_pratio_suppress + &
+           (abs(dv_alpha(j)) ** 2d0) / ysy_suppress_ipratios(j)
+    end do
+    average_pratio = average_pratio / num_filter
+    weighted_average_pratio = weighted_average_pratio
+    average_pratio_suppress = average_pratio_suppress / num_filter
+    weighted_average_pratio_suppress = weighted_average_pratio_suppress
+    print *, 'YSYPRATIO1 average pratio', t, average_pratio
+    print *, 'YSYPRATIO2 weighted average pratio', t, weighted_average_pratio
+    print *, 'YSYPRATIO3 average pratio (suppressed)', t, average_pratio_suppress
+    print *, 'YSYPRATIO4 weighted average pratio (suppressed)', t, weighted_average_pratio_suppress
 
     !write(count_str, '(I6.6)') count
     !write(time_str, '(F0.4)') t * 2.418884326505e-5  ! kPsecPerAu.
