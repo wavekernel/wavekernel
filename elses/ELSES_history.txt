@@ -2,12 +2,347 @@
 ELSES history
 --------------------------------------------------------------------------------
 ***************************************************
-2016/09/02
-ELSES v0.06.03 Release Candidate  2
-elses-v0.06.03-201600902-(commit番号)-rc.tgz
+2016/11/19
+ELSES v0.06.04 Released (elses-v0.06.04-20161119-XXXXXXX-rel.zip)
+(commit番号後日追加)
 ***************************************************
 --------------------------------------------------------------------------------
-日付 2016/09/02(commit番号)
+--------------------------------------------------------------------------------
+日付 2016/11/19(commit番号後日追加) 'ELSES v0.06.04 / Update the update log (ELSES_history.txt)'
+担当者名 星健夫
+
+更新ファイル
+ELSES_history.txt
+
+概要：
+supercell maker用のsample fileを追加。
+
+説明：
+(commit番号後日追加)
+Date:  Nov 19, 2016 
+'ELSES v0.06.04 / Update the update log (ELSES_history.txt)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/09/29(a93278b) 'Add a sample file for the supercell maker (mk_supercell_xyz.f90)'
+担当者名 星健夫
+
+新規ファイル
+tool/experimental/mk_supercell_xyz/CNT_w_cell_info.xyz
+
+概要：
+supercell maker用のsample fileを追加。
+
+説明：
+実験的ツール
+tool/experimental/mk_supercell_xyz/mk_supercell_xyz.f90
+用のsample fileを追加。
+(注：mk_supercell_xyz.f90は、ELSES make時には、compileされない)
+
+詳細メモ：
+single-wall CNT(1本鎖,周期系)のsupercellを作るときにつかう。
+(Ref: 更新記録2013/04/02)
+使い方の例：z方向(CNTの軸方向) 112倍に伸ばしたsupercellを作りたい時。
+tool/experimental/mk_supercell_xyz/で、以下を行う
+(1) mk_supercell_xyz.f90をcompileする。例：
+$ gfortran mk_supercell_xyz.f90 
+(2) 下記コマンドを実行
+$ ./a.out -nx=1 -ny=1 -nz=112 -filename_input=CNT_w_cell_info.xyz 
+-filename_output=CNT_sucercell.xyz -comment=CNT_supercell_1_1_112
+下記が標準出力ででる。
+@@@ mk_supecell_xyz.f90 (build 20160215)
+ NOTE: This code uses GET_COMMAND_ARGUMENT defined in Fortran2003
+ @@@ Read the paramters from the argument
+ INFO:supercell sizes  =            1           1         112
+ INFO:filename input   = CNT_w_cell_info.xyz
+ INFO:filename output  = CNT_sucercell.xyz
+ INFO:comment line     = CNT_supercell_1_1_112
+@@@ Input file : structure_org.xyz
+ -->      N        =       100
+ -->  ax,ay,az [A] =       10.0000000000       10.0000000000       
+12.2900000000
+@@@ Output file : structure_new.xyz
+ -->      N        =     11200
+ -->  ax,ay,az [A] =       10.0000000000       10.0000000000     
+1376.4800000000
+@@@ Generate the output file
+.... mk_supecell_xyz.f90 (build 20160215) ended without error
+注：できあがったCNT supercell系(CNT_sucercell.xyz)の冒頭は下記：
+          11200       10.0000000000       10.0000000000     1376.4800000000
+CNT_supercell_1_1_112
+C        -1.37999999999999989342        3.10000000000000008882       
+-4.91000000000000014211
+C        -0.69999999999999995559        3.31999999999999984013       
+-3.68000000000000015987
+C        -3.37000000000000010658       -0.34999999999999997780       
+-4.91000000000000014211
+C        -3.37000000000000010658        0.34999999999999997780       
+-3.68000000000000015987
+
+メモ：
+追加ファイル
+CNT_w_cell_info.xyz
+は、100原子のcell infoつきxyzファイル。
+冒頭分は下記：
+100 10.0d0 10.0d0 12.29d0
+CNT 
+C -1.38  3.10 -4.91
+C -0.70  3.32 -3.68
+C -3.37 -0.35 -4.91
+C -3.37  0.35 -3.68
+C -2.94  1.70 -3.68
+cell infoが付いていることをのぞけば、
+sample/sample_non_geno/CNT100atom_dyn/CNT.xyz
+と同じファイル。
+
+Git での更新：
+commit a93278b
+Date:  Sep 29, 2016 
+'Add a sample file for the supercell maker (mk_supercell_xyz.f90)'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/09/29(a93278b)
+担当者名 星健夫
+
+新規ファイル
+tool/experimental/mk_supercell_xyz/CNT_w_cell_info.xyz
+
+概要：
+supercell maker用のsample fileを追加。
+
+説明：
+実験的ツール
+tool/experimental/mk_supercell_xyz/mk_supercell_xyz.f90
+用のsample fileを追加。
+(注：mk_supercell_xyz.f90は、ELSES make時には、compileされない)
+
+詳細メモ：
+single-wall CNT(1本鎖,周期系)のsupercellを作るときにつかう。
+(Ref: 更新記録2013/04/02)
+使い方の例：z方向(CNTの軸方向) 112倍に伸ばしたsupercellを作りたい時。
+tool/experimental/mk_supercell_xyz/で、以下を行う
+(1) mk_supercell_xyz.f90をcompileする。例：
+$ gfortran mk_supercell_xyz.f90 
+(2) 下記コマンドを実行
+$ ./a.out -nx=1 -ny=1 -nz=112 -filename_input=CNT_w_cell_info.xyz 
+-filename_output=CNT_sucercell.xyz -comment=CNT_supercell_1_1_112
+下記が標準出力ででる。
+@@@ mk_supecell_xyz.f90 (build 20160215)
+ NOTE: This code uses GET_COMMAND_ARGUMENT defined in Fortran2003
+ @@@ Read the paramters from the argument
+ INFO:supercell sizes  =            1           1         112
+ INFO:filename input   = CNT_w_cell_info.xyz
+ INFO:filename output  = CNT_sucercell.xyz
+ INFO:comment line     = CNT_supercell_1_1_112
+@@@ Input file : structure_org.xyz
+ -->      N        =       100
+ -->  ax,ay,az [A] =       10.0000000000       10.0000000000       
+12.2900000000
+@@@ Output file : structure_new.xyz
+ -->      N        =     11200
+ -->  ax,ay,az [A] =       10.0000000000       10.0000000000     
+1376.4800000000
+@@@ Generate the output file
+.... mk_supecell_xyz.f90 (build 20160215) ended without error
+注：できあがったCNT supercell系(CNT_sucercell.xyz)の冒頭は下記：
+          11200       10.0000000000       10.0000000000     1376.4800000000
+CNT_supercell_1_1_112
+C        -1.37999999999999989342        3.10000000000000008882       
+-4.91000000000000014211
+C        -0.69999999999999995559        3.31999999999999984013       
+-3.68000000000000015987
+C        -3.37000000000000010658       -0.34999999999999997780       
+-4.91000000000000014211
+C        -3.37000000000000010658        0.34999999999999997780       
+-3.68000000000000015987
+
+メモ：
+追加ファイル
+CNT_w_cell_info.xyz
+は、100原子のcell infoつきxyzファイル。
+冒頭分は下記：
+100 10.0d0 10.0d0 12.29d0
+CNT 
+C -1.38  3.10 -4.91
+C -0.70  3.32 -3.68
+C -3.37 -0.35 -4.91
+C -3.37  0.35 -3.68
+C -2.94  1.70 -3.68
+cell infoが付いていることをのぞけば、
+sample/sample_non_geno/CNT100atom_dyn/CNT.xyz
+と同じファイル。
+
+Git での更新：
+commit a93278b
+Date:  Sep 29, 2016 
+'Add a sample file for the supercell maker (mk_supercell_xyz.f90)'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/09/29(e0d77be)
+担当者名 星健夫
+
+更新ファイル
+src/elses-ini-load-geno.f90
+
+概要：
+restart tagについてのエラー検出ルーチンを追加。
+
+説明：
+設定XMLファイルのoutput/restartタグは、
+他のoutput関連タグ(output/positionなど)を使うときには必須なので、
+これに違反している場合にエラーで止まるようにした。
+例：positionタグがあるのにrestartタグがない場合。
+ ERROR:Incompatible XML setting:The restart tag is requied for the position 
+tag
+というエラーがでてabortする。
+
+Git での更新：
+commit e0d77be
+Date:  Sep 29, 2016 
+'Error checking routine with the restart tag'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/09/29(cc1b879)
+担当者名 星健夫
+
+更新ファイル
+src/elses-md-output.f90
+src/elses-qm-output-atom-charge.f90
+src/elses-qm-solver-gkrylov-dst.f90
+
+概要：
+atom chargeのファイル出力の更新
+
+説明：
+DST workflowかつgKrylov利用の場合にも、
+atom charge file出力ができるようになった。
+
+詳細：
+atom_chargeタグの使い方は、更新[09/25](be85533)を参照。
+ただし、DST workflowかつgKrylov利用の場合、
+interaction範囲内の原子数は出力されない(dummy値「-1」になる)。
+
+メモ：
+DST workflowかつgKrylov利用において、以下の2点がポイント：
+(1) gKrylov solverにおいて、
+if (config%output%atom_charge%set) calc_charge = .true. 
+ (elses-qm-solver-gkrylov-dst.f90)
+を追加。つまり、atom_chargeタグがあるときには、
+chargeを(配列として)生成する(MDには不要だが)。
+(2) atom chargeの出力は、10万原子未満のときに限っている。
+（原理的にはもっと大きくても良いが、メモリを食う恐れがあるので、制限をつけている）
+この値は、以下で設定できる：
+integer, parameter :: num_atom_for_small_output=100000 
+ (elses-md-output.f90)
+
+Git での更新：
+commit cc1b879
+Date:  Sep 29, 2016 
+'Update the file output for atom charge in DST workflow and gKrylov'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/09/25(be85533)
+担当者名 星健夫
+
+更新ファイル
+sample/sample_geno/C6H6_opt/config.xml
+src/elses-md-output.f90
+src/elses-qm-output-atom-charge.f90
+src/elses-xml-config.f90
+
+概要：
+atom chargeのファイル出力の更新
+
+説明：
+atom charge(atomごとのマリケンチャージ)の出力方法の詳細を更新
+設定XMLファイルのoutputタグ内に、下記を書く：
+<atom_charge filename="output_atom_charge.txt" mode="last" />
+使用例として、以下に記載：
+sample/sample_geno/C6H6_opt/config.xml
+
+詳細：
+atom_chargeタグで可能な属性の一覧
+filename：ファイル名(必須)
+mode："first"(最初のiteration), "last"(最後のiteration), 
+"periodic(定期)", "default"(="last")
+interval：出力するiteration interval
+      (毎iterationごとに出力したいときは、1、に設定）
+
+Git での更新：
+commit be85533
+Date:  Sep 26, 2016 
+'Update the file output for atom charge'
+--------------------------------------------------------------------------------
+***************************************************
+2016/09/18
+ELSES v0.06.03 Released (elses-v0.06.03-20160902-0cc29dd-rel.zip)
+Note: identical to RC2
+***************************************************
+--------------------------------------------------------------------------------
+更新記録 2016/09/18(eeeb77a)
+担当者名 星健夫
+
+更新ファイル
+src/elses-ini-load-common.f90
+
+概要
+matrix generation modeでの微修正
+
+Git での更新：
+commit 59942a1
+Date:  Sep 11, 2016 
+'Tiny modification on the matrix generation mode'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 2016/09/11(59942a1)
+担当者名 星健夫
+
+更新ファイル
+src/elses-ini-load-common.f90
+
+概要
+matrix generation modeでの微修正
+
+Git での更新：
+commit 59942a1
+Date:  Sep 11, 2016 
+'Tiny modification on the matrix generation mode'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/09/18(eeeb77a)
+担当者名 星健夫
+
+更新ファイル
+Makefile
+src/elses-00-version-info.f90
+
+バージョン番号更新(v0.06.03→v0.06.04)
+
+Git での更新：
+commit eeeb77a
+Date:  Sep 18, 2016 
+'Update the version number (v0.06.03 --> v0.06.04)'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+新記録 2016/09/11(59942a1)
+担当者名 星健夫
+
+更新ファイル
+src/elses-ini-load-common.f90
+
+概要
+matrix generation modeでの微修正
+
+Git での更新：
+commit 59942a1
+Date:  Sep 11, 2016 
+'Tiny modification on the matrix generation mode'
+--------------------------------------------------------------------------------
+***************************************************
+2016/09/02
+ELSES v0.06.03 Release Candidate  2
+elses-v0.06.03-201600902-0cc29dd-rc.tgz
+***************************************************--------------------------------------------------------------------------------
+日付 2016/09/02(0cc29dd)
 担当者名 星健夫
 
 更新ファイル
@@ -17,7 +352,7 @@ ELSES_history.txt
 ELSES v0.06.03RC2 / Update the update log (ELSES_history.txt). 
 
 Git での更新：
-commit (commit番号)
+commit 0cc29dd
 Date:  Sep 02, 2016 
 'ELSES v0.06.03RC2 / Update the update log (ELSES_history.txt)'
 --------------------------------------------------------------------------------
