@@ -6,7 +6,7 @@
 # Makefile for ELSES
 #
 
-VERSION=0.06.04
+VERSION=0.07.00
 
 include Makefile.inc
 
