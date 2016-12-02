@@ -103,6 +103,12 @@ contains
       call fson_set_name('perturb_interval', setting_elem)
       setting_elem%value_real = setting%perturb_interval
       call fson_value_add(setting_in_fson, setting_elem)
+    else if (trim(setting%h1_type) == 'zero_damp') then
+      setting_elem => fson_value_create()
+      setting_elem%value_type = TYPE_REAL
+      call fson_set_name('eigenstate_damp_constant', setting_elem)
+      setting_elem%value_real = setting%eigenstate_damp_constant
+      call fson_value_add(setting_in_fson, setting_elem)
     end if
 
     ! Set setting%time_evolution_mode
