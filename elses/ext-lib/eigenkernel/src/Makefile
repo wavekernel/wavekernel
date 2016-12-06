@@ -1,5 +1,5 @@
+-include ../Makefile.in
 -include ../../../Makefile.inc
-include ../Makefile.in
 
 EIGENEXA_WITH_TIMER_FLAG = $(MACRO_PREFIX)USE_EIGENEXA_WITH_TIMER=0
 #EIGENEXA_WITH_TIMER_FLAG = $(MACRO_PREFIX)USE_EIGENEXA_WITH_TIMER=1

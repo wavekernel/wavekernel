@@ -1,5 +1,5 @@
+-include ../Makefile.in
 -include ../../../Makefile.inc
-include ../Makefile.in
 
 .PHONY: all bin lib clean dep
 
