@@ -5,7 +5,8 @@ kPsecPerAu = 2.418884326505e-5  # Time
 kAuPerAngstrom = 1.8897259885789  # Length
 kAngstrom2PerAu2 = kAuPerAngstrom ** -2.0  # Length
 
-def plot_charge_group(charge_group, to_plot_msd_contribution, time_start, time_end, group_start, group_end,
+def plot_charge_group(charge_group, to_plot_msd_contribution, to_plot_diag,
+                      time_start, time_end, group_start, group_end,
                       is_log_mode, log_min_exp, max_val_, stride, title, out_dir):
     num_groups = charge_group["num_groups"]
     if time_start is None:
@@ -63,7 +64,7 @@ def plot_charge_group(charge_group, to_plot_msd_contribution, time_start, time_e
                 else:
                     key = "ch"
                 pylab.bar(range(group_start, group_end + 1),
-                          charge[key][group_start - 1 : group_end], align="center", log=is_log_mode)
+                          charge[key][group_start - 1 : group_end], align="center", log=is_log_mode, color='black')
                 if is_log_mode:
                     exp_min = math.log10(min_val)
                     exp_max = math.log10(max_val)
@@ -75,7 +76,7 @@ def plot_charge_group(charge_group, to_plot_msd_contribution, time_start, time_e
                 pylab.text(group_start, text_ys[0], "time [ps]: " + str(charge["t"] * kPsecPerAu))#, fontsize=24)
                 pylab.text(group_start, text_ys[1], "MSD [$\AA^2$]: " + str(charge["m"] * kAngstrom2PerAu2))#, fontsize=24)
                 pylab.text(group_start, text_ys[2], "IPRatio: " + str(charge["i"]))#, fontsize=24)
-                if 'd' in charge:
+                if 'd' in charge and to_plot_diag:
                     pylab.twinx()
                     pylab.ylabel('diag(H)')
                     pylab.bar(range(group_start, group_end + 1),
@@ -113,6 +114,8 @@ if __name__ == "__main__":
                         default=False, help='')
     parser.add_argument('--log-min-exp', metavar='LOG_MIN_EXP', dest='log_min_exp',
                         type=float, default=8.0, help='')
+    parser.add_argument('--no-diag', action='store_false', dest='to_plot_diag',
+                        default=True, help='')
 
     args = parser.parse_args()
 
@@ -137,7 +140,7 @@ if __name__ == "__main__":
     else:
         title = args.title
 
-    plot_charge_group(charge_group, args.to_plot_msd_contribution,
+    plot_charge_group(charge_group, args.to_plot_msd_contribution, args.to_plot_diag,
                       args.time_start, args.time_end,
                       args.group_start, args.group_end,
                       args.is_log_mode, args.log_min_exp, args.max_val, args.stride, title, out_dir)
