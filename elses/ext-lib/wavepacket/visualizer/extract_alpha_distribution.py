@@ -3,6 +3,7 @@ import argparse, json, sys, re, os, datetime, struct
 kAuPerAngstrom = 1.8897259885789  # Length.
 kPsecPerAu = 2.418884326505e-5  # Time.
 kSizeOfReal = 8
+kAlphaWeightThreshold = 1e-8
 
 def get_real_array(split_dir, is_little_endian, element):
     if element == []:
@@ -23,9 +24,9 @@ def get_input_step_info(split_dir, is_little_endian, out, input_step):
     for s in out['structures']:
         if s['input_step'] == input_step:
             eigenvalues = get_real_array(split_dir, is_little_endian, s['eigenvalues'])
-            means = get_real_array(split_dir, is_little_endian, s['eigenstate_mean_z'])
+            z_means = get_real_array(split_dir, is_little_endian, s['eigenstate_mean_z'])
             msds = get_real_array(split_dir, is_little_endian, s['eigenstate_msd_total'])
-            return (eigenvalues, means, msds)
+            return (eigenvalues, z_means, msds)
     assert(False)  # Specified input_step not found.
 
 def read_and_write_step(state, split_dir, is_little_endian,
@@ -36,15 +37,19 @@ def read_and_write_step(state, split_dir, is_little_endian,
     alpha_real = get_real_array(split_dir, is_little_endian, state['alpha']['real'])
     alpha_imag = get_real_array(split_dir, is_little_endian, state['alpha']['imag'])
     alpha_weights = map(lambda (r, i): r ** 2.0 + i ** 2.0, zip(alpha_real, alpha_imag))
-    (eigenvalues, means, msds) = input_step_info
+    (eigenvalues, z_means, msds) = input_step_info
     assert(len(eigenvalues) == len(alpha_weights) == num_filter)
-    state_zipped = zip(range(fst_filter, fst_filter + num_filter), eigenvalues, means, msds, alpha_weights)
-    state_zipped_innegligible = filter(lambda state: state[4] > 1e-8, state_zipped)
+    state_zipped = zip(range(fst_filter, fst_filter + num_filter), eigenvalues, z_means, msds, alpha_weights)
+    def is_innegligible(state):
+        is_highest = state[0] == fst_filter + num_filter - 1  # Save highest eigenstate forcibly.
+        is_weight_large = state[4] > kAlphaWeightThreshold
+        return is_highest or is_weight_large
+    state_zipped_innegligible = filter(is_innegligible, state_zipped)
 
-    (indices, eigenvalues, means, msds, alpha_weights) = map(list, zip(*state_zipped_innegligible))
+    (indices, eigenvalues, z_means, msds, alpha_weights) = map(list, zip(*state_zipped_innegligible))
     output = {'time': t, 'step_num': s, 'actual_msd': actual_msd,
               'indices': indices, 'fst_filter': fst_filter, 'num_filter': num_filter,
-              'eigenvalues': eigenvalues, 'means': means, 'msds': msds, 'alpha_weights': alpha_weights}
+              'eigenvalues': eigenvalues, 'z_means': z_means, 'msds': msds, 'alpha_weights': alpha_weights}
     with open('%s_%06d_alpha_distribution.json' % (header, s), 'w') as fp:
         json.dump(output, fp)
 
