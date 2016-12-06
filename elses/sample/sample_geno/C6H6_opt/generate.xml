@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<generate name="C6H6">
+  <cluster structure="C6H6.xyz" >
+  </cluster>
+  <boundary mode="on" x="nonperiodic" y="nonperiodic" z="nonperiodic" />  
+  <atom_id_is_added mode="on" />
+  <heatbath>
+   <massperatom unit="a.u.">  25.0d0</massperatom>
+  </heatbath>
+</generate>
