@@ -2,6 +2,1037 @@
 ELSES history
 --------------------------------------------------------------------------------
 ***************************************************
+2016/09/02
+ELSES v0.06.03 Release Candidate  2
+elses-v0.06.03-201600902-(commit番号)-rc.tgz
+***************************************************
+--------------------------------------------------------------------------------
+日付 2016/09/02(commit番号)
+担当者名 星健夫
+
+更新ファイル
+ELSES_history.txt
+
+概要
+ELSES v0.06.03RC2 / Update the update log (ELSES_history.txt). 
+
+Git での更新：
+commit (commit番号)
+Date:  Sep 02, 2016 
+'ELSES v0.06.03RC2 / Update the update log (ELSES_history.txt)'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](40b1b91)
+担当者名 井町宏人
+
+更新ファイル：
+src/elses-qm-geno-output.f90
+src/elses-qm-output-participation.f90
+
+概要：
+eigen_mpi ソルバーにおいて output_participation.txt の出力が正しく行われるようにした。
+
+詳細：
+『ELSES更新[09/01] eigen_mpi ソルバーにおける output_wavefunction 出力の修正』
+(commit 0e86f3d) と同様の、eigen_mpi ソルバーで固有ベクトルが分散行列形式で保持されていることへの対応。
+ただし、output_participation.txt出力の条件判定に使われていた変数i_verboseの値が
+rootノードとそれ以外で一貫しておらず、デッドロックの原因になっていたため、
+この条件判定自体を一時的にコメントアウトしてある：
+src/elses-qm-geno-output.f90 l.176
+       !if (i_verbose >= 1) then  ! Comment out because i_verbose is not global and distributed operation fails.
+
+Git での更新：
+commit 40b1b91
+Date:  Sep 1, 2016 
+'Support output of participation ratios in eigen_mpi solver'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](487dbd5)
+担当者名 星健夫
+
+更新ファイル：
+src/elses-config.f90
+src/elses-xml-config.f90
+src/elses-qm-output-basis-info.f90
+
+概要：
+basis informationの書き出し機能の強化。
+
+解説(update)：
+使い方は、設定XMLファイルのoutputタグ内に書く。例：
+<basis_info filename="output_basis_information.txt" mode="first"/>
+・filename：省略不可。
+・mode：「first」「last」「default(=last)」が設定可。省略可。
+指定されたファイルにbasis informationを出力する。
+ここでいうbasis informationとは、
+「output_wavefunctionファイルにおいて、LCAO係数をのぞいたもの」
+である。
+modeが「first」「last」時には、それぞれ、
+最初・最後のiteration時に出力される。
+
+Git での更新：
+commit 487dbd5
+Date:  Sep. 01, 2016 
+'Enhance file output for basis information'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](83ad6b1) 
+担当者名 星健夫
+
+更新ファイル：
+src/code_optional/elses-la-eigen-solver-main-dummy.f90
+src/elses-la-eigen-solver-main.f90 (上記ファイルのdead copy)
+
+
+概要：
+9/1更新(0e86f3d)への修正。
+
+解説：
+9/1更新(0e86f3d)において、
+src/code_optional/elses-la-eigen-solver-main-true.f90
+が更新されたが、ここで
+src/code_optional/elses-la-eigen-solver-main-dummy.f90
+もupdateが必要だったが、そうなっていなかったので、修正。
+
+Git での更新：
+commit 83ad6b1
+Date:  Sep. 01, 2016 
+'Modify for the update at 09/01(0e86f3d) '
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](0e86f3d) 
+担当者名 井町宏人
+
+更新ファイル：
+src/Makefile.dep
+src/code_optional/elses-la-eigen-solver-main-true.f90
+src/elses-md-main.f90
+src/elses-qm-geno-output.f90
+src/elses-qm-output-eigenstates.f90
+
+概要：
+eigen_mpi ソルバーにおいて output_wavefunction の出力が正しく行われるようにした。
+
+詳細：
+eigen_mpi ソルバーでは、計算した固有ベクトルを分散行列の形で持つため、
+分散行列に対応した出力処理を実装する必要があった。
+既存の出力処理が実装された src/elses-qm-output-eigenstates.f90 に、
+分散行列からベクトル1本ごとにrootノードに集める処理を追加することでこれを実現した。
+一度に行列全体を集めないのはメモリ量制限を回避するためである。
+また、既存の出力処理ではメインループが書かれた src/elses-md-main.f90 の時点で
+rootノードのみで処理を行わせる分岐が存在したが、分散行列を扱う必要上これを外した。
+
+Git での更新：
+commit 0e86f3d
+Date:  Aug 30, 2016 
+'Support output_wavefunction in eigen_mpi solver'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](83ad6b1) 
+担当者名 星健夫
+
+更新ファイル：
+src/code_optional/elses-la-eigen-solver-main-dummy.f90
+src/elses-la-eigen-solver-main.f90 (上記ファイルのdead copy)
+
+
+概要：
+9/1更新(0e86f3d)への修正。
+
+解説：
+9/1更新(0e86f3d)において、
+src/code_optional/elses-la-eigen-solver-main-true.f90
+が更新されたが、ここで
+src/code_optional/elses-la-eigen-solver-main-dummy.f90
+もupdateが必要だったが、そうなっていなかったので、修正。
+
+Git での更新：
+commit 83ad6b1
+Date:  Sep. 01, 2016 
+'Modify for the update at 09/01(0e86f3d) '
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](41befb0) 
+担当者名 星健夫
+
+更新ファイル：
+src/Makefile.dep
+
+概要：
+微修正
+(Makefile.dep更新)
+
+Git での更新：
+commit 41befb0
+Date:  Sep. 01, 2016 
+'Tiny modification (update of src/Makefile.dep)'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](ea592c5) 
+担当者名 星健夫
+
+更新ファイル：
+src/elses-config.f90
+src/elses-xml-config.f90
+src/elses-md-output.f90
+src/elses-qm-output-basis-info.f90
+src/ELSES_history.txt (更新ログを追加しただけ)
+
+概要：
+basis informationの書き出し機能の追加。
+
+メモ：
+Wavetool(波束解析ツール)での利用を想定。
+
+解説：
+使い方は、設定XMLファイルのoutputタグ内に、以下のように書く。
+<basis_info filename="output_basis_information.txt" />
+(注：ファイル名は任意)。
+最終iteration(固定)で、指定されたファイルにbasis informationを出力する。
+ここでいうbasis informationとは、
+「output_wavefunctionファイルにおいて、LCAO係数をのぞいたもの」
+である。
+
+Git での更新：
+commit ea592c5
+Date:  Sep. 01, 2016 
+'Added: File output for basis information'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/09/01](0e86f3d) 
+担当者名 井町宏人
+
+更新ファイル：
+src/Makefile.dep
+src/code_optional/elses-la-eigen-solver-main-true.f90
+src/elses-md-main.f90
+src/elses-qm-geno-output.f90
+src/elses-qm-output-eigenstates.f90
+
+概要：
+eigen_mpi ソルバーにおいて output_wavefunction の出力が正しく行われるようにした。
+
+詳細：
+eigen_mpi ソルバーでは、計算した固有ベクトルを分散行列の形で持つため、
+分散行列に対応した出力処理を実装する必要があった。
+既存の出力処理が実装された src/elses-qm-output-eigenstates.f90 に、
+分散行列からベクトル1本ごとにrootノードに集める処理を追加することでこれを実現した。
+一度に行列全体を集めないのはメモリ量制限を回避するためである。
+また、既存の出力処理ではメインループが書かれた src/elses-md-main.f90 の時点で
+rootノードのみで処理を行わせる分岐が存在したが、分散行列を扱う必要上これを外した。
+
+Git での更新：
+commit 0e86f3d
+Date:  Aug 30, 2016 
+'Support output_wavefunction in eigen_mpi solver'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/08/30](532c758) 
+担当者名 井町宏人
+
+更新ファイル：
+Makefile.inc
+
+概要：
+ifort と gfortran 向けに、推奨するデバッグオプションを Makefile.inc に追加した。
+各オプションの簡単な解説を付す。
+
+
+GNU Fortran コンパイラのデバッグオプション指定
+-O0 -g -Wall -Wno-unused -Wno-unused-dummy-argument -ffpe-trap=invalid,zero,overflow -fbounds-check -fbacktrace -fopenmp
+
+https://gcc.gnu.org/onlinedocs/gcc/Invoking-GCC.html
+から説明を引用
+-O0: (最適化しない)
+-g: Produce debugging information in the operating system's native format.
+-Wall: Enables commonly used warning options pertaining to usage that we recommend avoiding and that we believe are easy to avoid.
+-Wno-unused, -Wno-unused-dummy-argument: (変数・仮引数の未使用に対する警告をオフ (数が多くて他の警告が見づらくなるため))
+-ffpe-trap=list: Specify a list of floating point exception traps to enable.
+-fbounds-check: For front ends that support it, generate additional code to check that indices used to access arrays are within the declared range.
+-fbacktrace: (バックトレースを生成)
+なお、I/O のバッファリングを無効にするには (コンパイル時ではなく) プログラムの実行時に GFORTRAN_UNBUFFERED_ALL=1 をつけます。
+
+
+Intel Fortran コンパイラのデバッグオプション指定
+-g -debug -traceback -assume nobuffered_io -check -ftrapuv -warn all,nounused -qopenmp
+
+https://www.xlsoft.com/jp/products/intel/compilers/manual/14/for/index.htm
+から説明を引用
+-g: ソースレベルのデバッガーで使用するため、オブジェクト・コードの中にシンボリック・デバッグ情報と行番号を生成します。O2 をオフにして -O0 をデフォルトにします
+-traceback: コンパイラーがオブジェクト・ファイルに追加情報を生成するので、シンボリック・スタック・トレースバックが可能になります。
+-debug: 詳細なデバッグ情報を生成します。
+-assume nobuffered_io: 内部バッファーにあるデータは直ちにディスクから読み込まれるか、ディスクに書き込まれ (フラッシュされ) ます。
+-check: すべての check オプションを有効にします。 https://www.xlsoft.com/jp/products/intel/compilers/manual/14/for/GUID-AFB42D1D-FE3D-42CD-B703-9A7AA602ED12.htm
+-ftrapuv: エラー検出を行いやすくするように、ローカル変数を異常な値に初期化します。
+-warn: https://www.xlsoft.com/jp/products/intel/compilers/manual/14/for/GUID-E2601B5C-430F-4614-9008-DB669E4C97C6.htm
+
+Git での更新：
+commit 532c758
+Date:  Aug 30, 2016 
+'Add recommended debug options for ifort and gfortran'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+更新記録 [2016/08/30] (829631b)  
+担当者名 星健夫
+
+更新ファイル：
+src/elses-ini-load-common.f90
+
+概要：
+微修正
+
+Git での更新：
+commit 829631b
+Date:  Aug 30, 2016 
+'A small modification on src/elses-ini-load-common.f90'
+--------------------------------------------------------------------------------
+***************************************************
+2016/08/27
+ELSES v0.06.03 Release Candidate  
+elses-v0.06.03-201600827-e992688-rc.tgz
+***************************************************
+--------------------------------------------------------------------------------
+日付 2016/08/27(2)
+担当者名 星健夫
+
+更新ファイル
+ELSES_history.txt
+
+概要
+ELSES v0.06.03RC1 / The update log (ELSES_history.txt) was updated. 
+
+Git での更新：
+commit e992688
+Date:  Aug 27, 2016 
+'ELSES v0.06.03RC1 / The update log (ELSES_history.txt) was updated.'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/08/27
+担当者名 星健夫
+
+更新ファイル
+Makefile
+src/elses-00-version-info.f90
+
+概要
+バージョン番号更新(v0.06.02→v0.06.03)
+
+Git での更新：
+commit 10a317c
+Date:  Aug 27, 2016 
+'The version number was updated from v0.06.02 into v0.06.03'
+--------------------------------------------------------------------------------
+***************************************************
+2016/08/26
+ELSES v0.06.02 Released (elses-v0.06.01-201600505-rel.tgz)
+Note: identical to RC1
+***************************************************
+--------------------------------------------------------------------------------
+日付 2016/08/26
+担当者名 星健夫
+
+更新ファイル
+src/elses-md-save-restart-xml.f90
+
+概要
+restart XML fileへの出力追加。
+
+詳細
+restart XML fileに、total number of atomsを出力追加。例：
+<total_number_of_atoms> 12 </total_number_of_atoms>
+
+Git での更新：
+commit 1fdf85e
+Date:  Aug 26, 2016 
+'Add information into the restart XML file'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/08/18
+担当者名 星健夫
+
+更新ファイル
+src/elses-ini-set-str-from-vatom.f90
+src/elses-md-velocity-dst.f90
+src/elses-md-velocity-routines.f90
+
+概要
+一部原子固定のダイナミクス計算法の更新。
+
+Git での更新：
+commit e990ec6
+Date:  Aug 18, 2016 
+'Dynamics mode with fixed atoms was updated'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/08/17(2)
+担当者名 星健夫
+
+更新ファイル
+src/elses-xml-compat-check.f90
+
+概要
+8/15更新(commit b0ed69)で入ったbugを fix。
+
+Git での更新：
+commit def7d79
+Date:  Aug 17, 2016 
+'A bug in the commit b0ed69c in Aug 15. 2016 was fixed'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/08/17
+担当者名 星健夫
+
+更新ファイル
+src/elses-xml-config.f90
+
+概要
+8/15更新(commit b0ed69)で入ったbugを fix。
+
+Git での更新：
+commit d9f6c99
+Date:  Aug 15, 2016 
+'A bug in the commit b0ed69c in Aug 15. 2016 was fixed'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/08/15
+担当者名 星健夫
+
+更新ファイル
+src/elses-config.f90
+src/elses-md-save-restart-xml.f90
+src/elses-xml-compat-check.f90
+src/elses-xml-config.f90
+
+概要
+連番XMLファイルよるrestartをサポートした。
+
+使い方：
+restart tagに「mode」属性を追加する。
+「overwrite」「sequential」「append」が指定できる。
+defaultは「overwrite」。
+(1) overwrite mode
+<restart  filename="restart.xml" interval="10" mode="overwrite" />
+単一XMLファイル(restart.xml)に上書きされる。
+ELSESの入力XMLファイルとして、そのまま使える。
+(2) sequential mode 
+<restart  filename="restart.xml" interval="10" mode="sequential" />
+連番XMLファイルに記録される。
+restart_step00000000.xml
+restart_step00000010.xml
+restart_step00000020.xml
+(以下同様)
+ELSESの入力XMLファイルとして、そのまま使える。
+(3) append mode 
+<restart  filename="restart.xml" interval="10" mode="append" />
+単一XMLファイル(restart.xml)に追記される。
+ELSESの入力XMLファイルとして、そのままでは使えない！！！
+(詳細は、ELSESノート機能編Sec. 2.6)
+
+注：「append mode」属性は、legacy 属性として、非推奨(廃止予定)。
+<restart  filename="restart.xml" interval="10" append_mode="on" />
+上記(3)のように「mode」属性で指定すべき。
+
+Git での更新：
+commit b0ed69c
+Date:  Aug 15, 2016 
+'Sequantial XML files are supported for restart'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/08/04(2)
+担当者名 星健夫
+
+新規ファイル
+tool/plot_eigenstates/src/elses-lib-math-cubic-harmonics.f90
+tool/plot_eigenstates/src/elses-lib-sto-radial-func.f90
+
+更新ファイル
+tool/plot_eigenstates/src/elses-generate-cubefile.f90
+tool/plot_eigenstates/src/Makefile (上記の2つの新規ファイルを追記しただけ)
+tool/plot_eigenstates/src/Makefile.dep
+
+
+概要：
+generate-cubeの更新。
+
+詳細：
+Irなど、原子番号が大きいものにも対応。
+ただし、s,p,d軌道のみ(f以上は非対応)。
+
+メモ：
+r=0での０割りを避けるため、
+・modified STO radial function      : R(r) / r^l
+・modified cubic spherical function : r^l Q(x/r, y/r, z/r)
+を用意して、両者の積として表現している。
+
+git での更新：
+commit 01244e2
+Date:  Aug 4, 2016 
+'elses-generate-cube is updated'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/08/04
+担当者名 星健夫
+
+更新ファイル
+src/elses-md-save-struct.f90
+src/Makefile.dep
+
+概要：
+ファイル出力機能の拡張。
+
+詳細：
+ファイル出力できる原子種名を増やした。
+Irなど、原子番号が大きいものにも対応。
+
+メモ：
+古いルーチン
+get_atomic_num (elses-md-save-struct.f90)
+を新しいルーチン
+get_atomic_num [M_lib_element_database] (elses-lib-element-name.f90)
+へのwrapperに置き換え。
+原子番号86(Rn)まで、対応。
+
+git での更新：
+commit 5f4bd0e
+Date:  Aug 3, 2016 
+'The function for file output is slightly improved'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/07/14
+担当者名 星健夫
+
+更新ファイル
+src/elses-config.f90
+src/elses-xml-config.f90
+src/elses-qm-geno-Huckel-atom-parameters.f90
+
+概要：
+checking option for element XML fileを追加
+
+詳細：
+element XML fileの存在を陽にチェックするoptionを追加できる。
+element tag内に「filecheck="on"」という属性を追加すれば良い。
+例：
+<element  name="O" model="geno"  filename="O_test.xml" filecheck="on" />
+
+上記で「off」にすると、チェックされない。default設定は「off」
+
+checkがonになっていると、当該ファイル(上記例ではO_test.xml)がない場合は、
+以下のメッセージが標準出力にでてabortする
+ ERROR:element XML file is missing : element name=O
+
+checking optionが有効になっていることは、node logで確認できる：
+例えば、DOM parserなら、
+INFO-XML-DOM:Optional tag detected : element file check:O
+SAX parserなら、
+INFO-XML-SAX:Optional tag detected : element file check:O
+
+追記：
+チェックのon/offは、elementごとに指定する。
+例：
+<element  name="C" model="geno"  filename="C_test.xml" />
+<element  name="H" model="geno"  filename="H_test.xml" filecheck="off"/>
+<element  name="O" model="geno"  filename="O_test.xml" filecheck="on" />
+上記の場合、Oのelement fileのみがチェックされる。
+C,Hについてはチェックされず、ELSES default parameterが読み込まれる：
+その場合、以下のようなmessageが、node logに出力される；
+INFO-XML:Load_XML_AtomParameter: *** Warning!!! *** Failed to open data 
+file C.xml
+INFO-XML:Load_XML_AtomParameter: *** Warning!!! *** Failed to open data 
+file H.xml
+
+git での更新：
+commit db8c50e
+Date:  Jul 14, 2016 
+'Add the checking option for element XML file'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/07/12
+担当者名 星健夫
+
+更新ファイル
+src/elses-qm-dst-domain.f90
+
+概要：
+標準出力&node logメッセージの微修正。
+機能に違いはなし。
+
+git での更新：
+commit fe5d426
+Date:  Jul 12, 2016 
+'The messages for log files are slightly modified in 
+elses-qm-dst-domain.f90'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/13
+担当者名 井町宏人
+
+更新ファイル
+src/elses-config.f90
+src/elses-xml-config.f90
+src/code_optional/elses-la-eigen-solver-main-true.f90
+src/code_optional/elses-qm-wavepacket-main-true.f90
+
+概要：
+wavepacketの初期値設定オプション追加への対応。
+
+詳細：
+wavepacketの摂動行列の生成方法のうちいくつかでは、
+行列が状態ベクトルに依存しないため、複数の状態ベクトルに対する計算を同時に実行できる。
+それぞれを独立に実行するよりも大幅に計算時間を削減可能なため、これを実装した。
+複数の初期状態ベクトルを、固有状態番号の列挙により指定可能である。
+例：
+  <wave_packet mode="on">
+    <initialization type="alpha_delta_multiple">
+      <alpha_delta_multiple_indices> 1790,1795,1797 
+</alpha_delta_multiple_indices>
+    </initialization>
+
+git での更新：
+commit 2bc53625486c5ec1147d5b901d94e22662035d57
+Date:   Mon Jun 13 02:20:43 2016 +0900
+'Support multiple initial states mode in wavepacket'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/13
+担当者名 井町宏人
+
+更新ファイル
+src/elses-xml-config.f90
+src/code_optional/elses-qm-wavepacket-main-true.f90
+
+概要：
+wavepacketの行列入れ替え時オプション追加への対応。
+
+詳細：
+wavepacketの行列入れ替え部分に、
+従来のminimize_lcao_error_matrix_suppressの変種の手法2種
+minimize_lcao_error_matrix_suppress_orthogonal (変換行列を最も近い直交行列に修正する)
+minimize_lcao_error_matrix_suppress_adaptive (遷移の制限を適応的に行う)
+を追加し、これをELSESとの連携において利用可能にした。
+
+git での更新：
+commit f1426cf204af732c298d7f869a0015d21c675efa
+Date:   Mon Jun 13 02:19:43 2016 +0900
+'Support two new re-initialization methods with suppressed matrix in 
+wavepacket'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/12
+担当者名 井町宏人
+
+更新ファイル
+src/elses-la-matvec-dstm-dens.f90
+
+概要：
+行列の対称性を利用した行列ベクトル積ルーチンの採用。
+
+詳細：
+gKrylov_Aソルバーの行列ベクトル積手法にdensを選択した際、
+これまでは実際の行列ベクトル積計算にLAPACKのDGEMVルーチンを使用していたが、
+行列が実対称であることから、対称性を利用して高速に計算できるDSYMVに変更した。
+
+git での更新：
+commit 1584567eca047d9ea6ff5f4b703b2d9115c8ad2a
+Date:   Sun Jun 12 20:32:39 2016 +0900
+'Use DSYMV instead of DGEMV in dens matvec mode'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/12
+担当者名 井町宏人
+
+更新ファイル
+src/elses-md-motion.f90
+
+概要：
+dst_bench_modeの修正の再適用。
+
+詳細：
+以下の更新がgit上のリポジトリに反映されていなかった点を修正。
+----------
+日付 2016/05/17
+担当者名 星健夫
+
+更新ファイル
+src/elses-md-motion.f90
+
+概要：
+dst_bench_modeの修正。
+
+詳細：
+dst_bench_modeでは、
+cell_change_only 計算時に座標が更新されないことがある問題を修正。
+----------
+git での更新：
+commit 44ac0f27518b71de2d5b8b8d167e2d1116a0a114
+Date:   Sun Jun 12 20:30:47 2016 +0900
+'Fix a bug skipping MD procedure in cell_change_only mode with 
+dst_bench_mode'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/12
+担当者名 井町宏人
+
+更新ファイル
+src/code_optional/elses-qm-wavepacket-main-true.f90
+src/elses-xml-config.f90
+
+概要：
+wavepacketの行列入れ替え時オプション追加への対応。
+
+詳細：
+wavepacketの行列入れ替え部分に、
+固有状態間の遷移を、固有値の差の大きさをもとに制限する手法
+(minimize_lcao_error_matrix_suppress)を追加し、
+これをELSESとの連携において利用可能にした。
+例：
+  <wave_packet mode="on">
+    <re_initialize type="minimize_lcao_error_matrix_suppress">
+      <suppress_const>10000.0</suppress_const>
+    </re_initialize>
+
+git での更新：
+commit caca374b37fbe1bbe5f0b5fd9c20292f40fc11bf
+Date:   Sun Jun 12 20:08:44 2016 +0900
+'Add a new suppression type mode for re-initialization, 
+minimize_lcao_error_matrix_suppress, and use a variable suppress_constant 
+for suppression type modes'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/12
+担当者名 井町宏人
+
+更新ファイル
+src/code_optional/elses-qm-wavepacket-main-true.f90
+
+概要：
+wavepacketの変数追加への対応。
+
+詳細：
+wavepacketの行列入れ替え部分の変更により、1ステップ前の行列H, Sが必要となったため、
+これらを保持する処理を追加した。
+
+git での更新：
+commit df2eb6bffdee8264a8cb6b6014fa0d1b0c08f138
+Date: Jun 12 20:20:03 2016 +0900
+'Save Hamiltonian and overlap matrices of the previous MD time step for 
+some modes of re-initialization'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/16
+担当者名 星健夫
+
+更新ファイル
+src/elses-xml-config.f90
+src/elses-xml-sax-handler.f90
+
+概要：
+append modeの構造XMLファイルを読み込んだ場合には、
+errorで止まるようにする
+
+詳細：
+DOMでの読み込んだ場合には、標準出力に以下がでて止まる
+ERROR:<structure_history> was found in the XML file and is not supported
+SAXでの読み込んだ場合には、標準出力に以下がでて止まる
+ERROR(XML-SAX):<structure_history> was found in the XML file and is not 
+supported
+
+解説：
+append modeでrestart XMLファイルを記録した場合、そのまま次の入力には使えない。
+1snapshot分のデータを引き抜いたXMLファイルを作る必要がる。
+
+0,1番目のsnapshopが入っている場合の例
+----------------------------------------------------------
+append modeでのXMLファイル 
+----------------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<structure_history>
+<structure name="test" mdstep="                   0">
+（ 0番目のsnapshot分のデータ)
+ </structure>
+<structure name="test" mdstep="                   1">
+（ 1番目のsnapshot分のデータ)
+</structure>
+</structure_history>
+----------------------------------------------------------
+append modeでない(入力に使える)XMLファイル
+----------------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<structure name="test" mdstep="                   1">
+（ 1番目のsnapshot分のデータ)
+</structure>
+----------------------------------------------------------
+git上更新
+Commits on Jun 16, 2016 (941b850)
+'Error detection in the initial read of the structure XML file within the 
+append mode'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/06/15
+担当者名 星健夫
+
+更新ファイル
+src/elses-md-velocity-routines.f90
+
+概要：
+初期velocityの設定方法の修正(dst_benchmark_modeむけ更新)
+
+詳細：
+dst_bench_modeでは、
+初期velocityは強制的に乱数から生成するようにする。
+（XMLファイルにvelocity dataがあっても無視される）。
+一方dst_bench_mode以外では、MD計算では、
+XMLファイルにmeaningfulな(non-zeroな)
+velocity dataがあれば、採用される。
+
+参考2：
+03/27更新で、
+「常に、XMLファイルにvelocity dataがあっても無視される」
+という仕様になってしまっていたので、それに対する修正
+
+git更新
+Commits on Jun 15, 2016 
+commit 2f494a3234202a3d40ef744e8af1ffd8abbdf620
+'Modified on elses-md-velocity-routines.f90 for forced initialization of 
+velocity data'
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/17(2)
+担当者名 星健夫
+
+更新ファイル
+src/Makefile
+
+概要：
+gitでの管理にむけての準備
+
+詳細：
+make時に
+「bin/ディレクトリがなければ、作る」
+操作を追加。
+
+メモ：
+gitは、空のdirectoryを登録できない。
+bin/は(makeする前は)空のディレクトリなので、
+make時に作る仕様にした。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/17
+担当者名 星健夫
+
+更新ファイル
+src/elses-md-motion.f90
+
+概要：
+dst_bench_modeの修正。
+
+詳細：
+dst_bench_modeでは、
+cell_change_only 計算時に座標が更新されないことがある問題を修正。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/16
+担当者名 井町宏人
+
+更新ファイル
+src/code_optional/elses-qm-wavepacket-main-true.f90
+src/elses-config.f90
+src/elses-xml-config.f90
+
+
+概要：
+wavepacket の、行列入れ替え後に、固有状態表現のベクトルを直接見て広がりを抑えるのではなく、
+固有状態への変換行列の非対角要素を小さくすることで広がりの抑制を実現する手法の実装への対応。
+
+
+詳細：
+固有状態表現のベクトルを直接見て広がりを抑える既存手法である minimize_lcao_error_suppress 
+とパラメーター変数を共有する形で、
+変換行列の非対角要素を小さくする新機能 minimize_lcao_error_matrix_suppress を実装した。
+変更点は、抑制の強さを決めるパラメーターの XML からの読み込みと wavepacket への受け渡し部分のみ。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/12(2)
+担当者名 井町宏人
+
+更新ファイル
+src/code_optional/elses-la-eigen-solver-main-true.f90
+src/elses-qm-output-levels.f90
+
+概要：
+バージョンelses-v0.06.02-20160511r1-devに存在した、
+非並列に呼ばれるブロックにMPI並列を意図したコードが
+含まれるためデッドロックが発生するバグを修正した。
+
+詳細：
+バージョンelses-v0.06.02-20160511r1-devでは、
+eigen_mpiスキームで計算後eigen_levelを出力する際に
+qm_output_levelsサブルーチン内で呼ばれる、
+participation ratioを計算するルーチン
+set_pratio_mpiが、MPI並列化されているにも関わらず、
+(rootノード以外のファイル出力を抑止するために)
+その部分にrootノードしか到達しないようになっていたため、
+デッドロックが発生していた。
+これを回避するため、set_pratio_mpiが呼ばれるのを、
+固有値問題を解いた直後の(並列に呼ばれる)位置に
+移動するという修正を行った。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/12(1)
+担当者名 井町宏人
+
+更新ファイル
+src/code_optional/elses-qm-wavepacket-main-true.f90
+
+概要：
+wavepacketの、type(wp_state_t)型の変数stateの導入により
+各種状態変数を隠蔽するという変更に対応した。
+
+詳細：
+以前のバージョンでは状態を表す各種変数が
+ELSES側に生で見えていたため、wavepacketを呼び出すELSES側の記述が
+煩雑であったのを、状態変数の隠蔽により簡潔にした。
+また、これ以降wavepacketに変更があった場合に
+ELSES側のソースも変更しなければならない場面が少なくなるはずである。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/11(3)
+担当者名 星健夫
+
+更新ファイル
+src/elses-config.f90
+src/elses-xml-config.f90
+src/elses-qm-output-eigenstates.f90
+
+概要
+wavefunction(LCAO係数)出力機能の強化。
+出力するlevelを指定できるようにした。
+
+使用法
+config XMLファイル中に、wavefunctionタグの属性として「level_lowest」「level_highest」を設定する。
+
+例：
+<output>
+  <wavefunction filename="output_wavefunction.txt" level_lowest="2" 
+level_highest="10" />
+</output>
+設定情報は、verbose modeで実行したさい、node logに下記のように出力される。
+ INFO-XML:optional attirbute:wavefunction/level_lowest   =           2
+ INFO-XML:optional attirbute:wavefunction/level_highest  =          10
+出来上がったファイルoutput_wavefunction.txtでは、
+以下のようにk=2~10の9個のLCAOベクトルが出力される。
+(冒頭略)
+# LCAO coefficients
+         9
+         1        0.322855006102656   k=         2
+         2       -0.024892067024446   k=         2
+         3        0.055413814858069   k=         2
+         4        0.003997634354396   k=         2
+(中略)
+        28       -0.018626941085877   k=        10
+        29       -0.027168330428638   k=        10
+        30        0.016358159216596   k=        10
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/11(2)
+担当者名 星健夫
+
+更新ファイル
+src/elses-md-main.f90
+
+概要
+eigen_mpiモード向け更新
+
+詳細
+以下のルーチンは、root nodeのみで呼ばれるようにした。
+これらは、非並列のファイル出力ルーチン。
+
+
+CallTree抜粋
+- elses_md_main_01
+|   + output_levels_matrices ←
+|   + output_for_eigen_solver ←
+|   + output_for_wfn_charge ←
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/11
+担当者名 井町宏人
+
+更新ファイル
+src/code_optional/elses-la-eigen-solver-main-true.f90
+src/code_optional/elses-qm-wavepacket-main-true.f90
+src/elses-la-eigen-solver-main.f90
+src/elses-mod-eig-leg.f
+src/elses-qm-output-levels.f90
+src/elses-qm-solver-eig-geno.f90
+src/code_optional/elses-la-eigen-solver-main-dummy.f90
+src/code_optional/elses-qm-wavepacket-main-dummy.f90
+src/elses-qm-wavepacket-main.f90
+
+概要：
+eigen_mpiソルバー使用時における、固有ベクトル行列全体をノード間で冗長に持つ部分の削除
+および、wavepacket 2016/05/11 版のインターフェース変更への追従
+
+
+詳細：
+以前のバージョンでは、eigen_mpiソルバー使用時に、
+固有対の計算後に固有ベクトル行列全体を冗長に持つ設計になっていたため、
+計算規模がメモリ量に制約されていた。
+固有ベクトルは、そのPaticipation ratioと、密度行列の計算のみに使われるので、
+それらを分散行列形式のまま並列に計算することで、固有ベクトル行列を冗長に持つ必要をなくした。
+src/code_optional/elses-la-eigen-solver-main-true.f90 内の、
+set_pratio_mpiがParticipation ratioの計算ルーチン、
+set_density_matrix_mpiが密度行列の計算ルーチンである。
+
+これらのルーチンへの分散固有ベクトル行列データの受け渡しのため、
+module elses_arr_eig_legに以下の2つの変数が追加されている。
+         integer              :: desc_eigenvectors(9)
+         real*8,  allocatable :: eigenvectors(:,:)
+set_pratio_mpiによるParticipation ratioの計算結果は、
+同モジュールに従来からあるatmp変数の1列目に格納されるようになっている。
+
+wavepacket 2016/05/11 版のインターフェース変更とは、
+以前のバージョンでは、ハミルトニアンおよび重なり行列H、Sや各種ベクトル変数を
+分散密行列形式で保持していたのを、(行列については疎行列形式のままにすることで)
+ノード間で冗長に持つようにしたというものである。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/10(2)
+担当者名 星健夫
+
+更新ファイル
+src/code_for_mpi/elses-lib-mpi-wrapper-dummy.f90
+src/elses-lib-mpi-wrapper-compile.f90
+(上記ファイルのdead copy)
+
+詳細：
+不要モジュール変数を削除。
+機能に変化なし。
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+日付 2016/05/10
+担当者名 星健夫
+
+更新ファイル
+src/elses-lib-timer-in-thread.f90
+src/elses-la-matvec-dstm-crs.f90
+src/elses-la-matvec-dstm-dens.f90
+src/elses-la-matvec-dstm-sss.f90
+src/elses-la-matvec-routines-dstm.f90
+src/elses-md-main.f90
+
+概要：
+matvec_timer_in_threadの機能強化。
+総時間だけでなく、呼び出し回数もカウントするようにした。
+
+詳細：
+module M_lib_timer_in_thread (elses-lib-timer-in-thread.f90) における
+モジュール変数：matvec_timer_in_thread(n_threads,1:2)
+→内容：
+・matvec_timer_in_thread(n_threads,1): matvecの時間の総計
+・matvec_timer_in_thread(n_threads,2): matvecの呼び出し回数の総計
+--------------------------------------------------------------------------------
+***************************************************
 2016/05/05
 ELSES v0.06.02 Release Candidate  (elses-v0.06.02-20160505-rc.tgz)
 ***************************************************
