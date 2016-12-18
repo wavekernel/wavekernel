@@ -51,6 +51,14 @@ def get_xyz(split_dir, is_little_endian, out, input_step):  # Can read both from
             return zip(xs, ys, zs)
     assert(False)  # Specified input_step not found.
 
+def get_eigenvalues(split_dir, is_little_endian, out, input_step, first, last):  # Can read both from single or split output.
+    for s in out['structures']:
+        if s['input_step'] == input_step:
+            return {'input_step': input_step,
+                    'time': s['time'],
+                    'eigenvalues': get_real_array(split_dir, is_little_endian, s['eigenvalues'])[first : last]}
+    assert(False)  # Specified input_step not found.
+
 def get_msd(charges, xyz, mean):
     assert(len(charges) == len(xyz))
     normalizer = 1.0 / sum(charges)
@@ -100,7 +108,8 @@ def write_xyz(elements, xyz_coordinates, fp):
             fp.write(s)
 
 def add_step(setting, state, extracted_types, split_dir, is_little_endian,
-             num_filter, xyz, group_info, ts, tb_energy, nl_energy, total_energy,
+             num_filter, xyz, eigenvalues, group_info,
+             ts, eigenvalues_log, tb_energy, nl_energy, total_energy,
              means, msds, ipratios, tb_energy_deviations,
              psi_pratios, alpha_pratios,
              charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max, alphas):
@@ -108,6 +117,7 @@ def add_step(setting, state, extracted_types, split_dir, is_little_endian,
     ts.append(state["time"])
     # Energies
     if "energy" in extracted_types:
+        eigenvalues_log.append(eigenvalues)
         tb_energy.append(state["TB_energy"])
         nl_energy.append(state["NL_energy"])
         total_energy.append(state["total_energy"])
@@ -176,13 +186,16 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
     cond = wavepacket_out["condition"]
     # Common.
     dim = cond["dim"]
-    eigenvalues = cond["eigenvalues"]
+    initial_eigenvalues = cond["eigenvalues"]
+    last_eigenvalue_index = len(initial_eigenvalues)
+    first_eigenvalue_index = last_eigenvalue_index - 1
     ts = []
     # Charge on groups.
     charges_on_groups_all = []
     charges_on_groups_max = {"val": 0.0}
     msd_contributions_on_groups_max = {"val": 0.0}
     # Energy
+    eigenvalues_log = []
     tb_energy = []
     nl_energy = []
     total_energy = []
@@ -203,7 +216,7 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
     last_input_step = 0
     for i in range(num_filter):
         alphas.append({"i": i + fst_filter,
-                       "eigenvalue": eigenvalues[i],
+                       "eigenvalue": initial_eigenvalues[i],
                        "msd": [cond["eigenstate_msd_x"][i],
                                cond["eigenstate_msd_y"][i],
                                cond["eigenstate_msd_z"][i],
@@ -225,12 +238,14 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
             for state in states_split["states"]:
                 if state["step_num"] % stride == 0:
                     xyz = get_xyz(split_dir, is_little_endian, states_split, state["input_step"])
+                    eigenvalues = get_eigenvalues(split_dir, is_little_endian, states_split, state['input_step'],
+                                                  first_eigenvalue_index, last_eigenvalue_index)
                     if state["input_step"] > last_input_step:
                         xyz_coordinates.append(xyz)
                         last_input_step += 1
                     add_step(setting, state, extracted_types, split_dir, is_little_endian,
-                             num_filter, xyz, group_info,
-                             ts, tb_energy, nl_energy, total_energy,
+                             num_filter, xyz, eigenvalues, group_info,
+                             ts, eigenvalues_log, tb_energy, nl_energy, total_energy,
                              means, msds, ipratios, tb_energy_deviations,
                              psi_pratios, alpha_pratios,
                              charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max,
@@ -239,12 +254,14 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
         for state in wavepacket_out["states"]:
             if state["step_num"] % stride == 0:
                 xyz = get_xyz('', is_little_endian, wavepacket_out, state["input_step"])
+                eigenvalues = get_eigenvalues('', is_little_endian, states_split, state['input_step'],
+                                              first_eigenvalue_index, last_eigenvalue_index)
                 if state["input_step"] > last_input_step:
                     xyz_coordinates.append(xyz)
                     last_input_step += 1
                 add_step(setting, state, extracted_types, '', is_little_endian,
-                         num_filter, xyz, group_info,
-                         ts, tb_energy, nl_energy, total_energy,
+                         num_filter, xyz, eigenvalues, group_info,
+                         ts, eigenvalues_log, tb_energy, nl_energy, total_energy,
                          means, msds, ipratios, psi_pratios, alpha_pratios,
                          charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max,
                          alphas)
@@ -261,15 +278,16 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
             json.dump(result_charge_group, fp, indent=2)
 
     if "energy" in extracted_types:
-        result_energy = {"min_eigenvalue": min(eigenvalues),
-                         "max_eigenvalue": max(eigenvalues),
+        result_energy = {"min_eigenvalue": min(initial_eigenvalues),
+                         "max_eigenvalue": max(initial_eigenvalues),
                          "ts": ts,
+                         "eigenvalues_log": eigenvalues_log,
                          "tb_energy": tb_energy,
                          "nl_energy": nl_energy,
                          "total_energy": total_energy}
         filename_energy = header + "_energy.json"
         with open(filename_energy, "w") as fp:
-            json.dump(result_energy, fp)
+            json.dump(result_energy, fp, indent=2)
 
     if "msd" in extracted_types:
         result_charge_moment = {"ts": ts,
