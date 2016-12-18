@@ -172,6 +172,10 @@ def add_step(setting, state, extracted_types, split_dir, is_little_endian,
         for i in range(0, num_filter):
             real_part = alpha_real[i]
             imag_part = alpha_imag[i]
+            if abs(real_part) < 1e-20:  # Alleviate underflow error.
+                real_part = 0.
+            if abs(imag_part) < 1e-20:
+                imag_part = 0.
             absval = real_part ** 2 + imag_part ** 2
             if absval < 1e-6:
                 absval = 0.0  # Reduce file size.
