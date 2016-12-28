@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import argparse, json, sys, re, os, datetime, struct, copy, pylab
+import argparse, json, sys, re, os, datetime, struct
 kAuPerAngstrom = 1.8897259885789
 kSizeOfReal = 8
 
