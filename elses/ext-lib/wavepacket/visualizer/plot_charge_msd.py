@@ -104,7 +104,7 @@ def plot_charge_moment(charge_moment,
 
     pylab.ylabel('MSD ' + msd_axis + ' [$\AA^2$]', color='blue')
     pylab.grid(True)
-    pylab.plot(ts, msds, '+', markeredgecolor='blue', label='MSD ' + msd_axis,
+    pylab.plot(ts, msds, '+-', markeredgecolor='blue', label='MSD ' + msd_axis,
                markerfacecolor='none')
 
     if msd_min is None:
@@ -143,7 +143,7 @@ def plot_charge_moment(charge_moment,
 
     if to_plot_tb_energy_deviation:
         pylab.ylabel('TB energy deviation [a.u.]', color='red')
-        pylab.plot(ts, tb_energy_deviations, '+', color='red', label='TB energy dev')
+        pylab.plot(ts, tb_energy_deviations, '+-', color='red', label='TB energy dev')
         if energy_min is None:
             energy_min = pylab.ylim()[0]
         if energy_max is None:
@@ -155,7 +155,7 @@ def plot_charge_moment(charge_moment,
         pylab.ylim(energy_min, energy_max)  # limit setting again is needed.
     else:
         pylab.ylabel('Mean ' + mean_axis + ' [$\AA$]', color='red')
-        pylab.plot(ts, means, '+', color='red', label='Mean ' + mean_axis)
+        pylab.plot(ts, means, '+-', color='red', label='Mean ' + mean_axis)
         if mean_min is None:
             mean_min = pylab.ylim()[0]
         if mean_max is None:

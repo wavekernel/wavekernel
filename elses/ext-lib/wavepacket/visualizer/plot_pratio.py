@@ -36,7 +36,7 @@ def plot(pratio_extract, printed_value, ymin, ymax, time_start, time_end, title,
         ymax = max(ys)
     pylab.ylim(ymin, ymax)
 
-    pylab.plot(ts, ys, '+', label=printed_value, ms=mark_size)
+    pylab.plot(ts, ys, '+-', label=printed_value, ms=mark_size)
 
     pylab.legend(loc='upper left')
     pylab.title(title)
