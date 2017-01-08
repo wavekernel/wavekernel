@@ -1,3 +1,0 @@
-FC = ifort
-FFLAGS =
-LIBS = -lmpi

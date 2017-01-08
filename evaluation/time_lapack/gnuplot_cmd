@@ -1,9 +1,0 @@
-n = 3000
-file = sprintf("./n%d.txt", n)
-set title "N = ".n
-set xlabel "#threads"
-set xtics 1
-set ylabel "elapsed time[sec]"
-set term png
-set output sprintf("n%d.png", n)
-plot file u 1:2 t "DSYTRD" w lp, file u 1:3 t "DSTEDC" w lp, file u 1:4 t "DORMTR" w lp, file u 1:5 t "TOTAL" w lp
