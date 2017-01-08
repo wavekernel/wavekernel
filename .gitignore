@@ -14,6 +14,9 @@ quad/pi-quad-prec
 scocg/sequential/scocg
 *.out
 job*.sh*
+bin/
+src/elses
+src/elses-xml-selftest
 
 # Data
 *.dat
@@ -27,7 +30,29 @@ job*.sh*
 *.zip
 *.a
 
+# Intermediate
+*.lst
+perf.data
+
+# Input Data
+sample/
+tool/band/samples/
+
+# Document
+src/HTML/
+*.doc
+
+# Backup
+*.old
+*.bak
+
+# Link
+Makefile.inc
+
 # Misc
+tool/experimental/.*
+tool/experimental/set_group_id/.*
+xmlf90-1.2g-elses/macros/lib/stddjdm6
 Makefile.in
 *.mod
 *.log
