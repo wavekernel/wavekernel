@@ -1,993 +1,0 @@
-
-elses-eig-leg2.f,130
-      subroutine elses_eig_main(elses_eig_main27,1304
-      subroutine elses_set_eig_leg_atmp2elses_set_eig_leg_atmp2171,5453
-
-elses-hami-01.f,307
-      subroutine elses_set_hami_01(elses_set_hami_0169,3401
-      subroutine elses_set_rest_01elses_set_rest_01551,16890
-      REAL*8 FUNCTION DVEC2(DVEC21089,33181
-      subroutine elses_qm_force_01elses_qm_force_011123,33921
-      subroutine elses_set_hami_01_newelses_set_hami_01_new1763,52144
-
-elses-kr-main.f,52
-      subroutine elses_kr_mainelses_kr_main16,706
-
-elses-kr-setkry.f,53
-      subroutine elses_set_kry(elses_set_kry22,915
-
-elses-kr-sub.f,631
-      subroutine elses_set_param_ctl_krelses_set_param_ctl_kr67,3334
-      subroutine elses_chk_param_ctl_krelses_chk_param_ctl_kr157,6093
-      subroutine elses_set_rcut_kry(elses_set_rcut_kry230,8454
-      subroutine elses_set_jsv4jsk_str(elses_set_jsv4jsk_str537,18203
-      subroutine elses_check_rnelses_check_rn633,21351
-      subroutine elses_kr_set_chempotelses_kr_set_chempot765,24958
-      subroutine elses_cal_rhoelses_cal_rho1044,32449
-      subroutine elses_sym_dbijelses_sym_dbij1238,37974
-      subroutine elses_enetb(elses_enetb1474,44685
-      subroutine elses_es_bkmatelses_es_bkmat1586,47940
-
-elses-md-init.f,195
-      subroutine elses_init_alloc2belses_init_alloc2b79,4057
-      subroutine elses_set_js4jsvelses_set_js4jsv154,6412
-      subroutine elses_set_val_elec_totelses_set_val_elec_tot197,7567
-
-elses-mod-01.f,258
-      subroutine elses_alloc_amm(elses_alloc_amm219,7467
-      subroutine elses_alloc_awt(elses_alloc_awt239,8051
-      subroutine elses_alloc_val_elec(elses_alloc_val_elec261,8685
-      subroutine elses_alloc_elem_name(elses_alloc_elem_name289,9530
-
-elses-mod-02.f,118
-      subroutine elses_alloc_atmelses_alloc_atm74,2381
-      subroutine elses_alloc_intf(elses_alloc_intf138,4105
-
-elses-mod-03.f,307
-      subroutine elses_alloc_mat1(elses_alloc_mat199,3238
-      subroutine elses_alloc_nval(elses_alloc_nval185,5897
-      subroutine elses_alloc_mat2(elses_alloc_mat2208,6574
-      subroutine elses_alloc_dfij(elses_alloc_dfij276,8571
-      subroutine elses_alloc_r_baseelses_alloc_r_base311,9674
-
-elses-mod-04.f,214
-      subroutine elses_alloc_kry_glo(elses_alloc_kry_glo75,2636
-      subroutine elses_alloc_kry_rKnstr(elses_alloc_kry_rKnstr251,7462
-      subroutine elses_alloc_jsv4jsk_str(elses_alloc_jsv4jsk_str293,8888
-
-elses-mod-eig-leg.f,66
-      subroutine elses_alloc_eig_leg(elses_alloc_eig_leg44,1705
-
-elses-mod-nrl.f,69
-      subroutine elses_alloc_dsij_dpijelses_alloc_dsij_dpij34,1204
-
-elses-qm-main.f,164
-      subroutine elses_es_restelses_es_rest49,2464
-      subroutine elses_set_hamielses_set_hami86,3394
-      subroutine elses_qm_forceelses_qm_force146,5053
-
-elses-xml-02.f,303
-      subroutine elses_xml_viselses_xml_vis11,450
-      subroutine elses_xml_load_ctrlelses_xml_load_ctrl58,1725
-      subroutine elses_xml_save_txpelses_xml_save_txp82,2469
-      subroutine elses_init_compat2elses_init_compat2191,6092
-      subroutine elses_set_mass2elses_set_mass2364,10488
-
-elses-00-main.f90,0
-
-elses-00-version-info.f90,64
-  subroutine elses_00_version_infoelses_00_version_info17,456
-
-elses-ana-icohp.f90,117
-subroutine elses_ana_icohp(elses_ana_icohp29,1188
-subroutine elses_alloc_dhij_cohp(elses_alloc_dhij_cohp193,6089
-
-elses-ana-plot-hami.f90,50
-subroutine elses_plot_hamielses_plot_hami15,637
-
-elses-band-calc.f90,131
-    subroutine elses_band_calculationelses_band_calculation18,688
-        subroutine qm_initializationqm_initialization61,2627
-
-elses-config.f90,1418
-  subroutine element_print(element_print36,1033
-  subroutine classic_print(classic_print52,1510
-  subroutine quantum_print(quantum_print66,1955
-  subroutine heatbath_default(heatbath_default162,5053
-  subroutine structure_print(structure_print175,5387
-  subroutine unitcell_print(unitcell_print196,5895
-  subroutine atom_print(atom_print210,6349
-  subroutine option_default(option_default454,14607
-  subroutine calc_default(calc_default468,15007
-  subroutine limit_default(limit_default482,15500
-  subroutine dynamics_default(dynamics_default494,15808
-  subroutine snapshot_default(snapshot_default507,16163
-  subroutine solver_default(solver_default518,16514
-  subroutine cell_change_default(cell_change_default537,17221
-  subroutine output_default(output_default548,17602
-  subroutine distributed_default(distributed_default566,18090
-  subroutine config_print(config_print585,18765
-  subroutine system_print(system_print601,19242
-  subroutine target_print(target_print622,19832
-  subroutine calc_print(calc_print666,21034
-  subroutine limit_print(limit_print678,21328
-  subroutine dynamics_print(dynamics_print689,21605
-  subroutine solver_print(solver_print701,21963
-  subroutine output_print(output_print713,22320
-  subroutine file_print(file_print725,22634
-  function target_match(target_match739,22991
-  subroutine target_overwrite(target_overwrite791,24242
-
-elses-eig-leg.f90,414
-      subroutine elses_set_eig_leg_atmpelses_set_eig_leg_atmp11,438
-      subroutine elses_seteig3(elses_seteig3188,5502
-      subroutine elses_eig_mateig(elses_eig_mateig441,13933
-        subroutine CalculateEivenvaluesOfOverlapCalculateEivenvaluesOfOverlap656,20270
-      subroutine elses_eig_chem_potelses_eig_chem_pot676,21044
-      subroutine elses_eig_set_dens_matelses_eig_set_dens_mat886,27541
-
-elses-eig-standard.f90,47
-  subroutine eig_standard(eig_standard18,550
-
-elses-hami-gaas-molteni.f90,219
-subroutine elses_set_hami_gaas_moltenielses_set_hami_gaas_molteni29,1276
-subroutine elses_set_rest_gaas_Moltenielses_set_rest_gaas_Molteni522,17701
-      subroutine elses_force_moltenielses_force_molteni761,24164
-
-elses-ini-load-common.f90,521
-  subroutine load_xml_configload_xml_config19,583
-  subroutine ini_load_commonini_load_common173,5536
-  subroutine load_element_allocload_element_alloc250,8085
-  subroutine load_structure_allocload_structure_alloc306,9600
-  subroutine set_structure_dataset_structure_data370,11453
-  subroutine set_unitcell_infoset_unitcell_info476,15177
-  subroutine load_xml_conditionsload_xml_conditions596,19123
-  subroutine ini_misc_setini_misc_set641,20402
-  subroutine ini_misc_set_genoini_misc_set_geno676,21419
-
-elses-ini-load-geno.f90,278
-  subroutine ini_load_genoini_load_geno16,436
-  subroutine for_conversion_modefor_conversion_mode110,3553
-  subroutine load_element_infoload_element_info149,4691
-  subroutine set_tot_elec_numset_tot_elec_num368,11326
-  subroutine chk_input_datachk_input_data447,13708
-
-elses-ini-set-str-from-matom.f90,80
-  subroutine set_structure_data_from_matomset_structure_data_from_matom18,523
-
-elses-ini-set-str-from-vatom.f90,151
-  subroutine set_atm_position_from_txset_atm_position_from_tx19,571
-  subroutine set_structure_data_from_vatomset_structure_data_from_vatom90,2985
-
-elses-io-ctrl-dos-plot.f90,78
-   subroutine initial_preparation_for_dos(initial_preparation_for_dos20,553
-
-elses-io-ctrl-plot-eigenstates.f90,152
-   subroutine set_filename_for_save_wfn(set_filename_for_save_wfn21,607
-   subroutine init_for_plot_wavefunction(init_for_plot_wavefunction101,3143
-
-elses-io-dst-system-load.f90,76
-  subroutine dst_structure_load_from_txtdst_structure_load_from_txt22,697
-
-elses-io-dst-write-log.f90,66
-  subroutine set_dst_write_log_fileset_dst_write_log_file23,696
-
-elses-io-pair-list-for-cohp.f90,135
-   subroutine set_pair_num_for_cohp(set_pair_num_for_cohp23,657
-   subroutine set_pair_list_for_cohp(set_pair_list_for_cohp94,2762
-
-elses-io-read-xyz-file.f90,205
-  subroutine get_basic_info_from_xyz(get_basic_info_from_xyz19,598
-  subroutine get_position_from_xyz(get_position_from_xyz110,3730
-  subroutine read_first_line_of_xyz(read_first_line_of_xyz177,6012
-
-elses-io-update-snapshot.f90,52
-  subroutine update_snapshotupdate_snapshot20,566
-
-elses-la-eigen-solver.f90,69
-  subroutine la_eigen_solver_wrapper(la_eigen_solver_wrapper19,567
-
-elses-la-eigen-tridiag.f90,55
-  subroutine calc_eig_tridiag(calc_eig_tridiag16,341
-
-elses-la-gkrylov-hist.f90,235
-  subroutine check_proj_listcheck_proj_list55,1836
-  subroutine alloc_for_histalloc_for_hist194,5837
-  subroutine alloc_for_hist_stralloc_for_hist_str287,8560
-  subroutine set_s_inv_e_j_for_hist(set_s_inv_e_j_for_hist373,11554
-
-elses-la-gkrylov-main-dstm.f90,57
-  subroutine gkrylov_main_dstm(gkrylov_main_dstm18,531
-
-elses-la-gkrylov-main.f90,47
-  subroutine gkrylov_main(gkrylov_main17,447
-
-elses-la-gkrylov-output.f90,174
-  subroutine calc_eigen_in_gkrylovcalc_eigen_in_gkrylov21,478
-  subroutine get_v_v_product(get_v_v_product480,16546
-  subroutine get_kr_eig_vec(get_kr_eig_vec511,17572
-
-elses-la-gscocg-cg-s-mat.f90,49
-  subroutine cg_s_mat_proj(cg_s_mat_proj31,823
-
-elses-la-gscocg-main.f90,45
-  subroutine gscocg_main(gscocg_main17,461
-
-elses-la-gscocg-tru-res.f90,47
-  subroutine calc_tru_res(calc_tru_res31,821
-
-elses-la-krgl-main.f90,596
-  subroutine krgl_alloc(krgl_alloc34,948
-  subroutine krgl_main(krgl_main87,2553
-  subroutine calc_u_su_hu(calc_u_su_hu845,27701
-  subroutine schmidt_orth_w_s_mat(schmidt_orth_w_s_mat910,29652
-  subroutine calc_eig(calc_eig934,30355
-  subroutine set_chemical_potential(set_chemical_potential1043,33587
-  subroutine plot_ldos_in_krglplot_ldos_in_krgl1227,38741
-  subroutine reset_dsijreset_dsij1396,44261
-  subroutine check_matrix(check_matrix1423,45030
-  subroutine sym_dbij_and_dpijsym_dbij_and_dpij1470,46337
-  subroutine get_num_of_nonzeros(get_num_of_nonzeros1528,47842
-
-elses-la-matvec-dst.f90,55
-  subroutine matvec_mul_dst_r(matvec_mul_dst_r22,654
-
-elses-la-matvec-io.f90,403
-  subroutine matvec_init(matvec_init36,888
-  subroutine get_interaction_list_number(get_interaction_list_number142,3771
-  subroutine set_interaction_list(set_interaction_list154,4231
-  subroutine calc_nj(calc_nj182,5006
-  subroutine matvec_mul(matvec_mul211,5626
-  subroutine inner_product_with_s(inner_product_with_s258,6946
-  subroutine inner_product_with_h(inner_product_with_h284,7705
-
-elses-la-matvec-routines-dstm.f90,162
-  subroutine matvec_mul_dstm(matvec_mul_dstm23,723
-  subroutine calc_u_su_hu_dstm(calc_u_su_hu_dstm79,2649
-  subroutine cg_s_mat_dstm(cg_s_mat_dstm141,4805
-
-elses-la-matvec-routines.f90,169
-  subroutine matvec_mul_proj_r(matvec_mul_proj_r24,719
-  subroutine cg_s_mat_proj_r2(cg_s_mat_proj_r2136,4590
-  subroutine cg_s_mat_proj_r(cg_s_mat_proj_r252,7815
-
-elses-lib-dst-info.f90,0
-
-elses-lib-element-name.f90,234
-  subroutine get_element_name(get_element_name28,789
-  subroutine get_atomic_num(get_atomic_num57,1656
-  subroutine show_db_element_nameshow_db_element_name96,2765
-  subroutine make_db_element_namemake_db_element_name120,3399
-
-elses-lib-math-func.f90,107
-  function Fermi_Dirac_Func Fermi_Dirac_Func22,524
-  subroutine get_determinant(get_determinant48,1237
-
-elses-lib-mpi-wrapper-compile.f90,1011
-  subroutine mpi_wrapper_initial(mpi_wrapper_initial44,1479
-  subroutine mpi_wrapper_finalmpi_wrapper_final69,2165
-  subroutine mpi_wrapper_allreduce_r5(mpi_wrapper_allreduce_r585,2606
-  subroutine mpi_wrapper_allreduce_r4(mpi_wrapper_allreduce_r497,2931
-  subroutine mpi_wrapper_allreduce_r3(mpi_wrapper_allreduce_r3109,3254
-  subroutine mpi_wrapper_allreduce_r2(mpi_wrapper_allreduce_r2121,3575
-  subroutine mpi_wrapper_allreduce_r1(mpi_wrapper_allreduce_r1133,3894
-  subroutine mpi_wrapper_allreduce_i2(mpi_wrapper_allreduce_i2145,4211
-  subroutine mpi_wrapper_allreduce_i1(mpi_wrapper_allreduce_i1157,4530
-  subroutine mpi_wrapper_allreduce_i1c(mpi_wrapper_allreduce_i1c169,4847
-  subroutine mpi_wrapper_allreduce_r0(mpi_wrapper_allreduce_r0182,5232
-  subroutine mpi_wrapper_allreduce_minmax_r1(mpi_wrapper_allreduce_minmax_r1193,5550
-  subroutine mpi_wrapper_barrier_time(mpi_wrapper_barrier_time206,5939
-  subroutine mpi_wrapper_allreduce_chk(mpi_wrapper_allreduce_chk218,6265
-
-elses-lib-omp.f90,163
-  subroutine show_mpi_omp_infoshow_mpi_omp_info17,444
-  subroutine show_omp_infoshow_omp_info51,1407
-  subroutine zero_clear_omp_r4(zero_clear_omp_r481,2107
-
-elses-lib-phys-const.f90,0
-
-elses-lib-quad-precision.f90,65
-  subroutine quad_prec_test_for_pi(quad_prec_test_for_pi18,500
-
-elses-lib-random-num.f90,67
-  subroutine rndini(rndini26,695
-  subroutine rndu(rndu78,1868
-
-elses-lib-report-mpi-time.f90,225
-  subroutine get_lap_of_allreduce_time(get_lap_of_allreduce_time21,676
-  subroutine get_lap_of_barrier_time(get_lap_of_barrier_time55,1709
-  subroutine record_allreduce_barrier_time(record_allreduce_barrier_time89,2720
-
-elses-lib-sort.f90,35
-  subroutine dhsort(dhsort19,889
-
-elses-lib-stop-signal.f90,59
-  subroutine detect_stop_signal(detect_stop_signal18,433
-
-elses-lib-wall-clock-time.f90,330
-   subroutine get_system_clock_time(get_system_clock_time26,653
-   subroutine get_elapse_wall_clock_time(get_elapse_wall_clock_time42,1078
-   subroutine measure_clock_time_period(measure_clock_time_period69,1841
-   subroutine show_reset_period_of_clock(show_reset_period_of_clock90,2560
-subroutine tclock(tclock115,3335
-
-elses-md-alloc.f90,59
-  subroutine array_alloc_for_md(array_alloc_for_md19,502
-
-elses-md-booking.f90,137
-  subroutine get_max_size_of_booking_list(get_max_size_of_booking_list17,543
-  subroutine plot_booking_list plot_booking_list96,2828
-
-elses-md-cell-change.f90,135
-  subroutine elses_md_cell_change(elses_md_cell_change23,724
-  subroutine elses_md_cell_change_oldelses_md_cell_change_old231,7730
-
-elses-md-constraint.f90,60
-  subroutine elses_md_constraintelses_md_constraint20,591
-
-elses-md-dst-booking.f90,182
-   subroutine set_len_bk_list_dst(set_len_bk_list_dst33,1075
-   subroutine set_bk_list_dst(set_bk_list_dst134,4132
-   subroutine dealloc_bk_list_dstdealloc_bk_list_dst227,6956
-
-elses-md-dst-cell.f90,470
-   subroutine initial_mcell_bookinginitial_mcell_booking40,1369
-   subroutine set_paramters_for_bookingset_paramters_for_booking360,12550
-   subroutine get_j_cell(get_j_cell475,17400
-   subroutine get_j_cell_xyz(get_j_cell_xyz492,17938
-  subroutine get_neighbor_cell_list(get_neighbor_cell_list511,18582
-  subroutine get_cell_index_for_atom(get_cell_index_for_atom562,20107
-   subroutine initial_cell_booking_one_cellinitial_cell_booking_one_cell609,21504
-
-elses-md-dst-get-atom-range.f90,198
-  subroutine dst_get_index_range(dst_get_index_range21,598
-  subroutine dst_get_atm_index_range(dst_get_atm_index_range67,1946
-  subroutine a_x_b_divided_by_c_i8(a_x_b_divided_by_c_i8119,3603
-
-elses-md-dst-update-cell-booking.f90,183
-   subroutine update_cell_bookingupdate_cell_booking24,738
-   subroutine set_cell_for_atomset_cell_for_atom249,9213
-   subroutine check_cell_booking check_cell_booking357,13257
-
-elses-md-dst.f90,153
-  subroutine set_dst_initialset_dst_initial50,2145
-  subroutine set_dst_finalset_dst_final119,4300
-  subroutine show_mpi_infoshow_mpi_info139,4803
-
-elses-md-get-distance.f90,121
-   subroutine get_vector_for_atom_pair(get_vector_for_atom_pair23,602
-   subroutine get_distance(get_distance60,1793
-
-elses-md-main.f90,54
-  subroutine elses_md_main_01elses_md_main_0117,423
-
-elses-md-make-bk-list-w-cell.f90,62
-   subroutine make_bk_list_w_cell(make_bk_list_w_cell26,742
-
-elses-md-motion-verlet.f90,195
-  subroutine md_motion_verlet_velocity(md_motion_verlet_velocity33,1191
-  subroutine md_motion_verlet_positionmd_motion_verlet_position230,7563
-  subroutine md_heatbathmd_heatbath387,12577
-
-elses-md-motion.f90,460
-   subroutine elses_md_motion_ini_setelses_md_motion_ini_set27,796
-   subroutine elses_ini_set_velocityelses_ini_set_velocity102,3715
-   subroutine elses_md_motionelses_md_motion138,4799
-  subroutine optimization_check(optimization_check232,8737
-  subroutine steepest_descent(steepest_descent368,13173
-  subroutine md_update_txmd_update_tx466,15725
-  function get_atom_dist(get_atom_dist518,17060
-subroutine elses_gene_txelses_gene_tx554,18189
-
-elses-md-output-atom-energy.f90,111
-  subroutine output_atom_energyoutput_atom_energy23,524
-  subroutine output_setting(output_setting121,3644
-
-elses-md-output.f90,380
-   subroutine elses_md_output_mainelses_md_output_main32,1032
-   subroutine setting_for_main_outputsetting_for_main_output204,6892
-   subroutine output_energyoutput_energy254,8699
-   subroutine output_force_ave_maxoutput_force_ave_max305,10877
-   subroutine md_output_compatmd_output_compat353,12420
-   subroutine output_csc_convergenceoutput_csc_convergence451,15242
-
-elses-md-save-restart-xml.f90,269
-  subroutine save_restart_xml(save_restart_xml16,472
-  subroutine save_restart_xml_main(save_restart_xml_main70,2123
-  subroutine unitcell_save(unitcell_save295,10636
-  subroutine heatbath_save(heatbath_save313,11307
-  subroutine atom_save(atom_save331,11990
-
-elses-md-save-struct.f90,540
-  subroutine elses_md_save_struct(elses_md_save_struct18,538
-  subroutine save_velocity_datasave_velocity_data77,2343
-  subroutine save_position_datasave_position_data144,4504
-  subroutine save_struct_xyz(save_struct_xyz308,10082
-  subroutine save_struct_axsf(save_struct_axsf362,11717
-  subroutine save_struct_axsf_npbc(save_struct_axsf_npbc506,16726
-  subroutine save_struct_xsf(save_struct_xsf586,19349
-  subroutine save_struct_xsf_npbc(save_struct_xsf_npbc661,22047
-  subroutine get_atomic_num(get_atomic_num725,24144
-
-elses-md-velocity-routines.f90,448
-  subroutine calc_kinetic_energy(calc_kinetic_energy24,738
-  subroutine calc_total_momentum(calc_total_momentum87,2688
-  subroutine calc_total_momentum_abs(calc_total_momentum_abs125,4090
-  subroutine adjust_velocityadjust_velocity162,5496
-  subroutine calc_initial_velocitycalc_initial_velocity239,8100
-  subroutine set_velocity_from_maxwellset_velocity_from_maxwell405,13135
-  subroutine allocate_velocityallocate_velocity501,15925
-
-elses-mod-file-io.f90,52
-   integer function vacant_unit(vacant_unit23,795
-
-elses-options.f90,194
-  subroutine elses_process_optionselses_process_options18,729
-  function command_argument_count(command_argument_count62,2210
-  subroutine get_command_argument(get_command_argument76,2596
-
-elses-qm-alloc-charge.f90,131
-   subroutine allocate_charge_arrays(allocate_charge_arrays24,692
-   subroutine allocate_csc_arrays(allocate_csc_arrays86,2754
-
-elses-qm-charge-from-weight-dst.f90,69
-  subroutine calc_charge_from_wt_dst(calc_charge_from_wt_dst25,768
-
-elses-qm-chk-allocated.f90,57
-   subroutine chk_allocated_dstchk_allocated_dst20,504
-
-elses-qm-cohp-dstm-plot.f90,111
-  subroutine prep_cohp_dstprep_cohp_dst32,1104
-  subroutine calc_cohp_dstm_plot calc_cohp_dstm_plot97,3205
-
-elses-qm-cohp-dstm.f90,51
-  subroutine calc_cohp_dstm(calc_cohp_dstm25,680
-
-elses-qm-domain.f90,470
-   subroutine qm_domain_settingqm_domain_setting67,2589
-   subroutine qm_domain_ini_settingqm_domain_ini_setting133,4628
-   subroutine qm_domain_allocate_csc qm_domain_allocate_csc241,7595
-   subroutine make_booking_listmake_booking_list349,10731
-   subroutine generate_foigenerate_foi502,15471
-subroutine mullikenmulliken544,16469
-subroutine qm_domain_ini_compatqm_domain_ini_compat618,18635
-   subroutine get_length_of_list(get_length_of_list654,19634
-
-elses-qm-dst-dens-mat.f90,361
-  subroutine alloc_dst_dens_matalloc_dst_dens_mat38,1293
-  subroutine dealloc_dst_dens_matdealloc_dst_dens_mat85,3049
-  subroutine qm_calc_etb_dst(qm_calc_etb_dst111,3972
-  subroutine set_tb_force_dst(set_tb_force_dst182,6300
-  subroutine calc_mulliken_dstcalc_mulliken_dst264,9465
-  subroutine calc_mulliken_dst_testcalc_mulliken_dst_test353,12957
-
-elses-qm-dst-domain.f90,317
-   subroutine qm_domain_setting_dstqm_domain_setting_dst32,929
-   subroutine get_distance(get_distance108,3668
-  subroutine proj_init_end_dst(proj_init_end_dst143,4830
-  subroutine set_projection_dst_cell(set_projection_dst_cell232,7999
-  subroutine set_atom_list_from_cell(set_atom_list_from_cell455,17025
-
-elses-qm-dst-global-dens-mat.f90,67
-  subroutine set_global_density_mat(set_global_density_mat22,542
-
-elses-qm-dst-global-ham-mat.f90,170
-   subroutine set_ham_tb0_and_overlap_globalset_ham_tb0_and_overlap_global21,535
-   subroutine plot_ham_tb0_and_overlap_globalplot_ham_tb0_and_overlap_global111,3777
-
-elses-qm-dst-global-weight.f90,309
-  subroutine set_global_weight_mat(set_global_weight_mat24,621
-  subroutine set_chem_pot_by_global_weight_mat(set_chem_pot_by_global_weight_mat69,2246
-  subroutine alloc_global_weight_mat(alloc_global_weight_mat85,2769
-  subroutine plot_ldos_by_global_weight_matplot_ldos_by_global_weight_mat139,4431
-
-elses-qm-dst-micro-mat.f90,302
-  subroutine set_ham_tb0_and_overlap_dstm(set_ham_tb0_and_overlap_dstm20,623
-   subroutine set_mat_tb0_diag_loc(set_mat_tb0_diag_loc188,7040
-  subroutine set_size_for_dstm_micro_mat(set_size_for_dstm_micro_mat241,9098
-  subroutine set_size_for_dst_micro_mat(set_size_for_dst_micro_mat302,11364
-
-elses-qm-dst-projection-cell.f90,183
-  subroutine set_dst_atm_listset_dst_atm_list59,2324
-  subroutine proj_get_mat_size_dst(proj_get_mat_size_dst348,11938
-  subroutine proj_get_list_dst(proj_get_list_dst431,14566
-
-elses-qm-dstm-get-nna-distance.f90,65
-  subroutine get_nna_distance_dstm(get_nna_distance_dstm33,945
-
-elses-qm-dstm-ini-setting.f90,75
-   subroutine qm_domain_ini_setting_dstmqm_domain_ini_setting_dstm21,698
-
-elses-qm-engine-csc-tb0.f90,57
-   subroutine qm_engine_csc_tb0qm_engine_csc_tb018,566
-
-elses-qm-engine-csc.f90,158
-   subroutine qm_engine_cscqm_engine_csc19,583
-       subroutine write_ham_cscwrite_ham_csc144,5187
-   subroutine tune_mix_ratio(tune_mix_ratio164,5994
-
-elses-qm-engine-dst.f90,107
-   subroutine qm_engine_dstqm_engine_dst19,635
-   subroutine calc_total_forcecalc_total_force334,11191
-
-elses-qm-engine-nrl.f90,49
-   subroutine qm_engine_nrlqm_engine_nrl18,501
-
-elses-qm-engine.f90,53
-   subroutine elses_qm_engineelses_qm_engine18,556
-
-elses-qm-flexible-cutoff.f90,60
-  subroutine flexible_cutoff_iniflexible_cutoff_ini16,438
-
-elses-qm-geno-Huckel-atom-parameters.f90,1045
-  subroutine GetChemicalHardness(GetChemicalHardness103,5072
-  subroutine GetInitialENum(GetInitialENum115,5512
-  subroutine GetInitialOcc(GetInitialOcc129,6007
-  function normDoubleZeta(normDoubleZeta149,6691
-  subroutine SetAtomParameters(SetAtomParameters157,7025
-    function Load_XML_AtomParameter(Load_XML_AtomParameter327,14532
-    subroutine replaceAll(replaceAll537,22346
-    subroutine normalizeString(normalizeString548,22650
-    subroutine load_cArray(load_cArray557,23024
-    subroutine load_iArray(load_iArray570,23435
-    subroutine load_dArray(load_dArray583,23837
-    subroutine setDefaultElecConf(setDefaultElecConf596,24254
-    subroutine setDefaultOccupation(setDefaultOccupation728,29723
-    subroutine renormalizeDoubleZeta(renormalizeDoubleZeta769,31025
-    subroutine setStandard(setStandard805,32704
-    subroutine load_default(load_default863,35289
-    subroutine write_information(write_information1045,44219
-    subroutine create_element_xml_file(create_element_xml_file1087,46700
-
-elses-qm-geno-Huckel.f90,618
- subroutine initOVLCalc(initOVLCalc30,1085
- subroutine SetOverlap(SetOverlap79,2627
-  subroutine calc_SS_dSS(calc_SS_dSS285,11927
-    function A(A371,15862
-    function B(B411,17378
-  subroutine SetDiagonalElements(SetDiagonalElements479,19651
-  subroutine SetDiagonalShifts(SetDiagonalShifts569,23221
-  subroutine SetNondiagonalElements(SetNondiagonalElements588,23877
-    function K(K696,27850
-    function dK(dK709,28255
-  function RepulsiveEnergy(RepulsiveEnergy732,28966
-    function fdamp(fdamp878,35744
-    function twobody1(twobody1904,36399
-    function twobody2(twobody2932,37404
-
-elses-qm-geno-csc-dst.f90,371
-  subroutine set_CSC_parameters_geno_dst set_CSC_parameters_geno_dst25,777
-  subroutine set_hamiltonian_csc_dstset_hamiltonian_csc_dst46,1584
-  subroutine set_atm_force_csc_dstset_atm_force_csc_dst148,5043
-  subroutine set_atm_force_csc_prep_dst set_atm_force_csc_prep_dst177,6099
-  subroutine set_atm_force_csc_overlap_dstset_atm_force_csc_overlap_dst240,7847
-
-elses-qm-geno-csc.f90,513
-  subroutine set_CSC_parameters_genoset_CSC_parameters_geno18,507
-  function s11(s1138,1293
-  function ds11(ds1165,2129
-  subroutine elses_get_gammaelses_get_gamma96,3196
-  subroutine set_hamiltonian_cscset_hamiltonian_csc167,5393
-  subroutine set_atm_force_cscset_atm_force_csc215,6688
-  subroutine set_atm_force_csc_prepset_atm_force_csc_prep226,7067
-  subroutine set_atm_force_csc_overlapset_atm_force_csc_overlap278,8271
-  subroutine set_atm_force_csc_dgammaset_atm_force_csc_dgamma334,9715
-
-elses-qm-geno-dst.f90,137
-   subroutine set_ham_tb0_and_overlap_dst(set_ham_tb0_and_overlap_dst33,1327
-   subroutine set_mat_tb0_diagset_mat_tb0_diag295,11210
-
-elses-qm-geno-output.f90,333
-  subroutine qm_geno_outputqm_geno_output30,714
-  subroutine output_for_eigen_solveroutput_for_eigen_solver147,4634
-  subroutine qm_calc_etb(qm_calc_etb202,6489
-  subroutine qm_calc_ecsc(qm_calc_ecsc263,8131
-  subroutine qm_calc_etb_atom(qm_calc_etb_atom288,8759
-  subroutine qm_calc_ecsc_atom(qm_calc_ecsc_atom335,10167
-
-elses-qm-geno-rest-dstm.f90,61
-  subroutine calc_geno_rest_dstm(calc_geno_rest_dstm20,513
-
-elses-qm-geno.f90,740
-     subroutine initialize_chargeinitialize_charge26,673
-     subroutine renew_charge(renew_charge34,999
-   subroutine set_hamiltonian_and_overlap_geno(set_hamiltonian_and_overlap_geno61,2106
-       subroutine browsGreaterElementsOfOverlapMatrix(browsGreaterElementsOfOverlapMatrix201,6952
-       integer function jsd_diagonal(jsd_diagonal275,9445
-   subroutine write_hamiltonian_and_overlap_geno(write_hamiltonian_and_overlap_geno290,9935
-   subroutine write_Ecc_perAtom_geno(write_Ecc_perAtom_geno370,13119
-   subroutine set_rest_geno(set_rest_geno413,14430
-   subroutine set_qm_force_genoset_qm_force_geno491,16908
-   function rms_delta_q(rms_delta_q554,19165
-   subroutine calc_e_rep_atom(calc_e_rep_atom580,19779
-
-elses-qm-nrl.f90,519
-  subroutine qm_nrl_ini(qm_nrl_ini24,651
-  subroutine qm_nrl_init_allocqm_nrl_init_alloc58,1654
-  subroutine qm_nrl_set_hamqm_nrl_set_ham120,3488
-  subroutine qm_nrl_set_forceqm_nrl_set_force187,5559
-  subroutine qm_nrl_set_force_extraqm_nrl_set_force_extra237,6969
-subroutine elses_nrl_ini(elses_nrl_ini302,8646
-subroutine elses_init_alloc_nrl_legelses_init_alloc_nrl_leg315,8986
-subroutine elses_set_hami_nrl_legelses_set_hami_nrl_leg325,9300
-subroutine elses_nrl_set_forcelses_nrl_set_forc335,9604
-
-elses-qm-output-atom-charge-ortho.f90,71
-  subroutine output_atom_charge_ortho(output_atom_charge_ortho18,495
-
-elses-qm-output-atom-charge.f90,111
-  subroutine output_atom_chargeoutput_atom_charge19,505
-  subroutine output_setting(output_setting148,4606
-
-elses-qm-output-eigenstates.f90,448
-  subroutine output_eigenstates(output_eigenstates18,411
-  subroutine output_number_of_atomoutput_number_of_atom73,1615
-  subroutine output_cell_informationoutput_cell_information89,2019
-  subroutine output_atom_species(output_atom_species110,2788
-  subroutine output_atom_parameter(output_atom_parameter135,3373
-  subroutine output_atom_position(output_atom_position220,6216
-  subroutine output_coefficientoutput_coefficient234,6551
-
-elses-qm-output-icohp.f90,53
-  subroutine qm_output_icohp(qm_output_icohp25,637
-
-elses-qm-output-levels.f90,55
-  subroutine qm_output_levels(qm_output_levels23,558
-
-elses-qm-output-matrices.f90,247
-  subroutine output_levels_matricesoutput_levels_matrices25,649
-  subroutine set_active_status(set_active_status119,3761
-  subroutine set_append_mode(set_append_mode193,6900
-  subroutine qm_output_matrices_mm(qm_output_matrices_mm238,8322
-
-elses-qm-output-participation.f90,58
-  subroutine calc_participationcalc_participation17,473
-
-elses-qm-output-rest-energy-pair.f90,64
-  subroutine plot_rest_energy_pairplot_rest_energy_pair24,610
-
-elses-qm-partial-trace-dstm.f90,368
-  subroutine set_interac_list_dstm(set_interac_list_dstm27,761
-  subroutine set_interac_list_dstm_old(set_interac_list_dstm_old90,2694
-  subroutine calc_partial_trace_dstm(calc_partial_trace_dstm190,5873
-  subroutine set_booking_list_rev1_dstm(set_booking_list_rev1_dstm310,10119
-  subroutine calc_partial_tb0_force_dstm(calc_partial_tb0_force_dstm338,11037
-
-elses-qm-population-ortho.f90,64
-  subroutine save_population_orthosave_population_ortho26,694
-
-elses-qm-population.f90,229
-  subroutine initial_guess_for_chargeinitial_guess_for_charge24,602
-  subroutine save_population_after_convergencesave_population_after_convergence87,2763
-  subroutine update_population_guessupdate_population_guess134,4394
-
-elses-qm-projection-list-dstm.f90,71
-  subroutine set_projection_list_dstm(set_projection_list_dstm25,775
-
-elses-qm-projection-suggest.f90,133
-  subroutine suggest_proj_radius(suggest_proj_radius22,552
-  subroutine suggest_proj_radius_wrap(suggest_proj_radius_wrap77,2516
-
-elses-qm-projection.f90,621
-  subroutine proj_init_end(proj_init_end28,725
-  subroutine proj_initproj_init87,2757
-  subroutine proj_get_mat_size(proj_get_mat_size115,3551
-  subroutine proj_get_list(proj_get_list180,5578
-  subroutine get_interac_list_num_proj_atom(get_interac_list_num_proj_atom240,7406
-  subroutine get_interac_list_num_proj(get_interac_list_num_proj268,8233
-  subroutine set_interac_list_proj(set_interac_list_proj292,9064
-  subroutine matvec_mul_proj(matvec_mul_proj346,10814
-  subroutine inner_product_with_s_proj(inner_product_with_s_proj436,13740
-  subroutine convert_dm_and_edm(convert_dm_and_edm482,15083
-
-elses-qm-set-s-as-i.f90,51
-  subroutine set_s_mat_as_i(set_s_mat_as_i16,428
-
-elses-qm-solver-eig-geno.f90,372
-   subroutine qm_solver_eig_genoqm_solver_eig_geno24,677
-  subroutine plot_eigen_levelsplot_eigen_levels134,4254
-  subroutine copy_to_full_matricescopy_to_full_matrices201,6488
-  subroutine set_eigen_statesset_eigen_states262,8155
-  subroutine set_density_matrixset_density_matrix292,8992
-  subroutine plot_spectrum_from_eigenplot_spectrum_from_eigen424,13254
-
-elses-qm-solver-geno-main.f90,123
-  subroutine qm_solver_geno_mainqm_solver_geno_main20,477
-  subroutine qm_solver_ortho_mainqm_solver_ortho_main78,2394
-
-elses-qm-solver-gkrylov-dst.f90,423
-  subroutine qm_solver_gkrylov_dst(qm_solver_gkrylov_dst27,881
-  subroutine set_chemical_potential_dst(set_chemical_potential_dst988,42834
-  subroutine get_max_booking_list_length(get_max_booking_list_length1137,47560
-  subroutine get_elec_num_for_atom(get_elec_num_for_atom1169,48806
-  subroutine convert_dm_and_edm_dst(convert_dm_and_edm_dst1212,50021
-  subroutine proj_init_compat proj_init_compat1293,52739
-
-elses-qm-solver-gkrylov.f90,125
-  subroutine qm_solver_gkrylov(qm_solver_gkrylov20,445
-  subroutine get_elec_num_for_atom(get_elec_num_for_atom320,11222
-
-elses-qm-solver-gscocg.f90,154
-  subroutine qm_solver_gscocgqm_solver_gscocg20,443
-  function Fermi(Fermi229,7065
-  subroutine get_elec_num_for_atom(get_elec_num_for_atom239,7408
-
-elses-qm-solver-krgl.f90,118
-  subroutine qm_solver_krgl(qm_solver_krgl20,439
-  subroutine get_elec_num_for_atom(get_elec_num_for_atom198,5934
-
-elses-vis-main.f90,49
-subroutine elses_vis_init(elses_vis_init22,736
-
-elses-vis-rasmol.f90,52
-subroutine elses_vis_rasmol(elses_vis_rasmol5,206
-
-elses-vis-xyz-extended.f90,65
-subroutine elses_vis_xyz_extended(elses_vis_xyz_extended11,497
-
-elses-xml-03.f90,82
-subroutine elses_xml_load_elec_temperatureelses_xml_load_elec_temperature14,559
-
-elses-xml-compat-check.f90,188
-  subroutine check_xml_compatcheck_xml_compat19,506
-  subroutine check_xml_compat_dstcheck_xml_compat_dst41,1058
-  subroutine check_xml_compat_non_dstcheck_xml_compat_non_dst61,1738
-
-elses-xml-config.f90,1780
-  subroutine getElements(getElements25,591
-  function DB_find(DB_find36,816
-  function DB_pushback(DB_pushback53,1165
-  subroutine element_load(element_load85,2066
-  subroutine classic_load(classic_load260,7802
-  subroutine quantum_load(quantum_load296,8809
-  subroutine structure_loadXYZ(structure_loadXYZ407,12018
-  subroutine structure_saveXYZ(structure_saveXYZ498,14824
-  subroutine structure_load(structure_load535,15808
-  subroutine structure_element_load(structure_element_load628,18919
-  subroutine heatbath_load(heatbath_load673,20520
-  subroutine unitcell_load(unitcell_load732,22354
-  subroutine atom_load(atom_load832,25417
-  subroutine structure_save(structure_save975,29712
-  subroutine unitcell_save(unitcell_save1012,30788
-  subroutine heatbath_save(heatbath_save1029,31407
-  subroutine atom_save(atom_save1046,32038
-  subroutine config_load(config_load1106,33798
-  subroutine system_load(system_load1192,36362
-  subroutine target_load(target_load1439,45920
-  subroutine calc_load(calc_load1592,50372
-  subroutine optimization_load(optimization_load1750,56590
-  subroutine genoOption_load(genoOption_load1817,59539
-  subroutine limit_load(limit_load1935,64081
-  subroutine dynamics_load(dynamics_load1995,65822
-  subroutine solver_load(solver_load2045,67227
-  subroutine distributed_load(distributed_load2178,73061
-  subroutine snapshot_load(snapshot_load2305,78905
-  subroutine cell_change_load(cell_change_load2341,80395
-  subroutine load_calc_check(load_calc_check2392,82372
-  subroutine output_load(output_load2468,85554
-  subroutine file_load(file_load2609,90510
-  subroutine file_load_matrices(file_load_matrices2695,93172
-  subroutine file_load_eigen_level(file_load_eigen_level2823,97623
-
-elses-xml-misc.f90,120
-  subroutine XML_error(XML_error11,311
-  function XML_TO_AU(XML_TO_AU21,548
-  function XML_AU_TO(XML_AU_TO49,1340
-
-elses-xml-sax-counter.f90,143
-  subroutine begin_element(begin_element36,923
-  subroutine pcdata_chunk(pcdata_chunk87,2558
-  subroutine end_element(end_element98,2766
-
-elses-xml-sax-data-sync-matom.f90,64
-  subroutine struc_data_sync_matomstruc_data_sync_matom17,509
-
-elses-xml-sax-data-sync.f90,112
-  subroutine struc_data_syncstruc_data_sync17,497
-  subroutine inquire_data_kind(inquire_data_kind527,15325
-
-elses-xml-sax-handler.f90,250
-  subroutine xml_flag_initxml_flag_init46,1366
-  subroutine xml_flag_check(xml_flag_check69,2178
-  subroutine begin_element(begin_element96,3328
-  subroutine pcdata_chunk(pcdata_chunk393,14901
-   subroutine end_element(end_element626,25549
-
-elses-xml-sax-parser.f90,265
-  subroutine struc_load_sax(struc_load_sax12,276
-   subroutine get_system_clock_time(get_system_clock_time458,17571
-   subroutine measure_clock_time_period(measure_clock_time_period474,17996
-  subroutine a_x_b_divided_by_c_i8(a_x_b_divided_by_c_i8495,18751
-
-elses-xml-selftest.f90,30
-  subroutine mainmain16,397
-
-Nrl/nrlvar.f,0
-
-Nrl/nrladapt.f90,465
-  subroutine NrlReadTBParameters(NrlReadTBParameters59,1691
-  subroutine NrlBuildMatrices(NrlBuildMatrices142,4228
-  subroutine NrlBuildForces(NrlBuildForces169,5038
-  subroutine NrlWriteLocalDos(NrlWriteLocalDos210,6388
-  subroutine NrlWritePartialDos(NrlWritePartialDos252,7710
-  subroutine NrlWriteCohp(NrlWriteCohp295,9079
-  subroutine BuildRepulsiveEnergy(BuildRepulsiveEnergy341,10572
-  subroutine AddRepulsiveForce(AddRepulsiveForce365,11318
-
-Nrl/nrlcut.f90,0
-
-Nrl/nrlhop.f90,1634
-  subroutine SetBondCutOff(SetBondCutOff143,3002
-  subroutine InitHoppingMatrix(InitHoppingMatrix215,5121
-  subroutine GetHopBond(GetHopBond231,5645
-  subroutine PositionDerivative(PositionDerivative247,6035
-  subroutine GetHoppingDerivativeList(GetHoppingDerivativeList266,6658
-  subroutine PotentialDerivative(PotentialDerivative284,7170
-  subroutine ReleaseHoppingMatrix(ReleaseHoppingMatrix307,7898
-  subroutine GetL(GetL318,8237
-  integer function LFromLM(LFromLM330,8559
-  integer function LesserL(LesserL346,8894
-  subroutine SetCutOffFunction(SetCutOffFunction358,9214
-  subroutine InitHopBuilder(InitHopBuilder382,9884
-  subroutine ReleaseHopBuilder(ReleaseHopBuilder392,10120
-  subroutine AllocateHopBuilder(AllocateHopBuilder402,10373
-  subroutine DeallocateHopBuilder(DeallocateHopBuilder428,11200
-  subroutine GetMatrixOfAtomPair(GetMatrixOfAtomPair450,11728
-  subroutine GetDerivativeOfAtomPair(GetDerivativeOfAtomPair503,13591
-  subroutine ReadCutOffFunction(ReadCutOffFunction536,14726
-  subroutine InvertHoppingData(InvertHoppingData564,15479
-  subroutine ReadHopHeader(ReadHopHeader576,15786
-  subroutine ReadHoppingData(ReadHoppingData602,16437
-  subroutine InvertBond(InvertBond636,17396
-  subroutine ReadHoppingBond(ReadHoppingBond649,17721
-  subroutine ReadHoppingMatrix(ReadHoppingMatrix665,18161
-  subroutine PrepareHopParameters(PrepareHopParameters698,19322
-  subroutine ReadHopParameters(ReadHopParameters710,19749
-  subroutine AllocateHoppingMatrixXML(AllocateHoppingMatrixXML735,20395
-  subroutine HoppingMatrixLoadXML(HoppingMatrixLoadXML773,21732
-
-Nrl/nrlio.f90,607
-  subroutine ReadHeaderLine(ReadHeaderLine51,1305
-  subroutine ReadSpeciesCount(ReadSpeciesCount81,2029
-  subroutine ReadBasicInfo(ReadBasicInfo108,2698
-  subroutine ReadGlobalCutOff(ReadGlobalCutOff154,3884
-  subroutine ReadHeader(ReadHeader181,4679
-  function GetOverlapSection(GetOverlapSection211,5583
-  subroutine ReadTBParametersFromUnit(ReadTBParametersFromUnit242,6365
-  subroutine ReadTBParametersFromXML(ReadTBParametersFromXML295,8432
-    subroutine initializeinitialize522,16677
-    subroutine integer_load(integer_load543,17292
-    subroutine real_load(real_load563,17808
-
-Nrl/nrlldos.f90,1002
-  subroutine LDInitLDos(LDInitLDos97,2081
-  subroutine LDReleaseLDos(LDReleaseLDos111,2443
-  subroutine DeallocateLDosRange(DeallocateLDosRange120,2677
-  subroutine SetLDosRange(SetLDosRange130,2982
-  subroutine ConstructDosFromNos(ConstructDosFromNos161,3902
-  subroutine LDWriteTo(LDWriteTo181,4452
-  subroutine LDInitLDosCalculator(LDInitLDosCalculator199,4919
-  subroutine LDReleaseLDosCalculator(LDReleaseLDosCalculator216,5410
-  subroutine DeallocateLDosCalculator(DeallocateLDosCalculator225,5697
-  subroutine LDSetSigma(LDSetSigma237,6105
-  subroutine LDAssociateMatrices(LDAssociateMatrices248,6392
-  subroutine SqrtMatrix(SqrtMatrix285,7539
-  subroutine MultiplyMatrix(MultiplyMatrix338,9002
-  subroutine ConvertBasisAsOrthogonal(ConvertBasisAsOrthogonal354,9539
-  subroutine ConstructRowList(ConstructRowList369,9976
-  subroutine LDGetLDos(LDGetLDos390,10580
-  subroutine LDGetPartialDos(LDGetPartialDos461,12627
-  subroutine LDGetCohp(LDGetCohp534,14771
-
-Nrl/nrlmatrix.f90,608
-  subroutine InitMatrixBuilder(InitMatrixBuilder68,1627
-  subroutine ReleaseMatrixBuilder(ReleaseMatrixBuilder82,2054
-  subroutine AddPairMatrix(AddPairMatrix96,2452
-  subroutine BuildHamiltonianMatrix(BuildHamiltonianMatrix115,3039
-  subroutine BuildOverlapMatrix(BuildOverlapMatrix147,4214
-  subroutine AddDerivativeToOnSiteForce(AddDerivativeToOnSiteForce180,5392
-  subroutine AddDerivativeToOffSiteForce(AddDerivativeToOffSiteForce216,6585
-  subroutine BuildHamiltonianForceOnAtom(BuildHamiltonianForceOnAtom250,7716
-  subroutine BuildOverlapForceOnAtom(BuildOverlapForceOnAtom293,9270
-
-Nrl/nrlonsite.f90,1483
-  subroutine InitOnSiteDensity(InitOnSiteDensity145,3050
-  subroutine ReleaseOnSiteDensity(ReleaseOnSiteDensity160,3460
-  subroutine ReadOnSiteEnergyParams(ReadOnSiteEnergyParams216,5293
-  subroutine SetOnSiteEnergyParamsIdentity(SetOnSiteEnergyParamsIdentity256,6304
-  subroutine InitOnSiteEnergy(InitOnSiteEnergy269,6629
-  subroutine ReleaseOnSiteEnergy(ReleaseOnSiteEnergy285,7097
-  subroutine InitOnSiteBuilder(InitOnSiteBuilder343,8827
-  subroutine ReleaseOnSiteBuilder(ReleaseOnSiteBuilder356,9189
-  subroutine DeallocateOnSiteBuilder(DeallocateOnSiteBuilder366,9474
-  subroutine AllocateOnSiteBuilder(AllocateOnSiteBuilder389,10337
-  subroutine GetOnSiteOfAtom(GetOnSiteOfAtom446,12138
-  subroutine GetOnSiteDerivativeOnSite(GetOnSiteDerivativeOnSite499,13902
-  subroutine GetOnSiteDerivative(GetOnSiteDerivative556,15932
-  subroutine ReadOnSiteHeader(ReadOnSiteHeader611,17788
-  subroutine ReadOnSiteDensity(ReadOnSiteDensity643,18538
-  subroutine ReadOnSiteEnergy(ReadOnSiteEnergy676,19480
-  subroutine SetOnSiteEnergyIdentity(SetOnSiteEnergyIdentity691,19886
-  subroutine PrepareForRead(PrepareForRead706,20323
-  subroutine ReadFromUnit(ReadFromUnit720,20843
-  subroutine SetIdentity(SetIdentity753,21657
-  subroutine AllocateOnsiteXML(AllocateOnsiteXML765,21985
-  subroutine OnsiteSetXML(OnsiteSetXML819,23754
-  subroutine OnsiteLoadXML(OnsiteLoadXML835,24308
-  subroutine OnsiteSetIdentityXML(OnsiteSetIdentityXML896,26729
-
-Nrl/nrlpair.f90,218
-  subroutine SetIdentity(SetIdentity55,1123
-  subroutine SetSizeOfPairMatrix(SetSizeOfPairMatrix74,1590
-  subroutine SetSizeOfPairForceMatrix(SetSizeOfPairForceMatrix88,1987
-  subroutine WriteTo(WriteTo98,2303
-
-Nrl/nrlrep.f90,414
-  subroutine InitRepulsiveBuilder(InitRepulsiveBuilder56,1299
-  subroutine ReleaseRepulsiveBuilder(ReleaseRepulsiveBuilder69,1771
-  function RepulsivePairEnergy(RepulsivePairEnergy77,1951
-  function RepulsivePairDerivative(RepulsivePairDerivative98,2464
-  subroutine BuildRepulsiveEnergyOnAtom(BuildRepulsiveEnergyOnAtom121,3097
-  subroutine BuildRepulsiveForceOnAtom(BuildRepulsiveForceOnAtom144,3839
-
-Nrl/nrlsystem.f90,359
-  subroutine NrlInitAtomIterator(NrlInitAtomIterator87,2143
-  subroutine NrlReleaseAtomIterator(NrlReleaseAtomIterator102,2663
-  subroutine NrlResetAtomIterator(NrlResetAtomIterator116,3144
-  subroutine UPdateDistance(UPdateDistance135,3899
-  logical function NrlGetNextAtomPair(NrlGetNextAtomPair178,5426
-  subroutine Increment(Increment222,7054
-
-Nrl/skderiv.f90,272
-  subroutine Swap(Swap32,819
-    subroutine SwapElement(SwapElement44,1123
-  subroutine ConvertPDParameter(ConvertPDParameter186,5291
-  subroutine ConvertDDParameter(ConvertDDParameter372,11436
-  subroutine SlaterKosterDerivative(SlaterKosterDerivative576,18643
-
-Nrl/sktable.f90,2225
-  double precision function Vss(Vss24,468
-  double precision function Vsx(Vsx31,608
-  double precision function Vsy(Vsy38,750
-  double precision function Vsz(Vsz45,898
-  double precision function Vxx(Vxx52,1046
-  double precision function Vxy(Vxy59,1214
-  double precision function Vxz(Vxz66,1374
-  double precision function Vyy(Vyy73,1534
-  double precision function Vyz(Vyz80,1685
-  double precision function Vzz(Vzz87,1836
-  double precision function Vs_xy(Vs_xy94,1987
-  double precision function Vs_yz(Vs_yz101,2154
-  double precision function Vs_zx(Vs_zx108,2309
-  double precision function Vs_xx(Vs_xx115,2466
-  double precision function Vs_zz(Vs_zz122,2639
-  double precision function Vx_xy(Vx_xy129,2810
-  double precision function Vx_yz(Vx_yz137,3012
-  double precision function Vx_zx(Vx_zx145,3214
-  double precision function Vy_xy(Vy_xy153,3418
-  double precision function Vy_yz(Vy_yz160,3575
-  double precision function Vy_zx(Vy_zx167,3732
-  double precision function Vz_xy(Vz_xy174,3889
-  double precision function Vz_yz(Vz_yz181,4046
-  double precision function Vz_zx(Vz_zx188,4203
-  double precision function Vx_xx(Vx_xx195,4360
-  double precision function Vy_xx(Vy_xx203,4591
-  double precision function Vz_xx(Vz_xx211,4819
-  double precision function Vx_zz(Vx_zz219,5047
-  double precision function Vy_zz(Vy_zz227,5277
-  double precision function Vz_zz(Vz_zz235,5507
-  double precision function Vxy_xy(Vxy_xy243,5735
-  double precision function Vxy_yz(Vxy_yz252,5990
-  double precision function Vxy_zx(Vxy_zx261,6231
-  double precision function Vyz_yz(Vyz_yz270,6472
-  double precision function Vyz_zx(Vyz_zx277,6636
-  double precision function Vzx_zx(Vzx_zx284,6800
-  double precision function Vxy_xx(Vxy_xx291,6964
-  double precision function Vyz_xx(Vyz_xx300,7236
-  double precision function Vzx_xx(Vzx_xx309,7516
-  double precision function Vxy_zz(Vxy_zz318,7796
-  double precision function Vyz_zz(Vyz_zz327,8092
-  double precision function Vzx_zz(Vzx_zz336,8403
-  double precision function Vxx_xx(Vxx_xx345,8714
-  double precision function Vxx_zz(Vxx_zz354,8996
-  double precision function Vzz_zz(Vzz_zz364,9360
