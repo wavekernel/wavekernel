@@ -50,7 +50,7 @@ def diff_list(xs):
         ys[i + 1] = xs[i + 1] - xs[i]
     return ys
 
-def plot(energy_calc, time_start, time_end, energy_min, energy_max, is_diff_mode, title, fig_path):
+def plot(energy_calc, time_start, time_end, energy_min, energy_max, is_diff_mode, is_tb_only, title, fig_path):
     if max(energy_calc['ts']) * kPsecPerAu < 0.001:
         ts = map(lambda t: t * kPsecPerAu * 1000, energy_calc['ts'])
         pylab.xlabel('Time [fs]')
@@ -72,8 +72,9 @@ def plot(energy_calc, time_start, time_end, energy_min, energy_max, is_diff_mode
         ys = diff_list(ys)
     print_energy(ts, ys, 'tb_energy_%s.txt' % fig_path)
     pylab.plot(ts, ys, '+-', label='TB_energy (H0)', ms=mark_size)
-    pylab.plot(ts, energy_calc['nl_energy'], '+', label='NL_energy (H1)', ms=mark_size)
-    pylab.plot(ts, energy_calc['total_energy'], '+', label='total_energy\n(H0 + H1)', ms=mark_size)
+    if is_tb_only:
+        pylab.plot(ts, energy_calc['nl_energy'], '+', label='NL_energy (H1)', ms=mark_size)
+        pylab.plot(ts, energy_calc['total_energy'], '+', label='total_energy\n(H0 + H1)', ms=mark_size)
     if 'eigenvalues_log' in energy_calc:
         ys = map(lambda l: l['eigenvalues'][0], energy_calc['eigenvalues_log'])
         if is_diff_mode:
@@ -107,6 +108,8 @@ if __name__ == '__main__':
                         default=False, help='')
     parser.add_argument('--diff', action='store_true', dest='is_diff_mode',
                         default=False, help='')
+    parser.add_argument('--tb-only', action='store_true', dest='is_tb_only',
+                        default=False, help='')
     parser.add_argument('-o', metavar='OUT', dest='fig_path', type=str, default=None,
                         help='')
     args = parser.parse_args()
@@ -131,4 +134,4 @@ if __name__ == '__main__':
         else:
             energy_calc = json.load(fp)
     plot(energy_calc, args.time_start, args.time_end, args.energy_min, args.energy_max,
-         args.is_diff_mode, title, fig_path)
+         args.is_diff_mode, args.is_tb_only, title, fig_path)
