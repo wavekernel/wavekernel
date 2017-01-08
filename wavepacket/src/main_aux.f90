@@ -179,6 +179,47 @@ contains
   end subroutine read_bcast_matrix_files
 
 
+  ! dv_psi is not referenced when is_initial is true.
+  subroutine add_perturbation_for_zero_damp_charge_overlap(setting, proc, is_initial, &
+       dim, Y_filtered, Y_filtered_desc, dv_psi, H_sparse)
+    type(wp_setting_t), intent(in) :: setting
+    type(wp_process_t), intent(in) :: proc
+    logical, intent(in) :: is_initial
+    integer, intent(in) :: dim, Y_filtered_desc(desc_size)
+    real(8), intent(in) :: Y_filtered(:, :)
+    complex(kind(0d0)), intent(in) :: dv_psi(:, :)
+    type(sparse_mat), intent(inout) :: H_sparse
+
+    integer :: i, j, k, ierr
+    complex(kind(0d0)), allocatable :: psi(:)
+    real(8), allocatable :: eigenvector(:, :)
+
+    if (setting%num_multiple_initials > 1) then
+      call terminate('num_multiple_initials must be 1 in zero_damp_charge_overlap mode', 1)
+    end if
+
+    allocate(psi(dim))
+    if (is_initial) then  ! In initiailization, perturbation source is HOMO eigenvector.
+      allocate(eigenvector(dim, 1))
+      call gather_matrix_real_part(Y_filtered, Y_filtered_desc, &
+           1, setting%alpha_delta_index - setting%fst_filter + 1, dim, 1, 0, 0, eigenvector)
+      if (check_master()) then
+        psi(:) = cmplx(eigenvector(:, 1), 0d0, kind(0d0))
+      end if
+      call mpi_bcast(psi, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
+    else
+      psi(:) = dv_psi(:, 1)
+    end if
+    do k = 1, H_sparse%num_non_zeros  ! Distributed redundant computation.
+      i = H_sparse%suffix(1, k)
+      j = H_sparse%suffix(2, k)
+      if (i == j) then
+        H_sparse%value(k) = H_sparse%value(k) + setting%charge_factor_common * (abs(psi(i)) ** 4d0)
+      end if
+    end do
+  end subroutine add_perturbation_for_zero_damp_charge_overlap
+
+
   subroutine set_aux_matrices(dim, setting, proc, state, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors)
     integer, intent(in) :: dim
@@ -240,6 +281,19 @@ contains
            state%H1_lcao_sparse_charge_overlap)
     end if
     call add_timer_event('set_aux_matrices', 'set_eigenpairs', wtime)
+
+    if (trim(setting%h1_type) == 'zero_damp_charge_overlap') then
+      print *, 'ZZZZZY1', state%dv_eigenvalues
+      call add_perturbation_for_zero_damp_charge_overlap(setting, proc, .true., &
+           state%dim, state%Y_filtered, state%Y_filtered_desc, state%dv_psi, state%H_sparse)
+      ! After adding perturbation to the Hamiltonian, calculate eigenpairs again.
+      call set_eigenpairs(state%dim, setting, proc, state%filter_group_id, state%structure, &
+           state%H_sparse, state%S_sparse, state%Y_desc, state%Y, &
+           state%dv_eigenvalues, state%Y_filtered_desc, state%Y_filtered, state%filter_group_indices, &
+           state%H1_lcao_sparse_charge_overlap)
+      print *, 'ZZZZZY2', state%dv_eigenvalues
+      call add_timer_event('set_aux_matrices', 'set_eigenpairs_second_for_zero_damp_charge_overlap', wtime)
+    end if
 
     allocate(eigenstate_charges(size(state%group_id, 2), setting%num_filter))
     call get_eigenstate_charges_on_groups(state%Y_filtered, state%Y_filtered_desc, &
@@ -727,7 +781,8 @@ contains
     type(wp_structure_t), intent(in) :: structure
     type(wp_charge_factor_t), intent(in) :: charge_factor
     integer, allocatable, intent(inout) :: filter_group_indices(:, :)
-    type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, H1_lcao_sparse_charge_overlap
+    type(sparse_mat), intent(inout) :: H_sparse  ! Modified when h1_type == zero_damp_charge_overlap
+    type(sparse_mat), intent(in) :: S_sparse, H_sparse_prev, S_sparse_prev, H1_lcao_sparse_charge_overlap
     integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
     integer, intent(in) :: H1_desc(desc_size), desc_eigenvectors(desc_size)
     ! value of last step is needed for offdiag norm calculation.
@@ -789,6 +844,11 @@ contains
            Y_filtered, 1, 1, Y_filtered_desc, &
            desc_eigenvectors(context_))
     else
+      if (trim(setting%h1_type) == 'zero_damp_charge_overlap') then
+        print *, 'ZZZZZX', t, maxval(abs(dv_psi))
+        call add_perturbation_for_zero_damp_charge_overlap(setting, proc, .false., &
+             dim, Y_filtered, Y_filtered_desc, dv_psi, H_sparse)
+      end if
       call set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, Y_desc, Y, &
            dv_eigenvalues, Y_filtered_desc, Y_filtered, filter_group_indices, &
            H1_lcao_sparse_charge_overlap)
@@ -915,7 +975,7 @@ contains
         end do
       end do
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
-    else if (trim(setting%h1_type) == 'zero_damp' .and. trim(setting%filter_mode) /= 'group') then
+    else if (trim(setting%h1_type(1 : 9)) == 'zero_damp' .and. trim(setting%filter_mode) /= 'group') then
       ! Skip time evolution calculation.
       do j = 1, setting%num_multiple_initials
         if (trim(setting%init_type) == 'alpha_delta') then

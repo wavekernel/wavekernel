@@ -62,7 +62,7 @@ contains
     call fson_set_name('h1_type', setting_elem)
     call fson_set_as_string(trim(setting%h1_type), setting_elem)
     call fson_value_add(setting_in_fson, setting_elem)
-    if (trim(setting%h1_type(1 : 6)) == 'charge') then
+    if (trim(setting%h1_type(1 : 6)) == 'charge' .or. trim(setting%h1_type) == 'zero_damp_charge_overlap') then
       ! charge_factor_common
       setting_elem => fson_value_create()
       setting_elem%value_type = TYPE_REAL
@@ -103,7 +103,7 @@ contains
       call fson_set_name('perturb_interval', setting_elem)
       setting_elem%value_real = setting%perturb_interval
       call fson_value_add(setting_in_fson, setting_elem)
-    else if (trim(setting%h1_type) == 'zero_damp') then
+    else if (trim(setting%h1_type(1 : 9)) == 'zero_damp') then
       setting_elem => fson_value_create()
       setting_elem%value_type = TYPE_REAL
       call fson_set_name('eigenstate_damp_constant', setting_elem)

@@ -227,6 +227,13 @@ contains
             call read_charge_factor_for_atoms(argv, setting%charge_factor_common, &
                  setting%charge_factor_H, setting%charge_factor_C)
             index_arg = index_arg + 2
+          else if (trim(setting%h1_type) == 'zero_damp_charge_overlap') then
+            call getarg(index_arg + 2, argv)
+            read(argv, *) setting%eigenstate_damp_constant
+            call getarg(index_arg + 3, argv)
+            call read_charge_factor_for_atoms(argv, setting%charge_factor_common, &
+                 setting%charge_factor_H, setting%charge_factor_C)
+            index_arg = index_arg + 3
           else if (trim(setting%h1_type) == 'maxwell') then
             call getarg(index_arg + 2, argv)
             read(argv, *) setting%temperature
@@ -441,7 +448,7 @@ contains
       call fson_path_get(setting_fson, 'localize_end', setting%localize_end)
       call fson_path_get(setting_fson, 'localize_potential_depth', setting%localize_potential_depth)
     end if
-    ! Read h1 type.
+    ! Read h1 type.  ! TODO: support zero_damp_charge_overlap etc.
     call fson_path_get(setting_fson, 'h1_type', setting%h1_type)
     if (trim(setting%h1_type) == 'charge' .or. trim(setting%h1_type) == 'charge_overlap') then
       call fson_path_get(setting_fson, 'charge_factor_common', setting%charge_factor_common)
@@ -669,6 +676,11 @@ contains
     if (trim(setting%h1_type) == 'zero_damp') then
       print '(A, E26.16e3)', ' eigenstate_damp_constant: ', setting%eigenstate_damp_constant
     else if (trim(setting%h1_type(1 : 6)) == 'charge') then
+      print '(A, E26.16e3)', ' charge_factor_common: ', setting%charge_factor_common
+      print '(A, E26.16e3)', ' charge_factor_H: ', setting%charge_factor_H
+      print '(A, E26.16e3)', ' charge_factor_C: ', setting%charge_factor_C
+    else if (trim(setting%h1_type) == 'zero_damp_charge_overlap') then
+      print '(A, E26.16e3)', ' eigenstate_damp_constant: ', setting%eigenstate_damp_constant
       print '(A, E26.16e3)', ' charge_factor_common: ', setting%charge_factor_common
       print '(A, E26.16e3)', ' charge_factor_H: ', setting%charge_factor_H
       print '(A, E26.16e3)', ' charge_factor_C: ', setting%charge_factor_C
@@ -954,7 +966,8 @@ contains
     print *, '  -i [alpha_gauss|alpha_delta <n>|alpha_file <file>|lcao_file <file>]'
     print *, '  (cont.) -i [local_alpha_delta <i>,<j>,<k>|local_alpha_delta_group <i>,<j>,<k>]', &
          'Select state initialization method (Default: alpha_delta 1)'
-    print *, '  -h [zero|zero_damp <float>|diag|charge <float>|charge_overlap <float>|maxwell <float>]'
+    print *, '  -h [zero|zero_damp <float>|diag|charge <float>|charge_overlap <float>|maxwell <float>'
+    print *, '      zero_damp_charge_overlap <float> <float>]'
     print *, '     Select how to generate H1, perturbation term (Default: zero)'
     print *, '  -e [crank_nicolson|taylor1|taylor2|taylor3]  Select time evolution mode (Default: crank_nicolson)'
     print *, '  -f <m>,<n>  Enable eigenstate filtering using from m-th to n-th (inclusive) generalized eigenvectors'
