@@ -3,6 +3,12 @@ import argparse, json, pylab, sys, math, re
 
 kPsecPerAu = 2.418884326505e-5  # Time
 
+def print_energy(ts, xs, filename):
+    with open(filename, 'w') as fp:
+        fp.write('# time[ps]\tenergy[au]\n')
+        for t, x in zip(ts, xs):
+            fp.write('%f\t%f\n' % (t, x))
+
 def read_plain_extracted(fp):
     rf = r"[+-]?(\d+\.)?\d+([deE][+-]?\d+)?"
     ts = []
@@ -37,7 +43,14 @@ def read_plain_extracted(fp):
     maximum = max(maximum, max(total_energy))
     return {'ts': ts, 'isamrs': isamrs, 'max_eigenvalue': maximum, 'min_eigenvalue': minimum, 'tb_energy': tb_energy, 'nl_energy': nl_energy, 'total_energy': total_energy}
 
-def plot(energy_calc, time_start, time_end, energy_min, energy_max, title, fig_path):
+def diff_list(xs):
+    n = len(xs)
+    ys = [0.] * n
+    for i in range(n - 1):
+        ys[i + 1] = xs[i + 1] - xs[i]
+    return ys
+
+def plot(energy_calc, time_start, time_end, energy_min, energy_max, is_diff_mode, title, fig_path):
     if max(energy_calc['ts']) * kPsecPerAu < 0.001:
         ts = map(lambda t: t * kPsecPerAu * 1000, energy_calc['ts'])
         pylab.xlabel('Time [fs]')
@@ -51,30 +64,24 @@ def plot(energy_calc, time_start, time_end, energy_min, energy_max, title, fig_p
         time_end = max(ts)
     pylab.xlim(time_start, time_end)
 
-    min_eigenvalue = energy_calc['min_eigenvalue']
-    max_eigenvalue = energy_calc['max_eigenvalue']
-    diff_eigenvalue = max_eigenvalue - min_eigenvalue
-    if energy_min is None:
-        energy_min = min_eigenvalue - diff_eigenvalue * 0.01
-    if energy_max is None:
-        energy_max = max_eigenvalue + diff_eigenvalue * 0.01
-    pylab.ylim(energy_min, energy_max)
-    yticks_new = list(pylab.yticks()[0])
-    yticks_new.extend([energy_min, energy_max])
-    pylab.yticks(yticks_new)
-    pylab.ylim(energy_min, energy_max)  # limit setting again is needed.
     pylab.ylabel('Energy [a.u.]')
 
-    mark_size = 3
-    pylab.plot(ts, energy_calc['tb_energy'], '+', label='TB_energy (H0)', ms=mark_size)
+    mark_size = 5
+    ys = energy_calc['tb_energy']
+    if is_diff_mode:
+        ys = diff_list(ys)
+    print_energy(ts, ys, 'tb_energy_%s.txt' % fig_path)
+    pylab.plot(ts, ys, '+-', label='TB_energy (H0)', ms=mark_size)
     pylab.plot(ts, energy_calc['nl_energy'], '+', label='NL_energy (H1)', ms=mark_size)
     pylab.plot(ts, energy_calc['total_energy'], '+', label='total_energy\n(H0 + H1)', ms=mark_size)
+    if 'eigenvalues_log' in energy_calc:
+        ys = map(lambda l: l['eigenvalues'][0], energy_calc['eigenvalues_log'])
+        if is_diff_mode:
+            ys = diff_list(ys)
+        print_energy(ts, ys, 'homo_energy_%s.txt' % fig_path)
+        pylab.plot(ts, ys, 'x-', label='HOMO', ms=mark_size, color='red')
 
-    line_min_eigenvalue = [energy_calc['min_eigenvalue']] * len(ts)
-    line_max_eigenvalue = [energy_calc['max_eigenvalue']] * len(ts)
-    pylab.plot(ts, line_min_eigenvalue, label='min energy')
-    pylab.plot(ts, line_max_eigenvalue, label='max energy')
-
+    pylab.ylim(energy_min, energy_max)
     pylab.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
     pylab.grid(True)
     pylab.subplots_adjust(right=0.65)
@@ -98,6 +105,8 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--plain', action='store_true', dest='is_plain_extracted_mode',
                         default=False, help='')
+    parser.add_argument('--diff', action='store_true', dest='is_diff_mode',
+                        default=False, help='')
     parser.add_argument('-o', metavar='OUT', dest='fig_path', type=str, default=None,
                         help='')
     args = parser.parse_args()
@@ -108,7 +117,11 @@ if __name__ == '__main__':
         title = args.title
 
     if args.fig_path is None:
-        fig_path = re.sub('(_energy)?\.[^.]+$', '', args.energy_calc_path) + '_energy.png'
+        fig_path = re.sub('(_energy)?\.[^.]+$', '', args.energy_calc_path)
+        if args.is_diff_mode:
+            fig_path += '_energy_diff.png'
+        else:
+            fig_path += '_energy.png'
     else:
         fig_path = args.fig_path
 
@@ -117,4 +130,5 @@ if __name__ == '__main__':
             energy_calc = read_plain_extracted(fp)
         else:
             energy_calc = json.load(fp)
-    plot(energy_calc, args.time_start, args.time_end, args.energy_min, args.energy_max, title, fig_path)
+    plot(energy_calc, args.time_start, args.time_end, args.energy_min, args.energy_max,
+         args.is_diff_mode, title, fig_path)
