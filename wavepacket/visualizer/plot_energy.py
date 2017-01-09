@@ -76,11 +76,13 @@ def plot(energy_calc, time_start, time_end, energy_min, energy_max, is_diff_mode
         pylab.plot(ts, energy_calc['nl_energy'], '+', label='NL_energy (H1)', ms=mark_size)
         pylab.plot(ts, energy_calc['total_energy'], '+', label='total_energy\n(H0 + H1)', ms=mark_size)
     if 'eigenvalues_log' in energy_calc:
-        ys = map(lambda l: l['eigenvalues'][0], energy_calc['eigenvalues_log'])
-        if is_diff_mode:
-            ys = diff_list(ys)
-        print_energy(ts, ys, 'homo_energy_%s.txt' % fig_path)
-        pylab.plot(ts, ys, 'x-', label='HOMO', ms=mark_size, color='red')
+        for i in range(min(5, len(energy_calc['eigenvalues_log'][0]['eigenvalues']))):
+            ys = map(lambda l: l['eigenvalues'][-1 - i], energy_calc['eigenvalues_log'])
+            #if is_diff_mode:
+            #    ys = diff_list(ys)
+            print_energy(ts, ys, 'homo_%d_energy_%s.txt' % (i, fig_path))
+            label = 'HOMO' if i == 0 else ('HOMO-%d' % i)
+            pylab.plot(ts, ys, 'x-', label=label, ms=mark_size - 2)
 
     pylab.ylim(energy_min, energy_max)
     pylab.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)

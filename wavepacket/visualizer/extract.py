@@ -192,7 +192,7 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
     dim = cond["dim"]
     initial_eigenvalues = cond["eigenvalues"]
     last_eigenvalue_index = len(initial_eigenvalues)
-    first_eigenvalue_index = last_eigenvalue_index - 1
+    first_eigenvalue_index = 0  #last_eigenvalue_index - 1
     ts = []
     # Charge on groups.
     charges_on_groups_all = []
