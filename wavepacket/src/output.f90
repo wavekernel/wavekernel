@@ -62,7 +62,9 @@ contains
     call fson_set_name('h1_type', setting_elem)
     call fson_set_as_string(trim(setting%h1_type), setting_elem)
     call fson_value_add(setting_in_fson, setting_elem)
-    if (trim(setting%h1_type(1 : 6)) == 'charge' .or. trim(setting%h1_type) == 'zero_damp_charge_overlap') then
+    if (trim(setting%h1_type(1 : 6)) == 'charge' .or. &
+         trim(setting%h1_type) == 'zero_damp_charge_base' .or. &
+         trim(setting%h1_type) == 'zero_damp_charge_atom') then
       ! charge_factor_common
       setting_elem => fson_value_create()
       setting_elem%value_type = TYPE_REAL

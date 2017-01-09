@@ -513,7 +513,7 @@ contains
       call make_H1_diag(proc, Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
            H1_alpha, H1_alpha_desc)
     else if (trim(h1_type) == 'zero' .or. trim(h1_type) == 'zero_damp' .or. trim(h1_type) == 'zero_sparse' .or. &
-         trim(h1_type) == 'zero_damp_charge_overlap') then
+         trim(h1_type) == 'zero_damp_charge_base' .or. trim(h1_type) == 'zero_damp_charge_atom') then
       call make_H1_zero(H1_alpha)
     else if (trim(h1_type) == 'charge') then
       call make_H1_charge_on_atoms(proc, structure, Y, Y_desc, &
