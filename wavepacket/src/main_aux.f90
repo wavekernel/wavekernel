@@ -195,7 +195,7 @@ contains
 
     integer :: i, j, k, ierr
     complex(kind(0d0)) :: psi(dim)
-    real(8) :: diag, H1_lcao_diag(dim), dv_charge_on_atoms(structure%num_atoms), eigenvector(dim, 1)
+    real(8) :: diag, diag_acc, H1_lcao_diag(dim), dv_charge_on_atoms(structure%num_atoms), eigenvector(dim, 1)
 
     if (setting%num_multiple_initials > 1) then
       call terminate('num_multiple_initials must be 1 in zero_damp_charge_* mode', 1)
@@ -218,17 +218,21 @@ contains
         i = H_sparse%suffix(1, k)
         j = H_sparse%suffix(2, k)
         if (i == j) then
-          H_sparse%value(k) = H_sparse%value(k) + setting%charge_factor_common * (abs(psi(i)) ** 4d0)
+          H_sparse%value(k) = H_sparse%value(k) + setting%charge_factor_common * (abs(psi(i)) ** 2d0)
         end if
       end do
     else if (trim(setting%h1_type) == 'zero_damp_charge_atom') then
+      diag_acc = 0d0
       call get_mulliken_charges_on_atoms(dim, structure, S_sparse, psi, dv_charge_on_atoms)
       do i = 1, structure%num_atoms
         diag = setting%charge_factor_common * dv_charge_on_atoms(i)  ! Positive value.
+        print *, 'ZZZZcharge', i, diag
         do j = structure%atom_indices(i), structure%atom_indices(i + 1) - 1
-          H1_lcao_diag(j) = diag
+          H1_lcao_diag(j) = diag / (structure%atom_indices(i + 1) - structure%atom_indices(i))
+          diag_acc = diag_acc + H1_lcao_diag(j)
         end do
       end do
+      print *, 'ZZZZchargediagacc', diag_acc, setting%charge_factor_common
       do k = 1, H_sparse%num_non_zeros
         i = H_sparse%suffix(1, k)
         j = H_sparse%suffix(2, k)
