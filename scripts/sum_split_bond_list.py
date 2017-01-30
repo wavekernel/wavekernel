@@ -60,6 +60,7 @@ if __name__ == '__main__':
     assert(os.path.isdir(args.input_dir))
     split_bond_list_filenames = filter(lambda s: s.find('output_bond_list') >= 0, os.listdir(args.input_dir))
 
+    # Sum (integrate) COHP fragments with symmetrization (H_sym = (H + H^T) / 2).
     for n, f in enumerate(split_bond_list_filenames):
         if args.max_num_files is not None and n >= args.max_num_files:
             print 'max_num_files %d reached, break' % args.max_num_files
@@ -69,14 +70,16 @@ if __name__ == '__main__':
             xss = read_bond_list_piece(args.max_step_num, fp)
             for step_num in range(len(xss)):
                 for (atom2, orbital1, atom1, icohp) in xss[step_num]:
-                    key = (atom1 / args.molecule_size, atom2 / args.molecule_size)
-                    key_transpose = (key[1], key[0])  # Symmetrize here.
+                    i, j = atom1 / args.molecule_size, atom2 / args.molecule_size
+                    if i < j:  # MatrixMarket symmetric format records the lower triangular part.
+                        i, j = j, i
+                    key = (i, j)
                     if not key in Xs[step_num]:
                         Xs[step_num][key] = 0.0
-                    if not key_transpose in Xs[step_num]:
-                        Xs[step_num][key_transpose] = 0.0
-                    Xs[step_num][key] += icohp / 2.0
-                    Xs[step_num][key_transpose] += icohp / 2.0
+                    if i == j:
+                        Xs[step_num][key] += icohp  # Symmetrizing sum for diagonal -> 2x
+                    else:
+                        Xs[step_num][key] += icohp / 2.
 
     # Output in the format of MatrixMarket file.
     for step_num, X in enumerate(Xs):
