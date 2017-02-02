@@ -36,7 +36,16 @@ def read_and_write_step(state, split_dir, is_little_endian,
     actual_msd = state['charge_coordinate_msd'][3]
     alpha_real = get_real_array(split_dir, is_little_endian, state['alpha']['real'])
     alpha_imag = get_real_array(split_dir, is_little_endian, state['alpha']['imag'])
-    alpha_weights = map(lambda (r, i): r ** 2.0 + i ** 2.0, zip(alpha_real, alpha_imag))
+    alpha_weights = []
+    for real, imag in zip(alpha_real, alpha_imag):
+        if abs(real) < 1e-20:  # Alleviate underflow error.
+            real = 0.
+        if abs(imag) < 1e-20:
+            imag = 0.
+        absval = real ** 2 + imag ** 2
+        if absval < 1e-8:
+            absval = 0.0  # Reduce file size.
+        alpha_weights.append(absval)
     (eigenvalues, z_means, msds) = input_step_info
     assert(len(eigenvalues) == len(alpha_weights) == num_filter)
     state_zipped = zip(range(fst_filter, fst_filter + num_filter), eigenvalues, z_means, msds, alpha_weights)
