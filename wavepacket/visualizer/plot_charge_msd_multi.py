@@ -44,7 +44,7 @@ def plot_charge_moment(grouped_charge_moments,
                        energy_min, energy_max, to_plot_tb_energy_deviation,
                        time_start, time_end,
                        time_start_diffusion, time_end_diffusion,
-                       grouped_labels, group_to_avg_label, to_plot_avg_only, 
+                       grouped_labels, group_to_avg_label, to_plot_avg_only,
                        title, fig_path):
     #font = {'size': 20}
     #matplotlib.rc('font', **font)
@@ -77,7 +77,7 @@ def plot_charge_moment(grouped_charge_moments,
 
     group_to_diffusion_coef_info = []
     if to_show_diffusion_coef:
-        for tss, avg_msds, avg_label in zip(group_to_tss, group_to_avg_msds, group_to_avg_label):        
+        for tss, avg_msds, avg_label in zip(group_to_tss, group_to_avg_msds, group_to_avg_label):
             xys = zip(tss[0], avg_msds)
             xys = filter(lambda xy: time_start_diffusion <= xy[0] and xy[0] < time_end_diffusion, xys)
             n = len(xys)
@@ -102,8 +102,8 @@ def plot_charge_moment(grouped_charge_moments,
             print 'a T0 + b, y(T0), IRE(0): ', b, xys[0][1], intercept_relative_error_left
             print 'a T1 + b, y(T1), IRE(1): ', \
                 a * xys[-1][0] + b, xys[0][1], intercept_relative_error_right
-            print 'RMSE [Å^2]: ', rmse
-            print 'diffusion coefficient [Å^2 / ps]: ', a / 2.0
+            print 'RMSE [angstrom^2]: ', rmse
+            print 'diffusion coefficient [angstrom^2 / ps]: ', a / 2.0
             print 'diffusion coefficient [cm^2 / s]: ', a / 2.0 * 1e-4
             # '1.0' = [e]
             # 'kBoltzmann * 1.0' = [V / K]
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', metavar='TIME_END', dest='time_end', type=float, default=None,
                         help='')  # in ps.
     parser.add_argument('-d', action='store_true', dest='to_plot_tb_energy_deviation',
-                        default=False, help='')    
+                        default=False, help='')
     parser.add_argument('-l', metavar='LABELS', dest='labels', type=str, default=None,
                         help='labels for each charge moment files separated by comma')
     parser.add_argument('--gl', metavar='GROUP_TO_AVG_LABEL', dest='group_to_avg_label', type=str, default=None,

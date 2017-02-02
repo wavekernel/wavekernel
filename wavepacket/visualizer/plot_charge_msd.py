@@ -91,8 +91,8 @@ def plot_charge_moment(charge_moment,
         print 'a T0 + b, y(T0), IRE(0): ', b, xys[0][1], intercept_relative_error_left
         print 'a T1 + b, y(T1), IRE(1): ', \
             a * xys[-1][0] + b, xys[0][1], intercept_relative_error_right
-        print 'RMSE [Å^2]: ', rmse
-        print 'diffusion coefficient [Å^2 / ps]: ', a / 2.0
+        print 'RMSE [angstrom^2]: ', rmse
+        print 'diffusion coefficient [angstrom^2 / ps]: ', a / 2.0
         print 'diffusion coefficient [cm^2 / s]: ', a / 2.0 * 1e-4
         # '1.0' = [e]
         # 'kBoltzmann * 1.0' = [V / K]
