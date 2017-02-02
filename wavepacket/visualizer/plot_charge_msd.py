@@ -8,11 +8,13 @@ kBoltzmann = 8.6173303e-5  # [eV / K]
 
 def fig_path_to_params(s):  # Temporary information retrieve function.
     rf = r"[+-]?(\d+\.)?\d+([deE][+-]?\d+)?"
-    m = re.search(r'out_(?P<k>(para|meta))_447i_(?P<s>%s)s_(?P<d>%s)d' % (rf, rf), s)
+    m = re.search(r'out_(?P<k>(para|meta))_(?P<e>\d+)seed_(?P<t>%s)t_.*_(?P<s>%s)s_(?P<d>%s)d' % (rf, rf, rf), s)
+    #m = re.search(r'out_(?P<k>(para|meta))_.*_(?P<s>%s)s_(?P<d>%s)d_(?P<g>%s)g' % (rf, rf, rf), s)
     if m:
-        return m.group('k'), float(m.group('s')), float(m.group('d'))
+        return m.group('k'), int(m.group('e')), float(m.group('t')), float(m.group('s')), float(m.group('d'))
+        #return m.group('k'), float(m.group('s')), float(m.group('d')), float(m.group('g'))
     else:
-        assert(False)
+        return None
 
 def read_plain_extracted(fp):
     rf = r"[+-]?(\d+\.)?\d+([deE][+-]?\d+)?"
@@ -98,8 +100,10 @@ def plot_charge_moment(charge_moment,
         # 'kBoltzmann * 1.0' = [V / K]
         mbt = a / 2.0 * 1e-4 / (kBoltzmann * 1.0)
         print 'mobility * temperature [cm^2 K / V s]', mbt
-        #k, s, d = fig_path_to_params(fig_path)
-        #print 'ZZZ', fig_path, k, s, d, mbt
+        if fig_path_to_params(fig_path) is not None:
+            k, e, t, s, d = fig_path_to_params(fig_path)
+            print 'ZZZ', fig_path, k, e, t, s, d, mbt
+            #print 'ZZZ', fig_path, k, s, d, g, mbt
         pylab.plot(ts_new[0:n:n-1], ys_hat[0:n:n-1], 'x-', color='green', markersize=10)
 
     pylab.ylabel('MSD ' + msd_axis + ' [$\AA^2$]', color='blue')
