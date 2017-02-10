@@ -322,23 +322,6 @@ contains
       call fson_value_add(setting_in_fson, setting_elem)
     end if
 
-    ! Set settings for precomputed eigenpairs.
-    setting_elem => fson_value_create()
-    setting_elem%value_type = TYPE_LOGICAL
-    call fson_set_name('to_use_precomputed_eigenpairs', setting_elem)
-    setting_elem%value_logical = setting%to_use_precomputed_eigenpairs
-    call fson_value_add(setting_in_fson, setting_elem)
-    if (setting%to_use_precomputed_eigenpairs) then
-      setting_elem => fson_value_create()
-      call fson_set_name('eigenvalue_filename', setting_elem)
-      call fson_set_as_string(trim(setting%eigenvalue_filename), setting_elem)
-      call fson_value_add(setting_in_fson, setting_elem)
-      setting_elem => fson_value_create()
-      call fson_set_name('eigenvector_dirname', setting_elem)
-      call fson_set_as_string(trim(setting%eigenvector_dirname), setting_elem)
-      call fson_value_add(setting_in_fson, setting_elem)
-    end if
-
     ! Set misc flags.
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_LOGICAL

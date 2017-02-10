@@ -28,7 +28,7 @@ module wp_setting_m
     integer :: output_interval = 1, restart_step_num, restart_total_states_count, restart_input_step
     integer :: num_multiple_initials = 1
     logical :: is_atom_indices_enabled = .false., to_multiply_phase_factor = .false., &
-         is_output_split = .false., to_use_precomputed_eigenpairs = .false., &
+         is_output_split = .false., &
          is_group_id_used = .false., is_overlap_ignored = .false., is_restart_mode = .false., &
          is_binary_output_mode = .false., is_multistep_input_mode = .false., is_reduction_mode = .false., &
          to_calculate_eigenstate_moment_every_step = .true.
@@ -42,8 +42,6 @@ module wp_setting_m
          atom_indices_filename = '', &
          alpha_filename = '', &
          lcao_filename = '', &
-         eigenvalue_filename = '', &
-         eigenvector_dirname = '', &
          group_id_filename = '', &
          restart_filename = '', &
          filter_mode = 'all', &
@@ -335,16 +333,6 @@ contains
           call getarg(index_arg + 1, argv)
           read(argv, *) setting%output_interval
           index_arg = index_arg + 1
-        case ('-eigenval')
-          setting%to_use_precomputed_eigenpairs = .true.
-          call getarg(index_arg + 1, argv)
-          setting%eigenvalue_filename = trim(argv)
-          index_arg = index_arg + 1
-        case ('-eigenvec')
-          setting%to_use_precomputed_eigenpairs = .true.
-          call getarg(index_arg + 1, argv)
-          setting%eigenvector_dirname = trim(argv)
-          index_arg = index_arg + 1
         case ('-local-depth')
           call getarg(index_arg + 1, argv)
           read(argv, *) setting%localize_potential_depth
@@ -488,11 +476,6 @@ contains
     end if
     call fson_path_get(setting_fson, 'output_interval', setting%output_interval)
     call fson_path_get(setting_fson, 'is_binary_output_mode', setting%is_binary_output_mode)
-    call fson_path_get(setting_fson, 'to_use_precomputed_eigenpairs', setting%to_use_precomputed_eigenpairs)
-    if (setting%to_use_precomputed_eigenpairs) then
-      call fson_path_get(setting_fson, 'eigenvalue_filename', setting%eigenvalue_filename)
-      call fson_path_get(setting_fson, 'eigenvector_dirname', setting%eigenvector_dirname)
-    end if
     call fson_path_get(setting_fson, 'is_overlap_ignored', setting%is_overlap_ignored)  !
     call fson_path_get(setting_fson, 'filename_hamiltonian', setting%filename_hamiltonian)
     if (.not. setting%is_overlap_ignored) then
@@ -764,11 +747,6 @@ contains
     else
       print *, 'is_binary_output_mode: false'
     end if
-    if (setting%to_use_precomputed_eigenpairs) then
-      print *, 'to_use_precomputed_eigenpairs: true'
-      print *, 'eigenvalue_filename: ', trim(setting%eigenvalue_filename)
-      print *, 'eigenvector_dirname: ', trim(setting%eigenvector_dirname)
-    end if
     if (setting%amplitude_print_threshold >= 0d0) then
       print *, 'to_print_amplitude: true'
       print *, 'amplitude_print_threshold: ', setting%amplitude_print_threshold
@@ -849,7 +827,7 @@ contains
       buf_logical(1) = setting%is_atom_indices_enabled
       buf_logical(2) = setting%to_multiply_phase_factor
       buf_logical(3) = setting%is_output_split
-      buf_logical(4) = setting%to_use_precomputed_eigenpairs
+      buf_logical(4) = .true. ! Dummy value.
       buf_logical(5) = setting%is_group_id_used
       buf_logical(6) = setting%is_overlap_ignored
       buf_logical(7) = setting%is_restart_mode
@@ -874,8 +852,8 @@ contains
       buf_character(7) = setting%atom_indices_filename
       buf_character(8) = setting%alpha_filename
       buf_character(9) = setting%lcao_filename
-      buf_character(10) = setting%eigenvalue_filename
-      buf_character(11) = setting%eigenvector_dirname
+      buf_character(10) = ''  ! Dummy value.
+      buf_character(11) = ''
       buf_character(12) = setting%group_id_filename
       buf_character(13) = setting%restart_filename
       buf_character(14) = setting%filter_mode
@@ -932,7 +910,7 @@ contains
       setting%is_atom_indices_enabled = buf_logical(1)
       setting%to_multiply_phase_factor = buf_logical(2)
       setting%is_output_split = buf_logical(3)
-      setting%to_use_precomputed_eigenpairs = buf_logical(4)
+      ! buf_logical(4) is not used.
       setting%is_group_id_used = buf_logical(5)
       setting%is_overlap_ignored = buf_logical(6)
       setting%is_restart_mode = buf_logical(7)
@@ -947,8 +925,7 @@ contains
       setting%atom_indices_filename = buf_character(7)
       setting%alpha_filename = buf_character(8)
       setting%lcao_filename = buf_character(9)
-      setting%eigenvalue_filename = buf_character(10)
-      setting%eigenvector_dirname = buf_character(11)
+      ! buf_character(10) and (11) are not used.
       setting%group_id_filename = buf_character(12)
       setting%restart_filename = buf_character(13)
       setting%filter_mode = buf_character(14)
@@ -988,9 +965,6 @@ contains
     print *, '  --no-replace-basis  With -m option, treat changes of matrices as perturbation without replacing eigenvectors'
     print *, '  --block-size <n>  Set default block size to <n> (Default: 64)'
     print *, '  --skip-out <n>  Set output printing interval to <n> (Default: 1)'
-    print *, '  --eigenval <file>  Read eigenvalues of the eigenproblem (H, S) from <file>.'
-    print *, '                     Must be used with --eigenvec'
-    print *, '  --eigenvec <dir>  Read eigenvectors of the eigenproblem (H, S) from <dir>.'
     print *, '  --local-depth <float>  Specify depth of potential well in atomic unit (Default: 10.0)'
     print *, '  --print-amp <threshold>,<interval>  ', &
          'Determine the threshold and interval to print high amplitude elements of A (Default: no print)'

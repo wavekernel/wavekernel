@@ -546,29 +546,12 @@ contains
       H(:, :) = H(:, :) + H1_lcao_charge_overlap(:, :)  ! distributed sum.
     end if
 
-    if (setting%to_use_precomputed_eigenpairs .or. setting%filter_mode == 'all') then  ! Temporary condition.
+    if (setting%filter_mode == 'all') then
       allocate(Y_filtered_last(size(Y_filtered, 1), size(Y_filtered, 2)), &
            SY(size(Y_filtered, 1), size(Y_filtered, 2)))
       call setup_distributed_matrix_real('YSY', proc, setting%num_filter, setting%num_filter, YSY_desc, YSY)
       Y_filtered_last(:, :) = Y_filtered(:, :)
       call add_timer_event('set_eigenpairs', 'prepare_matrices_for_offdiag_norm_calculation', wtime)
-    end if
-
-    if (setting%to_use_precomputed_eigenpairs) then
-      call terminate('not implemented', 44)
-      !! read_distribute_eigen* are written in 'read at master -> broadcast' style.
-      !call read_distribute_eigenvalues(setting%eigenvalue_filename, dim, &
-      !     full_vecs, col_eigenvalues, full_vecs_desc)
-      !call read_distribute_eigenvectors(setting%eigenvector_dirname, dim, &
-      !     setting%fst_filter, setting%num_filter, &
-      !     Y_filtered, Y_filtered_desc)
-      !! Filter eigenvalues.
-      !call pzgemr2d(setting%num_filter, 1, &
-      !     full_vecs, setting%fst_filter, col_eigenvalues, full_vecs_desc, &
-      !     filtered_vecs, 1, col_eigenvalues_filtered, filtered_vecs_desc, &
-      !     full_vecs_desc(context_))
-      !call add_timer_event('set_eigenpairs', 'read_and_distribute_eigenpairs', wtime)
-    else if (setting%filter_mode == 'all') then
       call solve_gevp(dim, 1, proc, H, H_desc, S, S_desc, dv_eigenvalues, Y, Y_desc)
       call add_timer_event('set_eigenpairs', 'solve_gevp_in_filter_all', wtime)
       ! Filter eigenvalues.
@@ -644,20 +627,6 @@ contains
       !end do
       !filter_group_indices(1, num_groups + 1) = dim + 1
       !filter_group_indices(2, num_groups + 1) = setting%num_filter + 1
-    end if
-
-    ! calculate norm of offdiag part of Y' S' Y, where Y' and S' are in present step and Y is in previous step.
-    if (setting%to_use_precomputed_eigenpairs .or. setting%filter_mode == 'all') then  ! Temporary condition.
-      !call pzgemm('No', 'No', dim, setting%num_filter, dim, kOne, &
-      !     S, 1, 1, S_desc, &
-      !     Y_filtered_last, 1, 1, Y_filtered_desc, &
-      !     kZero, SY, 1, 1, Y_filtered_desc)
-      !call pzgemm('Conjg', 'No', setting%num_filter, setting%num_filter, dim, kOne, &
-      !     Y_filtered, 1, 1, Y_filtered_desc, &
-      !     SY, 1, 1, Y_filtered_desc, &
-      !     kZero, YSY, 1, 1, YSY_desc)
-      !call print_offdiag_norm('YSY', YSY, YSY_desc)
-      !call add_timer_event('set_eigenpairs', 'calculate_offdiag_norm', wtime)
     end if
 
     deallocate(H, S)
