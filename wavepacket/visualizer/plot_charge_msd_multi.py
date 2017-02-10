@@ -127,7 +127,7 @@ def plot_charge_moment(grouped_charge_moments,
                 pylab.plot(ts, msds, '+-', label=label, markerfacecolor='none')
 
     for tss, avg_msds, avg_label in zip(group_to_tss, group_to_avg_msds, group_to_avg_label):
-        pylab.plot(tss[0], avg_msds, '+-', label=avg_label,
+        pylab.plot(tss[0], avg_msds, 'o-', label=avg_label,
                    markerfacecolor='none', markersize=10)  #, markeredgecolor='red'
     pylab.legend()
 
