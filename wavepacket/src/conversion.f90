@@ -38,20 +38,18 @@ contains
   end subroutine alpha_to_lcao_coef
 
 
-  ! Same to change_basis_lcao_to_alpha except that Y and A_lcao are assumed to be real.
-  subroutine change_basis_lcao_to_alpha(proc, Y, Y_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
+  subroutine change_basis_lcao_to_alpha(proc, Y_filtered, Y_filtered_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
     type(wp_process_t), intent(in) :: proc
-    real(8), intent(in) :: Y(:, :)
+    real(8), intent(in) :: Y_filtered(:, :)
     type(sparse_mat), intent(in) :: A_lcao_sparse
-    integer, intent(in) :: Y_desc(desc_size), A_alpha_desc(desc_size)
+    integer, intent(in) :: Y_filtered_desc(desc_size), A_alpha_desc(desc_size)
     real(8), intent(out) :: A_alpha(:, :)
 
     integer :: dim, num_filter, AY_desc(desc_size), A_lcao_desc(desc_size)
-    real(8), allocatable :: A_lcao(:, :)
-    real(8), allocatable :: Y_real(:, :), A_lcao_real(:, :), A_alpha_real(:, :), AY(:, :)
+    real(8), allocatable :: A_lcao(:, :), AY(:, :)
 
-    dim = Y_desc(rows_)
-    num_filter = Y_desc(cols_)
+    dim = Y_filtered_desc(rows_)
+    num_filter = Y_filtered_desc(cols_)
     call setup_distributed_matrix_real('A', proc, dim, dim, A_lcao_desc, A_lcao, .true.)
     call distribute_global_sparse_matrix_wp(A_lcao_sparse, A_lcao_desc, A_lcao)
     call setup_distributed_matrix_real('AY', proc, dim, num_filter, AY_desc, AY)
@@ -59,12 +57,12 @@ contains
     ! A' = A_lcao * Y, AY <- A'
     call pdgemm('No', 'No', dim, num_filter, dim, 1d0, &
          A_lcao, 1, 1, A_lcao_desc, &
-         Y, 1, 1, Y_desc, &
+         Y_filtered, 1, 1, Y_filtered_desc, &
          0d0, &
          AY, 1, 1, AY_desc)
     ! A'' = Y^\dagger A', A_alpha <- A''
     call pdgemm('Trans', 'No', num_filter, num_filter, dim, 1d0, &
-         Y, 1, 1, Y_desc, &
+         Y_filtered, 1, 1, Y_filtered_desc, &
          AY, 1, 1, AY_desc, &
          0d0, &
          A_alpha, 1, 1, A_alpha_desc)
@@ -278,12 +276,12 @@ contains
 
   ! A_alpha <- Y^\dagger diag(A_lcao_diag) Y.
   ! Complexity: O(m n^2).
-  subroutine change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, &
+  subroutine change_basis_lcao_diag_to_alpha(proc, Y_filtered, Y_filtered_desc, &
        A_lcao_diag, A_alpha, A_alpha_desc)
     type(wp_process_t), intent(in) :: proc
-    real(8), intent(in) :: Y(:, :), A_lcao_diag(:)
+    real(8), intent(in) :: Y_filtered(:, :), A_lcao_diag(:)
     real(8), intent(out) :: A_alpha(:, :)
-    integer, intent(in) :: Y_desc(desc_size), A_alpha_desc(desc_size)
+    integer, intent(in) :: Y_filtered_desc(desc_size), A_alpha_desc(desc_size)
 
     integer :: i, j, dim, num_filter, Y_dagger_desc(desc_size)
     real(8), allocatable :: Y_dagger(:, :)
@@ -291,8 +289,8 @@ contains
 
     wtime_start = mpi_wtime()
 
-    dim = Y_desc(rows_)
-    num_filter = Y_desc(cols_)
+    dim = Y_filtered_desc(rows_)
+    num_filter = Y_filtered_desc(cols_)
     call setup_distributed_matrix_real('', proc, num_filter, dim, Y_dagger_desc, Y_dagger)
 
     wtime_end = mpi_wtime()
@@ -300,7 +298,7 @@ contains
     wtime_start = wtime_end
 
     call pdtran(num_filter, dim, 1d0, &
-         Y, 1, 1, Y_desc, &
+         Y_filtered, 1, 1, Y_filtered_desc, &
          0d0, &
          Y_dagger, 1, 1, Y_dagger_desc)
 
@@ -318,7 +316,7 @@ contains
 
     call pdgemm('No', 'No', num_filter, num_filter, dim, 1d0, &
          Y_dagger, 1, 1, Y_dagger_desc, &
-         Y, 1, 1, Y_desc, &
+         Y_filtered, 1, 1, Y_filtered_desc, &
          0d0, &
          A_alpha, 1, 1, A_alpha_desc)
 

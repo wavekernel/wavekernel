@@ -20,49 +20,6 @@ module wp_initialization_m
 
 contains
 
-  subroutine print_eigenvectors(Y, Y_desc)
-    complex(kind(0d0)) :: Y(:, :)
-    integer :: Y_desc(desc_size)
-
-    real(8) :: work(Y_desc(rows_))
-    real(8), allocatable :: Y_real(:, :)
-    integer :: len, i, digit, stat, err
-    character(512) :: num_str, filename
-    integer, parameter :: iunit = 10, max_num_digits = 8
-
-    allocate(Y_real(size(Y, 1), size(Y, 2)))
-    Y_real(:, :) = real(Y(:, :), kind(0d0))
-
-    do i = 1, Y_desc(cols_)
-      if (check_master()) then
-        write (num_str, '(i0)') i
-        len = len_trim(num_str)
-        num_str(max_num_digits - len + 1 : max_num_digits) = num_str(1 : len)
-        do digit = 1, max_num_digits - len
-          num_str(digit:digit) = '0'
-        end do
-
-        filename = trim(num_str) // '.dat'
-        open (iunit, file=trim(filename), status='replace', iostat=stat)
-      end if
-
-      call mpi_bcast(stat, 1, mpi_integer, 0, mpi_comm_world, err) ! Share stat for file opening
-      if (stat /= 0) then
-        if (check_master ()) print *, 'iostat: ', stat
-        call terminate('print_eigenvectors: cannot open ' // trim(filename), stat)
-      end if
-
-      call mpi_barrier(mpi_comm_world, stat)
-      call eigentest_pdlaprnt(Y_desc(rows_), 1, Y_real, &
-           1, i, Y_desc, 0, 0, iunit, work)
-
-      if (check_master()) then
-        close (iunit)
-      end if
-    end do
-  end subroutine print_eigenvectors
-
-
   subroutine make_initial_psi_gauss(dim, dv_psi)
     integer, intent(in) :: dim
     complex(kind(0d0)), intent(out) :: dv_psi(:)

@@ -261,14 +261,14 @@ contains
 
   ! 最初に一般化固有値問題を解く部分.
   ! Complexity: O(m^3).
-  subroutine solve_gevp(dim, origin, proc, H, H_desc, S, S_desc, eigenvalues, Y, Y_desc)
+  subroutine solve_gevp(dim, origin, proc, H, H_desc, S, S_desc, eigenvalues, Y_all, Y_all_desc)
     integer, intent(in) :: dim, origin
     integer, intent(in) :: H_desc(desc_size), S_desc(desc_size)
-    integer, intent(in) :: Y_desc(desc_size)
+    integer, intent(in) :: Y_all_desc(desc_size)
     type(wp_process_t), intent(in) :: proc
     real(8), intent(in) :: H(:, :), S(:, :)
     real(8), intent(out) :: eigenvalues(dim)
-    real(8), intent(out) :: Y(:, :)
+    real(8), intent(out) :: Y_all(:, :)
 
     integer :: lwork_pdsyngst, lwork, lrwork, liwork, info, trilwmin
     integer :: nb, npg, npe, nqe
@@ -337,7 +337,7 @@ contains
     end if
     call pdsyevd('Vectors', 'Lower', dim, &
          H2, 1, 1, H2_desc, &
-         eigenvalues, Y, 1, 1, Y_desc, &
+         eigenvalues, Y_all, 1, 1, Y_all_desc, &
          work, lwork, iwork, liwork, info)
     if (info /= 0) then
       call terminate('pdsyevd failed', info)
@@ -350,7 +350,7 @@ contains
     end if
     call pdtrtrs('Lower', 'Trans', 'No', dim, dim, &
          L, 1, 1, L_desc, &
-         Y, 1, 1, Y_desc, info)
+         Y_all, 1, 1, Y_all_desc, info)
     if (info /= 0) then
       call terminate('pdtrtrs failed', info)
     end if

@@ -133,7 +133,7 @@ contains
     if (setting%is_reduction_mode) then
       call terminate('setup_distributed_matrices: reduction mode is not implemented in this version', 1)
     end if
-    call setup_distributed_matrix_real('Y', proc, state%dim, state%dim, state%Y_desc, state%Y, .true.)
+    call setup_distributed_matrix_real('Y_all', proc, state%dim, state%dim, state%Y_all_desc, state%Y_all, .true.)
     call setup_distributed_matrix_real('Y_filtered', proc, &
          state%dim, setting%num_filter, state%Y_filtered_desc, state%Y_filtered)
     call setup_distributed_matrix_real('H1', proc, &
@@ -300,7 +300,7 @@ contains
            state%Y_filtered_desc(context_))
     else
       call set_eigenpairs(state%dim, setting, proc, state%filter_group_id, state%structure, &
-           state%H_sparse, state%S_sparse, state%Y_desc, state%Y, &
+           state%H_sparse, state%S_sparse, state%Y_all_desc, state%Y_all, &
            state%dv_eigenvalues, state%Y_filtered_desc, state%Y_filtered, state%filter_group_indices, &
            state%H1_lcao_sparse_charge_overlap)
     end if
@@ -313,7 +313,7 @@ contains
            state%Y_filtered, state%Y_filtered_desc, state%dv_psi, state%H_sparse)
       ! After adding perturbation to the Hamiltonian, calculate eigenpairs again.
       call set_eigenpairs(state%dim, setting, proc, state%filter_group_id, state%structure, &
-           state%H_sparse, state%S_sparse, state%Y_desc, state%Y, &
+           state%H_sparse, state%S_sparse, state%Y_all_desc, state%Y_all, &
            state%dv_eigenvalues, state%Y_filtered_desc, state%Y_filtered, state%filter_group_indices, &
            state%H1_lcao_sparse_charge_overlap)
       print *, 'ZZZZZY2', state%dv_eigenvalues
@@ -368,9 +368,9 @@ contains
     !type(wp_charge_factor_t), intent(in) :: charge_factor
     !integer, allocatable, intent(inout) :: filter_group_indices(:, :)
     !type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    !integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), H1_desc(desc_size)
+    !integer, intent(in) :: Y_all_desc(desc_size), Y_filtered_desc(desc_size), H1_desc(desc_size)
     !real(8), intent(inout) :: Y_filtered(:, :)  ! value of last step is needed for offdiag norm calculation.
-    !real(8), intent(out) :: Y(:, :), H1(:, :), H1_base(:, :)
+    !real(8), intent(out) :: Y_all(:, :), H1(:, :), H1_base(:, :)
     !complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     !complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
     !real(8), intent(out) :: dv_charge_on_basis(:), dv_charge_on_atoms(:), dv_eigenvalues(:)
@@ -396,7 +396,7 @@ contains
     call read_next_input_step_with_basis_replace(state%dim, setting, proc, &
          state%group_id, state%filter_group_id, state%t, state%structure, &
          state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
-         state%Y_desc, state%Y, state%Y_filtered_desc, state%Y_filtered, &
+         state%Y_all_desc, state%Y_all, state%Y_filtered_desc, state%Y_filtered, &
          state%YSY_filtered_desc, state%YSY_filtered, &
          state%H1_desc, state%H1, state%H1_base, &
          state%filter_group_indices, state%Y_local, state%charge_factor, &
@@ -493,7 +493,7 @@ contains
   end subroutine read_bcast_group_id
 
 
-  subroutine set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, Y_desc, Y, &
+  subroutine set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, Y_all_desc, Y_all, &
        dv_eigenvalues_filtered, Y_filtered_desc, Y_filtered, filter_group_indices, &
        H1_lcao_sparse_charge_overlap)
     integer, intent(in) :: dim
@@ -502,15 +502,15 @@ contains
     integer, intent(in) :: filter_group_id(:, :)
     type(wp_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H1_lcao_sparse_charge_overlap
-    integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size)
+    integer, intent(in) :: Y_all_desc(desc_size), Y_filtered_desc(desc_size)
     integer, allocatable, intent(out) :: filter_group_indices(:, :)
     real(8), intent(out) :: dv_eigenvalues_filtered(:)
-    real(8), intent(inout) :: Y_filtered(:, :)  ! value of last step is needed for offdiag norm calculation.
+    real(8), intent(inout) :: Y_all(:, :), Y_filtered(:, :)  ! value of last step is needed for offdiag norm calculation.
 
     integer :: i, j, num_groups, atom_min, atom_max, index_min, index_max, dim_sub, Y_sub_desc(desc_size)
     integer :: homo_level, filter_lowest_level, base_index_of_group, sum_dim_sub
     integer :: H_desc(desc_size), S_desc(desc_size)
-    real(8) :: Y(:, :), elem
+    real(8) :: elem
     real(8) :: dv_eigenvalues(dim), wtime
     integer :: YSY_desc(desc_size)
     real(8), allocatable :: H(:, :), S(:, :), Y_sub(:, :), Y_filtered_last(:, :), SY(:, :), YSY(:, :)
@@ -552,16 +552,16 @@ contains
       call setup_distributed_matrix_real('YSY', proc, setting%num_filter, setting%num_filter, YSY_desc, YSY)
       Y_filtered_last(:, :) = Y_filtered(:, :)
       call add_timer_event('set_eigenpairs', 'prepare_matrices_for_offdiag_norm_calculation', wtime)
-      call solve_gevp(dim, 1, proc, H, H_desc, S, S_desc, dv_eigenvalues, Y, Y_desc)
+      call solve_gevp(dim, 1, proc, H, H_desc, S, S_desc, dv_eigenvalues, Y_all, Y_all_desc)
       call add_timer_event('set_eigenpairs', 'solve_gevp_in_filter_all', wtime)
       ! Filter eigenvalues.
       dv_eigenvalues_filtered(1 : setting%num_filter) = &
            dv_eigenvalues(setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
       ! Filter eigenvectors.
       call pdgemr2d(dim, setting%num_filter, &
-           Y, 1, setting%fst_filter, Y_desc, &
+           Y_all, 1, setting%fst_filter, Y_all_desc, &
            Y_filtered, 1, 1, Y_filtered_desc, &
-           Y_desc(context_))
+           Y_all_desc(context_))
       call add_timer_event('set_eigenpairs', 'copy_filtering_eigenvectors_in_filter_all', wtime)
     else if (setting%filter_mode == 'group') then
       call terminate('not implemented', 45)
@@ -759,7 +759,7 @@ contains
 
   subroutine read_next_input_step_with_basis_replace(dim, setting, proc, group_id, filter_group_id, t, structure, &
        H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
-       Y_desc, Y, Y_filtered_desc, Y_filtered, YSY_filtered_desc, YSY_filtered, &
+       Y_all_desc, Y_all, Y_filtered_desc, Y_filtered, YSY_filtered_desc, YSY_filtered, &
        H1_desc, H1, H1_base, &
        filter_group_indices, Y_local, charge_factor, &
        dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
@@ -777,11 +777,11 @@ contains
     integer, allocatable, intent(inout) :: filter_group_indices(:, :)
     type(sparse_mat), intent(inout) :: H_sparse  ! Modified when h1_type == zero_damp_charge_*
     type(sparse_mat), intent(in) :: S_sparse, H_sparse_prev, S_sparse_prev, H1_lcao_sparse_charge_overlap
-    integer, intent(in) :: Y_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    integer, intent(in) :: Y_all_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
     integer, intent(in) :: H1_desc(desc_size), desc_eigenvectors(desc_size)
     ! value of last step is needed for offdiag norm calculation.
     real(8), intent(inout) :: dv_eigenvalues(:), Y_filtered(:, :)
-    real(8), intent(out) :: Y(:, :), YSY_filtered(:, :), H1(:, :), H1_base(:, :)
+    real(8), intent(out) :: Y_all(:, :), YSY_filtered(:, :), H1(:, :), H1_base(:, :)
     real(8), intent(out) :: dv_charge_on_basis(:, :), dv_charge_on_atoms(:, :)
     real(8), intent(inout) :: dv_atom_perturb(:)
     complex(kind(0d0)), intent(in) :: dv_psi(:, :), dv_alpha(:, :)
@@ -844,7 +844,7 @@ contains
              dim, structure, S_sparse, &
              Y_filtered, Y_filtered_desc, dv_psi, H_sparse)
       end if
-      call set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, Y_desc, Y, &
+      call set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, Y_all_desc, Y_all, &
            dv_eigenvalues, Y_filtered_desc, Y_filtered, filter_group_indices, &
            H1_lcao_sparse_charge_overlap)
     end if
