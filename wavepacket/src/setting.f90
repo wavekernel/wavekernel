@@ -650,7 +650,7 @@ contains
       stop 'multiple initials mode must be used with output split'
     end if
 
-    if (trim(setting%h1_type) == 'zero_damp' .and. setting%eigenstate_damp_constant <= 0d0) then
+    if (trim(setting%h1_type) == 'zero_damp' .and. setting%eigenstate_damp_constant < 0d0) then
       stop 'eigenstate damp constant must be positive'
     end if
   end subroutine verify_setting

@@ -1013,7 +1013,7 @@ contains
         end if
         do i = 1, setting%num_filter
           diff_eigenvalue = state%dv_eigenvalues(k) - state%dv_eigenvalues(i)
-          damp_factor = abs(diff_eigenvalue) / setting%eigenstate_damp_constant
+          damp_factor = setting%eigenstate_damp_constant * (diff_eigenvalue ** 2d0)
           !print *, 'ZZZZZ zero_damp ', j, k, i, ': ', &
           !     state%dv_eigenvalues(k), state%dv_eigenvalues(i), damp_factor * setting%delta_t
           state%dv_alpha_next(i, j) = &
