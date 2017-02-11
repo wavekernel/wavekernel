@@ -185,7 +185,7 @@ def add_step(setting, state, extracted_types, split_dir, is_little_endian,
         psi_pratios.append(1.0 / state["psi"]["ipratio"])
         alpha_pratios.append(1.0 / state["alpha"]["ipratio"])
 
-def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little_endian, start_time):
+def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little_endian, out_dir, start_time):
     setting = wavepacket_out["setting"]
     cond = wavepacket_out["condition"]
     # Common.
@@ -270,7 +270,10 @@ def calc(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little
                          charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max,
                          alphas)
 
-    header = re.sub("\.[^.]+$", "", wavepacket_out_path)
+    basedir, tail = os.path.split(wavepacket_out_path)
+    if out_dir is not None:
+        basedir = out_dir
+    header = os.path.join(basedir, re.sub("\.[^.]+$", "", tail))
 
     if "group" in extracted_types:
         result_charge_group = {"num_groups": group_info["num_groups"],
@@ -331,6 +334,8 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('-s', metavar='STRIDE', dest='skip_stride_num', type=int, default=1,
                         help='')
+    parser.add_argument('-o', metavar='OUTDIR', dest='out_dir', type=str, default=None,
+                        help='')
     parser.add_argument('--big-endian', action='store_false', dest='is_little_endian',
                         default=True, help='')
     parser.add_argument('--type', dest='extracted_types_comma_separated', type=str,
@@ -342,11 +347,15 @@ if __name__ == "__main__":
 
     start_time = datetime.datetime.now()
 
+    # Argument checking.
     if not os.path.isfile(args.wavepacket_out_path):
-        sys.stderr.write("file " + args.wavepacket_out_path + " does not exist\n")
+        sys.stderr.write("File %s does not exist\n" % args.wavepacket_out_path)
+        sys.exit(1)
+    if not os.path.isdir(args.out_dir):
+        sys.stderr.write("Directory %s does not exist\n" % args.out_dir)
         sys.exit(1)
 
     with open(args.wavepacket_out_path, "r") as fp:
         wavepacket_out = json.load(fp)
-    calc(wavepacket_out, extracted_types, args.skip_stride_num, args.wavepacket_out_path,
-         args.is_little_endian, start_time)
+    extract_main(wavepacket_out, extracted_types, args.skip_stride_num, args.wavepacket_out_path,
+                 args.is_little_endian, args.out_dir, start_time)
