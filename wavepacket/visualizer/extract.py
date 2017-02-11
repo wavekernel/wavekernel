@@ -313,7 +313,7 @@ def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, i
                         "alphas": alphas}
         filename_alpha = header + "_alpha.json"
         with open(filename_alpha, "w") as fp:
-            json.dump(result_alpha, fp)
+            json.dump(result_alpha, fp, indent=2)
 
     if "pratio" in extracted_types:
         result_pratio = {"ts": ts,
@@ -321,7 +321,7 @@ def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, i
                          "alpha_pratios": alpha_pratios}
         filename_pratio = header + "_pratio.json"
         with open(filename_pratio, "w") as fp:
-            json.dump(result_pratio, fp)
+            json.dump(result_pratio, fp, indent=2)
 
     if "xyz" in extracted_types:
         filename_xyz = header + "_position.xyz"
