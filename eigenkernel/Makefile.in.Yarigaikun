@@ -1,7 +1,0 @@
-FC = mpif90
-MACRO_PREFIX = -D
-CPPFLAG = -cpp
-FCFLAGS = -O0 -fopenmp -g -Wall -ffpe-trap=invalid,zero,overflow -fbounds-check
-LDFLAGS = $(FCFLAGS)
-LIBS = -lscalapack -llapack -lblas
-#LIBS = -L$(HOME)/lib/elpa-2015.05.001/lib -I$(HOME)/lib/elpa-2015.05.001/include/elpa_openmp-2015.05.001/modules -L$(HOME)/lib/EigenExa -I$(HOME)/lib/EigenExa -I$(HOME)/lib -lelpa_openmp -lEigenExa -lscalapack -llapack -lblas -lgomp
