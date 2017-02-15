@@ -1,17 +1,17 @@
 ./matrix_io.o : ./global_variables.o ./processes.o ./event_logger.o 
-./setting.o : ./global_variables.o ./fson.o ./fson.o ./fson.o 
-./charge.o : ./util.o ./global_variables.o ./processes.o ./matrix_io.o ./linear_algebra.o ./event_logger.o ./descriptor_parameters.o ./atom.o 
-./linear_algebra.o : ./util.o ./global_variables.o ./processes.o ./distribute_matrix.o ./descriptor_parameters.o 
-./atom.o : ./global_variables.o ./descriptor_parameters.o 
-./conversion.o : ./global_variables.o ./processes.o ./linear_algebra.o ./distribute_matrix.o ./descriptor_parameters.o 
-./processes.o : ./global_variables.o 
-./state.o : ./util.o ./matrix_io.o ./fson.o ./distribute_matrix.o ./charge.o ./atom.o 
-./output.o : ./util.o ./state.o ./setting.o ./linear_algebra.o ./global_variables.o ./processes.o ./event_logger.o ./fson.o ./fson.o ./fson.o ./descriptor_parameters.o ./charge.o ./atom.o 
-./initialization.o : ./util.o ./state.o ./setting.o ./matrix_generation.o ./linear_algebra.o ./global_variables.o ./conversion.o ./charge.o ./atom.o ./processes.o ./distribute_matrix.o ./descriptor_parameters.o 
-./distribute_matrix.o : ./processes.o ./matrix_io.o ./global_variables.o ./descriptor_parameters.o ./event_logger.o 
-./matrix_generation.o : ./util.o ./linear_algebra.o ./global_variables.o ./conversion.o ./processes.o ./stats.o ./event_logger.o ./distribute_matrix.o ./descriptor_parameters.o ./charge.o ./atom.o 
-./main.o : ./main_aux.o 
 ./time_evolution.o : ./global_variables.o ./event_logger.o ./processes.o ./distribute_matrix.o ./descriptor_parameters.o 
+./event_logger.o : ./fson.o ./fson.o ./fson.o 
+./linear_algebra.o : ./util.o ./global_variables.o ./processes.o ./event_logger.o ./distribute_matrix.o ./descriptor_parameters.o 
+./distribute_matrix.o : ./processes.o ./matrix_io.o ./global_variables.o ./descriptor_parameters.o ./event_logger.o 
+./initialization.o : ./util.o ./state.o ./setting.o ./matrix_generation.o ./linear_algebra.o ./conversion.o ./charge.o ./atom.o ./processes.o ./global_variables.o ./distribute_matrix.o ./descriptor_parameters.o 
+./main.o : ./main_aux.o 
+./atom.o : ./global_variables.o ./descriptor_parameters.o 
+./charge.o : ./util.o ./state.o ./global_variables.o ./processes.o ./matrix_io.o ./linear_algebra.o ./event_logger.o ./descriptor_parameters.o ./atom.o 
+./processes.o : ./global_variables.o 
+./state.o : ./util.o ./matrix_io.o ./linear_algebra.o ./fson.o ./distribute_matrix.o ./atom.o 
 ./main_aux.o : ./util.o ./time_evolution.o ./state.o ./setting.o ./output.o ./matrix_generation.o ./linear_algebra.o ./initialization.o ./global_variables.o ./conversion.o ./charge.o ./atom.o ./event_logger.o ./fson.o ./fson.o ./fson.o ./fson.o ./processes.o ./distribute_matrix.o ./descriptor_parameters.o 
 ./fson.o : 
-./event_logger.o : ./fson.o ./fson.o ./fson.o 
+./conversion.o : ./state.o ./global_variables.o ./processes.o ./linear_algebra.o ./distribute_matrix.o ./descriptor_parameters.o 
+./setting.o : ./global_variables.o ./fson.o ./fson.o ./fson.o 
+./matrix_generation.o : ./util.o ./state.o ./linear_algebra.o ./global_variables.o ./conversion.o ./processes.o ./stats.o ./event_logger.o ./distribute_matrix.o ./descriptor_parameters.o ./charge.o ./atom.o 
+./output.o : ./util.o ./state.o ./setting.o ./linear_algebra.o ./global_variables.o ./processes.o ./event_logger.o ./fson.o ./fson.o ./fson.o ./descriptor_parameters.o ./charge.o ./atom.o 

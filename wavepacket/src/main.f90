@@ -37,8 +37,8 @@ program main
 
   call read_bcast_group_id(setting, state%structure%num_atoms, state%group_id)
   if (trim(setting%filter_mode) == 'group') then
-    call read_group_id(trim(setting%filter_group_filename), state%filter_group_id)
-    call bcast_group_id(g_wp_master_pnum, state%filter_group_id)
+    call read_group_id(trim(setting%filter_group_filename), state%basis%filter_group_id)
+    call bcast_group_id(g_wp_master_pnum, state%basis%filter_group_id)
   end if
   call add_timer_event('main', 'read_bcast_atom_indices_and_coordinates', state%wtime)
 
@@ -48,8 +48,8 @@ program main
   state%charge_factor%charge_factor_H = setting%charge_factor_H
   state%charge_factor%charge_factor_C = setting%charge_factor_C
 
-  call set_aux_matrices(state%dim, setting, proc, state, &
-       .false., dummy_eigenvalues, dummy_desc_eigenvectors, dummy_eigenvectors)
+  call set_aux_matrices(setting, proc, &
+       .false., dummy_eigenvalues, dummy_desc_eigenvectors, dummy_eigenvectors, state)
   call add_timer_event('main', 'set_aux_matrices', state%wtime)
 
   call initialize(setting, proc, state)

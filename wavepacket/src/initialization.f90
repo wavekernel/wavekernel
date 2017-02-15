@@ -16,7 +16,7 @@ module wp_initialization_m
   implicit none
 
   private
-  public :: initialize, re_initialize_state, clear_offdiag_blocks, reconcile_from_lcao_coef, compute_energies
+  public :: initialize, re_initialize_state, clear_offdiag_blocks, compute_energies
 
 contains
 
@@ -172,86 +172,87 @@ contains
   !end subroutine get_re_initialize_errors
 
 
-  subroutine reconcile_from_lcao_coef(num_filter, S_sparse, Y_filtered, Y_filtered_desc, &
-       dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
-    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
-    real(8), intent(in) :: Y_filtered(:, :)
-    type(sparse_mat), intent(in) :: S_sparse
-    complex(kind(0d0)), intent(in) :: dv_psi(:)
-    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !subroutine reconcile_from_lcao_coef(num_filter, S_sparse, Y_filtered, Y_filtered_desc, &
+  !     dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
+  !  integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
+  !  real(8), intent(in) :: Y_filtered(:, :)
+  !  type(sparse_mat), intent(in) :: S_sparse
+  !  complex(kind(0d0)), intent(in) :: dv_psi(:)
+  !  complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !
+  !  complex(kind(0d0)) :: dv_alpha(num_filter)
+  !
+  !  call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha_reconcile)
+  !  call normalize_vector(num_filter, dv_alpha_reconcile)
+  !  call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+  !end subroutine reconcile_from_lcao_coef
+  !
+  !
+  !subroutine reconcile_from_lcao_coef_cutoff(num_filter, cutoff, &
+  !     S_sparse, Y_filtered, Y_filtered_desc, &
+  !     dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
+  !  integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
+  !  real(8), intent(in) :: cutoff, Y_filtered(:, :)
+  !  type(sparse_mat), intent(in) :: S_sparse
+  !  complex(kind(0d0)), intent(in) :: dv_psi(:)
+  !  complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !
+  !  complex(kind(0d0)) :: dv_alpha(num_filter)
+  !
+  !  call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
+  !  call cutoff_vector(num_filter, cutoff, dv_alpha, dv_alpha_reconcile)
+  !  call normalize_vector(num_filter, dv_alpha_reconcile)
+  !  call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+  !end subroutine reconcile_from_lcao_coef_cutoff
+  !
+  !
+  !subroutine reconcile_from_lcao_coef_suppress(num_filter, suppress_constant, &
+  !     S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
+  !     dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
+  !  integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
+  !  real(8), intent(in) :: suppress_constant, eigenvalues(:), Y_filtered(:, :)
+  !  type(sparse_mat), intent(in) :: S_sparse
+  !  complex(kind(0d0)), intent(in) :: dv_psi(:)
+  !  complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !
+  !  integer :: i, min_abs_i, ierr
+  !  complex(kind(0d0)) :: dv_alpha(num_filter), diff
+  !  real(8) :: min_abs
+  !
+  !  call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
+  !  i = 0
+  !  min_abs = -1d0
+  !  do i = 1, num_filter
+  !    if (abs(dv_alpha(i)) > min_abs) then
+  !      min_abs = abs(dv_alpha(i))
+  !      min_abs_i = i
+  !    end if
+  !  end do
+  !  do i = 1, num_filter
+  !    diff = eigenvalues(i) - eigenvalues(min_abs_i)
+  !    dv_alpha_reconcile(i) = dv_alpha(i) * exp(- abs(diff * suppress_constant) ** 2d0)
+  !  end do
+  !  call normalize_vector(num_filter, dv_alpha_reconcile)
+  !  call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+  !end subroutine reconcile_from_lcao_coef_suppress
 
-    complex(kind(0d0)) :: dv_alpha(num_filter)
 
-    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha_reconcile)
-    call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
-  end subroutine reconcile_from_lcao_coef
-
-
-  subroutine reconcile_from_lcao_coef_cutoff(num_filter, cutoff, &
-       S_sparse, Y_filtered, Y_filtered_desc, &
-       dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
-    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
-    real(8), intent(in) :: cutoff, Y_filtered(:, :)
-    type(sparse_mat), intent(in) :: S_sparse
-    complex(kind(0d0)), intent(in) :: dv_psi(:)
-    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
-
-    complex(kind(0d0)) :: dv_alpha(num_filter)
-
-    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
-    call cutoff_vector(num_filter, cutoff, dv_alpha, dv_alpha_reconcile)
-    call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
-  end subroutine reconcile_from_lcao_coef_cutoff
-
-
-  subroutine reconcile_from_lcao_coef_suppress(num_filter, suppress_constant, &
-       S_sparse, eigenvalues, Y_filtered, Y_filtered_desc, &
-       dv_psi, dv_alpha_reconcile, dv_psi_reconcile)
-    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size)
-    real(8), intent(in) :: suppress_constant, eigenvalues(:), Y_filtered(:, :)
-    type(sparse_mat), intent(in) :: S_sparse
-    complex(kind(0d0)), intent(in) :: dv_psi(:)
-    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
-
-    integer :: i, min_abs_i, ierr
-    complex(kind(0d0)) :: dv_alpha(num_filter), diff
-    real(8) :: min_abs
-
-    call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
-    i = 0
-    min_abs = -1d0
-    do i = 1, num_filter
-      if (abs(dv_alpha(i)) > min_abs) then
-        min_abs = abs(dv_alpha(i))
-        min_abs_i = i
-      end if
-    end do
-    do i = 1, num_filter
-      diff = eigenvalues(i) - eigenvalues(min_abs_i)
-      dv_alpha_reconcile(i) = dv_alpha(i) * exp(- abs(diff * suppress_constant) ** 2d0)
-    end do
-    call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
-  end subroutine reconcile_from_lcao_coef_suppress
-
-
-  subroutine reconcile_from_alpha_matrix_suppress(num_filter, t, suppress_constant, &
-       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+  subroutine reconcile_from_alpha_matrix_suppress(t, suppress_constant, &
+       dv_eigenvalues_prev, dv_eigenvalues, basis, YSY_filtered, YSY_filtered_desc, &
        dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
-    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    integer, intent(in) :: YSY_filtered_desc(desc_size)
+    type(wp_basis_t), intent(in) :: basis
     real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
-    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+    real(8), intent(in) :: YSY_filtered(:, :)
     complex(kind(0d0)), intent(in) :: dv_alpha(:)
     complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
 
-    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(num_filter)
-    real(8) :: dv_suppress_factor(num_filter), suppress_factor_sum, dv_suppress_factor_copy(num_filter)
-    real(8) :: dv_suppress_factor2(num_filter), suppress_factor_sum2
-    complex(kind(0d0)) :: dv_evcoef_amplitude(num_filter), dv_evcoef_amplitude_reconcile(num_filter)
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(basis%num_basis)
+    real(8) :: dv_suppress_factor(basis%num_basis), suppress_factor_sum, dv_suppress_factor_copy(basis%num_basis)
+    real(8) :: dv_suppress_factor2(basis%num_basis), suppress_factor_sum2
+    complex(kind(0d0)) :: dv_evcoef_amplitude(basis%num_basis), dv_evcoef_amplitude_reconcile(basis%num_basis)
     real(8), allocatable :: ENE_suppress(:, :), YSY_filtered_suppress(:, :)
-    real(8) :: ysy_ipratios(num_filter), ysy_suppress_ipratios(num_filter)
+    real(8) :: ysy_ipratios(basis%num_basis), ysy_suppress_ipratios(basis%num_basis)
     real(8) :: average_pratio, weighted_average_pratio, average_pratio_suppress, weighted_average_pratio_suppress
     real(8) :: work(1000), energy_normalizer, diff
     integer, save :: count = 0
@@ -266,13 +267,13 @@ contains
     allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
     ENE_suppress(:, :) = 0d0
 
-    do j = 1, num_filter
-      do i = 1, num_filter
+    do j = 1, basis%num_basis
+      do i = 1, basis%num_basis
         diff = dv_eigenvalues(i) - dv_eigenvalues_prev(j)
         dv_suppress_factor(i) = exp(- (suppress_constant * diff) ** 2d0)
       end do
       call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor', dv_suppress_factor)
-      do i = 1, num_filter
+      do i = 1, basis%num_basis
         call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
         if (myrow == rsrc .and. mycol == csrc) then
           YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
@@ -280,27 +281,27 @@ contains
       end do
     end do
 
-    call get_ipratio_of_eigenstates(YSY_filtered, YSY_filtered_desc, ysy_ipratios)
-    call get_ipratio_of_eigenstates(YSY_filtered_suppress, YSY_filtered_desc, ysy_suppress_ipratios)
-    average_pratio = 0d0
-    weighted_average_pratio = 0d0
-    average_pratio_suppress = 0d0
-    weighted_average_pratio_suppress = 0d0
-    do j = 1, num_filter
-      average_pratio = average_pratio + 1d0 / ysy_ipratios(j)
-      average_pratio_suppress = average_pratio_suppress + 1d0 / ysy_suppress_ipratios(j)
-      weighted_average_pratio = weighted_average_pratio + (abs(dv_alpha(j)) ** 2d0) / ysy_ipratios(j)
-      weighted_average_pratio_suppress = weighted_average_pratio_suppress + &
-           (abs(dv_alpha(j)) ** 2d0) / ysy_suppress_ipratios(j)
-    end do
-    average_pratio = average_pratio / num_filter
-    weighted_average_pratio = weighted_average_pratio
-    average_pratio_suppress = average_pratio_suppress / num_filter
-    weighted_average_pratio_suppress = weighted_average_pratio_suppress
-    print *, 'YSYPRATIO1 average pratio', t, average_pratio
-    print *, 'YSYPRATIO2 weighted average pratio', t, weighted_average_pratio
-    print *, 'YSYPRATIO3 average pratio (suppressed)', t, average_pratio_suppress
-    print *, 'YSYPRATIO4 weighted average pratio (suppressed)', t, weighted_average_pratio_suppress
+    !call get_ipratio_of_eigenstates(YSY_filtered, YSY_filtered_desc, ysy_ipratios)
+    !call get_ipratio_of_eigenstates(YSY_filtered_suppress, YSY_filtered_desc, ysy_suppress_ipratios)
+    !average_pratio = 0d0
+    !weighted_average_pratio = 0d0
+    !average_pratio_suppress = 0d0
+    !weighted_average_pratio_suppress = 0d0
+    !do j = 1, basis%num_basis
+    !  average_pratio = average_pratio + 1d0 / ysy_ipratios(j)
+    !  average_pratio_suppress = average_pratio_suppress + 1d0 / ysy_suppress_ipratios(j)
+    !  weighted_average_pratio = weighted_average_pratio + (abs(dv_alpha(j)) ** 2d0) / ysy_ipratios(j)
+    !  weighted_average_pratio_suppress = weighted_average_pratio_suppress + &
+    !       (abs(dv_alpha(j)) ** 2d0) / ysy_suppress_ipratios(j)
+    !end do
+    !average_pratio = average_pratio / basis%num_basis
+    !weighted_average_pratio = weighted_average_pratio
+    !average_pratio_suppress = average_pratio_suppress / basis%num_basis
+    !weighted_average_pratio_suppress = weighted_average_pratio_suppress
+    !print *, 'YSYPRATIO1 average pratio', t, average_pratio
+    !print *, 'YSYPRATIO2 weighted average pratio', t, weighted_average_pratio
+    !print *, 'YSYPRATIO3 average pratio (suppressed)', t, average_pratio_suppress
+    !print *, 'YSYPRATIO4 weighted average pratio (suppressed)', t, weighted_average_pratio_suppress
 
     !write(count_str, '(I6.6)') count
     !write(time_str, '(F0.4)') t * 2.418884326505e-5  ! kPsecPerAu.
@@ -308,7 +309,7 @@ contains
     !if (check_master()) then
     !  open(iunit_YSY, file=trim(filename))
     !end if
-    !call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+    !call pdlaprnt(basis%num_basis, basis%num_basis, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
     !if (check_master()) then
     !  close(iunit_YSY)
     !end if
@@ -319,9 +320,9 @@ contains
     !print *, 'Energy correction X', dv_evcoef
     !print *, 'Energy correction Y', dv_evcoef_reconcile
     !
-    !do j = 1, num_filter
+    !do j = 1, basis%num_basis
     !  dv_evcoef_amplitude(j) = conjg(dv_evcoef(j)) * dv_evcoef(j)
-    !  do i = 1, num_filter
+    !  do i = 1, basis%num_basis
     !    if (abs(dv_evcoef_reconcile(i)) < 1d-10) then  ! αの値ではなくsmoothed deltaの方で切り落としを定める.
     !      !print *, 'ZZZZ i: alphaprime0(zero), abs(alphaprime0)', i, ':', dv_evcoef_reconcile(i), abs(dv_evcoef_reconcile(i))
     !      dv_suppress_factor2(i) = kZero
@@ -330,7 +331,7 @@ contains
     !    end if
     !  end do
     !  call check_nan_vector('reconcile_from_alpha_matrix_suppress dv_suppress_factor2', dv_suppress_factor2)
-    !  do i = 1, num_filter
+    !  do i = 1, basis%num_basis
     !    call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
     !    if (myrow == rsrc .and. mycol == csrc) then
     !      ENE_suppress(i_local, j_local) = dv_suppress_factor2(i)
@@ -344,7 +345,7 @@ contains
     !if (check_master()) then
     !  open(iunit_YSY, file=trim(filename))
     !end if
-    !call pdlaprnt(num_filter, num_filter, ENE_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'ENEsuppress', &
+    !call pdlaprnt(basis%num_basis, basis%num_basis, ENE_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'ENEsuppress', &
     !     iunit_YSY, work)
     !if (check_master()) then
     !  close(iunit_YSY)
@@ -355,7 +356,7 @@ contains
     !call matvec_dd_z('No', ENE_suppress, YSY_filtered_desc, kOne, dv_evcoef_amplitude, kZero, dv_evcoef_amplitude_reconcile)
     !print *, 'Energy correction A', dreal(dv_evcoef_amplitude)
     !print *, 'Energy correction B', dreal(dv_evcoef_amplitude_reconcile)
-    !do i = 1, num_filter
+    !do i = 1, basis%num_basis
     !  energy_normalizer = dsqrt(dreal(dv_evcoef_amplitude_reconcile(i))) / abs(dv_evcoef_reconcile(i))
     !  if (abs(dv_evcoef_reconcile(i)) < 1d-10) then
     !    !print *, 'Energy correction(1) i: alphaprime0, abs(alphaprime0), targetamp', i, ':', &
@@ -376,344 +377,343 @@ contains
     if (check_master()) then
       write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
            '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
-           dznrm2(num_filter, dv_alpha_reconcile, 1)
+           dznrm2(basis%num_basis, dv_alpha_reconcile, 1)
     end if
-    call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+    call normalize_vector(basis%num_basis, dv_alpha_reconcile)
+    call alpha_to_lcao_coef(basis, dv_alpha_reconcile, dv_psi_reconcile)
     deallocate(YSY_filtered_suppress, ENE_suppress)
   end subroutine reconcile_from_alpha_matrix_suppress
 
 
-  subroutine reconcile_from_alpha_matrix_suppress_orthogonal(num_filter, t, suppress_constant, &
-       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
-       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
-    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
-    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
-    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
-    complex(kind(0d0)), intent(in) :: dv_alpha(:)
-    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
-
-    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
-    real(8) :: dv_suppress_factor(num_filter)
-    real(8), allocatable :: YSY_filtered_orthogonal(:, :), YSY_filtered_suppress(:, :)
-    real(8) :: dznrm2
-
-    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
-    allocate(YSY_filtered_orthogonal(size(YSY_filtered, 1), size(YSY_filtered, 2)))
-    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
-    YSY_filtered_orthogonal(:, :) = 0d0
-
-    do j = 1, num_filter
-      do i = 1, num_filter
-        dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
-      end do
-      call check_nan_vector('reconcile_from_alpha_matrix_suppress_orthogonal dv_suppress_factor', dv_suppress_factor)
-      do i = 1, num_filter
-        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
-        if (myrow == rsrc .and. mycol == csrc) then
-          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
-        end if
-      end do
-    end do
-
-    dv_alpha_reconcile(:) = kZero
-    call matvec_nearest_orthonormal_matrix(YSY_filtered_suppress, YSY_filtered_desc, &
-         dv_alpha, dv_alpha_reconcile, YSY_filtered_orthogonal)
-
-    if (check_master()) then
-      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-           '] reconcile_from_alpha_matrix_suppress_orthogonal() : evcoef norm before normalization ', &
-           dznrm2(num_filter, dv_alpha_reconcile, 1)
-    end if
-    call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
-    deallocate(YSY_filtered_suppress, YSY_filtered_orthogonal)
-  end subroutine reconcile_from_alpha_matrix_suppress_orthogonal
-
-
-  subroutine reconcile_from_alpha_matrix_suppress_adaptive(num_filter, t, suppress_constant, &
-       is_first_in_multiple_initials, &
-       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
-       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
-    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
-    logical, intent(in) :: is_first_in_multiple_initials
-    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
-    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
-    complex(kind(0d0)), intent(in) :: dv_alpha(:)
-    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
-
-    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
-    real(8) :: dv_suppress_factor(num_filter)
-    real(8), allocatable, save :: YSY_filtered_suppress(:, :)
-    type(wp_energy_t) :: energies
-
-    integer, save :: count = 0
-    character(len=100) :: filename
-    character(len=6) :: count_str
-    character(len=12) :: time_str
-    character(len=12) :: suppress_str
-    integer, parameter :: iunit_YSY = 20
-    real(8) :: energy_diff, work(1000)
-    real(8), parameter :: relax_constant_for_suppression = 1d-10
-    real(8) :: energy_mean(Y_filtered_desc(cols_)), energy_dev(Y_filtered_desc(cols_))
-    ! Function.
-    real(8) :: dznrm2
-
-    if (check_master()) then
-      write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-           '] reconcile_from_alpha_matrix_suppress_adaptive() : start for time ', t, ' au, ', &
-           t * kPsecPerAu, ' ps'
-    end if
-
-    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
-
-    if (is_first_in_multiple_initials) then
-      if (allocated(YSY_filtered_suppress)) then
-        deallocate(YSY_filtered_suppress)
-      end if
-      allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
-
-      call get_moment_for_each_column(dv_eigenvalues, YSY_filtered_desc, YSY_filtered, energy_mean, energy_dev)
-      call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_mean', energy_mean)
-      call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_dev', energy_dev)
-
-      do j = 1, num_filter
-        do i = 1, num_filter
-          energy_diff = dv_eigenvalues(i) - energy_mean(j)
-          dv_suppress_factor(i) = exp(- suppress_constant * &
-               (energy_diff / (energy_dev(j) + relax_constant_for_suppression)) ** 2d0)
-          !if (dv_suppress_factor(i) > 1e-100) then
-          !  print *, 'ZZZZZZ', j, i, suppress_constant, energy_mean(j), energy_diff, &
-          !       energy_dev(j), dv_suppress_factor(i)
-          !end if
-        end do
-        call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive dv_suppress_factor', dv_suppress_factor)
-        do i = 1, num_filter
-          call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
-          if (myrow == rsrc .and. mycol == csrc) then
-            YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
-          end if
-        end do
-      end do
-
-      !write(count_str, '(I6.6)') count
-      !if (mod(count, 6) == 0) then
-      !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
-      !  write(suppress_str, '(F0.5)') suppress_constant
-      !  filename = 'YSY_' // trim(count_str) // '_' // trim(suppress_str) // '_' //  trim(time_str) // 'ps.mtx'
-      !  if (check_master()) then
-      !    open(iunit_YSY, file=trim(filename))
-      !  end if
-      !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
-      !  if (check_master()) then
-      !    close(iunit_YSY)
-      !  end if
-      !  filename = 'YSYsuppressed_' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
-      !  if (check_master()) then
-      !    open(iunit_YSY, file=trim(filename))
-      !  end if
-      !  call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSYf', iunit_YSY, work)
-      !  if (check_master()) then
-      !    close(iunit_YSY)
-      !  end if
-      !end if
-      !count = count + 1
-    end if
-
-    dv_alpha_reconcile(:) = kZero
-    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
-
-    if (check_master()) then
-      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-           '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
-           dznrm2(num_filter, dv_alpha_reconcile, 1)
-    end if
-    call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
-  end subroutine reconcile_from_alpha_matrix_suppress_adaptive
+  !subroutine reconcile_from_alpha_matrix_suppress_orthogonal(num_filter, t, suppress_constant, &
+  !     dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+  !     dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+  !  integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+  !  real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+  !  real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+  !  complex(kind(0d0)), intent(in) :: dv_alpha(:)
+  !  complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !
+  !  integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
+  !  real(8) :: dv_suppress_factor(num_filter)
+  !  real(8), allocatable :: YSY_filtered_orthogonal(:, :), YSY_filtered_suppress(:, :)
+  !  real(8) :: dznrm2
+  !
+  !  call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+  !  allocate(YSY_filtered_orthogonal(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+  !  allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+  !  YSY_filtered_orthogonal(:, :) = 0d0
+  !
+  !  do j = 1, num_filter
+  !    do i = 1, num_filter
+  !      dv_suppress_factor(i) = exp(- suppress_constant * (dv_eigenvalues(i) - dv_eigenvalues_prev(j)) ** 2d0)
+  !    end do
+  !    call check_nan_vector('reconcile_from_alpha_matrix_suppress_orthogonal dv_suppress_factor', dv_suppress_factor)
+  !    do i = 1, num_filter
+  !      call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+  !      if (myrow == rsrc .and. mycol == csrc) then
+  !        YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+  !      end if
+  !    end do
+  !  end do
+  !
+  !  dv_alpha_reconcile(:) = kZero
+  !  call matvec_nearest_orthonormal_matrix(YSY_filtered_suppress, YSY_filtered_desc, &
+  !       dv_alpha, dv_alpha_reconcile, YSY_filtered_orthogonal)
+  !
+  !  if (check_master()) then
+  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !         '] reconcile_from_alpha_matrix_suppress_orthogonal() : evcoef norm before normalization ', &
+  !         dznrm2(num_filter, dv_alpha_reconcile, 1)
+  !  end if
+  !  call normalize_vector(num_filter, dv_alpha_reconcile)
+  !  call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+  !  deallocate(YSY_filtered_suppress, YSY_filtered_orthogonal)
+  !end subroutine reconcile_from_alpha_matrix_suppress_orthogonal
 
 
+  !subroutine reconcile_from_alpha_matrix_suppress_adaptive(num_filter, t, suppress_constant, &
+  !     is_first_in_multiple_initials, &
+  !     dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+  !     dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+  !  integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+  !  logical, intent(in) :: is_first_in_multiple_initials
+  !  real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+  !  real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+  !  complex(kind(0d0)), intent(in) :: dv_alpha(:)
+  !  complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !
+  !  integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
+  !  real(8) :: dv_suppress_factor(num_filter)
+  !  real(8), allocatable, save :: YSY_filtered_suppress(:, :)
+  !  type(wp_energy_t) :: energies
+  !
+  !  integer, save :: count = 0
+  !  character(len=100) :: filename
+  !  character(len=6) :: count_str
+  !  character(len=12) :: time_str
+  !  character(len=12) :: suppress_str
+  !  integer, parameter :: iunit_YSY = 20
+  !  real(8) :: energy_diff, work(1000)
+  !  real(8), parameter :: relax_constant_for_suppression = 1d-10
+  !  real(8) :: energy_mean(Y_filtered_desc(cols_)), energy_dev(Y_filtered_desc(cols_))
+  !  ! Function.
+  !  real(8) :: dznrm2
+  !
+  !  if (check_master()) then
+  !    write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !         '] reconcile_from_alpha_matrix_suppress_adaptive() : start for time ', t, ' au, ', &
+  !         t * kPsecPerAu, ' ps'
+  !  end if
+  !
+  !  call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+  !
+  !  if (is_first_in_multiple_initials) then
+  !    if (allocated(YSY_filtered_suppress)) then
+  !      deallocate(YSY_filtered_suppress)
+  !    end if
+  !    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+  !
+  !    call get_moment_for_each_column(dv_eigenvalues, YSY_filtered_desc, YSY_filtered, energy_mean, energy_dev)
+  !    call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_mean', energy_mean)
+  !    call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive energy_dev', energy_dev)
+  !
+  !    do j = 1, num_filter
+  !      do i = 1, num_filter
+  !        energy_diff = dv_eigenvalues(i) - energy_mean(j)
+  !        dv_suppress_factor(i) = exp(- suppress_constant * &
+  !             (energy_diff / (energy_dev(j) + relax_constant_for_suppression)) ** 2d0)
+  !        !if (dv_suppress_factor(i) > 1e-100) then
+  !        !  print *, 'ZZZZZZ', j, i, suppress_constant, energy_mean(j), energy_diff, &
+  !        !       energy_dev(j), dv_suppress_factor(i)
+  !        !end if
+  !      end do
+  !      call check_nan_vector('reconcile_from_alpha_matrix_suppress_adaptive dv_suppress_factor', dv_suppress_factor)
+  !      do i = 1, num_filter
+  !        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+  !        if (myrow == rsrc .and. mycol == csrc) then
+  !          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+  !        end if
+  !      end do
+  !    end do
+  !
+  !    !write(count_str, '(I6.6)') count
+  !    !if (mod(count, 6) == 0) then
+  !    !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
+  !    !  write(suppress_str, '(F0.5)') suppress_constant
+  !    !  filename = 'YSY_' // trim(count_str) // '_' // trim(suppress_str) // '_' //  trim(time_str) // 'ps.mtx'
+  !    !  if (check_master()) then
+  !    !    open(iunit_YSY, file=trim(filename))
+  !    !  end if
+  !    !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+  !    !  if (check_master()) then
+  !    !    close(iunit_YSY)
+  !    !  end if
+  !    !  filename = 'YSYsuppressed_' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
+  !    !  if (check_master()) then
+  !    !    open(iunit_YSY, file=trim(filename))
+  !    !  end if
+  !    !  call pdlaprnt(num_filter, num_filter, YSY_filtered_suppress, 1, 1, YSY_filtered_desc, 0, 0, 'YSYf', iunit_YSY, work)
+  !    !  if (check_master()) then
+  !    !    close(iunit_YSY)
+  !    !  end if
+  !    !end if
+  !    !count = count + 1
+  !  end if
+  !
+  !  dv_alpha_reconcile(:) = kZero
+  !  call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
+  !
+  !  if (check_master()) then
+  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !         '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
+  !         dznrm2(num_filter, dv_alpha_reconcile, 1)
+  !  end if
+  !  call normalize_vector(num_filter, dv_alpha_reconcile)
+  !  call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+  !end subroutine reconcile_from_alpha_matrix_suppress_adaptive
 
-  subroutine reconcile_from_alpha_matrix_suppress_select(num_filter, t, suppress_constant, &
-       is_first_in_multiple_initials, &
-       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
-       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
-    integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
-    logical, intent(in) :: is_first_in_multiple_initials
-    real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
-    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
-    complex(kind(0d0)), intent(in) :: dv_alpha(:)
-    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
 
-    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, max_index_in_col, max_index_in_row
-    real(8), allocatable, save :: YSY_filtered_select(:, :), YSY_filtered_orthogonal(:, :)
-    integer, allocatable, save :: col_to_max_index_in_col(:), row_to_max_index_in_row(:)
-    integer :: tmp_max_index(2), ierr
-    real(8) :: col_vector_local(num_filter, 1), row_vector_local(1, num_filter), suppress_factor, norm
 
-    integer, save :: count = 0
-    character(len=100) :: filename
-    character(len=6) :: count_str
-    character(len=12) :: time_str
-    character(len=12) :: suppress_str
-    integer, parameter :: iunit_YSY = 20
-    real(8) :: energy_diff, energy_diff_prev, energy_diff_diff, work(1000)
-    ! Function.
-    integer :: blacs_pnum
-    real(8) :: dznrm2
-
-    if (check_master()) then
-      write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-           '] reconcile_from_alpha_matrix_suppress_select() : start for time ', t, ' au, ', &
-           t * kPsecPerAu, ' ps'
-    end if
-
-    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
-
-    if (is_first_in_multiple_initials) then
-      print *, 'ZZZZZZZX'
-      if (allocated(YSY_filtered_select)) then
-        deallocate(YSY_filtered_select)
-      end if
-      if (allocated(YSY_filtered_orthogonal)) then
-        deallocate(YSY_filtered_orthogonal)
-      end if
-      allocate(YSY_filtered_select(size(YSY_filtered, 1), size(YSY_filtered, 2)))
-      allocate(YSY_filtered_orthogonal(size(YSY_filtered, 1), size(YSY_filtered, 2)))
-      YSY_filtered_select(:, :) = YSY_filtered(:, :)
-      YSY_filtered_orthogonal(:, :) = 0d0
-
-      if (allocated(col_to_max_index_in_col)) then
-        deallocate(col_to_max_index_in_col)
-      end if
-      if (allocated(row_to_max_index_in_row)) then
-        deallocate(row_to_max_index_in_row)
-      end if
-      allocate(col_to_max_index_in_col(num_filter), row_to_max_index_in_row(num_filter))
-
-      do j = 1, num_filter
-        call gather_matrix_real_part(YSY_filtered, YSY_filtered_desc, 1, j, num_filter, 1, &
-             0, 0, col_vector_local)
-        if (myrow == 0 .and. mycol == 0) then
-          tmp_max_index = maxloc(abs(col_vector_local))
-          col_to_max_index_in_col(j) = tmp_max_index(1)
-        end if
-      end do
-      do i = 1, num_filter
-        call gather_matrix_real_part(YSY_filtered, YSY_filtered_desc, i, 1, 1, num_filter, &
-             0, 0, row_vector_local)
-        if (myrow == 0 .and. mycol == 0) then
-          tmp_max_index = maxloc(abs(row_vector_local))
-          row_to_max_index_in_row(i) = tmp_max_index(2)
-        end if
-      end do
-      call mpi_bcast(col_to_max_index_in_col, num_filter, mpi_integer, 0, mpi_comm_world, ierr)
-      call mpi_bcast(row_to_max_index_in_row, num_filter, mpi_integer, 0, mpi_comm_world, ierr)
-      print *, 'ZZZZZZcol_to_max_index_in_col ', col_to_max_index_in_col
-      print *, 'ZZZZZZrow_to_max_index_in_row ', row_to_max_index_in_row
-
-      do j = 1, num_filter
-        do i = 1, num_filter
-          max_index_in_col = col_to_max_index_in_col(j)
-          max_index_in_row = row_to_max_index_in_row(i)
-          if (i /= max_index_in_col .or. j /= max_index_in_row) then
-            call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
-            if (myrow == rsrc .and. mycol == csrc) then
-              energy_diff = dv_eigenvalues(i) - dv_eigenvalues(max_index_in_col)
-              energy_diff_prev = dv_eigenvalues_prev(max_index_in_row) - dv_eigenvalues_prev(j)
-              energy_diff_diff = abs(energy_diff - energy_diff_prev)
-              !if (abs(i - max_index_in_col) > 3) then
-              !  suppress_factor = 0d0
-              !else
-              if (i == max_index_in_col) then
-                suppress_factor = 1d0 / abs(YSY_filtered_select(i_local, j_local))
-              else
-                if (energy_diff_diff < 1d-16 .or. suppress_constant / energy_diff_diff > 37d0) then
-                  suppress_factor = 0d0
-                else
-                  suppress_factor = exp(- suppress_constant / energy_diff_diff)
-                end if
-              end if
-              YSY_filtered_select(i_local, j_local) = YSY_filtered_select(i_local, j_local) * suppress_factor
-            end if
-          end if
-        end do
-        !call pdnrm2(num_filter, norm, YSY_filtered_select, 1, j, YSY_filtered_desc, 1)
-        !call infog2l(1, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
-        !call mpi_bcast(norm, 1, mpi_double_precision, blacs_pnum(YSY_filtered_desc(context_), rsrc, csrc), &
-        !     mpi_comm_world, ierr)
-        !print *, 'ZZZZZZZZYSY_filtered_select_norm', j, norm
-        !if (norm >= 1d-16) then
-        !  call pdscal(num_filter, 1d0 / norm, YSY_filtered_select, 1, j, YSY_filtered_desc, 1)
-        !end if
-      end do
-    end if
-
-    !write(count_str, '(I6.6)') count
-    !if (mod(count, 6) == 0) then
-    !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
-    !  write(suppress_str, '(F0.5)') suppress_constant
-    !  filename = 'YSY' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
-    !  if (check_master()) then
-    !    open(iunit_YSY, file=trim(filename))
-    !  end if
-    !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
-    !  if (check_master()) then
-    !    close(iunit_YSY)
-    !  end if
-    !  filename = 'YSYselect' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
-    !  if (check_master()) then
-    !    open(iunit_YSY, file=trim(filename))
-    !  end if
-    !  call pdlaprnt(num_filter, num_filter, YSY_filtered_select, 1, 1, YSY_filtered_desc, 0, 0, 'YSYs', iunit_YSY, work)
-    !  if (check_master()) then
-    !    close(iunit_YSY)
-    !  end if
-    !end if
-    !count = count + 1
-    !!stop
-
-    dv_alpha_reconcile(:) = kZero
-    !call matvec_nearest_orthonormal_matrix(YSY_filtered_select, YSY_filtered_desc, &
-    !     dv_evcoef, dv_evcoef_reconcile, YSY_filtered_orthogonal)
-    call matvec_dd_z('No', YSY_filtered_select, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
-
-    print *, 'ZZZZTT', row_to_max_index_in_row
-    do i = 1, num_filter
-      j = row_to_max_index_in_row(i)
-      if (abs(dv_alpha(j)) > 1d-16) then
-        dv_alpha_reconcile(i) = abs(dv_alpha_reconcile(i))! * (dv_alpha(j) / abs(dv_alpha(j)))
-      end if
-    end do
-
-    if (check_master()) then
-      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-           '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm before normalization ', &
-           dznrm2(num_filter, dv_alpha_reconcile, 1)
-    end if
-    if (dznrm2(num_filter, dv_alpha_reconcile, 1) < 1d-16) then
-      if (check_master()) then
-        write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-             '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm missing'
-      end if
-      dv_alpha_reconcile(:) = dv_alpha(:)
-    end if
-
-    call normalize_vector(num_filter, dv_alpha_reconcile)
-    call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
-  end subroutine reconcile_from_alpha_matrix_suppress_select
+  !subroutine reconcile_from_alpha_matrix_suppress_select(num_filter, t, suppress_constant, &
+  !     is_first_in_multiple_initials, &
+  !     dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+  !     dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+  !  integer, intent(in) :: num_filter, Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+  !  logical, intent(in) :: is_first_in_multiple_initials
+  !  real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+  !  real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :)
+  !  complex(kind(0d0)), intent(in) :: dv_alpha(:)
+  !  complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+  !
+  !  integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, max_index_in_col, max_index_in_row
+  !  real(8), allocatable, save :: YSY_filtered_select(:, :), YSY_filtered_orthogonal(:, :)
+  !  integer, allocatable, save :: col_to_max_index_in_col(:), row_to_max_index_in_row(:)
+  !  integer :: tmp_max_index(2), ierr
+  !  real(8) :: col_vector_local(num_filter, 1), row_vector_local(1, num_filter), suppress_factor, norm
+  !
+  !  integer, save :: count = 0
+  !  character(len=100) :: filename
+  !  character(len=6) :: count_str
+  !  character(len=12) :: time_str
+  !  character(len=12) :: suppress_str
+  !  integer, parameter :: iunit_YSY = 20
+  !  real(8) :: energy_diff, energy_diff_prev, energy_diff_diff, work(1000)
+  !  ! Function.
+  !  integer :: blacs_pnum
+  !  real(8) :: dznrm2
+  !
+  !  if (check_master()) then
+  !    write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !         '] reconcile_from_alpha_matrix_suppress_select() : start for time ', t, ' au, ', &
+  !         t * kPsecPerAu, ' ps'
+  !  end if
+  !
+  !  call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+  !
+  !  if (is_first_in_multiple_initials) then
+  !    print *, 'ZZZZZZZX'
+  !    if (allocated(YSY_filtered_select)) then
+  !      deallocate(YSY_filtered_select)
+  !    end if
+  !    if (allocated(YSY_filtered_orthogonal)) then
+  !      deallocate(YSY_filtered_orthogonal)
+  !    end if
+  !    allocate(YSY_filtered_select(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+  !    allocate(YSY_filtered_orthogonal(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+  !    YSY_filtered_select(:, :) = YSY_filtered(:, :)
+  !    YSY_filtered_orthogonal(:, :) = 0d0
+  !
+  !    if (allocated(col_to_max_index_in_col)) then
+  !      deallocate(col_to_max_index_in_col)
+  !    end if
+  !    if (allocated(row_to_max_index_in_row)) then
+  !      deallocate(row_to_max_index_in_row)
+  !    end if
+  !    allocate(col_to_max_index_in_col(num_filter), row_to_max_index_in_row(num_filter))
+  !
+  !    do j = 1, num_filter
+  !      call gather_matrix_real_part(YSY_filtered, YSY_filtered_desc, 1, j, num_filter, 1, &
+  !           0, 0, col_vector_local)
+  !      if (myrow == 0 .and. mycol == 0) then
+  !        tmp_max_index = maxloc(abs(col_vector_local))
+  !        col_to_max_index_in_col(j) = tmp_max_index(1)
+  !      end if
+  !    end do
+  !    do i = 1, num_filter
+  !      call gather_matrix_real_part(YSY_filtered, YSY_filtered_desc, i, 1, 1, num_filter, &
+  !           0, 0, row_vector_local)
+  !      if (myrow == 0 .and. mycol == 0) then
+  !        tmp_max_index = maxloc(abs(row_vector_local))
+  !        row_to_max_index_in_row(i) = tmp_max_index(2)
+  !      end if
+  !    end do
+  !    call mpi_bcast(col_to_max_index_in_col, num_filter, mpi_integer, 0, mpi_comm_world, ierr)
+  !    call mpi_bcast(row_to_max_index_in_row, num_filter, mpi_integer, 0, mpi_comm_world, ierr)
+  !    print *, 'ZZZZZZcol_to_max_index_in_col ', col_to_max_index_in_col
+  !    print *, 'ZZZZZZrow_to_max_index_in_row ', row_to_max_index_in_row
+  !
+  !    do j = 1, num_filter
+  !      do i = 1, num_filter
+  !        max_index_in_col = col_to_max_index_in_col(j)
+  !        max_index_in_row = row_to_max_index_in_row(i)
+  !        if (i /= max_index_in_col .or. j /= max_index_in_row) then
+  !          call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+  !          if (myrow == rsrc .and. mycol == csrc) then
+  !            energy_diff = dv_eigenvalues(i) - dv_eigenvalues(max_index_in_col)
+  !            energy_diff_prev = dv_eigenvalues_prev(max_index_in_row) - dv_eigenvalues_prev(j)
+  !            energy_diff_diff = abs(energy_diff - energy_diff_prev)
+  !            !if (abs(i - max_index_in_col) > 3) then
+  !            !  suppress_factor = 0d0
+  !            !else
+  !            if (i == max_index_in_col) then
+  !              suppress_factor = 1d0 / abs(YSY_filtered_select(i_local, j_local))
+  !            else
+  !              if (energy_diff_diff < 1d-16 .or. suppress_constant / energy_diff_diff > 37d0) then
+  !                suppress_factor = 0d0
+  !              else
+  !                suppress_factor = exp(- suppress_constant / energy_diff_diff)
+  !              end if
+  !            end if
+  !            YSY_filtered_select(i_local, j_local) = YSY_filtered_select(i_local, j_local) * suppress_factor
+  !          end if
+  !        end if
+  !      end do
+  !      !call pdnrm2(num_filter, norm, YSY_filtered_select, 1, j, YSY_filtered_desc, 1)
+  !      !call infog2l(1, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+  !      !call mpi_bcast(norm, 1, mpi_double_precision, blacs_pnum(YSY_filtered_desc(context_), rsrc, csrc), &
+  !      !     mpi_comm_world, ierr)
+  !      !print *, 'ZZZZZZZZYSY_filtered_select_norm', j, norm
+  !      !if (norm >= 1d-16) then
+  !      !  call pdscal(num_filter, 1d0 / norm, YSY_filtered_select, 1, j, YSY_filtered_desc, 1)
+  !      !end if
+  !    end do
+  !  end if
+  !
+  !  !write(count_str, '(I6.6)') count
+  !  !if (mod(count, 6) == 0) then
+  !  !  write(time_str, '(F0.5)') t * 2.418884326505e-5  ! kPsecPerAu.
+  !  !  write(suppress_str, '(F0.5)') suppress_constant
+  !  !  filename = 'YSY' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
+  !  !  if (check_master()) then
+  !  !    open(iunit_YSY, file=trim(filename))
+  !  !  end if
+  !  !  call pdlaprnt(num_filter, num_filter, YSY_filtered, 1, 1, YSY_filtered_desc, 0, 0, 'YSY', iunit_YSY, work)
+  !  !  if (check_master()) then
+  !  !    close(iunit_YSY)
+  !  !  end if
+  !  !  filename = 'YSYselect' // trim(count_str) // '_' // trim(suppress_str) // '_' // trim(time_str) // 'ps.mtx'
+  !  !  if (check_master()) then
+  !  !    open(iunit_YSY, file=trim(filename))
+  !  !  end if
+  !  !  call pdlaprnt(num_filter, num_filter, YSY_filtered_select, 1, 1, YSY_filtered_desc, 0, 0, 'YSYs', iunit_YSY, work)
+  !  !  if (check_master()) then
+  !  !    close(iunit_YSY)
+  !  !  end if
+  !  !end if
+  !  !count = count + 1
+  !  !!stop
+  !
+  !  dv_alpha_reconcile(:) = kZero
+  !  !call matvec_nearest_orthonormal_matrix(YSY_filtered_select, YSY_filtered_desc, &
+  !  !     dv_evcoef, dv_evcoef_reconcile, YSY_filtered_orthogonal)
+  !  call matvec_dd_z('No', YSY_filtered_select, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
+  !
+  !  print *, 'ZZZZTT', row_to_max_index_in_row
+  !  do i = 1, num_filter
+  !    j = row_to_max_index_in_row(i)
+  !    if (abs(dv_alpha(j)) > 1d-16) then
+  !      dv_alpha_reconcile(i) = abs(dv_alpha_reconcile(i))! * (dv_alpha(j) / abs(dv_alpha(j)))
+  !    end if
+  !  end do
+  !
+  !  if (check_master()) then
+  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !         '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm before normalization ', &
+  !         dznrm2(num_filter, dv_alpha_reconcile, 1)
+  !  end if
+  !  if (dznrm2(num_filter, dv_alpha_reconcile, 1) < 1d-16) then
+  !    if (check_master()) then
+  !      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !           '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm missing'
+  !    end if
+  !    dv_alpha_reconcile(:) = dv_alpha(:)
+  !  end if
+  !
+  !  call normalize_vector(num_filter, dv_alpha_reconcile)
+  !  call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+  !end subroutine reconcile_from_alpha_matrix_suppress_select
 
 
   subroutine set_initial_value(setting, proc, dim, structure, group_id, &
-       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, dv_eigenvalues, &
+       H_sparse, S_sparse, basis, &
        dv_psi, dv_alpha, errors)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
     integer, intent(in) :: dim, group_id(:, :)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
     type(wp_structure_t), intent(in) :: structure
-    integer, intent(in) :: Y_filtered_desc(desc_size)
-    real(8), intent(in) :: Y_filtered(:, :), dv_eigenvalues(:)
+    type(wp_basis_t), intent(in) :: basis
     complex(kind(0d0)), intent(out) :: dv_psi(:, :), dv_alpha(:, :)
     type(wp_error_t), intent(out) :: errors(:)
 
@@ -785,7 +785,7 @@ contains
         call normalize_vector(setting%num_filter, dv_alpha(:, i))
         ! フィルターした後の状態の重ね合わせで \psi を決めているのでこの時点では
         ! \psi に対するエラーは存在しない.
-        call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha(:, i), dv_psi(:, i))
+        call alpha_to_lcao_coef(basis, dv_alpha(:, i), dv_psi(:, i))
       end do
       if (setting%to_multiply_phase_factor) then
         call terminate('not implemented', 49)
@@ -841,17 +841,18 @@ contains
       !     full_vecs, full_vecs_desc, filtered_vecs, filtered_vecs_desc)
       !call get_filtering_errors(dim, full_vecs, full_vecs_desc, absolute_filter_error, relative_filter_error)
     else if (trim(setting%init_type) == 'lcao_file') then
-      if (check_master()) then
-        call read_vector(dim, trim(setting%lcao_filename), dv_psi)
-      end if
-      call mpi_bcast(dv_psi, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
-      !if (setting%to_multiply_phase_factor) then
-      !  call multiply_phase_factors(dim, num_atoms, atom_indices, atom_coordinates, &
-      !       setting%phase_factor_coef, psi)
+      call terminate('not implemented', 49)
+      !if (check_master()) then
+      !  call read_vector(dim, trim(setting%lcao_filename), dv_psi)
       !end if
-      call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi(:, 1), dv_alpha)
-      call normalize_vector(setting%num_filter, dv_alpha(:, 1))
-      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha(:, 1), dv_psi(:, 1))
+      !call mpi_bcast(dv_psi, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
+      !!if (setting%to_multiply_phase_factor) then
+      !!  call multiply_phase_factors(dim, num_atoms, atom_indices, atom_coordinates, &
+      !!       setting%phase_factor_coef, psi)
+      !!end if
+      !call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi(:, 1), dv_alpha)
+      !call normalize_vector(setting%num_filter, dv_alpha(:, 1))
+      !call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha(:, 1), dv_psi(:, 1))
     end if
   end subroutine set_initial_value
 
@@ -901,54 +902,48 @@ contains
 
 
   subroutine compute_energies(setting, proc, structure, &
-       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
+       H_sparse, S_sparse, basis, &
        dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
-       filter_group_indices, Y_local, eigenvalues, dv_psi, dv_alpha, &
+       dv_psi, dv_alpha, &
        dv_atom_perturb, &
-       H1_base, H1, H1_desc, energies)
+       H1, H1_desc, energies)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
-    integer, intent(in) :: filter_group_indices(:, :)
     type(wp_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size)
+    type(wp_basis_t), intent(in) :: basis
+    integer, intent(in) :: H1_desc(desc_size)
     type(wp_charge_factor_t), intent(in) :: charge_factor
-    real(8), intent(in) :: dv_charge_on_basis(:), dv_charge_on_atoms(structure%num_atoms), eigenvalues(:)
-    real(8), intent(in) :: Y_filtered(:, :), H1_base(:, :)
+    real(8), intent(in) :: dv_charge_on_basis(:), dv_charge_on_atoms(structure%num_atoms)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
     real(8), intent(inout) :: dv_atom_perturb(structure%num_atoms)
     real(8), intent(out) :: H1(:, :)
     type(wp_energy_t), intent(out) :: energies
 
-    integer :: dim, num_filter
-    complex(kind(0d0)) :: energy_tmp, dv_h_psi(Y_filtered_desc(rows_))
+    integer :: dim
+    complex(kind(0d0)) :: energy_tmp
     type(sparse_mat) :: H1_lcao_sparse_charge_overlap
     ! Functions.
     complex(kind(0d0)) :: zdotc
 
-    dim = Y_filtered_desc(rows_)
-    num_filter = Y_filtered_desc(cols_)
-
-    call compute_tightbinding_energy(num_filter, dv_alpha, eigenvalues, energies)
+    call compute_tightbinding_energy(basis%num_basis, dv_alpha, basis%dv_eigenvalues, energies)
 
     call make_H1(proc, setting%h1_type, structure, &
-         S_sparse, Y_filtered, Y_filtered_desc, &
+         S_sparse, basis, &
          .true., &  ! H and H_desc are not referenced because is_init is true.
          setting%is_restart_mode, &
-         trim(setting%filter_mode) == 'group', filter_group_indices, Y_local, &
          0d0, setting%temperature, setting%delta_t, setting%perturb_interval, &
          dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
          dv_atom_perturb, &
          H1, H1_desc)
     if (trim(setting%filter_mode) == 'group') then
-      H1(:, :) = H1(:, :) + H1_base(:, :)  ! Sum of distributed matrices.
+      H1(:, :) = H1(:, :) + basis%H1_base(:, :)  ! Sum of distributed matrices.
     end if
 
     if (trim(setting%h1_type) == 'charge_overlap') then
       call get_charge_overlap_energy(structure, charge_factor, dv_charge_on_atoms, energies%nonlinear)
     else
-      call get_A_inner_product(setting%num_filter, H1, H1_desc, dv_alpha, dv_alpha, energy_tmp)
+      call get_A_inner_product(basis%num_basis, H1, H1_desc, dv_alpha, dv_alpha, energy_tmp)
       energies%nonlinear = truncate_imag(energy_tmp)
       if (trim(setting%h1_type) == 'charge') then
         energies%nonlinear = energies%nonlinear / 2d0
@@ -975,7 +970,7 @@ contains
     end if
 
     call set_initial_value(setting, proc, state%dim, state%structure, state%group_id, &
-         state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, state%dv_eigenvalues, &
+         state%H_sparse, state%S_sparse, state%basis, &
          state%dv_psi, state%dv_alpha, state%errors)
 
     if (setting%is_restart_mode) then
@@ -1014,21 +1009,20 @@ contains
 
     do i = 1, setting%num_multiple_initials
       call compute_energies(setting, proc, state%structure, &
-           state%H_sparse, state%S_sparse, state%Y_filtered, state%Y_filtered_desc, &
+           state%H_sparse, state%S_sparse, state%basis, &
            state%dv_charge_on_basis(:, i), state%dv_charge_on_atoms(:, i), state%charge_factor, &
-           state%filter_group_indices, state%Y_local, state%dv_eigenvalues, &
            state%dv_psi(:, i), state%dv_alpha(:, i), &
            state%dv_atom_perturb, &
-           state%H1_base, state%H1, state%H1_desc, state%energies(i))
+           state%H1, state%H1_desc, state%energies(i))
     end do
   end subroutine initialize
 
 
   subroutine re_initialize_state(setting, proc, dim, t, structure, charge_factor, is_first_in_multiple_initials, &
-       H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, Y_filtered, Y_filtered_desc, &
-       YSY_filtered, YSY_filtered_desc, &
-       dv_eigenvalues_prev, dv_eigenvalues, filter_group_indices, Y_local, &
-       H1_base, H1, H1_desc, dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
+       H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
+       basis, YSY_filtered, YSY_filtered_desc, &
+       dv_eigenvalues_prev, H1, H1_desc, &
+       dv_psi, dv_alpha, dv_psi_reconcile, dv_alpha_reconcile, &
        dv_charge_on_basis, dv_charge_on_atoms, &
        dv_atom_perturb, &
        charge_moment, energies, errors)
@@ -1037,12 +1031,12 @@ contains
     type(wp_structure_t), intent(in) :: structure
     type(wp_charge_factor_t), intent(in) :: charge_factor
     logical, intent(in) :: is_first_in_multiple_initials
-    integer, intent(in) :: dim, filter_group_indices(:, :)
-    real(8), intent(in) :: t, dv_eigenvalues_prev(setting%num_filter), dv_eigenvalues(setting%num_filter)
+    integer, intent(in) :: dim
+    real(8), intent(in) :: t, dv_eigenvalues_prev(setting%num_filter)!, dv_eigenvalues(setting%num_filter)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
-    integer, intent(in) :: Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size), H1_desc(desc_size)
-    real(8), intent(in) :: Y_filtered(:, :), YSY_filtered(:, :), H1_base(:, :)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    type(wp_basis_t), intent(in) :: basis
+    integer, intent(in) :: YSY_filtered_desc(desc_size), H1_desc(desc_size)
+    real(8), intent(in) :: YSY_filtered(:, :)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:), dv_alpha_reconcile(:)
     real(8), intent(out) :: H1(:, :)
@@ -1060,43 +1054,42 @@ contains
       call matvec_time_evolution_by_matrix_replace(proc, setting%delta_t, &
            H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
            dv_psi, dv_psi_evol)
-      call lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi_evol, &
-           dv_alpha_evol)
+      call lcao_coef_to_alpha(S_sparse, basis, dv_psi_evol, dv_alpha_evol)
     end if
 
-    if (trim(setting%re_initialize_method) == 'minimize_lcao_error') then
-      call reconcile_from_lcao_coef(setting%num_filter, &
-           S_sparse, Y_filtered, Y_filtered_desc, &
-           dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
-    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_cutoff') then
-      call reconcile_from_lcao_coef_cutoff(setting%num_filter, setting%vector_cutoff_residual, &
-           S_sparse, Y_filtered, Y_filtered_desc, &
-           dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
-    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_suppress') then
-      call reconcile_from_lcao_coef_suppress(setting%num_filter, setting%suppress_constant, &
-           S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
-           dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
-    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
-      call reconcile_from_alpha_matrix_suppress(setting%num_filter, t, setting%suppress_constant, &
-           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+    !if (trim(setting%re_initialize_method) == 'minimize_lcao_error') then
+    !  call reconcile_from_lcao_coef(setting%num_filter, &
+    !       S_sparse, Y_filtered, Y_filtered_desc, &
+    !       dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    !else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_cutoff') then
+    !  call reconcile_from_lcao_coef_cutoff(setting%num_filter, setting%vector_cutoff_residual, &
+    !       S_sparse, Y_filtered, Y_filtered_desc, &
+    !       dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    !else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_suppress') then
+    !  call reconcile_from_lcao_coef_suppress(setting%num_filter, setting%suppress_constant, &
+    !       S_sparse, dv_eigenvalues, Y_filtered, Y_filtered_desc, &
+    !       dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
+      call reconcile_from_alpha_matrix_suppress(t, setting%suppress_constant, &
+           dv_eigenvalues_prev, basis%dv_eigenvalues, basis, YSY_filtered, YSY_filtered_desc, &
            dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
-    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal') then
-      call reconcile_from_alpha_matrix_suppress_orthogonal(setting%num_filter, t, setting%suppress_constant, &
-           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
-           dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
-    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive') then
-      call reconcile_from_alpha_matrix_suppress_adaptive(setting%num_filter, t, setting%suppress_constant, &
-           is_first_in_multiple_initials, &
-           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
-           dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
-    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
-      call reconcile_from_alpha_matrix_suppress_select(setting%num_filter, t, setting%suppress_constant, &
-           is_first_in_multiple_initials, &
-           dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
-           dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+    !else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal') then
+    !  call reconcile_from_alpha_matrix_suppress_orthogonal(setting%num_filter, t, setting%suppress_constant, &
+    !       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+    !       dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    !else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive') then
+    !  call reconcile_from_alpha_matrix_suppress_adaptive(setting%num_filter, t, setting%suppress_constant, &
+    !       is_first_in_multiple_initials, &
+    !       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+    !       dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    !else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
+    !  call reconcile_from_alpha_matrix_suppress_select(setting%num_filter, t, setting%suppress_constant, &
+    !       is_first_in_multiple_initials, &
+    !       dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
+    !       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
     else if (trim(setting%re_initialize_method) == 'minimize_alpha_error') then
       dv_alpha_reconcile(:) = dv_alpha(:)
-      call alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha_reconcile, dv_psi_reconcile)
+      call alpha_to_lcao_coef(basis, dv_alpha_reconcile, dv_psi_reconcile)
     else
       call terminate('re_initialize_state: unknown re-initialization method', 1)
     end if
@@ -1122,11 +1115,11 @@ contains
     end if
 
     call compute_energies(setting, proc, structure, &
-       H_sparse, S_sparse, Y_filtered, Y_filtered_desc, &
+       H_sparse, S_sparse, basis, &
        dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
-       filter_group_indices, Y_local, dv_eigenvalues, dv_psi_reconcile, dv_alpha_reconcile, &
+       dv_psi_reconcile, dv_alpha_reconcile, &
        dv_atom_perturb, &
-       H1_base, H1, H1_desc, energies)
+       H1, H1_desc, energies)
   end subroutine re_initialize_state
 
 

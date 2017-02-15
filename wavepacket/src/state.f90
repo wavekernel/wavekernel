@@ -1,6 +1,5 @@
 module wp_state_m
   use wp_atom_m
-  use wp_charge_m
   use wp_distribute_matrix_m
   use wp_fson_m
   use wp_linear_algebra_m
@@ -8,9 +7,34 @@ module wp_state_m
   use wp_util_m
   implicit none
 
+  type wp_charge_moment_t
+    real(8) :: means(3)
+    real(8) :: msds(4)
+  end type wp_charge_moment_t
+
+  type wp_charge_factor_t
+    real(8) :: charge_factor_common, charge_factor_H, charge_factor_C
+  end type wp_charge_factor_t
+
   type wp_fson_values_for_state_t
     type(fson_value), pointer :: output, states, split_files_metadata
   end type wp_fson_values_for_state_t
+
+  type wp_basis_t
+    ! Common variables.
+    logical :: is_group_filter_mode
+    integer :: dim, num_basis
+    real(8), allocatable :: dv_eigenvalues(:), dv_ipratios(:), eigenstate_mean(:, :), eigenstate_msd(:, :)
+    real(8), allocatable :: eigenstate_ipratios(:)
+    ! Variables for no filter mode.
+    integer :: Y_all_desc(desc_size), Y_filtered_desc(desc_size)
+    real(8), allocatable :: Y_all(:, :)  ! m x m
+    real(8), allocatable :: Y_filtered(:, :)  ! m x n
+    ! Variables for filter mode.
+    real(8), allocatable :: H1_base(:, :)  ! n x n
+    type(wp_local_matrix_t), allocatable :: Y_local(:)
+    integer, allocatable :: filter_group_id(:, :), filter_group_indices(:, :)
+  end type wp_basis_t
 
   type wp_state_t
     type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, H1_lcao_sparse_charge_overlap
@@ -23,24 +47,19 @@ module wp_state_m
     complex(kind(0d0)), allocatable :: dv_alpha_reconcile(:, :), dv_psi_reconcile(:, :)
     real(8), allocatable :: dv_atom_perturb(:), dv_atom_speed(:)
     real(8), allocatable :: dv_charge_on_basis(:, :), dv_charge_on_atoms(:, :)
-    real(8), allocatable :: dv_eigenvalues(:), dv_ipratios(:), eigenstate_mean(:, :), eigenstate_msd(:, :)
-    real(8), allocatable :: eigenstate_ipratios(:)
     type(wp_charge_moment_t), allocatable :: charge_moment(:)
     type(wp_charge_factor_t) :: charge_factor
     real(8) :: wtime_total, wtime
-    integer, allocatable :: group_id(:, :), filter_group_id(:, :), filter_group_indices(:, :)
+    integer, allocatable :: group_id(:, :)
     type(wp_fson_values_for_state_t), allocatable :: fsons(:)
     type(fson_value), pointer :: structures
     integer :: print_count, total_state_count
-    type(wp_local_matrix_t), allocatable :: Y_local(:)
-
     ! MPI realated
-    real(8), allocatable :: Y_all(:, :)  ! m x m
-    real(8), allocatable :: Y_filtered(:, :)  ! m x n
+    type(wp_basis_t) :: basis
     real(8), allocatable :: YSY_filtered(:, :)  ! n x n
-    real(8), allocatable :: H1(:, :), H1_base(:, :)  ! n x n
+    real(8), allocatable :: H1(:, :)  ! n x n
     complex(kind(0d0)), allocatable :: A(:, :)  ! n x n
-    integer :: Y_all_desc(desc_size), Y_filtered_desc(desc_size), YSY_filtered_desc(desc_size)
+    integer :: YSY_filtered_desc(desc_size)
     integer :: H1_desc(desc_size), A_desc(desc_size)
   end type wp_state_t
 

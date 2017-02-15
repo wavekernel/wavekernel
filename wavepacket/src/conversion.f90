@@ -5,6 +5,7 @@ module wp_conversion_m
   use wp_linear_algebra_m
   use wp_processes_m
   use wp_global_variables_m
+  use wp_state_m
   implicit none
 
   private
@@ -17,28 +18,39 @@ module wp_conversion_m
 
 contains
 
-  ! \alpha から \Psi に直す (ノート (13), (14) 式), \Psi = Y \alpha.
-  ! Complexity: O(m n).
-  !subroutine alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, full_vecs, full_vecs_desc, &
-  !     filtered_vecs, filtered_vecs_desc, t, col_source, col_target)
-  subroutine alpha_to_lcao_coef(Y_filtered, Y_filtered_desc, dv_alpha, dv_psi)
-    real(8), intent(in) :: Y_filtered(:, :)
-    integer, intent(in) :: Y_filtered_desc(desc_size)
-    complex(kind(0d0)), intent(in) :: dv_alpha(Y_filtered_desc(cols_))
-    complex(kind(0d0)), intent(out) :: dv_psi(Y_filtered_desc(rows_))
+  ! psi = Y alpha.
+  subroutine alpha_to_lcao_coef(basis, dv_alpha, dv_psi)
+    type(wp_basis_t), intent(in) :: basis
+    complex(kind(0d0)), intent(in) :: dv_alpha(basis%num_basis)
+    complex(kind(0d0)), intent(out) :: dv_psi(basis%dim)
 
-    integer :: dim, num_filter
-
-    dim = Y_filtered_desc(rows_)
-    num_filter = Y_filtered_desc(cols_)
-
-    ! psi = Y alpha
-    dv_psi(:) = kZero
-    call matvec_dd_z('No', Y_filtered, Y_filtered_desc, kOne, dv_alpha, kZero, dv_psi)
+    if (basis%is_group_filter_mode) then
+      stop 'IMPLEMENT HERE'
+    else
+      dv_psi(:) = kZero
+      call matvec_dd_z('No', basis%Y_filtered, basis%Y_filtered_desc, kOne, dv_alpha, kZero, dv_psi)
+    end if
   end subroutine alpha_to_lcao_coef
 
 
-  subroutine change_basis_lcao_to_alpha(proc, Y_filtered, Y_filtered_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
+  subroutine change_basis_lcao_to_alpha(proc, basis, A_lcao_sparse, A_alpha, A_alpha_desc)
+    type(wp_process_t), intent(in) :: proc
+    type(wp_basis_t), intent(in) :: basis
+    type(sparse_mat), intent(in) :: A_lcao_sparse
+    integer, intent(in) :: A_alpha_desc(desc_size)
+    real(8), intent(out) :: A_alpha(:, :)
+
+    if (basis%is_group_filter_mode) then
+      call change_basis_lcao_to_alpha_group_filter(proc, basis%filter_group_indices, basis%Y_local, &
+           A_lcao_sparse, A_alpha, A_alpha_desc)
+    else
+      call change_basis_lcao_to_alpha_all(proc, basis%Y_filtered, basis%Y_filtered_desc, &
+           A_lcao_sparse, A_alpha, A_alpha_desc)
+    end if
+  end subroutine change_basis_lcao_to_alpha
+
+
+  subroutine change_basis_lcao_to_alpha_all(proc, Y_filtered, Y_filtered_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
     type(wp_process_t), intent(in) :: proc
     real(8), intent(in) :: Y_filtered(:, :)
     type(sparse_mat), intent(in) :: A_lcao_sparse
@@ -67,7 +79,7 @@ contains
          0d0, &
          A_alpha, 1, 1, A_alpha_desc)
     deallocate(A_lcao, AY)
-  end subroutine change_basis_lcao_to_alpha
+  end subroutine change_basis_lcao_to_alpha_all
 
 
   subroutine change_basis_lcao_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
@@ -274,9 +286,27 @@ contains
   end subroutine change_basis_lcao_to_alpha_group_filter
 
 
+  subroutine change_basis_lcao_diag_to_alpha(proc, basis, A_lcao_diag, A_alpha, A_alpha_desc)
+    type(wp_process_t), intent(in) :: proc
+    type(wp_basis_t), intent(in) :: basis
+    real(8), intent(in) :: A_lcao_diag(:)
+    integer, intent(in) :: A_alpha_desc(desc_size)
+    real(8), intent(out) :: A_alpha(:, :)
+
+    if (basis%is_group_filter_mode) then
+      call change_basis_lcao_diag_to_alpha_group_filter(proc, &
+           basis%filter_group_indices, basis%Y_local, &
+           A_lcao_diag, A_alpha, A_alpha_desc)
+    else
+      call change_basis_lcao_diag_to_alpha_all(proc, basis%Y_filtered, basis%Y_filtered_desc, &
+       A_lcao_diag, A_alpha, A_alpha_desc)
+    end if
+  end subroutine change_basis_lcao_diag_to_alpha
+
+
   ! A_alpha <- Y^\dagger diag(A_lcao_diag) Y.
   ! Complexity: O(m n^2).
-  subroutine change_basis_lcao_diag_to_alpha(proc, Y_filtered, Y_filtered_desc, &
+  subroutine change_basis_lcao_diag_to_alpha_all(proc, Y_filtered, Y_filtered_desc, &
        A_lcao_diag, A_alpha, A_alpha_desc)
     type(wp_process_t), intent(in) :: proc
     real(8), intent(in) :: Y_filtered(:, :), A_lcao_diag(:)
@@ -322,7 +352,7 @@ contains
 
     wtime_end = mpi_wtime()
     call add_event('change_basis_lcao_diag_to_alpha:pdgemm', wtime_end - wtime_start)
-  end subroutine change_basis_lcao_diag_to_alpha
+  end subroutine change_basis_lcao_diag_to_alpha_all
 
 
   subroutine change_basis_lcao_diag_to_alpha_group_filter(proc, &
@@ -426,27 +456,21 @@ contains
   end subroutine change_basis_lcao_diag_to_alpha_group_filter
 
 
-  ! \Psi から \alpha に直す. c = Y^-1 psi = Y^\dagger S psi.
-  ! filter した場合でも同様に擬似逆行列になる.
-  ! Complexity: O(m^2).
-  !subroutine lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, t, full_vecs, full_vecs_desc, &
-  !     filtered_vecs, filtered_vecs_desc, col_source, col_target)
-  subroutine lcao_coef_to_alpha(S_sparse, Y_filtered, Y_filtered_desc, dv_psi, dv_alpha)
+  subroutine lcao_coef_to_alpha(S_sparse, basis, dv_psi, dv_alpha)
     type(sparse_mat), intent(in) :: S_sparse
-    real(8), intent(in) :: Y_filtered(:, :)
-    integer, intent(in) :: Y_filtered_desc(desc_size)
-    complex(kind(0d0)), intent(in) :: dv_psi(Y_filtered_desc(rows_))
-    complex(kind(0d0)), intent(out) :: dv_alpha(Y_filtered_desc(cols_))
+    type(wp_basis_t), intent(in) :: basis
+    complex(kind(0d0)), intent(in) :: dv_psi(basis%dim)
+    complex(kind(0d0)), intent(out) :: dv_alpha(basis%num_basis)
 
-    complex(kind(0d0)) :: dv_s_psi(Y_filtered_desc(rows_))
-    integer :: dim, num_filter
-
-    dim = Y_filtered_desc(rows_)
-    num_filter = Y_filtered_desc(cols_)
+    complex(kind(0d0)) :: dv_s_psi(basis%dim)
 
     ! c = Y^\dagger S \psi, \alpha <- c
-    dv_s_psi(:) = kZero
-    call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)
-    call matvec_dd_z('Trans', Y_filtered, Y_filtered_desc, kOne, dv_s_psi, kZero, dv_alpha)
+    if (basis%is_group_filter_mode) then
+      stop 'IMPLEMENT HERE'
+    else
+      dv_s_psi(:) = kZero
+      call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)
+      call matvec_dd_z('Trans', basis%Y_filtered, basis%Y_filtered_desc, kOne, dv_s_psi, kZero, dv_alpha)
+    end if
   end subroutine lcao_coef_to_alpha
 end module wp_conversion_m

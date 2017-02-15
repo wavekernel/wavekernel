@@ -10,6 +10,7 @@ module wp_matrix_generation_m
   use wp_conversion_m
   use wp_global_variables_m
   use wp_linear_algebra_m
+  use wp_state_m
   use wp_util_m
   implicit none
 
@@ -18,35 +19,35 @@ module wp_matrix_generation_m
 
 contains
 
-  ! LACO の世界で対角の H1 を作り, Y^\dagger H1 Y とすることで
-  ! alpha の世界における対応する H1 を作る. これは対角にならないことに注意.
-  ! eve stands for eigenvalue expansion.
-  ! Complexity: O(m n).
-  subroutine make_H1_diag(proc, Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
-       H1_alpha, H1_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    real(8), intent(in) :: Y(:, :)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
-    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size), filter_group_indices(:, :)
-    logical, intent(in) :: is_group_filter_mode
-    real(8), intent(out) :: H1_alpha(:, :)
-
-    integer :: i, dim
-    real(8) :: H1_lcao_diag(Y_desc(rows_))
-
-    dim = Y_desc(rows_)
-    do i = 1, dim
-      H1_lcao_diag(i) = 0.05d0
-    end do
-
-    if (is_group_filter_mode) then
-      call terminate('not implemented', 68)
-      !call change_basis_lcao_diag_to_alpha_group_filter_real(proc, filter_group_indices, Y_local, &
-      !     H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    else
-      call change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    end if
-  end subroutine make_H1_diag
+  !! LACO の世界で対角の H1 を作り, Y^\dagger H1 Y とすることで
+  !! alpha の世界における対応する H1 を作る. これは対角にならないことに注意.
+  !! eve stands for eigenvalue expansion.
+  !! Complexity: O(m n).
+  !subroutine make_H1_diag(proc, Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
+  !     H1_alpha, H1_alpha_desc)
+  !  type(wp_process_t), intent(in) :: proc
+  !  real(8), intent(in) :: Y(:, :)
+  !  type(wp_local_matrix_t), intent(in) :: Y_local(:)
+  !  integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size), filter_group_indices(:, :)
+  !  logical, intent(in) :: is_group_filter_mode
+  !  real(8), intent(out) :: H1_alpha(:, :)
+  !
+  !  integer :: i, dim
+  !  real(8) :: H1_lcao_diag(Y_desc(rows_))
+  !
+  !  dim = Y_desc(rows_)
+  !  do i = 1, dim
+  !    H1_lcao_diag(i) = 0.05d0
+  !  end do
+  !
+  !  if (is_group_filter_mode) then
+  !    call terminate('not implemented', 68)
+  !    !call change_basis_lcao_diag_to_alpha_group_filter_real(proc, filter_group_indices, Y_local, &
+  !    !     H1_lcao_diag, H1_alpha, H1_alpha_desc)
+  !  else
+  !    call change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
+  !  end if
+  !end subroutine make_H1_diag
 
 
   ! make_H1_diag のゼロ行列版.
@@ -59,56 +60,56 @@ contains
   end subroutine make_H1_zero
 
 
-  ! Complexity: O(m n^2).
-  subroutine make_H1_charge_on_atoms(proc, structure, Y, Y_desc, &
-       is_group_filter_mode, filter_group_indices, Y_local, &
-       charge_on_atoms, charge_factor, &
-       H1_alpha, H1_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_structure_t), intent(in) :: structure
-    integer, intent(in) :: filter_group_indices(:, :)
-    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
-    real(8), intent(in) :: Y(:, :)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
-    real(8) :: charge_on_atoms(structure%num_atoms)
-    logical, intent(in) :: is_group_filter_mode
-    type(wp_charge_factor_t), intent(in) :: charge_factor
-    real(8), intent(out) :: H1_alpha(:, :)
-
-    integer :: i, j, dim, num_filter
-    !integer :: atom_valence
-    real(8) :: diag, H1_lcao_diag(Y_desc(rows_)), wtime_start, wtime_end
-
-    wtime_start = mpi_wtime()
-
-    dim = Y_desc(rows_)
-    num_filter = Y_desc(cols_)
-
-    do i = 1, structure%num_atoms
-      diag = - get_charge_factor(i, structure, charge_factor) * charge_on_atoms(i)
-      ! TODO: Should atom_valence be considered? The lines comment out above are for this consideration.
-      !diag = -charge_factor * abs(charge_on_atom_i) / dble(atom_valence)
-
-      do j = structure%atom_indices(i), structure%atom_indices(i + 1) - 1
-        H1_lcao_diag(j) = diag
-      end do
-    end do
-
-    wtime_end = mpi_wtime()
-    call add_event('make_H1_charge_on_atoms:set_diag', wtime_end - wtime_start)
-    wtime_start = wtime_end
-
-    if (is_group_filter_mode) then
-      call terminate('not implemented', 49)
-      !call change_basis_lcao_diag_to_alpha_group_filter_real(proc, filter_group_indices, Y_local, &
-      !     H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    else
-      call change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    end if
-
-    wtime_end = mpi_wtime()
-    call add_event('make_H1_charge_on_atoms:change_basis', wtime_end - wtime_start)
-  end subroutine make_H1_charge_on_atoms
+  !! Complexity: O(m n^2).
+  !subroutine make_H1_charge_on_atoms(proc, structure, Y, Y_desc, &
+  !     is_group_filter_mode, filter_group_indices, Y_local, &
+  !     charge_on_atoms, charge_factor, &
+  !     H1_alpha, H1_alpha_desc)
+  !  type(wp_process_t), intent(in) :: proc
+  !  type(wp_structure_t), intent(in) :: structure
+  !  integer, intent(in) :: filter_group_indices(:, :)
+  !  integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
+  !  real(8), intent(in) :: Y(:, :)
+  !  type(wp_local_matrix_t), intent(in) :: Y_local(:)
+  !  real(8) :: charge_on_atoms(structure%num_atoms)
+  !  logical, intent(in) :: is_group_filter_mode
+  !  type(wp_charge_factor_t), intent(in) :: charge_factor
+  !  real(8), intent(out) :: H1_alpha(:, :)
+  !
+  !  integer :: i, j, dim, num_filter
+  !  !integer :: atom_valence
+  !  real(8) :: diag, H1_lcao_diag(Y_desc(rows_)), wtime_start, wtime_end
+  !
+  !  wtime_start = mpi_wtime()
+  !
+  !  dim = Y_desc(rows_)
+  !  num_filter = Y_desc(cols_)
+  !
+  !  do i = 1, structure%num_atoms
+  !    diag = - get_charge_factor(i, structure, charge_factor) * charge_on_atoms(i)
+  !    ! TODO: Should atom_valence be considered? The lines comment out above are for this consideration.
+  !    !diag = -charge_factor * abs(charge_on_atom_i) / dble(atom_valence)
+  !
+  !    do j = structure%atom_indices(i), structure%atom_indices(i + 1) - 1
+  !      H1_lcao_diag(j) = diag
+  !    end do
+  !  end do
+  !
+  !  wtime_end = mpi_wtime()
+  !  call add_event('make_H1_charge_on_atoms:set_diag', wtime_end - wtime_start)
+  !  wtime_start = wtime_end
+  !
+  !  if (is_group_filter_mode) then
+  !    call terminate('not implemented', 49)
+  !    !call change_basis_lcao_diag_to_alpha_group_filter_real(proc, filter_group_indices, Y_local, &
+  !    !     H1_lcao_diag, H1_alpha, H1_alpha_desc)
+  !  else
+  !    call change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
+  !  end if
+  !
+  !  wtime_end = mpi_wtime()
+  !  call add_event('make_H1_charge_on_atoms:change_basis', wtime_end - wtime_start)
+  !end subroutine make_H1_charge_on_atoms
 
 
   subroutine aux_make_H1_charge_with_overlap(structure, S_sparse, &
@@ -158,28 +159,24 @@ contains
   end subroutine aux_make_H1_charge_with_overlap
 
 
-  subroutine make_H1_charge_with_overlap(proc, structure, S_sparse, Y, Y_desc, &
-       is_group_filter_mode, filter_group_indices, Y_local, &
+  subroutine make_H1_charge_with_overlap(proc, structure, S_sparse, basis, &
        charge_on_basis, charge_on_atoms, charge_factor, &
        H1_alpha, H1_alpha_desc)
     type(wp_process_t), intent(in) :: proc
     type(wp_structure_t), intent(in) :: structure
-    integer, intent(in) :: filter_group_indices(:, :)
+    type(wp_basis_t), intent(in) :: basis
     type(sparse_mat), intent(in) :: S_sparse
-    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
-    real(8), intent(in) :: Y(:, :), charge_on_basis(:), charge_on_atoms(structure%num_atoms)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
-    logical, intent(in) :: is_group_filter_mode
+    integer, intent(in) :: H1_alpha_desc(desc_size)
+    real(8), intent(in) :: charge_on_basis(:), charge_on_atoms(structure%num_atoms)
     type(wp_charge_factor_t), intent(in) :: charge_factor
     real(8), intent(out) :: H1_alpha(:, :)
 
-    integer :: i, j, k, dim, num_filter, atom_i, atom_j, i1, i2, j1, j2
+    integer :: i, j, k, dim, atom_i, atom_j, i1, i2, j1, j2
     integer :: nprow, npcol, myrow, mycol, i_local, j_local, ierr
     real(8) :: overlap_factor, overlap_factor_i, overlap_factor_j, wtime_start, wtime_end
     type(sparse_mat) :: H1_lcao_sparse
 
     wtime_start = mpi_wtime()
-    num_filter = Y_desc(cols_)
 
     call aux_make_H1_charge_with_overlap(structure, S_sparse, &
          charge_on_basis, charge_on_atoms, charge_factor, H1_lcao_sparse)
@@ -188,13 +185,7 @@ contains
     call add_event('make_H1_charge_with_overlap:multiply_overlap_by_charge', wtime_end - wtime_start)
     wtime_start = wtime_end
 
-    if (is_group_filter_mode) then
-      call terminate('not implemented', 65)
-      !call change_basis_lcao_to_alpha_group_filter_real(proc, filter_group_indices, Y_local, &
-      !     H1_lcao_sparse, H1_alpha, H1_alpha_desc)
-    else
-      call change_basis_lcao_to_alpha(proc, Y, Y_desc, H1_lcao_sparse, H1_alpha, H1_alpha_desc)
-    end if
+    call change_basis_lcao_to_alpha(proc, basis, H1_lcao_sparse, H1_alpha, H1_alpha_desc)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_charge_with_overlap:change_basis', wtime_end - wtime_start)
@@ -330,37 +321,31 @@ contains
   !end subroutine make_H1_maxwell
   !
 
-  subroutine make_H1_harmonic(proc, structure, Y, Y_desc, &
-       is_group_filter_mode, filter_group_indices, Y_local, &
+  subroutine make_H1_harmonic(proc, structure, basis, &
        is_init, is_restart_mode, &
        t, temperature, delta_time, perturb_interval, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
     type(wp_process_t), intent(in) :: proc
     type(wp_structure_t), intent(in) :: structure
-    integer, intent(in) :: filter_group_indices(:, :)
-    real(8), intent(in) :: Y(:, :)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
-    logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
-    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
+    type(wp_basis_t), intent(in) :: basis
+    logical, intent(in) :: is_init, is_restart_mode
+    integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
     real(8), intent(inout) :: dv_atom_perturb(:)
     real(8), intent(out) :: H1_alpha(:, :)
 
-    integer :: dim, atom, nprow, npcol, myprow, mypcol, prow_own, pcol_own, i, j, ierr
+    integer :: atom, i, j, ierr
     integer :: seed = 10  ! Static variable.
     real(8) :: phase, energy, wtime_start, wtime_end, random_val(structure%num_atoms), val
-    real(8) :: H1_lcao_diag(Y_desc(rows_))
+    real(8) :: H1_lcao_diag(basis%dim)
     logical :: to_refresh
-    integer :: indxg2p, indxg2l
 
     wtime_start = mpi_wtime()
-    call blacs_gridinfo(proc%context, nprow, npcol, myprow, mypcol)
     ! Temporary implementation. Perturbation term is not inherited in restart_mode now.
     to_refresh = (is_init .and. .not. is_restart_mode) .or. &
          t < floor((t + delta_time) / perturb_interval) * perturb_interval - 1d-10
 
-    dim = Y_desc(rows_)
     H1_lcao_diag(:) = 0d0
 
     if (check_master()) then
@@ -383,12 +368,7 @@ contains
     call add_event('make_H1_harmonic:set_diag', wtime_end - wtime_start)
     wtime_start = wtime_end
 
-    if (is_group_filter_mode) then
-      call change_basis_lcao_diag_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
-           H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    else
-      call change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    end if
+    call change_basis_lcao_diag_to_alpha(proc, basis, H1_lcao_diag, H1_alpha, H1_alpha_desc)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_harmonic:change_basis', wtime_end - wtime_start)
@@ -440,25 +420,22 @@ contains
   end subroutine aux_make_H1_harmonic_for_nn_exciton
 
 
-  subroutine make_H1_harmonic_for_nn_exciton(proc, structure, Y, Y_desc, &
-       is_group_filter_mode, filter_group_indices, Y_local, &
+  subroutine make_H1_harmonic_for_nn_exciton(proc, structure, basis, &
        is_init, is_restart_mode, &
        t, temperature, delta_time, perturb_interval, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
     type(wp_process_t), intent(in) :: proc
     type(wp_structure_t), intent(in) :: structure
-    integer, intent(in) :: filter_group_indices(:, :)
-    real(8), intent(in) :: Y(:, :)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
-    logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
-    integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
+    type(wp_basis_t), intent(in) :: basis
+    logical, intent(in) :: is_init, is_restart_mode
+    integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
     real(8), intent(inout) :: dv_atom_perturb(:)
     real(8), intent(out) :: H1_alpha(:, :)
 
     real(8) :: wtime_start, wtime_end
-    real(8) :: H1_lcao_diag(Y_desc(rows_))
+    real(8) :: H1_lcao_diag(basis%dim)
     logical :: to_refresh
     real(8), save :: t_last_refresh = -1d100
 
@@ -474,12 +451,7 @@ contains
     call add_event('make_H1_harmonic_for_nn_exciton:set_diag', wtime_end - wtime_start)
     wtime_start = wtime_end
 
-    if (is_group_filter_mode) then
-      call change_basis_lcao_diag_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
-           H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    else
-      call change_basis_lcao_diag_to_alpha(proc, Y, Y_desc, H1_lcao_diag, H1_alpha, H1_alpha_desc)
-    end if
+    call change_basis_lcao_diag_to_alpha(proc, basis, H1_lcao_diag, H1_alpha, H1_alpha_desc)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_harmonic_for_nn_exciton:change_basis', wtime_end - wtime_start)
@@ -487,8 +459,7 @@ contains
 
 
   subroutine make_H1(proc, h1_type, structure, &
-       S_sparse, Y, Y_desc, is_init, is_restart_mode, &
-       is_group_filter_mode, filter_group_indices, Y_local, &
+       S_sparse, basis, is_init, is_restart_mode, &
        t, temperature, delta_time, perturb_interval, &
        charge_on_basis, charge_on_atoms, charge_factor, &
        dv_atom_perturb, &
@@ -496,33 +467,29 @@ contains
     type(wp_process_t), intent(in) :: proc
     character(*), intent(in) :: h1_type
     type(wp_structure_t), intent(in) :: structure
-    integer, intent(in) :: filter_group_indices(:, :)
+    type(wp_basis_t), intent(in) :: basis
     type(sparse_mat), intent(in) :: S_sparse
-    real(8), intent(in) :: Y(:, :)
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
-    integer, intent(in) :: Y_desc(desc_size)
     integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
     type(wp_charge_factor_t), intent(in) :: charge_factor
     real(8), intent(in) :: charge_on_basis(:), charge_on_atoms(structure%num_atoms)
-    logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
+    logical, intent(in) :: is_init, is_restart_mode
     real(8), intent(inout) :: dv_atom_perturb(:)
     real(8), intent(out) :: H1_alpha(:, :)
 
-    if (trim(h1_type) == 'diag') then
-      call make_H1_diag(proc, Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
-           H1_alpha, H1_alpha_desc)
-    else if (trim(h1_type) == 'zero' .or. trim(h1_type) == 'zero_damp' .or. trim(h1_type) == 'zero_sparse' .or. &
+    !if (trim(h1_type) == 'diag') then
+    !  call make_H1_diag(proc, Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
+    !       H1_alpha, H1_alpha_desc)
+    if (trim(h1_type) == 'zero' .or. trim(h1_type) == 'zero_damp' .or. trim(h1_type) == 'zero_sparse' .or. &
          trim(h1_type) == 'zero_damp_charge_base' .or. trim(h1_type) == 'zero_damp_charge_atom') then
       call make_H1_zero(H1_alpha)
-    else if (trim(h1_type) == 'charge') then
-      call make_H1_charge_on_atoms(proc, structure, Y, Y_desc, &
-           is_group_filter_mode, filter_group_indices, Y_local, &
-           charge_on_atoms, charge_factor, &
-           H1_alpha, H1_alpha_desc)
+    !else if (trim(h1_type) == 'charge') then
+    !  call make_H1_charge_on_atoms(proc, structure, Y, Y_desc, &
+    !       is_group_filter_mode, filter_group_indices, Y_local, &
+    !       charge_on_atoms, charge_factor, &
+    !       H1_alpha, H1_alpha_desc)
     else if (trim(h1_type) == 'charge_overlap') then
-      call make_H1_charge_with_overlap(proc, structure, S_sparse, Y, Y_desc, &
-           is_group_filter_mode, filter_group_indices, Y_local, &
+      call make_H1_charge_with_overlap(proc, structure, S_sparse, basis, &
            charge_on_basis, charge_on_atoms, charge_factor, &
            H1_alpha, H1_alpha_desc)
     !else if (trim(h1_type) == 'maxwell') then
@@ -531,15 +498,13 @@ contains
     !       is_init, is_restart_mode, temperature, delta_time, &
     !       H1_alpha, H1_alpha_desc)
     else if (trim(h1_type) == 'harmonic') then
-      call make_H1_harmonic(proc, structure, Y, Y_desc, &
-           is_group_filter_mode, filter_group_indices, Y_local, &
+      call make_H1_harmonic(proc, structure, basis, &
            is_init, is_restart_mode, &
            t, temperature, delta_time, perturb_interval, &
            dv_atom_perturb, &
            H1_alpha, H1_alpha_desc)
     else if (trim(h1_type) == 'harmonic_for_nn_exciton') then
-      call make_H1_harmonic_for_nn_exciton(proc, structure, Y, Y_desc, &
-           is_group_filter_mode, filter_group_indices, Y_local, &
+      call make_H1_harmonic_for_nn_exciton(proc, structure, basis, &
            is_init, is_restart_mode, &
            t, temperature, delta_time, perturb_interval, &
            dv_atom_perturb, &

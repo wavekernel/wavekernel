@@ -7,6 +7,7 @@ module wp_charge_m
   use wp_matrix_io_m
   use wp_processes_m
   use wp_global_variables_m
+  use wp_state_m
   use wp_util_m
   implicit none
 
@@ -14,19 +15,9 @@ module wp_charge_m
   external :: blacs_pnum
   integer :: blacs_pnum
 
-  public :: wp_charge_moment_t, wp_charge_factor_t, &
-       get_mulliken_charges_on_basis, get_mulliken_charges_on_atoms, &
+  public :: get_mulliken_charges_on_basis, get_mulliken_charges_on_atoms, &
        get_eigenstate_charges_on_groups, get_charge_overlap_energy, &
        get_mulliken_charge_coordinate_moments, get_msd_of_eigenstates, get_ipratio_of_eigenstates, get_charge_factor
-
-  type wp_charge_moment_t
-    real(8) :: means(3)
-    real(8) :: msds(4)
-  end type wp_charge_moment_t
-
-  type wp_charge_factor_t
-    real(8) :: charge_factor_common, charge_factor_H, charge_factor_C
-  end type wp_charge_factor_t
 
 contains
 
@@ -120,57 +111,61 @@ contains
 
   ! charges(group, k): \sum_{i \in (atom \in group)} y_{i, k}^2 / \sum_{i} y_{i, k}^2
   ! ipratios(k): \sum_{g} charges(g, k)^2 (ipratio for sqrt{\sum_{i \in (atom \in group(g))} y_{i, k}^2})
-  subroutine get_eigenstate_charges_on_groups(Y_filtered, Y_filtered_desc, structure, group_id, charges, ipratios)
-    real(8), intent(in) :: Y_filtered(:, :)
-    integer, intent(in) :: Y_filtered_desc(desc_size)
+  subroutine get_eigenstate_charges_on_groups(basis, structure, group_id)
+    type(wp_basis_t), intent(inout) :: basis
     type(wp_structure_t), intent(in) :: structure
     integer, intent(in) :: group_id(:, :)
-    real(8), intent(out) :: charges(size(group_id, 2), Y_filtered_desc(cols_))
-    real(8), intent(out) :: ipratios(Y_filtered_desc(cols_))
 
     integer :: nprow, npcol, myrow, mycol, myrank
     integer :: lrindx, lcindx, rsrc, csrc
     integer :: k, g, ai, a, atom_index_start, atom_index_end, i, ierr
-    real(8) :: charges_buf(size(group_id, 2), Y_filtered_desc(cols_)), charges_sum
-    real(8) :: ipratios_buf(Y_filtered_desc(cols_))
+    real(8), allocatable :: charges_buf(:, :), ipratios_buf(:), charges(:, :)
+    real(8) :: charges_sum
     integer :: indxl2g, blacs_pnum  ! Function.
 
-    call blacs_gridinfo(Y_filtered_desc(context_), nprow, npcol, myrow, mycol)
-    charges_buf(:, :) = 0d0
-    do k = 1, Y_filtered_desc(cols_)
-      do g = 1, size(group_id, 2)
-        do ai = 1, group_id(1, g)
-          a = group_id(ai + 1, g)
-          atom_index_start = structure%atom_indices(a)
-          atom_index_end = structure%atom_indices(a + 1) - 1
-          do i = atom_index_start, atom_index_end
-            call infog2l(i, k, Y_filtered_desc, nprow, npcol, myrow, mycol, lrindx, lcindx, rsrc, csrc)
-            if (myrow == rsrc .and. mycol == csrc) then
-              charges_buf(g, k) = charges_buf(g, k) + Y_filtered(lrindx, lcindx) ** 2d0
-            end if
+    if (basis%is_group_filter_mode) then
+      stop 'IMPLEMENT HERE'
+    else
+      allocate(charges(size(group_id, 2), basis%Y_filtered_desc(cols_)))
+      allocate(charges_buf(size(group_id, 2), basis%Y_filtered_desc(cols_)))
+      allocate(ipratios_buf(basis%Y_filtered_desc(cols_)))
+      call blacs_gridinfo(basis%Y_filtered_desc(context_), nprow, npcol, myrow, mycol)
+      charges_buf(:, :) = 0d0
+      do k = 1, basis%Y_filtered_desc(cols_)
+        do g = 1, size(group_id, 2)
+          do ai = 1, group_id(1, g)
+            a = group_id(ai + 1, g)
+            atom_index_start = structure%atom_indices(a)
+            atom_index_end = structure%atom_indices(a + 1) - 1
+            do i = atom_index_start, atom_index_end
+              call infog2l(i, k, basis%Y_filtered_desc, nprow, npcol, myrow, mycol, lrindx, lcindx, rsrc, csrc)
+              if (myrow == rsrc .and. mycol == csrc) then
+                charges_buf(g, k) = charges_buf(g, k) + basis%Y_filtered(lrindx, lcindx) ** 2d0
+              end if
+            end do
           end do
         end do
       end do
-    end do
-    charges(:, :) = 0d0
-    call mpi_allreduce(charges_buf, charges, size(group_id, 2) * Y_filtered_desc(cols_), &
-         mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
-    charges_buf(:, :) = 0d0
-    ipratios_buf(:) = 0d0
-    call mpi_comm_rank(mpi_comm_world, myrank, ierr)
-    do k = 1, Y_filtered_desc(cols_)
-      if (myrank == mod(k, nprow * npcol)) then
-        charges_sum = sum(charges(:, k))
-        charges_buf(:, k) = charges(:, k) / charges_sum
-        ipratios_buf(k) = sum(charges_buf(:, k) ** 2d0)
-      end if
-    end do
-    charges(:, :) = 0d0
-    ipratios(:) = 0d0
-    call mpi_allreduce(charges_buf, charges, size(group_id, 2) * Y_filtered_desc(cols_), &
-         mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
-    call mpi_allreduce(ipratios_buf, ipratios, Y_filtered_desc(cols_), &
-         mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+      charges(:, :) = 0d0
+      call mpi_allreduce(charges_buf, charges, size(group_id, 2) * basis%Y_filtered_desc(cols_), &
+           mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+      charges_buf(:, :) = 0d0
+      ipratios_buf(:) = 0d0
+      call mpi_comm_rank(mpi_comm_world, myrank, ierr)
+      do k = 1, basis%Y_filtered_desc(cols_)
+        if (myrank == mod(k, nprow * npcol)) then
+          charges_sum = sum(charges(:, k))
+          charges_buf(:, k) = charges(:, k) / charges_sum
+          ipratios_buf(k) = sum(charges_buf(:, k) ** 2d0)
+        end if
+      end do
+      charges(:, :) = 0d0
+      basis%eigenstate_ipratios(:) = 0d0
+      call mpi_allreduce(charges_buf, charges, size(group_id, 2) * basis%Y_filtered_desc(cols_), &
+           mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+      call mpi_allreduce(ipratios_buf, basis%eigenstate_ipratios, basis%Y_filtered_desc(cols_), &
+           mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+    end if
   end subroutine get_eigenstate_charges_on_groups
 
 
@@ -220,74 +215,83 @@ contains
   end subroutine get_mulliken_charge_coordinate_moments
 
 
-  subroutine get_msd_of_eigenstates(structure, S_sparse, Y_filtered, Y_filtered_desc, means_all, msds_all)
+  subroutine get_msd_of_eigenstates(structure, S_sparse, basis)
     type(sparse_mat), intent(in) :: S_sparse
-    integer, intent(in) :: Y_filtered_desc(desc_size)
+    !integer, intent(in) :: Y_filtered_desc(desc_size)
     type(wp_structure_t), intent(in) :: structure
-    real(8), intent(in) :: Y_filtered(:, :)
-    real(8), intent(out) :: means_all(3, Y_filtered_desc(cols_)), msds_all(4, Y_filtered_desc(cols_))
+    !real(8), intent(in) :: Y_filtered(:, :)
+    !real(8), intent(out) :: means_all(3, Y_filtered_desc(cols_)), msds_all(4, Y_filtered_desc(cols_))
+    type(wp_basis_t), intent(inout) :: basis
 
-    real(8) :: dv_psi_local(Y_filtered_desc(rows_)), dv_psi(Y_filtered_desc(rows_))
+    real(8), allocatable :: dv_psi_local(:), dv_psi(:)
     real(8) :: dv_charge_on_atoms(structure%num_atoms)
     integer :: dim, num_filter, i, j, print_count, ierr
     type(wp_charge_moment_t) ::charge_moment
 
-    dim = Y_filtered_desc(rows_)
-    num_filter = Y_filtered_desc(cols_)
-    print_count = 1
-    do i = 1, num_filter
-      if (i > num_filter / 10 * print_count .and. &
-           check_master()) then
-        write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-             '] calculating MSD of eigenstate ', i
-        print_count = print_count + 1
-      end if
-      dv_psi_local(:) = 0d0
-      do j = 1, dim
-        call pdelget('Self', ' ', dv_psi_local(j), Y_filtered, j, i, Y_filtered_desc)
+    if (basis%is_group_filter_mode) then
+      stop 'IMPLEMENT HERE'
+    else
+      dim = basis%Y_filtered_desc(rows_)
+      num_filter = basis%Y_filtered_desc(cols_)
+      allocate(dv_psi_local(dim), dv_psi(dim))
+      print_count = 1
+      do i = 1, num_filter
+        if (i > num_filter / 10 * print_count .and. &
+             check_master()) then
+          write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+               '] calculating MSD of eigenstate ', i
+          print_count = print_count + 1
+        end if
+        dv_psi_local(:) = 0d0
+        do j = 1, dim
+          call pdelget('Self', ' ', dv_psi_local(j), basis%Y_filtered, j, i, basis%Y_filtered_desc)
+        end do
+        call mpi_allreduce(dv_psi_local, dv_psi, dim, mpi_real8, mpi_sum, mpi_comm_world, ierr)
+        call get_mulliken_charges_on_atoms(dim, structure, S_sparse, dcmplx(dv_psi), dv_charge_on_atoms)
+        call get_mulliken_charge_coordinate_moments(structure, dv_charge_on_atoms, charge_moment)
+        basis%eigenstate_mean(1 : 3, i) = charge_moment%means(1 : 3)
+        basis%eigenstate_msd(1 : 4, i) = charge_moment%msds(1 : 4)
       end do
-      call mpi_allreduce(dv_psi_local, dv_psi, dim, mpi_real8, mpi_sum, mpi_comm_world, ierr)
-      call get_mulliken_charges_on_atoms(dim, structure, S_sparse, dcmplx(dv_psi), dv_charge_on_atoms)
-      call get_mulliken_charge_coordinate_moments(structure, dv_charge_on_atoms, charge_moment)
-      means_all(1 : 3, i) = charge_moment%means(1 : 3)
-      msds_all(1 : 4, i) = charge_moment%msds(1 : 4)
-    end do
+    end if
   end subroutine get_msd_of_eigenstates
 
 
-  subroutine get_ipratio_of_eigenstates(Y_filtered, Y_filtered_desc, ipratios)
-    integer, intent(in) :: Y_filtered_desc(desc_size)
-    real(8), intent(in) :: Y_filtered(:, :)
-    real(8), intent(out) :: ipratios(Y_filtered_desc(cols_))
+  subroutine get_ipratio_of_eigenstates(basis)
+    type(wp_basis_t), intent(inout) :: basis
 
     integer :: dim, num_filter, i, j, n_procs_row, n_procs_col, my_proc_row, my_proc_col
-    real(8) :: sum_power4(Y_filtered_desc(cols_)), sum_power2(Y_filtered_desc(cols_))
+    real(8), allocatable :: sum_power4(:), sum_power2(:)
     real(8) :: elem
     integer :: indxg2p
 
-    dim = Y_filtered_desc(rows_)
-    num_filter = Y_filtered_desc(cols_)
+    if (basis%is_group_filter_mode) then
+      stop 'IMPLEMENT HERE'
+    else
+      dim = basis%Y_filtered_desc(rows_)
+      num_filter = basis%Y_filtered_desc(cols_)
+      allocate(sum_power4(num_filter), sum_power2(num_filter))
 
-    call blacs_gridinfo(Y_filtered_desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
-    sum_power4(:) = 0d0
-    sum_power2(:) = 0d0
-    do j = 1, num_filter
-      if (indxg2p(j, Y_filtered_desc(block_col_), 0, 0, n_procs_col) == my_proc_col) then
-        do i = 1, dim
-          if (indxg2p(i, Y_filtered_desc(block_row_), 0, 0, n_procs_row) == my_proc_row) then
-            call pdelget('', '', elem, Y_filtered, i, j, Y_filtered_desc)
-            sum_power4(j) = sum_power4(j) + elem ** 4d0
-            sum_power2(j) = sum_power2(j) + elem ** 2d0
-          end if
-        end do
-      end if
-    end do
-    call dgsum2d(Y_filtered_desc(context_), 'All', ' ', 1, num_filter, sum_power4, 1, -1, -1)
-    call dgsum2d(Y_filtered_desc(context_), 'All', ' ', 1, num_filter, sum_power2, 1, -1, -1)
+      call blacs_gridinfo(basis%Y_filtered_desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
+      sum_power4(:) = 0d0
+      sum_power2(:) = 0d0
+      do j = 1, num_filter
+        if (indxg2p(j, basis%Y_filtered_desc(block_col_), 0, 0, n_procs_col) == my_proc_col) then
+          do i = 1, dim
+            if (indxg2p(i, basis%Y_filtered_desc(block_row_), 0, 0, n_procs_row) == my_proc_row) then
+              call pdelget('', '', elem, basis%Y_filtered, i, j, basis%Y_filtered_desc)
+              sum_power4(j) = sum_power4(j) + elem ** 4d0
+              sum_power2(j) = sum_power2(j) + elem ** 2d0
+            end if
+          end do
+        end if
+      end do
+      call dgsum2d(basis%Y_filtered_desc(context_), 'All', ' ', 1, num_filter, sum_power4, 1, -1, -1)
+      call dgsum2d(basis%Y_filtered_desc(context_), 'All', ' ', 1, num_filter, sum_power2, 1, -1, -1)
 
-    do j = 1, num_filter
-      ipratios(j) = sum_power4(j) / (sum_power2(j) ** 2d0)
-    end do
+      do j = 1, num_filter
+        basis%dv_ipratios(j) = sum_power4(j) / (sum_power2(j) ** 2d0)
+      end do
+    end if
   end subroutine get_ipratio_of_eigenstates
 
 

@@ -675,11 +675,11 @@ contains
     type(wp_setting_t), intent(in) :: setting
     type(wp_state_t), intent(inout) :: state
 
-    integer :: i, coord, num_filter
+    integer :: i, coord, num_basis
     type(fson_value), pointer :: structure_fson, structure_item, element
     character(len=*), parameter :: coordinate_names = 'xyz'
 
-    num_filter = state%Y_filtered_desc(cols_)
+    num_basis = state%basis%num_basis
 
     structure_fson => fson_value_create()
     structure_fson%value_type = TYPE_OBJECT
@@ -708,43 +708,43 @@ contains
     end do
     ! Save ipratios.
     structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%eigenstate_ipratios, structure_item)
+    call fson_set_as_real_array(num_basis, state%basis%eigenstate_ipratios, structure_item)
     call fson_set_name('eigenstate_ipratio_on_groups', structure_item)
     call fson_value_add(structure_fson, structure_item)
     ! Save eigenvalues.
     structure_item => fson_value_create()
-    call fson_set_as_real_array(num_filter, state%dv_eigenvalues, structure_item)
+    call fson_set_as_real_array(num_basis, state%basis%dv_eigenvalues, structure_item)
     call fson_set_name('eigenvalues', structure_item)
     call fson_value_add(structure_fson, structure_item)
     if (setting%to_calculate_eigenstate_moment_every_step) then
       ! Set mean coordinates of eigenstates.
       structure_item => fson_value_create()
-      call fson_set_as_real_array(num_filter, state%eigenstate_mean(1, 1 : num_filter), structure_item)
+      call fson_set_as_real_array(num_basis, state%basis%eigenstate_mean(1, 1 : num_basis), structure_item)
       call fson_set_name('eigenstate_mean_x', structure_item)
       call fson_value_add(structure_fson, structure_item)
       structure_item => fson_value_create()
-      call fson_set_as_real_array(num_filter, state%eigenstate_mean(2, 1 : num_filter), structure_item)
+      call fson_set_as_real_array(num_basis, state%basis%eigenstate_mean(2, 1 : num_basis), structure_item)
       call fson_set_name('eigenstate_mean_y', structure_item)
       call fson_value_add(structure_fson, structure_item)
       structure_item => fson_value_create()
-      call fson_set_as_real_array(num_filter, state%eigenstate_mean(3, 1 : num_filter), structure_item)
+      call fson_set_as_real_array(num_basis, state%basis%eigenstate_mean(3, 1 : num_basis), structure_item)
       call fson_set_name('eigenstate_mean_z', structure_item)
       call fson_value_add(structure_fson, structure_item)
       ! Set MSD of eigenstates.
       structure_item => fson_value_create()
-      call fson_set_as_real_array(num_filter, state%eigenstate_msd(1, 1 : num_filter), structure_item)
+      call fson_set_as_real_array(num_basis, state%basis%eigenstate_msd(1, 1 : num_basis), structure_item)
       call fson_set_name('eigenstate_msd_x', structure_item)
       call fson_value_add(structure_fson, structure_item)
       structure_item => fson_value_create()
-      call fson_set_as_real_array(num_filter, state%eigenstate_msd(2, 1 : num_filter), structure_item)
+      call fson_set_as_real_array(num_basis, state%basis%eigenstate_msd(2, 1 : num_basis), structure_item)
       call fson_set_name('eigenstate_msd_y', structure_item)
       call fson_value_add(structure_fson, structure_item)
       structure_item => fson_value_create()
-      call fson_set_as_real_array(num_filter, state%eigenstate_msd(3, 1 : num_filter), structure_item)
+      call fson_set_as_real_array(num_basis, state%basis%eigenstate_msd(3, 1 : num_basis), structure_item)
       call fson_set_name('eigenstate_msd_z', structure_item)
       call fson_value_add(structure_fson, structure_item)
       structure_item => fson_value_create()
-      call fson_set_as_real_array(num_filter, state%eigenstate_msd(4, 1 : num_filter), structure_item)
+      call fson_set_as_real_array(num_basis, state%basis%eigenstate_msd(4, 1 : num_basis), structure_item)
       call fson_set_name('eigenstate_msd_total', structure_item)
       call fson_value_add(structure_fson, structure_item)
     end if
