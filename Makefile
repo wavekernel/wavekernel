@@ -1,7 +1,19 @@
-.PHONY: all 
+.PHONY: all bin bin_ext lib clean dep
 
-all: 
-	echo 'INFO: make ext-lib for dummy'
-clean: 
-	echo 'INFO: make clean ext-lib for dummy'
+all:
+	make -C src all
 
+bin:
+	make -C src bin
+
+bin_ext:
+	make -C src bin_ext
+
+lib:
+	make -C src lib
+
+clean:
+	make -C src clean
+
+dep:
+	make -C src dep
