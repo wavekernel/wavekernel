@@ -334,7 +334,7 @@ if __name__ == "__main__":
                         help='')
     parser.add_argument('-s', metavar='STRIDE', dest='skip_stride_num', type=int, default=1,
                         help='')
-    parser.add_argument('-o', metavar='OUTDIR', dest='out_dir', type=str, default=None,
+    parser.add_argument('-o', metavar='OUTDIR', dest='out_dir', type=str, default='.',
                         help='')
     parser.add_argument('--big-endian', action='store_false', dest='is_little_endian',
                         default=True, help='')
