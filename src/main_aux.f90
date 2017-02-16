@@ -111,8 +111,7 @@ contains
   end subroutine allocate_dv_vectors
 
 
-  subroutine setup_distributed_matrices(dim, setting, proc, state)
-    integer, intent(in) :: dim
+  subroutine setup_distributed_matrices(setting, proc, state)
     type(wp_setting_t), intent(in) :: setting
     type(wp_process_t), intent(in) :: proc
     type(wp_state_t), intent(inout) :: state
@@ -128,6 +127,14 @@ contains
 
     if (check_master()) then
       call print_proc(proc)
+    end if
+
+    state%basis%is_group_filter_mode = (trim(setting%filter_mode) == 'group')
+    state%basis%dim = state%dim
+    if (state%basis%is_group_filter_mode) then
+      stop 'IMPLEMENT HERE'
+    else
+      state%basis%num_basis = setting%num_filter
     end if
 
     if (setting%is_reduction_mode) then

@@ -26,7 +26,7 @@ program main
   call add_timer_event('main', 'read_bcast_setting', state%wtime)
 
   call setup_distribution(proc)
-  call setup_distributed_matrices(state%dim, setting, proc, state)
+  call setup_distributed_matrices(setting, proc, state)
   call add_timer_event('main', 'setup_distributed_matrices', state%wtime)
 
   call read_bcast_matrix_files(state%dim, setting, 1, state%H_sparse, state%S_sparse)
