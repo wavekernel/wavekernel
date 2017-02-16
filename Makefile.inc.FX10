@@ -1,0 +1,11 @@
+FC = mpifrtpx
+
+FFLAGS = -Kfast,openmp
+LDFLAGS = $(FFLAGS)
+FFLAGS_NO_WARN = -Kfast,openmp
+#FFLAGS_DEBUG = -O0 -g -Wall -ffpe-trap=invalid,zero,overflow -fbounds-check
+
+SCALAPACK = -SCALAPACK
+LAPACK = -SSL2BLAMP
+BLAS =
+LIBS = $(SCALAPACK) $(LAPACK) $(BLAS)

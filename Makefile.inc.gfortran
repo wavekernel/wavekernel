@@ -1,0 +1,11 @@
+FC = mpif90
+
+FFLAGS = -O0 -g -Wall -ffpe-trap=invalid,zero,overflow -fbounds-check -fcheck=all -fmax-errors=5
+LDFLAGS = $(FFLAGS)
+FFLAGS_NO_WARN = -O3 -g
+#FCFLAG_DEBUG = -O0 -g -Wall -ffpe-trap=invalid,zero,overflow -fbounds-check -fcheck=all
+
+SCALAPACK = -lscalapack
+LAPACK = -llapack
+BLAS = -lblas
+LIBS = $(SCALAPACK) $(LAPACK) $(BLAS)

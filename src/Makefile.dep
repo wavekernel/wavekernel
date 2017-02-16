@@ -1,17 +1,17 @@
-./matrix_io.o : ./global_variables.o ./processes.o ./event_logger.o 
-./time_evolution.o : ./global_variables.o ./event_logger.o ./processes.o ./distribute_matrix.o ./descriptor_parameters.o 
-./event_logger.o : ./fson.o ./fson.o ./fson.o 
-./linear_algebra.o : ./util.o ./global_variables.o ./processes.o ./event_logger.o ./distribute_matrix.o ./descriptor_parameters.o 
-./distribute_matrix.o : ./processes.o ./matrix_io.o ./global_variables.o ./descriptor_parameters.o ./event_logger.o 
-./initialization.o : ./util.o ./state.o ./setting.o ./matrix_generation.o ./linear_algebra.o ./conversion.o ./charge.o ./atom.o ./processes.o ./global_variables.o ./distribute_matrix.o ./descriptor_parameters.o 
-./main.o : ./main_aux.o 
-./atom.o : ./global_variables.o ./descriptor_parameters.o 
-./charge.o : ./util.o ./state.o ./global_variables.o ./processes.o ./matrix_io.o ./linear_algebra.o ./event_logger.o ./descriptor_parameters.o ./atom.o 
-./processes.o : ./global_variables.o 
-./state.o : ./util.o ./matrix_io.o ./linear_algebra.o ./fson.o ./distribute_matrix.o ./atom.o 
-./main_aux.o : ./util.o ./time_evolution.o ./state.o ./setting.o ./output.o ./matrix_generation.o ./linear_algebra.o ./initialization.o ./global_variables.o ./conversion.o ./charge.o ./atom.o ./event_logger.o ./fson.o ./fson.o ./fson.o ./fson.o ./processes.o ./distribute_matrix.o ./descriptor_parameters.o 
-./fson.o : 
-./conversion.o : ./state.o ./global_variables.o ./processes.o ./linear_algebra.o ./distribute_matrix.o ./descriptor_parameters.o 
-./setting.o : ./global_variables.o ./fson.o ./fson.o ./fson.o 
-./matrix_generation.o : ./util.o ./state.o ./linear_algebra.o ./global_variables.o ./conversion.o ./processes.o ./stats.o ./event_logger.o ./distribute_matrix.o ./descriptor_parameters.o ./charge.o ./atom.o 
-./output.o : ./util.o ./state.o ./setting.o ./linear_algebra.o ./global_variables.o ./processes.o ./event_logger.o ./fson.o ./fson.o ./fson.o ./descriptor_parameters.o ./charge.o ./atom.o 
+./src/matrix_io.o : ./src/global_variables.o ./src/processes.o ./src/event_logger.o 
+./src/time_evolution.o : ./src/global_variables.o ./src/event_logger.o ./src/processes.o ./src/distribute_matrix.o ./src/descriptor_parameters.o 
+./src/event_logger.o : ./src/fson.o ./src/fson.o ./src/fson.o 
+./src/linear_algebra.o : ./src/util.o ./src/global_variables.o ./src/processes.o ./src/event_logger.o ./src/distribute_matrix.o ./src/descriptor_parameters.o 
+./src/distribute_matrix.o : ./src/processes.o ./src/matrix_io.o ./src/global_variables.o ./src/descriptor_parameters.o ./src/event_logger.o 
+./src/initialization.o : ./src/util.o ./src/state.o ./src/setting.o ./src/matrix_generation.o ./src/linear_algebra.o ./src/conversion.o ./src/charge.o ./src/atom.o ./src/processes.o ./src/global_variables.o ./src/distribute_matrix.o ./src/descriptor_parameters.o 
+./src/main.o : ./src/main_aux.o 
+./src/atom.o : ./src/global_variables.o ./src/descriptor_parameters.o 
+./src/charge.o : ./src/util.o ./src/state.o ./src/global_variables.o ./src/processes.o ./src/matrix_io.o ./src/linear_algebra.o ./src/event_logger.o ./src/descriptor_parameters.o ./src/atom.o 
+./src/processes.o : ./src/global_variables.o 
+./src/state.o : ./src/util.o ./src/matrix_io.o ./src/linear_algebra.o ./src/fson.o ./src/distribute_matrix.o ./src/atom.o 
+./src/main_aux.o : ./src/util.o ./src/time_evolution.o ./src/state.o ./src/setting.o ./src/output.o ./src/matrix_generation.o ./src/linear_algebra.o ./src/initialization.o ./src/global_variables.o ./src/conversion.o ./src/charge.o ./src/atom.o ./src/event_logger.o ./src/fson.o ./src/fson.o ./src/fson.o ./src/fson.o ./src/processes.o ./src/distribute_matrix.o ./src/descriptor_parameters.o 
+./src/fson.o : 
+./src/conversion.o : ./src/state.o ./src/global_variables.o ./src/processes.o ./src/linear_algebra.o ./src/distribute_matrix.o ./src/descriptor_parameters.o 
+./src/setting.o : ./src/global_variables.o ./src/fson.o ./src/fson.o ./src/fson.o 
+./src/matrix_generation.o : ./src/util.o ./src/state.o ./src/linear_algebra.o ./src/global_variables.o ./src/conversion.o ./src/processes.o ./src/stats.o ./src/event_logger.o ./src/distribute_matrix.o ./src/descriptor_parameters.o ./src/charge.o ./src/atom.o 
+./src/output.o : ./src/util.o ./src/state.o ./src/setting.o ./src/linear_algebra.o ./src/global_variables.o ./src/processes.o ./src/event_logger.o ./src/fson.o ./src/fson.o ./src/fson.o ./src/descriptor_parameters.o ./src/charge.o ./src/atom.o 
