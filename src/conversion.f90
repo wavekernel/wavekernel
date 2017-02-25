@@ -25,7 +25,7 @@ contains
     complex(kind(0d0)), intent(out) :: dv_psi(basis%dim)
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE'
+      stop 'IMPLEMENT HERE (alpha_to_lcao_coef)'
     else
       dv_psi(:) = kZero
       call matvec_dd_z('No', basis%Y_filtered, basis%Y_filtered_desc, kOne, dv_alpha, kZero, dv_psi)
@@ -91,7 +91,7 @@ contains
     integer, intent(in) :: filter_group_indices(:, :), A_alpha_desc(desc_size)
     logical, intent(in), optional :: to_ignore_diag_block_
 
-    call terminate('not implemented', 82)
+    stop 'IMPLEMENT HERE (change_basis_lcao_to_alpha_group_filter)'
   !
   !  integer :: num_groups, dim, num_filter
   !  integer :: g, p, nprow, npcol, myp, myg, myprow, mypcol, np, prow, pcol
@@ -364,7 +364,7 @@ contains
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: A_alpha_desc(desc_size), filter_group_indices(:, :)
 
-    call terminate('not implemented', 81)
+    stop 'IMPLEMENT HERE (change_basis_lcao_diag_to_alpha_group_filter)'
   !
   !  integer :: num_groups, dim, num_filter
   !  integer :: g, p, nprow, npcol, myp, myg, myprow, mypcol, np, prow, pcol
@@ -466,7 +466,7 @@ contains
 
     ! c = Y^\dagger S \psi, \alpha <- c
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE'
+      stop 'IMPLEMENT HERE (lcao_coef_to_alpha)'
     else
       dv_s_psi(:) = kZero
       call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)

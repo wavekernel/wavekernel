@@ -132,7 +132,7 @@ contains
     state%basis%is_group_filter_mode = (trim(setting%filter_mode) == 'group')
     state%basis%dim = state%dim
     if (state%basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE'
+      state%basis%num_basis = setting%num_filter * size(state%basis%filter_group_id, 1)
     else
       state%basis%num_basis = setting%num_filter
     end if
@@ -207,7 +207,7 @@ contains
     real(8) :: diag, diag_acc, H1_lcao_diag(dim), dv_charge_on_atoms(structure%num_atoms), eigenvector(dim, 1)
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE'
+      stop 'IMPLEMENT HERE (not needed unless zero_damp_charge is used)'
     end if
 
     if (setting%num_multiple_initials > 1) then
@@ -443,12 +443,13 @@ contains
     !call get_eigenstate_charges_on_groups(state%basis, state%structure, state%group_id)
     !call add_timer_event('read_next_input_step_with_basis_replace', 'get_eigenstate_charges_on_groups', wtime)
 
-    ! group filter mode is not implemented now
-    !call set_local_eigenvectors(setting, proc, Y_filtered_desc, Y_filtered, filter_group_indices, Y_local)
-    !call add_timer_event('read_next_input_step_with_basis_replace', 'set_local_eigenvectors', wtime)
-    !
-    !call set_H1_base(setting, proc, filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
-    !call add_timer_event('read_next_input_step_with_basis_replace', 'set_H1_base', wtime)
+    if (setting%filter_mode == 'group') then
+      !call set_local_eigenvectors(setting, proc, Y_filtered_desc, Y_filtered, filter_group_indices, Y_local)
+      !call add_timer_event('read_next_input_step_with_basis_replace', 'set_local_eigenvectors', wtime)
+      call set_H1_base(proc, state%basis%filter_group_indices, state%basis%Y_local, &
+           state%H_sparse, state%basis%H1_base, state%H1_desc)
+      call add_timer_event('read_next_input_step_with_basis_replace', 'set_H1_base', wtime)
+    end if
 
     if (setting%to_calculate_eigenstate_moment_every_step) then
       call get_msd_of_eigenstates(state%structure, state%S_sparse, state%basis)
@@ -578,38 +579,39 @@ contains
     integer :: YSY_desc(desc_size)
     real(8), allocatable :: H(:, :), S(:, :), Y_sub(:, :), Y_filtered_last(:, :), SY(:, :), YSY(:, :)
     real(8), allocatable :: H1_lcao_charge_overlap(:, :)
+    integer, allocatable :: filter_group_indices(:, :)
 
     ! For harmonic_for_nn_exciton.
     real(8) :: dv_atom_perturb(structure%num_atoms / 3 * 2), t_last_refresh, H1_lcao_diag(dim)
 
     wtime = mpi_wtime()
 
-    call setup_distributed_matrix_real('H', proc, dim, dim, H_desc, H, .true.)
-    call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
-    call distribute_global_sparse_matrix_wp(H_sparse, H_desc, H)
-    call distribute_global_sparse_matrix_wp(S_sparse, S_desc, S)
-
-    if (trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
-      ! Add perturbation term for Hamiltonian to get non-degenerated eigenstates.
-      ! Now refreshing atom perturbation is forced. It may cause problem when multiple input mode.
-      call aux_make_H1_harmonic_for_nn_exciton(dv_atom_perturb, setting%temperature, .true., &
-           0d0, t_last_refresh, structure%num_atoms / 3, H1_lcao_diag)
-      do i = 1, dim
-        call pdelget('Self', ' ', elem, H, i, i, H_desc)
-        call pdelset(H, i, i, H_desc, elem + H1_lcao_diag(i))
-      end do
-    else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
-      if (check_master()) then
-        write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-             '] set_eigenpairs() : add charge overlap type Hamiltonian perturbation of previous step'
-      end if
-      call setup_distributed_matrix_real('H1_lcao_charge_overlap', proc, dim, dim, &
-           H_desc, H1_lcao_charge_overlap, .true.)
-      call distribute_global_sparse_matrix_wp(H1_lcao_sparse_charge_overlap, H_desc, H1_lcao_charge_overlap)
-      H(:, :) = H(:, :) + H1_lcao_charge_overlap(:, :)  ! distributed sum.
-    end if
-
     if (setting%filter_mode == 'all') then
+      call setup_distributed_matrix_real('H', proc, dim, dim, H_desc, H, .true.)
+      call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
+      call distribute_global_sparse_matrix_wp(H_sparse, H_desc, H)
+      call distribute_global_sparse_matrix_wp(S_sparse, S_desc, S)
+
+      if (trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
+        ! Add perturbation term for Hamiltonian to get non-degenerated eigenstates.
+        ! Now refreshing atom perturbation is forced. It may cause problem when multiple input mode.
+        call aux_make_H1_harmonic_for_nn_exciton(dv_atom_perturb, setting%temperature, .true., &
+             0d0, t_last_refresh, structure%num_atoms / 3, H1_lcao_diag)
+        do i = 1, dim
+          call pdelget('Self', ' ', elem, H, i, i, H_desc)
+          call pdelset(H, i, i, H_desc, elem + H1_lcao_diag(i))
+        end do
+      else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
+        if (check_master()) then
+          write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+               '] set_eigenpairs() : add charge overlap type Hamiltonian perturbation of previous step'
+        end if
+        call setup_distributed_matrix_real('H1_lcao_charge_overlap', proc, dim, dim, &
+             H_desc, H1_lcao_charge_overlap, .true.)
+        call distribute_global_sparse_matrix_wp(H1_lcao_sparse_charge_overlap, H_desc, H1_lcao_charge_overlap)
+        H(:, :) = H(:, :) + H1_lcao_charge_overlap(:, :)  ! distributed sum.
+      end if
+
       allocate(Y_filtered_last(size(basis%Y_filtered, 1), size(basis%Y_filtered, 2)), &
            SY(size(basis%Y_filtered, 1), size(basis%Y_filtered, 2)))
       call setup_distributed_matrix_real('YSY', proc, setting%num_filter, setting%num_filter, YSY_desc, YSY)
@@ -627,33 +629,38 @@ contains
            basis%Y_all_desc(context_))
       call add_timer_event('set_eigenpairs', 'copy_filtering_eigenvectors_in_filter_all', wtime)
     else if (setting%filter_mode == 'group') then
-      call terminate('not implemented', 45)
-      !num_groups = size(filter_group_id, 2)
-      !index_max = 0  ! Initialization for overlap checking.
-      !sum_dim_sub = 0
-      !if (allocated(filter_group_indices)) then
-      !  deallocate(filter_group_indices)
-      !end if
-      !allocate(filter_group_indices(2, num_groups + 1))
-      !call add_timer_event('set_eigenpairs', 'allocate_in_filter_group', wtime)
-      !!print *, 'E', atom_indices
-      !do i = 1, num_groups  ! Assumes that atoms in a group have successive indices.
-      !  if (check_master()) then
-      !    write (0, '(A, F16.6, A, I0, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
-      !         '] solve_gevp: solve group ', i, ' start'
-      !  end if
-      !  atom_min = dim
-      !  atom_max = 0
-      !  do j = 2, filter_group_id(1, i) + 1
-      !    atom_min = min(atom_min, filter_group_id(j, i))
-      !    atom_max = max(atom_max, filter_group_id(j, i))
-      !  end do
-      !  index_min = atom_indices(atom_min)
-      !  if (index_min <= index_max) then
-      !    call terminate('indeices for groups are overlapping', 1)
-      !  end if
-      !  index_max = atom_indices(atom_max + 1) - 1
-      !  dim_sub = index_max - index_min + 1
+      if (trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
+        stop 'IMPLEMENT HERE (set_eigenpairs 1)'
+      else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
+        stop 'IMPLEMENT HERE (set_eigenpairs 2)'
+      end if
+      stop 'IMPLEMENT HERE (set_eigenpairs 3)'
+      num_groups = size(basis%filter_group_id, 2)
+      index_max = 0  ! Initialization for overlap checking.
+      sum_dim_sub = 0
+      if (allocated(filter_group_indices)) then
+        deallocate(filter_group_indices)
+      end if
+      allocate(filter_group_indices(2, num_groups + 1))
+      call add_timer_event('set_eigenpairs', 'allocate_in_filter_group', wtime)
+      print *, 'E', structure%atom_indices
+      do i = 1, num_groups  ! Assumes that atoms in a group have successive indices.
+        if (check_master()) then
+          write (0, '(A, F16.6, A, I0, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+               '] solve_gevp: solve group ', i, ' start'
+        end if
+        atom_min = basis%dim
+        atom_max = 0
+        do j = 2, basis%filter_group_id(1, i) + 1
+          atom_min = min(atom_min, basis%filter_group_id(j, i))
+          atom_max = max(atom_max, basis%filter_group_id(j, i))
+        end do
+        index_min = structure%atom_indices(atom_min)
+        if (index_min <= index_max) then
+          call terminate('indeices for groups are overlapping', 1)
+        end if
+        index_max = structure%atom_indices(atom_max + 1) - 1
+        dim_sub = index_max - index_min + 1
       !
       !  call setup_distributed_matrix_complex('Y_sub', proc, dim_sub, dim_sub, Y_sub_desc, Y_sub, .true.)
       !  allocate(eigenvalues_sub(dim_sub))
@@ -682,14 +689,14 @@ contains
       !       Y_sub, 1, filter_lowest_level, Y_sub_desc, &
       !       Y_filtered, sum_dim_sub + 1, base_index_of_group + 1, Y_filtered_desc, &
       !       Y_desc(context_))
-      !  filter_group_indices(1, i) = sum_dim_sub + 1
-      !  filter_group_indices(2, i) = base_index_of_group + 1
-      !  sum_dim_sub = sum_dim_sub + dim_sub
+        filter_group_indices(1, i) = sum_dim_sub + 1
+        filter_group_indices(2, i) = base_index_of_group + 1
+        sum_dim_sub = sum_dim_sub + dim_sub
       !  deallocate(Y_sub, eigenvalues_sub)
       !  call add_timer_event('set_eigenpairs', 'filter_eigenvectors_in_filter_group', wtime)
-      !end do
-      !filter_group_indices(1, num_groups + 1) = dim + 1
-      !filter_group_indices(2, num_groups + 1) = setting%num_filter + 1
+      end do
+      filter_group_indices(1, num_groups + 1) = basis%dim + 1
+      filter_group_indices(2, num_groups + 1) = setting%num_filter + 1
     end if
 
     deallocate(H, S)

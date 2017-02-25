@@ -124,7 +124,7 @@ contains
     integer :: indxl2g, blacs_pnum  ! Function.
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE'
+      stop 'IMPLEMENT HERE (get_eigenstate_charges_on_groups)'
     else
       allocate(charges(size(group_id, 2), basis%Y_filtered_desc(cols_)))
       allocate(charges_buf(size(group_id, 2), basis%Y_filtered_desc(cols_)))
@@ -229,7 +229,7 @@ contains
     type(wp_charge_moment_t) ::charge_moment
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE'
+      stop 'IMPLEMENT HERE (get_msd_of_eigenstates)'
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)
@@ -265,7 +265,7 @@ contains
     integer :: indxg2p
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE'
+      stop 'IMPLEMENT HERE (get_ipratio_of_eigenstates)'
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)

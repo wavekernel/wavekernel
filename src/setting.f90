@@ -22,7 +22,6 @@ module wp_setting_m
     integer :: alpha_delta_index = 1, num_steps_per_output_split = 100
     integer, allocatable :: alpha_delta_multiple_indices(:)
     integer :: fst_filter = 0, num_filter  ! fst_filter = 0 means not being set.
-    integer :: num_group_filter_from_homo = 1
     ! These values have different meaning due to init_type.
     integer :: localize_start, localize_end
     integer :: output_interval = 1, restart_step_num, restart_total_states_count, restart_input_step
@@ -268,13 +267,20 @@ contains
                 stop 'invalid eigenstate filtering specification'
               end if
             end if
-          else if (trim(setting%filter_mode) == 'group') then  ! format: group <filename>,<num_from_homo>
+          else if (trim(setting%filter_mode) == 'group') then  ! format: group <filename>,<start>,<end>
             i = index(argv, ',')
             if (i == 0) then
-              stop 'missing comma in group eigenstate filtering specification'
+              stop 'missing comma in group eigenstate filtering specification (1)'
             else
-              read(argv(1 : i - 1), '(A)') setting%filter_group_filename
-              read(argv(i + 1 :), *) setting%num_group_filter_from_homo
+              j = index(argv(i + 1 :), ',')
+              if (j == 0) then
+                stop 'missing comma in group eigenstate filtering specification (2)'
+              else
+                read(argv(1 : i - 1), '(A)') setting%filter_group_filename
+                read(argv(i + 1 : i + j - 1), *) setting%fst_filter
+                read(argv(i + j + 1 :), *) setting%num_filter  ! Temporary substitution.
+                setting%num_filter = setting%num_filter - setting%fst_filter + 1
+              end if
             end if
           else
             stop "filter mode must be 'all' or 'group'"
@@ -538,7 +544,7 @@ contains
       setting%num_filter = dim
     else if (trim(setting%filter_mode) == 'group') then
       setting%fst_filter = 1
-      setting%num_filter = setting%num_group_filter_from_homo * num_groups
+      setting%num_filter = dim / num_groups
     end if
   end subroutine fill_filtering_setting
 
@@ -817,7 +823,7 @@ contains
       else
         buf_integer(11 : 14) = 0
       end if
-      buf_integer(15) = setting%num_group_filter_from_homo
+      buf_integer(15) = -1  ! Dummy value.
       buf_integer(16) = setting%num_multiple_initials
       if (allocated(setting%alpha_delta_multiple_indices)) then
         buf_integer(17) = size(setting%alpha_delta_multiple_indices, 1)
@@ -905,7 +911,7 @@ contains
       setting%restart_step_num = buf_integer(8)
       setting%restart_total_states_count = buf_integer(9)
       setting%restart_input_step = buf_integer(10)
-      setting%num_group_filter_from_homo = buf_integer(15)
+      ! buf_integer(15) is not used.
       setting%num_multiple_initials = buf_integer(16)
       setting%is_atom_indices_enabled = buf_logical(1)
       setting%to_multiply_phase_factor = buf_logical(2)
