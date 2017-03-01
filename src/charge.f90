@@ -195,8 +195,45 @@ contains
     real(8), intent(in) :: dv_charge_on_atoms(structure%num_atoms)
     type(wp_charge_moment_t), intent(out) :: charge_moment
 
-    real(8) :: normalizer, ratio
-    integer :: i, j
+    real(8) :: normalizer, ratio, coord, unit, center, coord_old
+    integer :: i, j, max_charge_atom_index
+    real(8) :: atom_coordinates_copy(size(structure%atom_coordinates, 1), size(structure%atom_coordinates, 2))
+
+    max_charge_atom_index = maxloc(dv_charge_on_atoms, 1)  ! The i-th atom is considered as a new center.
+    do j = 1, 3
+      if (structure%periodic_xyz(j)) then  ! Periodic boundary condition is imposed.
+        center = structure%atom_coordinates(j, max_charge_atom_index)
+        unit = structure%unitcell_xyz(j)
+        ! New unitcell range is center - unit / 2 <= x < center + unit / 2
+        do i = 1, structure%num_atoms
+          coord = structure%atom_coordinates(j, i)
+          do while (coord < center - unit / 2d0)  ! Move from left outside to unitcell.
+            coord = coord + unit
+          end do
+          do while (center + unit / 2d0 <= coord)  ! Move from right outside to unitcell.
+            coord = coord - unit
+          end do
+          atom_coordinates_copy(j, i) = coord
+        end do
+      else  ! Non-periodic boundary condition is imposed.
+        atom_coordinates_copy(j, :) = structure%atom_coordinates(j, :)
+      end if
+    end do
+
+    ! Output moved atoms for debugging.
+    if (check_master()) then
+      do i = 1, structure%num_atoms
+        do j = 1, 3
+          coord_old = structure%atom_coordinates(j, i)
+          coord = atom_coordinates_copy(j, i)
+          if (coord_old /= coord) then
+            print *, 'get_mulliken_charge_coordinate_moments: move atom', i, 'coord', j, 'from', &
+                 coord_old, '->', coord, '(center, unit:', structure%atom_coordinates(j, max_charge_atom_index), &
+                 ',', structure%unitcell_xyz(j), ')'
+          end if
+        end do
+      end do
+    end if
 
     normalizer = sum(dv_charge_on_atoms(:))
     charge_moment%means(:) = 0d0
@@ -204,8 +241,8 @@ contains
     do i = 1, structure%num_atoms
       ratio = dv_charge_on_atoms(i) / normalizer
       do j = 1, 3
-        charge_moment%means(j) = charge_moment%means(j) + structure%atom_coordinates(j, i) * ratio
-        charge_moment%msds(j) = charge_moment%msds(j) + (structure%atom_coordinates(j, i) ** 2d0) * ratio
+        charge_moment%means(j) = charge_moment%means(j) + atom_coordinates_copy(j, i) * ratio
+        charge_moment%msds(j) = charge_moment%msds(j) + (atom_coordinates_copy(j, i) ** 2d0) * ratio
       end do
     end do
     do j = 1, 3

@@ -14,6 +14,9 @@ module wp_atom_m
     integer, allocatable :: atom_indices(:)
     real(8), allocatable :: atom_coordinates(:, :)
     character, allocatable :: atom_elements(:)
+    ! Unitcell information.
+    logical :: periodic_xyz(3) = (/.false., .false., .false./)
+    real(8) :: unitcell_xyz(3)
   end type wp_structure_t
 
 contains
