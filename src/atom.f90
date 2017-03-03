@@ -68,7 +68,9 @@ contains
       structure%atom_coordinates(1 : 3, i) = coordinate(1 : 3) * kAuPerAngstrom
       if (structure%atom_elements(i) == 'H') then
         atom_valence = 1
-      else if (structure%atom_elements(i) == 'C' .or. structure%atom_elements(i) == 'O') then
+      else if (structure%atom_elements(i) == 'C' .or. &
+           structure%atom_elements(i) == 'O' .or. &
+           structure%atom_elements(i) == 'N') then
         atom_valence = 4
       else
         print *, 'unknown atom name!!! ', structure%atom_elements(i)
