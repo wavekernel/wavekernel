@@ -1,15 +1,15 @@
-module wp_atom_m
+module wk_atom_m
   use mpi
-  use wp_descriptor_parameters_m
-  use wp_global_variables_m
+  use wk_descriptor_parameters_m
+  use wk_global_variables_m
   implicit none
 
   private
-  public :: wp_structure_t, read_structure, multiply_phase_factors, &
+  public :: wk_structure_t, read_structure, multiply_phase_factors, &
        make_dummy_structure, read_group_id, read_group_id_header, make_dummy_group_id, print_group_id, &
        bcast_structure, bcast_group_id, lcao_index_to_atom_index, print_structure
 
-  type wp_structure_t
+  type wk_structure_t
     integer :: num_atoms
     integer, allocatable :: atom_indices(:)
     real(8), allocatable :: atom_coordinates(:, :)
@@ -17,7 +17,7 @@ module wp_atom_m
     ! Unitcell information.
     logical :: periodic_xyz(3) = (/.false., .false., .false./)
     real(8) :: unitcell_xyz(3)
-  end type wp_structure_t
+  end type wk_structure_t
 
 contains
 
@@ -47,7 +47,7 @@ contains
   subroutine read_structure(filename, step, structure)
     character(len=*), intent(in) :: filename
     integer, intent(in) :: step
-    type(wp_structure_t), intent(out) :: structure
+    type(wk_structure_t), intent(out) :: structure
 
     integer, parameter :: iunit = 12
     integer :: i, n, atom_valence
@@ -84,7 +84,7 @@ contains
 
 
   subroutine multiply_phase_factors(structure, phase_factor_coef, dv_psi_in, dv_psi_out)
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     real(8), intent(in) :: phase_factor_coef
     complex(kind(0d0)), intent(in) :: dv_psi_in(:)
     complex(kind(0d0)), intent(out) :: dv_psi_out(:)
@@ -103,7 +103,7 @@ contains
   ! make_dummy_atom_indices_and_coordinates
   subroutine make_dummy_structure(dim, structure)
     integer, intent(in) :: dim
-    type(wp_structure_t), intent(out) :: structure
+    type(wk_structure_t), intent(out) :: structure
 
     integer :: i
 
@@ -209,7 +209,7 @@ contains
   ! bcast_atom_indices
   subroutine bcast_structure(root, structure)
     integer, intent(in) :: root
-    type(wp_structure_t), intent(inout) :: structure
+    type(wk_structure_t), intent(inout) :: structure
     integer :: my_rank, ierr, n
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
@@ -244,7 +244,7 @@ contains
 
 
   subroutine lcao_index_to_atom_index(structure, lcao_index, atom_index)
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     integer, intent(in) :: lcao_index
     integer, intent(out) :: atom_index
 
@@ -267,7 +267,7 @@ contains
 
 
   subroutine print_structure(structure, iunit)
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     integer, intent(in) :: iunit
 
     integer :: i
@@ -278,4 +278,4 @@ contains
       write(iunit, *) structure%atom_coordinates(:, i)
     end do
   end subroutine print_structure
-end module wp_atom_m
+end module wk_atom_m

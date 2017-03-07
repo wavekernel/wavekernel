@@ -3,7 +3,7 @@
 .PHONY: all main lib clean dep
 
 MAIN = bin/wavepacket
-LIB = libwavepacket.a
+LIB = libwavekernel.a
 OBJS_MAIN = src/main.o
 OBJS_LIB = \
 	src/main_aux.o \

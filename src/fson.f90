@@ -23,7 +23,7 @@
 ! Created on March 7, 2012, 7:40 PM
 !
 
-module wp_fson_string_m
+module wk_fson_string_m
     implicit none
     private
 
@@ -233,7 +233,7 @@ contains
 
         equals = .true.
     end function equals_string
-  end module wp_fson_string_m
+  end module wk_fson_string_m
 
 
 ! Copyright (c) 2012 Joseph A. Levin
@@ -261,8 +261,8 @@ contains
 ! Created on March 7, 2012, 10:14 PM
 !
 
-module wp_fson_value_m
-    use wp_fson_string_m
+module wk_fson_value_m
+    use wk_fson_string_m
 
     implicit none
 
@@ -564,7 +564,7 @@ contains
             end if
         end select
     end subroutine fson_value_print
-  end module wp_fson_value_m
+  end module wk_fson_value_m
 
 
 !
@@ -591,9 +591,9 @@ contains
 ! Created on March 10, 2012, 11:01 PM
 !
 
-module wp_fson_path_m
-    use wp_fson_value_m
-    use wp_fson_string_m
+module wk_fson_path_m
+    use wk_fson_value_m
+    use wk_fson_string_m
 
     implicit none
 
@@ -902,7 +902,7 @@ contains
         ! ELEMENT CALLBACK
         interface
             subroutine array_callback(element, index, count)
-                use wp_fson_value_m
+                use wk_fson_value_m
                 type(fson_value), pointer :: element
                 integer :: index, count
             end subroutine array_callback
@@ -960,7 +960,7 @@ contains
             call exit(1)
         end if
       end subroutine get_real_array
-  end module wp_fson_path_m
+  end module wk_fson_path_m
 
 
 ! Copyright (c) 2012 Joseph A. Levin
@@ -991,10 +991,10 @@ contains
 ! Modified on December 8, 2014
 !
 
-module wp_fson_m
-    use wp_fson_value_m, fson_print => fson_value_print, fson_destroy => fson_value_destroy
-    use wp_fson_string_m
-    use wp_fson_path_m, fson_get => fson_path_get
+module wk_fson_m
+    use wk_fson_value_m, fson_print => fson_value_print, fson_destroy => fson_value_destroy
+    use wk_fson_string_m
+    use wk_fson_path_m, fson_get => fson_path_get
 
     implicit none
 
@@ -1411,4 +1411,4 @@ contains
         call fson_value_add(val, real_part)
         call fson_value_add(val, imag_part)
     end subroutine fson_set_as_cmplx_array
-  end module wp_fson_m
+  end module wk_fson_m

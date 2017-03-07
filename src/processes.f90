@@ -1,23 +1,23 @@
-module wp_processes_m
+module wk_processes_m
   use mpi
-  use wp_global_variables_m
+  use wk_global_variables_m
   implicit none
 
-  type wp_process_t
+  type wk_process_t
     integer :: my_rank, n_procs, context
     integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
     integer :: n_omp_threads
-  end type wp_process_t
+  end type wk_process_t
 
   private
-  public :: wp_process_t, setup_distribution, print_proc, get_num_procs, layout_procs, &
+  public :: wk_process_t, setup_distribution, print_proc, get_num_procs, layout_procs, &
        print_map_of_grid_to_processes, check_master, terminate, &
        check_nan_scalar, check_nan_vector, check_nan_matrix
 
 contains
 
   subroutine setup_distribution(proc)
-    type(wp_process_t), intent(out) :: proc
+    type(wk_process_t), intent(out) :: proc
 
     call get_num_procs(proc%n_procs, proc%n_omp_threads)
     call blacs_pinfo(proc%my_rank, proc%n_procs)
@@ -29,7 +29,7 @@ contains
 
     if (check_master()) then
       write (0, '(A, F16.6, A, I0, " x ", I0, " (", I0, ")" )') &
-           ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, "] BLACS process grid: ", &
+           ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, "] BLACS process grid: ", &
            proc%n_procs_row, proc%n_procs_col, proc%n_procs
     end if
 
@@ -41,7 +41,7 @@ contains
 
 
   subroutine print_proc(proc)
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
 
     print *, 'num_mpi_processes: ', proc%n_procs
     print *, 'num_mpi_processes_row: ', proc%n_procs_row
@@ -101,7 +101,7 @@ contains
     call blacs_get(-1, 0, context) ! Get default system context
 
     call mpi_comm_rank(mpi_comm_world, my_rank, ierr)
-    if (my_rank /= g_wp_master_pnum) return
+    if (my_rank /= g_wk_master_pnum) return
 
     call blacs_gridinfo(context, num_procs_row, num_procs_col, proc_row, proc_col)
     allocate(map(num_procs_row, num_procs_col))
@@ -125,7 +125,7 @@ contains
       call terminate('check_master: mpi_comm_rank failed', ierr)
     end if
 
-    check_master = (my_rank == g_wp_master_pnum)
+    check_master = (my_rank == g_wk_master_pnum)
   end function check_master
 
 
@@ -175,4 +175,4 @@ contains
       end do
     end do
   end subroutine check_nan_matrix
-end module wp_processes_m
+end module wk_processes_m

@@ -1,7 +1,7 @@
-module wp_event_logger_m
-  use wp_fson_m
-  use wp_fson_value_m
-  use wp_fson_string_m
+module wk_event_logger_m
+  use wk_fson_m
+  use wk_fson_value_m
+  use wk_fson_string_m
   implicit none
 
   type event_t
@@ -122,4 +122,4 @@ contains
 
     call fson_value_add(output, events_in_fson)
   end subroutine fson_events_add
-end module wp_event_logger_m
+end module wk_event_logger_m

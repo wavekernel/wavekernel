@@ -1,10 +1,10 @@
-module wp_linear_algebra_m
-  use wp_descriptor_parameters_m
-  use wp_distribute_matrix_m
-  use wp_event_logger_m
-  use wp_processes_m
-  use wp_global_variables_m
-  use wp_util_m
+module wk_linear_algebra_m
+  use wk_descriptor_parameters_m
+  use wk_distribute_matrix_m
+  use wk_event_logger_m
+  use wk_processes_m
+  use wk_global_variables_m
+  use wk_util_m
   implicit none
 
   private
@@ -164,7 +164,7 @@ contains
   subroutine matvec_time_evolution_by_matrix_replace(proc, delta_t, &
        H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
        dv_psi_in, dv_psi_out)
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     real(8), intent(in) :: delta_t
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
     complex(kind(0d0)), intent(in) :: dv_psi_in(H_sparse%size)
@@ -181,8 +181,8 @@ contains
     call setup_distributed_matrix_real('H1', proc, dim, dim, desc, H1, .true.)
     call setup_distributed_matrix_real('Hdiff', proc, dim, dim, desc, Hdiff, .true.)
     call setup_distributed_matrix_real('V', proc, dim, dim, desc, Eigenvectors, .true.)
-    call distribute_global_sparse_matrix_wp(H_sparse_prev, desc, H0)
-    call distribute_global_sparse_matrix_wp(H_sparse, desc, H1)
+    call distribute_global_sparse_matrix_wk(H_sparse_prev, desc, H0)
+    call distribute_global_sparse_matrix_wk(H_sparse, desc, H1)
     Hdiff(:, :) = -1d0 * (H1(:, :) - H0(:, :)) * delta_t / 2.0
     call pdsyevd('V', 'L', dim, Hdiff, 1, 1, desc, eigenvalues, Eigenvectors, 1, 1, desc, &
          lwork_real, -1, liwork, 0, ierr)
@@ -265,7 +265,7 @@ contains
     integer, intent(in) :: dim, origin
     integer, intent(in) :: H_desc(desc_size), S_desc(desc_size)
     integer, intent(in) :: Y_all_desc(desc_size)
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     real(8), intent(in) :: H(:, :), S(:, :)
     real(8), intent(out) :: eigenvalues(dim)
     real(8), intent(out) :: Y_all(:, :)
@@ -280,7 +280,7 @@ contains
     !real(8) :: work_pzlaprnt(1000)
 
     if (check_master()) then
-       write (0, '(A, F16.6, A, I0, A, I0)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+       write (0, '(A, F16.6, A, I0, A, I0)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] solve_gevp: workspace preparation start. dim, origin: ', dim, ', ', origin
     end if
 
@@ -308,7 +308,7 @@ contains
 
     ! find L' s.t. S = L' L'^\dagger, L <- L'.
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] solve_gevp: Cholesky factorization start'
     end if
     call pdpotrf('Lower', dim, L, 1, 1, L_desc, info)
@@ -318,7 +318,7 @@ contains
 
     ! H' = L^{-1} H L^{-\dagger}, H <- H'
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] solve_gevp: matrix reduction start'
     end if
     call pdsyngst(1, 'Lower', dim, &
@@ -332,7 +332,7 @@ contains
     ! find (evs, Y) s.t. H' Y = Y diag(evs),
     ! eigenvalues <- evs, H <- Y
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] solve_gevp: solving standard eigenvalue problem start'
     end if
     call pdsyevd('Vectors', 'Lower', dim, &
@@ -345,7 +345,7 @@ contains
 
     ! Y' = L^{-\dagger} Y, H <- Y'
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] solve_gevp: inverse transformation of eigenvectors start'
     end if
     call pdtrtrs('Lower', 'Trans', 'No', dim, dim, &
@@ -491,7 +491,7 @@ contains
              kOne, S_inv_sqrt, 1, 1, S_inv_sqrt_desc)
       end if
       if (check_master()) then
-        write (0, '(A, F16.6, A, I0, A, F16.6, A, F16.6)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+        write (0, '(A, F16.6, A, I0, A, F16.6, A, F16.6)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
              '] set_inv_sqrt: k is ', k, ', ||S - I||^k_1 is', norm_1, ', ||S - I||^k_F is', norm_f
       end if
     end do
@@ -519,7 +519,7 @@ contains
     error_1 = pzlange('1', dim, dim, S, 1, 1, S_desc, work_pzlange) / norm_1
     error_f = pzlange('Frobenius', dim, dim, S, 1, 1, S_desc, 0) / norm_f
     if (check_master()) then
-      write (0, '(A, F16.6, A, F16.6, A, F16.6)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A, F16.6, A, F16.6)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] set_inv_sqrt: relative error in approximating inverse square root of S (1-norm, Frobenius norm) is', &
            error_1, ',', error_f
     end if
@@ -696,9 +696,9 @@ contains
 
     if (check_master()) then
       do j = 1, X_desc(cols_)
-        write (0, '(A, F16.6, A, I0, 2E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+        write (0, '(A, F16.6, A, I0, 2E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
              '] get_moment_for_each_column() : j, mean, dev : ', j, mean(j), dev(j)
       end do
     end if
   end subroutine get_moment_for_each_column
-end module wp_linear_algebra_m
+end module wk_linear_algebra_m

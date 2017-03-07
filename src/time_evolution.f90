@@ -1,10 +1,10 @@
-module wp_time_evolution_m
+module wk_time_evolution_m
   use mpi
-  use wp_descriptor_parameters_m
-  use wp_distribute_matrix_m
-  use wp_processes_m
-  use wp_event_logger_m
-  use wp_global_variables_m
+  use wk_descriptor_parameters_m
+  use wk_distribute_matrix_m
+  use wk_processes_m
+  use wk_event_logger_m
+  use wk_global_variables_m
   implicit none
 
   private
@@ -228,4 +228,4 @@ contains
       call terminate('not implemented', 61)
     end if
   end subroutine step_forward
-end module wp_time_evolution_m
+end module wk_time_evolution_m

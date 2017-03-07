@@ -28,18 +28,18 @@ def get_eigenvalue_vs_ipratio(split_dir, is_little_endian, out, input_step):  # 
             }
     assert(False)  # Specified input_step not found.
 
-def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, start_time):
-    setting = wavepacket_out['setting']
-    cond = wavepacket_out['condition']
+def calc(wavekernel_out, stride, wavekernel_out_path, is_little_endian, start_time):
+    setting = wavekernel_out['setting']
+    cond = wavekernel_out['condition']
     # Common.
     dim = cond['dim']
     # xyz
     vss_acc = []
     last_input_step = 0
 
-    if wavepacket_out['setting']['is_output_split']:
-        split_dir = os.path.dirname(wavepacket_out_path)
-        for meta in wavepacket_out['split_files_metadata']:
+    if wavekernel_out['setting']['is_output_split']:
+        split_dir = os.path.dirname(wavekernel_out_path)
+        for meta in wavekernel_out['split_files_metadata']:
             path = os.path.join(split_dir, meta['filename'])
             with open(path, 'r') as fp:
                 diff = datetime.datetime.now() - start_time
@@ -51,7 +51,7 @@ def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, start_ti
                     vss_acc.append(vs)
                     last_input_step = state['input_step']
     else:
-        for state in wavepacket_out['states']:
+        for state in wavekernel_out['states']:
             if (state['input_step'] - 1) % stride == 0 and state['input_step'] > last_input_step:
                 vs = get_eigenvalue_vs_ipratio(split_dir, is_little_endian, states_split, state['input_step'])
                 vss_acc.append(vs)
@@ -60,7 +60,7 @@ def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, start_ti
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('wavepacket_out_path', metavar='JSON', type=str,
+    parser.add_argument('wavekernel_out_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('-s', metavar='STRIDE', dest='skip_stride_num', type=int, default=1,
                         help='')
@@ -70,14 +70,14 @@ if __name__ == '__main__':
 
     start_time = datetime.datetime.now()
 
-    if not os.path.isfile(args.wavepacket_out_path):
-        sys.stderr.write('file ' + args.wavepacket_out_path + ' does not exist\n')
+    if not os.path.isfile(args.wavekernel_out_path):
+        sys.stderr.write('file ' + args.wavekernel_out_path + ' does not exist\n')
         sys.exit(1)
 
-    with open(args.wavepacket_out_path, 'r') as fp:
-        wavepacket_out = json.load(fp)
-    vss_acc = calc(wavepacket_out, args.skip_stride_num, args.wavepacket_out_path,
+    with open(args.wavekernel_out_path, 'r') as fp:
+        wavekernel_out = json.load(fp)
+    vss_acc = calc(wavekernel_out, args.skip_stride_num, args.wavekernel_out_path,
                    args.is_little_endian, start_time)
-    output_path = re.sub('\.[^.]+$', '', args.wavepacket_out_path) + '_eigenvalue_vs_ipratio.json'
+    output_path = re.sub('\.[^.]+$', '', args.wavekernel_out_path) + '_eigenvalue_vs_ipratio.json'
     with open(output_path, 'w') as fp:
         json.dump(vss_acc, fp, indent=2)

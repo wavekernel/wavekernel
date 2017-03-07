@@ -2,8 +2,8 @@
 
 import json, sys, os.path, re, copy
 
-def print_times(wavepacket_out):
-    timer_events = wavepacket_out["events"]
+def print_times(wavekernel_out):
+    timer_events = wavekernel_out["events"]
     max_event_name_length = max(map(lambda event:len(event["name"]), timer_events))
     timer_events.sort(key=lambda event:event["val"], reverse=True)
     print "event_name%s\tnum_repeated\ttime" % (" " * (max_event_name_length - len("event_name")))
@@ -16,6 +16,6 @@ if __name__ == "__main__":
         print "Usage: python print_times.py <JSON file>"
         sys.exit(0)
     fp = open(sys.argv[1], 'r')
-    wavepacket_out = json.load(fp)
+    wavekernel_out = json.load(fp)
     fp.close()
-    print_times(wavepacket_out)
+    print_times(wavekernel_out)

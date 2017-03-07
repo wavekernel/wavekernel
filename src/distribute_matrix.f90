@@ -1,18 +1,18 @@
-module wp_distribute_matrix_m
+module wk_distribute_matrix_m
   use mpi
-  use wp_event_logger_m
-  use wp_descriptor_parameters_m
-  use wp_global_variables_m
-  use wp_matrix_io_m
-  use wp_processes_m, only : check_master, wp_process_t, layout_procs, terminate
+  use wk_event_logger_m
+  use wk_descriptor_parameters_m
+  use wk_global_variables_m
+  use wk_matrix_io_m
+  use wk_processes_m, only : check_master, wk_process_t, layout_procs, terminate
   implicit none
 
-  type wp_local_matrix_t
+  type wk_local_matrix_t
     integer :: m, n
     real(8), allocatable :: val(:, :)
-  end type wp_local_matrix_t
+  end type wk_local_matrix_t
 
-  public :: get_local_cols_wp, setup_distributed_matrix_complex, setup_distributed_matrix_real, &
+  public :: get_local_cols_wk, setup_distributed_matrix_complex, setup_distributed_matrix_real, &
        distribute_matrix_real_part, distribute_matrix_complex, &
        gather_matrix_complex, gather_matrix_real_part, gather_matrix_complex_part, &
        read_distribute_eigenvalues, read_distribute_eigenvectors, &
@@ -20,15 +20,15 @@ module wp_distribute_matrix_m
 
 contains
 
-  integer function get_local_cols_wp(proc, desc)
-    type(wp_process_t), intent(in) :: proc
+  integer function get_local_cols_wk(proc, desc)
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: desc(desc_size)
 
     integer :: numroc
 
-    get_local_cols_wp = max(1, numroc(desc(cols_), desc(block_col_), &
+    get_local_cols_wk = max(1, numroc(desc(cols_), desc(block_col_), &
          proc%my_proc_col, 0, proc%n_procs_col))
-  end function get_local_cols_wp
+  end function get_local_cols_wk
 
 
   ! If there is a process which owns no entries in given block size
@@ -54,7 +54,7 @@ contains
   subroutine setup_distributed_matrix_real(name, proc, rows, cols, &
        desc, mat, is_square_block, block_size_row, block_size_col)
     character(*), intent(in) :: name
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: rows, cols
 
     integer, intent(out) :: desc(desc_size)
@@ -69,13 +69,13 @@ contains
     if (present(block_size_row)) then
       actual_block_size_row = block_size_row
     else
-      actual_block_size_row = g_wp_block_size
+      actual_block_size_row = g_wk_block_size
       call correct_block_size(name, rows, proc%n_procs_row, actual_block_size_row)
     end if
     if (present(block_size_col)) then
       actual_block_size_col = block_size_col
     else
-      actual_block_size_col = g_wp_block_size
+      actual_block_size_col = g_wk_block_size
       call correct_block_size(name, cols, proc%n_procs_col, actual_block_size_col)
     end if
 
@@ -88,7 +88,7 @@ contains
 
     if (check_master() .and. trim(name) /= '') then
       write (0, '(A, F16.6, 3A, I0, ", ", I0, ", ", I0, ", ", I0)') &
-           ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] setup_distributed_matrix_real() ', trim(name), ' with M, N, MB, NB: ', &
            rows, cols, actual_block_size_row, actual_block_size_col
     end if
@@ -103,7 +103,7 @@ contains
       call terminate('setup_distributed_matrix_real: descinit failed', info)
     end if
 
-    allocate(mat(1 : local_rows, 1 : get_local_cols_wp(proc, desc)), stat = info)
+    allocate(mat(1 : local_rows, 1 : get_local_cols_wk(proc, desc)), stat = info)
     if (info /= 0) then
       print *, 'stat(allocate): ', info
       call terminate('setup_distributed_matrix_real: allocation failed', info)
@@ -116,7 +116,7 @@ contains
   subroutine setup_distributed_matrix_complex(name, proc, rows, cols, &
        desc, mat, is_square_block, block_size_row, block_size_col)
     character(*), intent(in) :: name
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: rows, cols
 
     integer, intent(out) :: desc(desc_size)
@@ -131,13 +131,13 @@ contains
     if (present(block_size_row)) then
       actual_block_size_row = block_size_row
     else
-      actual_block_size_row = g_wp_block_size
+      actual_block_size_row = g_wk_block_size
       call correct_block_size(name, rows, proc%n_procs_row, actual_block_size_row)
     end if
     if (present(block_size_col)) then
       actual_block_size_col = block_size_col
     else
-      actual_block_size_col = g_wp_block_size
+      actual_block_size_col = g_wk_block_size
       call correct_block_size(name, cols, proc%n_procs_col, actual_block_size_col)
     end if
 
@@ -150,7 +150,7 @@ contains
 
     if (check_master() .and. trim(name) /= '') then
       write (0, '(A, F16.6, 3A, I0, ", ", I0, ", ", I0, ", ", I0)') &
-           ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+           ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] setup_distributed_matrix_complex() ', trim(name), ' with M, N, MB, NB: ', &
            rows, cols, actual_block_size_row, actual_block_size_col
     end if
@@ -165,7 +165,7 @@ contains
       call terminate('setup_distributed_matrix_complex: descinit failed', info)
     end if
 
-    allocate(mat(1 : local_rows, 1 : get_local_cols_wp(proc, desc)), stat = info)
+    allocate(mat(1 : local_rows, 1 : get_local_cols_wk(proc, desc)), stat = info)
     if (info /= 0) then
       print *, 'stat(allocate): ', info
       call terminate('setup_distributed_matrix_complex: allocation failed', info)
@@ -473,7 +473,7 @@ contains
   end subroutine distribute_matrix_complex
 
 
-  subroutine distribute_global_sparse_matrix_wp(mat_in, desc, mat)
+  subroutine distribute_global_sparse_matrix_wk(mat_in, desc, mat)
     type(sparse_mat), intent(in) :: mat_in
     integer, intent(in) :: desc(desc_size)
     real(8), intent(out) :: mat(:, :)
@@ -494,7 +494,7 @@ contains
 
     time_end = mpi_wtime()
     call add_event('distribute_global_sparse_matrix', time_end - time_start)
-  end subroutine distribute_global_sparse_matrix_wp
+  end subroutine distribute_global_sparse_matrix_wk
 
 
   subroutine read_distribute_eigenvalues(filename, dim, full_vecs, col_eigenvalues, full_vecs_desc)
@@ -515,7 +515,7 @@ contains
       end do
       close(iunit)
     end if
-    call mpi_bcast(eigenvalues, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
+    call mpi_bcast(eigenvalues, dim, mpi_double_complex, g_wk_master_pnum, mpi_comm_world, ierr)
     do i = 1, dim
       call pzelset(full_vecs, i, col_eigenvalues, full_vecs_desc, eigenvalues(i))
     end do
@@ -552,7 +552,7 @@ contains
         end do
         close(iunit)
       end if
-      call mpi_bcast(eigenvector, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
+      call mpi_bcast(eigenvector, dim, mpi_double_complex, g_wk_master_pnum, mpi_comm_world, ierr)
       do i = 1, dim
         call pzelset(Y_filtered, i, j - fst_filter + 1, Y_filtered_desc, eigenvector(i))
       end do
@@ -596,4 +596,4 @@ contains
     call add_event('bcast_sparse_matrix:bcast_value', time_end - time_start_part)
     call add_event('bcast_sparse_matrix', time_end - time_start)
   end subroutine bcast_sparse_matrix
-end module wp_distribute_matrix_m
+end module wk_distribute_matrix_m

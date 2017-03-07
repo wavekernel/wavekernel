@@ -1,8 +1,8 @@
-module wp_matrix_io_m
+module wk_matrix_io_m
   use mpi
-  use wp_event_logger_m, only : add_event
-  use wp_processes_m, only : check_master, terminate
-  use wp_global_variables_m
+  use wk_event_logger_m, only : add_event
+  use wk_processes_m, only : check_master, terminate
+  use wk_global_variables_m
   implicit none
 
   type sparse_mat
@@ -59,10 +59,10 @@ contains
 
     if (check_master()) then
       if (trim(filename) /= trim(filename_filled)) then
-        write (0, '(A, F16.6, 4A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+        write (0, '(A, F16.6, 4A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
              '] read_matrix_file() integer format filled: ', trim(filename), ' -> ', trim(filename_filled)
       end if
-      write (0, '(A, F16.6, 2A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, 2A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] read_matrix_file() filename: ', trim(filename_filled)
     end if
 
@@ -139,7 +139,7 @@ contains
       if (num_non_zeros > 10000 .and. &
            line_count > num_non_zeros / 10 * print_count .and. &
            check_master()) then
-         write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+         write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
               '] read matrix element number ', line_count
          print_count = print_count + 1
       end if
@@ -169,7 +169,7 @@ contains
 
     time_start = mpi_wtime()
      if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', time_start - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', time_start - g_wk_mpi_wtime_init, &
            '] set_sparse_matrix_identity()'
     end if
 
@@ -304,4 +304,4 @@ contains
       write(iunit, *) matrix%suffix(1, i), matrix%suffix(2, i), matrix%value(i)
     end do
   end subroutine print_sparse_matrix
-end module wp_matrix_io_m
+end module wk_matrix_io_m

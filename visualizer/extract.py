@@ -27,13 +27,13 @@ def get_charges_on_groups(group_info, charges_on_atoms):
 def make_dummy_group_id(num_atoms):
     return map(lambda a: [a], range(1, num_atoms + 1))  # One atom, one group.
 
-def read_group_id(wavepacket_out):
-    if "group_id" in wavepacket_out["condition"]:
-        group_id = wavepacket_out["condition"]["group_id"]
+def read_group_id(wavekernel_out):
+    if "group_id" in wavekernel_out["condition"]:
+        group_id = wavekernel_out["condition"]["group_id"]
     else:
-        group_id = make_dummy_group_id(wavepacket_out["condition"]["num_atoms"])
+        group_id = make_dummy_group_id(wavekernel_out["condition"]["num_atoms"])
     num_groups = len(group_id)
-    num_atoms = len(wavepacket_out["condition"]["elements"])
+    num_atoms = len(wavekernel_out["condition"]["elements"])
     atom_to_group = [0] * num_atoms
     for g in range(num_groups):
         # Atom number in group_id is 1-oriented, while internal representation of visualiers are 0-oriented.
@@ -185,9 +185,9 @@ def add_step(setting, state, extracted_types, split_dir, is_little_endian,
         psi_pratios.append(1.0 / state["psi"]["ipratio"])
         alpha_pratios.append(1.0 / state["alpha"]["ipratio"])
 
-def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, is_little_endian, out_dir, start_time):
-    setting = wavepacket_out["setting"]
-    cond = wavepacket_out["condition"]
+def extract_main(wavekernel_out, extracted_types, stride, wavekernel_out_path, is_little_endian, out_dir, start_time):
+    setting = wavekernel_out["setting"]
+    cond = wavekernel_out["condition"]
     # Common.
     dim = cond["dim"]
     initial_eigenvalues = cond["eigenvalues"]
@@ -209,8 +209,8 @@ def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, i
     ipratios = []
     tb_energy_deviations = []
     # Alpha
-    fst_filter = wavepacket_out["setting"]["fst_filter"]
-    num_filter = wavepacket_out["setting"]["end_filter"] - fst_filter + 1
+    fst_filter = wavekernel_out["setting"]["fst_filter"]
+    num_filter = wavekernel_out["setting"]["end_filter"] - fst_filter + 1
     alphas = []
     # pratio
     psi_pratios = []
@@ -230,10 +230,10 @@ def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, i
                                 cond["eigenstate_mean_z"][i]],
                        "weights": []})
 
-    group_info = read_group_id(wavepacket_out)
-    if wavepacket_out["setting"]["is_output_split"]:
-        split_dir = os.path.dirname(wavepacket_out_path)
-        for meta in wavepacket_out["split_files_metadata"]:
+    group_info = read_group_id(wavekernel_out)
+    if wavekernel_out["setting"]["is_output_split"]:
+        split_dir = os.path.dirname(wavekernel_out_path)
+        for meta in wavekernel_out["split_files_metadata"]:
             path = os.path.join(split_dir, meta["filename"])
             with open(path, "r") as fp:
                 diff = datetime.datetime.now() - start_time
@@ -255,9 +255,9 @@ def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, i
                              charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max,
                              alphas)
     else:
-        for state in wavepacket_out["states"]:
+        for state in wavekernel_out["states"]:
             if state["step_num"] % stride == 0:
-                xyz = get_xyz('', is_little_endian, wavepacket_out, state["input_step"])
+                xyz = get_xyz('', is_little_endian, wavekernel_out, state["input_step"])
                 eigenvalues = get_eigenvalues('', is_little_endian, states_split, state['input_step'],
                                               first_eigenvalue_index, last_eigenvalue_index)
                 if state["input_step"] > last_input_step:
@@ -270,7 +270,7 @@ def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, i
                          charges_on_groups_all, charges_on_groups_max, msd_contributions_on_groups_max,
                          alphas)
 
-    basedir, tail = os.path.split(wavepacket_out_path)
+    basedir, tail = os.path.split(wavekernel_out_path)
     if out_dir is not None:
         basedir = out_dir
     header = os.path.join(basedir, re.sub("\.[^.]+$", "", tail))
@@ -330,7 +330,7 @@ def extract_main(wavepacket_out, extracted_types, stride, wavepacket_out_path, i
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('wavepacket_out_path', metavar='JSON', type=str,
+    parser.add_argument('wavekernel_out_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('-s', metavar='STRIDE', dest='skip_stride_num', type=int, default=1,
                         help='')
@@ -348,14 +348,14 @@ if __name__ == "__main__":
     start_time = datetime.datetime.now()
 
     # Argument checking.
-    if not os.path.isfile(args.wavepacket_out_path):
-        sys.stderr.write("File %s does not exist\n" % args.wavepacket_out_path)
+    if not os.path.isfile(args.wavekernel_out_path):
+        sys.stderr.write("File %s does not exist\n" % args.wavekernel_out_path)
         sys.exit(1)
     if not os.path.isdir(args.out_dir):
         sys.stderr.write("Directory %s does not exist\n" % args.out_dir)
         sys.exit(1)
 
-    with open(args.wavepacket_out_path, "r") as fp:
-        wavepacket_out = json.load(fp)
-    extract_main(wavepacket_out, extracted_types, args.skip_stride_num, args.wavepacket_out_path,
+    with open(args.wavekernel_out_path, "r") as fp:
+        wavekernel_out = json.load(fp)
+    extract_main(wavekernel_out, extracted_types, args.skip_stride_num, args.wavekernel_out_path,
                  args.is_little_endian, args.out_dir, start_time)

@@ -3,12 +3,12 @@ import argparse, json, sys, re, os, datetime, struct, pylab
 kAuPerAngstrom = 1.8897259885789
 kAngstrom2PerAu2 = kAuPerAngstrom ** -2.0
 
-def plot(wavepacket_out, wavepacket_out_path, to_show_msd, highlight_i, energy_min, energy_max, ymin, ymax, is_log, to_label, title, out_filename):
-    condition = wavepacket_out['condition']
+def plot(wavekernel_out, wavekernel_out_path, to_show_msd, highlight_i, energy_min, energy_max, ymin, ymax, is_log, to_label, title, out_filename):
+    condition = wavekernel_out['condition']
     eigenvalues = condition['eigenvalues']
     eigenstate_msd = condition['eigenstate_msd_total']
     eigenstate_msd = map(lambda x: x * kAngstrom2PerAu2, eigenstate_msd)
-    fst_filter = wavepacket_out['setting']['fst_filter']
+    fst_filter = wavekernel_out['setting']['fst_filter']
 
     pylab.figure(figsize=(16, 12))
     pylab.grid(True)
@@ -57,18 +57,18 @@ def plot(wavepacket_out, wavepacket_out_path, to_show_msd, highlight_i, energy_m
 #        zip(eigenvalues, eigenstate_msd)))
 #
     if title is None:
-        title = wavepacket_out_path
+        title = wavekernel_out_path
     pylab.xlabel('Energy [a.u.]')
     pylab.ylabel('MSD [$\AA^2$]')
     pylab.title(title)
 
     if out_filename is None:
-        out_filename = re.sub("\.[^.]+$", "", wavepacket_out_path) + "_eigenvalue_vs_msd.png"
+        out_filename = re.sub("\.[^.]+$", "", wavekernel_out_path) + "_eigenvalue_vs_msd.png"
     pylab.savefig(out_filename)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('wavepacket_out_path', metavar='JSON', type=str,
+    parser.add_argument('wavekernel_out_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('-m', action='store_true', dest='to_show_msd',
                         default=True, help='')
@@ -97,6 +97,6 @@ if __name__ == '__main__':
     if not args.to_show_msd:
         args.is_log = False
 
-    with open(args.wavepacket_out_path, 'r') as fp:
-        wavepacket_out = json.load(fp)
-    plot(wavepacket_out, args.wavepacket_out_path, args.to_show_msd, args.highlight_i, args.energy_min, args.energy_max, args.ymin, args.ymax, args.is_log, args.to_label, args.title, args.out_filename)
+    with open(args.wavekernel_out_path, 'r') as fp:
+        wavekernel_out = json.load(fp)
+    plot(wavekernel_out, args.wavekernel_out_path, args.to_show_msd, args.highlight_i, args.energy_min, args.energy_max, args.ymin, args.ymax, args.is_log, args.to_label, args.title, args.out_filename)

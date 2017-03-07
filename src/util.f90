@@ -1,19 +1,19 @@
-module wp_util_m
+module wk_util_m
   implicit none
 
   private
-  public :: wp_energy_t, wp_error_t, index_to_coordinate, truncate_imag, &
+  public :: wk_energy_t, wk_error_t, index_to_coordinate, truncate_imag, &
        add_number_to_filename, add_numbers_to_filename, add_numbers_to_filename_multiple_initial, &
        add_postfix_to_filename, &
-       remove_directory_from_filename, read_vector, wp_random_number, comb_sort
+       remove_directory_from_filename, read_vector, wk_random_number, comb_sort
 
-  type wp_energy_t
+  type wk_energy_t
     real(8) :: tightbinding, nonlinear, total, tightbinding_deviation
-  end type wp_energy_t
+  end type wk_energy_t
 
-  type wp_error_t
+  type wk_error_t
     real(8) :: absolute, relative
-  end type wp_error_t
+  end type wk_error_t
 
 contains
 
@@ -178,14 +178,14 @@ contains
   end subroutine read_vector
 
 
-  subroutine wp_random_number(seed, val)
+  subroutine wk_random_number(seed, val)
     integer, intent(inout) :: seed
     real(8), intent(out) :: val
     integer, parameter :: a = 1029, c = 555, n = 65536
 
     seed = mod(seed * a + c, n)
     val = dble(seed) / dble(n)
-  end subroutine wp_random_number
+  end subroutine wk_random_number
 
 
   real(8) function get_charge_factor(atom_i, atom_elements, charge_factor_common, charge_factor_H, charge_factor_C)
@@ -237,4 +237,4 @@ contains
       end do
     end do
   end subroutine comb_sort
-end module wp_util_m
+end module wk_util_m

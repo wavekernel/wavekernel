@@ -1,4 +1,4 @@
-module wp_maxwell_distribution_m
+module wk_maxwell_distribution_m
   implicit none
   integer, parameter :: num_max_stock = 2 * 100
   real(8), parameter :: pi = 3.1415926535897932
@@ -74,4 +74,4 @@ contains
       end if
     end do
   end function erfunc
-end module wp_maxwell_distribution_m
+end module wk_maxwell_distribution_m

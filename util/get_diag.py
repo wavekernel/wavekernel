@@ -64,17 +64,17 @@ def add_step_harmonic(state, split_dir, is_little_endian, xyz):
     print mean * kKelvinPerAu, numpy.sqrt(variance) * kKelvinPerAu, \
         max(map(lambda e: abs(e - mean), atom_energy)) * kKelvinPerAu
 
-def calc(wavepacket_out, wavepacket_out_path, xyz, stride, is_little_endian, start_time):
-    if wavepacket_out['setting']['h1_type'] == 'maxwell':
+def calc(wavekernel_out, wavekernel_out_path, xyz, stride, is_little_endian, start_time):
+    if wavekernel_out['setting']['h1_type'] == 'maxwell':
         is_maxwell = True
-    elif wavepacket_out['setting']['h1_type'] == 'harmonic':
+    elif wavekernel_out['setting']['h1_type'] == 'harmonic':
         is_maxwell = False
     else:
         assert(False)
     print 'mean [K], deviation [K], largest diff from mean [K]'
-    if wavepacket_out['setting']['is_output_split']:
-        split_dir = os.path.dirname(wavepacket_out_path)
-        for meta in wavepacket_out['split_files_metadata']:
+    if wavekernel_out['setting']['is_output_split']:
+        split_dir = os.path.dirname(wavekernel_out_path)
+        for meta in wavekernel_out['split_files_metadata']:
             path = os.path.join(split_dir, meta['filename'])
             with open(path, 'r') as fp:
                 diff = datetime.datetime.now() - start_time
@@ -88,7 +88,7 @@ def calc(wavepacket_out, wavepacket_out_path, xyz, stride, is_little_endian, sta
                         add_step_harmonic(state, split_dir, is_little_endian, xyz)
     else:
         split_dir = ''
-        for state in wavepacket_out['states']:
+        for state in wavekernel_out['states']:
             if state['step_num'] % stride == 0:
                 if is_maxwell:
                     add_step_maxwell(state, split_dir, is_little_endian, xyz)
@@ -97,7 +97,7 @@ def calc(wavepacket_out, wavepacket_out_path, xyz, stride, is_little_endian, sta
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('wavepacket_out_path', metavar='JSON', type=str,
+    parser.add_argument('wavekernel_out_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('xyz_path', metavar='XYZ', type=str,
                         help='')
@@ -109,8 +109,8 @@ if __name__ == '__main__':
 
     start_time = datetime.datetime.now()
 
-    with open(args.wavepacket_out_path, 'r') as fp:
-        wavepacket_out = json.load(fp)
+    with open(args.wavekernel_out_path, 'r') as fp:
+        wavekernel_out = json.load(fp)
     with open(args.xyz_path, 'r') as fp:
         xyz = read_xyz(fp)
-    calc(wavepacket_out, args.wavepacket_out_path, xyz, args.skip_stride_num, args.is_little_endian, start_time)
+    calc(wavekernel_out, args.wavekernel_out_path, xyz, args.skip_stride_num, args.is_little_endian, start_time)

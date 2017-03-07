@@ -4,10 +4,10 @@ kAuPerAngstrom = 1.8897259885789
 kAngstromPerAu = kAuPerAngstrom ** -1.0
 kAngstrom2PerAu2 = kAuPerAngstrom ** -2.0
 
-def plot(wavepacket_out, wavepacket_out_path, highlight_i, mean_min, mean_max, msd_min, msd_max, energy_min, energy_max, is_log, to_label, to_print, title, out_filename):
-    condition = wavepacket_out['condition']
-    fst_filter = wavepacket_out['setting']['fst_filter']
-    end_filter = wavepacket_out['setting']['end_filter']
+def plot(wavekernel_out, wavekernel_out_path, highlight_i, mean_min, mean_max, msd_min, msd_max, energy_min, energy_max, is_log, to_label, to_print, title, out_filename):
+    condition = wavekernel_out['condition']
+    fst_filter = wavekernel_out['setting']['fst_filter']
+    end_filter = wavekernel_out['setting']['end_filter']
     indices = range(fst_filter, end_filter + 1)
     eigenvalues = condition['eigenvalues']
     eigenstate_msds = condition['eigenstate_msd_total']
@@ -85,18 +85,18 @@ def plot(wavepacket_out, wavepacket_out_path, highlight_i, mean_min, mean_max, m
     pylab.legend(numpoints=1)
 
     if title is None:
-        title = wavepacket_out_path
+        title = wavekernel_out_path
     pylab.xlabel('Mean Z [$\AA$]')
     pylab.ylabel('MSD [$\AA^2$]')
     pylab.title(title)
 
     if out_filename is None:
-        out_filename = re.sub("\.[^.]+$", "", wavepacket_out_path) + "_mean_vs_msd.png"
+        out_filename = re.sub("\.[^.]+$", "", wavekernel_out_path) + "_mean_vs_msd.png"
     pylab.savefig(out_filename)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('wavepacket_out_path', metavar='JSON', type=str,
+    parser.add_argument('wavekernel_out_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('-i', metavar='NUM', dest='highlight_i', type=int, default=None,
                         help='')
@@ -124,8 +124,8 @@ if __name__ == '__main__':
                         help='')
     args = parser.parse_args()
 
-    with open(args.wavepacket_out_path, 'r') as fp:
-        wavepacket_out = json.load(fp)
-    plot(wavepacket_out, args.wavepacket_out_path, args.highlight_i,
+    with open(args.wavekernel_out_path, 'r') as fp:
+        wavekernel_out = json.load(fp)
+    plot(wavekernel_out, args.wavekernel_out_path, args.highlight_i,
          args.mean_min, args.mean_max, args.msd_min, args.msd_max, args.energy_min, args.energy_max,
          args.is_log, args.to_label, args.to_print, args.title, args.out_filename)

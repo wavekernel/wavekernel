@@ -1,18 +1,18 @@
-module wp_output_m
+module wk_output_m
   use mpi
-  use wp_atom_m
-  use wp_charge_m
-  use wp_descriptor_parameters_m
-  use wp_fson_m
-  use wp_fson_value_m
-  use wp_fson_string_m
-  use wp_event_logger_m
-  use wp_processes_m
-  use wp_global_variables_m
-  use wp_linear_algebra_m
-  use wp_setting_m
-  use wp_state_m
-  use wp_util_m
+  use wk_atom_m
+  use wk_charge_m
+  use wk_descriptor_parameters_m
+  use wk_fson_m
+  use wk_fson_value_m
+  use wk_fson_string_m
+  use wk_event_logger_m
+  use wk_processes_m
+  use wk_global_variables_m
+  use wk_linear_algebra_m
+  use wk_setting_m
+  use wk_state_m
+  use wk_util_m
   implicit none
 
   private
@@ -21,8 +21,8 @@ module wp_output_m
 contains
 
   subroutine add_setting_json(setting, proc, multiple_initial_index, output)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: multiple_initial_index
     type(fson_value), pointer, intent(inout) :: output
 
@@ -284,7 +284,7 @@ contains
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
     call fson_set_name('block_size', setting_elem)
-    setting_elem%value_integer = g_wp_block_size
+    setting_elem%value_integer = g_wk_block_size
     call fson_value_add(setting_in_fson, setting_elem)
 
     ! Set process information.
@@ -359,9 +359,9 @@ contains
   subroutine add_condition_json(dim, setting, structure, errors, group_id, filter_group_id, &
        eigenvalues, eigenstate_mean, eigenstate_msd, eigenstate_ipratio, output)
     integer, intent(in) :: dim
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_error_t), intent(in) :: errors
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_error_t), intent(in) :: errors
     integer, intent(in) :: group_id(:, :), filter_group_id(:, :)
     real(8), intent(in) :: eigenvalues(setting%num_filter)
     real(8), intent(in) :: eigenstate_mean(3, setting%num_filter), eigenstate_msd(4, setting%num_filter)
@@ -500,9 +500,9 @@ contains
        h1_type, dv_atom_speed, dv_atom_perturb, is_after_matrix_replace, H_sparse, &
        states)
     integer, intent(in) :: dim, num_filter, i, input_step
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_energy_t), intent(in) :: energies
-    type(wp_charge_moment_t), intent(in) :: charge_moment
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_energy_t), intent(in) :: energies
+    type(wk_charge_moment_t), intent(in) :: charge_moment
     double precision, intent(in) :: t
     complex(kind(0d0)), intent(in) :: dv_alpha(num_filter), dv_psi(dim)
     real(8), intent(in) :: dv_charges_on_basis(dim), dv_charges_on_atoms(structure%num_atoms)
@@ -672,8 +672,8 @@ contains
 
 
   subroutine add_structure_json(setting, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_state_t), intent(inout) :: state
 
     integer :: i, coord, num_basis
     type(fson_value), pointer :: structure_fson, structure_item, element
@@ -751,4 +751,4 @@ contains
     ! Save all items.
     call fson_value_add(state%structures, structure_fson)
   end subroutine add_structure_json
-end module wp_output_m
+end module wk_output_m

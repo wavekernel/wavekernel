@@ -1,14 +1,14 @@
-module wp_charge_m
+module wk_charge_m
   use mpi
-  use wp_atom_m
-  use wp_descriptor_parameters_m
-  use wp_event_logger_m
-  use wp_linear_algebra_m
-  use wp_matrix_io_m
-  use wp_processes_m
-  use wp_global_variables_m
-  use wp_state_m
-  use wp_util_m
+  use wk_atom_m
+  use wk_descriptor_parameters_m
+  use wk_event_logger_m
+  use wk_linear_algebra_m
+  use wk_matrix_io_m
+  use wk_processes_m
+  use wk_global_variables_m
+  use wk_state_m
+  use wk_util_m
   implicit none
 
   private
@@ -66,7 +66,7 @@ contains
   ! Complexity: O(m^2).
   subroutine get_mulliken_charges_on_atoms(dim, structure, S_sparse, dv_psi, dv_charge_on_atoms)
     integer, intent(in) :: dim
-    type(wp_structure_t) :: structure
+    type(wk_structure_t) :: structure
     type(sparse_mat), intent(in) :: S_sparse
     complex(kind(0d0)), intent(in) :: dv_psi(dim)
     real(8), intent(out) :: dv_charge_on_atoms(structure%num_atoms)
@@ -112,8 +112,8 @@ contains
   ! charges(group, k): \sum_{i \in (atom \in group)} y_{i, k}^2 / \sum_{i} y_{i, k}^2
   ! ipratios(k): \sum_{g} charges(g, k)^2 (ipratio for sqrt{\sum_{i \in (atom \in group(g))} y_{i, k}^2})
   subroutine get_eigenstate_charges_on_groups(basis, structure, group_id)
-    type(wp_basis_t), intent(inout) :: basis
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(inout) :: basis
+    type(wk_structure_t), intent(in) :: structure
     integer, intent(in) :: group_id(:, :)
 
     integer :: nprow, npcol, myrow, mycol, myrank
@@ -172,8 +172,8 @@ contains
   ! Definition of energy from the nonlinear term when h1_type is "charge_overlap".
   ! Called after calling get_mulliken_charges_on_atoms.
   subroutine get_charge_overlap_energy(structure, charge_factor, dv_charge_on_atoms, energy)
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_charge_factor_t), intent(in) :: charge_factor
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_charge_factor_t), intent(in) :: charge_factor
     real(8), intent(in) :: dv_charge_on_atoms(structure%num_atoms)
     real(8), intent(out) :: energy
 
@@ -191,9 +191,9 @@ contains
 
 
   subroutine get_mulliken_charge_coordinate_moments(structure, dv_charge_on_atoms, charge_moment)
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     real(8), intent(in) :: dv_charge_on_atoms(structure%num_atoms)
-    type(wp_charge_moment_t), intent(out) :: charge_moment
+    type(wk_charge_moment_t), intent(out) :: charge_moment
 
     real(8) :: normalizer, ratio, coord, unit, center, coord_old
     integer :: i, j, max_charge_atom_index
@@ -255,15 +255,15 @@ contains
   subroutine get_msd_of_eigenstates(structure, S_sparse, basis)
     type(sparse_mat), intent(in) :: S_sparse
     !integer, intent(in) :: Y_filtered_desc(desc_size)
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     !real(8), intent(in) :: Y_filtered(:, :)
     !real(8), intent(out) :: means_all(3, Y_filtered_desc(cols_)), msds_all(4, Y_filtered_desc(cols_))
-    type(wp_basis_t), intent(inout) :: basis
+    type(wk_basis_t), intent(inout) :: basis
 
     real(8), allocatable :: dv_psi_local(:), dv_psi(:)
     real(8) :: dv_charge_on_atoms(structure%num_atoms)
     integer :: dim, num_filter, i, j, print_count, ierr
-    type(wp_charge_moment_t) ::charge_moment
+    type(wk_charge_moment_t) ::charge_moment
 
     if (basis%is_group_filter_mode) then
       stop 'IMPLEMENT HERE (get_msd_of_eigenstates)'
@@ -275,7 +275,7 @@ contains
       do i = 1, num_filter
         if (i > num_filter / 10 * print_count .and. &
              check_master()) then
-          write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+          write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] calculating MSD of eigenstate ', i
           print_count = print_count + 1
         end if
@@ -294,7 +294,7 @@ contains
 
 
   subroutine get_ipratio_of_eigenstates(basis)
-    type(wp_basis_t), intent(inout) :: basis
+    type(wk_basis_t), intent(inout) :: basis
 
     integer :: dim, num_filter, i, j, n_procs_row, n_procs_col, my_proc_row, my_proc_col
     real(8), allocatable :: sum_power4(:), sum_power2(:)
@@ -334,8 +334,8 @@ contains
 
   real(8) function get_charge_factor(atom_i, structure, charge_factor)
     integer, intent(in) :: atom_i
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_charge_factor_t), intent(in) :: charge_factor
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_charge_factor_t), intent(in) :: charge_factor
 
     if (structure%atom_elements(atom_i) == 'H' .and. charge_factor%charge_factor_H >= 0d0) then
       get_charge_factor = charge_factor%charge_factor_H
@@ -345,4 +345,4 @@ contains
       get_charge_factor = charge_factor%charge_factor_common
     end if
   end function get_charge_factor
-end module wp_charge_m
+end module wk_charge_m

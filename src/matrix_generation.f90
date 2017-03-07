@@ -1,17 +1,17 @@
-module wp_matrix_generation_m
+module wk_matrix_generation_m
   use mpi
-  use wp_atom_m
-  use wp_charge_m
-  use wp_descriptor_parameters_m
-  use wp_distribute_matrix_m
-  use wp_event_logger_m
-  use wp_maxwell_distribution_m
-  use wp_processes_m
-  use wp_conversion_m
-  use wp_global_variables_m
-  use wp_linear_algebra_m
-  use wp_state_m
-  use wp_util_m
+  use wk_atom_m
+  use wk_charge_m
+  use wk_descriptor_parameters_m
+  use wk_distribute_matrix_m
+  use wk_event_logger_m
+  use wk_maxwell_distribution_m
+  use wk_processes_m
+  use wk_conversion_m
+  use wk_global_variables_m
+  use wk_linear_algebra_m
+  use wk_state_m
+  use wk_util_m
   implicit none
 
   private
@@ -25,9 +25,9 @@ contains
   !! Complexity: O(m n).
   !subroutine make_H1_diag(proc, Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
   !     H1_alpha, H1_alpha_desc)
-  !  type(wp_process_t), intent(in) :: proc
+  !  type(wk_process_t), intent(in) :: proc
   !  real(8), intent(in) :: Y(:, :)
-  !  type(wp_local_matrix_t), intent(in) :: Y_local(:)
+  !  type(wk_local_matrix_t), intent(in) :: Y_local(:)
   !  integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size), filter_group_indices(:, :)
   !  logical, intent(in) :: is_group_filter_mode
   !  real(8), intent(out) :: H1_alpha(:, :)
@@ -65,15 +65,15 @@ contains
   !     is_group_filter_mode, filter_group_indices, Y_local, &
   !     charge_on_atoms, charge_factor, &
   !     H1_alpha, H1_alpha_desc)
-  !  type(wp_process_t), intent(in) :: proc
-  !  type(wp_structure_t), intent(in) :: structure
+  !  type(wk_process_t), intent(in) :: proc
+  !  type(wk_structure_t), intent(in) :: structure
   !  integer, intent(in) :: filter_group_indices(:, :)
   !  integer, intent(in) :: Y_desc(desc_size), H1_alpha_desc(desc_size)
   !  real(8), intent(in) :: Y(:, :)
-  !  type(wp_local_matrix_t), intent(in) :: Y_local(:)
+  !  type(wk_local_matrix_t), intent(in) :: Y_local(:)
   !  real(8) :: charge_on_atoms(structure%num_atoms)
   !  logical, intent(in) :: is_group_filter_mode
-  !  type(wp_charge_factor_t), intent(in) :: charge_factor
+  !  type(wk_charge_factor_t), intent(in) :: charge_factor
   !  real(8), intent(out) :: H1_alpha(:, :)
   !
   !  integer :: i, j, dim, num_filter
@@ -114,10 +114,10 @@ contains
 
   subroutine aux_make_H1_charge_with_overlap(structure, S_sparse, &
        charge_on_basis, charge_on_atoms, charge_factor, H1_lcao_sparse)
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: S_sparse
     real(8), intent(in) :: charge_on_basis(:), charge_on_atoms(structure%num_atoms)
-    type(wp_charge_factor_t), intent(in) :: charge_factor
+    type(wk_charge_factor_t), intent(in) :: charge_factor
     type(sparse_mat), intent(inout) :: H1_lcao_sparse
 
     integer :: i, j, k, atom_i, atom_j, ierr
@@ -162,13 +162,13 @@ contains
   subroutine make_H1_charge_with_overlap(proc, structure, S_sparse, basis, &
        charge_on_basis, charge_on_atoms, charge_factor, &
        H1_alpha, H1_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_process_t), intent(in) :: proc
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(in) :: basis
     type(sparse_mat), intent(in) :: S_sparse
     integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: charge_on_basis(:), charge_on_atoms(structure%num_atoms)
-    type(wp_charge_factor_t), intent(in) :: charge_factor
+    type(wk_charge_factor_t), intent(in) :: charge_factor
     real(8), intent(out) :: H1_alpha(:, :)
 
     integer :: i, j, k, dim, atom_i, atom_j, i1, i2, j1, j2
@@ -194,7 +194,7 @@ contains
 
   !subroutine init_speed_with_maxwell(proc, num_atoms, atom_elements, &
   !     temperature, full_vecs, full_vecs_desc)
-  !  type(wp_process_t), intent(in) :: proc
+  !  type(wk_process_t), intent(in) :: proc
   !  integer, intent(in) :: num_atoms
   !  character, intent(in) :: atom_elements(num_atoms)
   !  complex(kind(0d0)), intent(out) :: full_vecs(:, :)
@@ -230,12 +230,12 @@ contains
   !     Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
   !     is_init, is_restart_mode, temperature, delta_time, &
   !     full_vecs, full_vecs_desc, H1_alpha, H1_alpha_desc)
-  !  type(wp_process_t), intent(in) :: proc
+  !  type(wk_process_t), intent(in) :: proc
   !  integer, intent(in) :: num_atoms, atom_indices(num_atoms + 1), filter_group_indices(:, :)
   !  character, intent(in) :: atom_elements(num_atoms)
   !  complex(kind(0d0)), intent(inout) :: full_vecs(:, :)
   !  complex(kind(0d0)), intent(in) :: Y(:, :)
-  !  type(wp_local_matrix_t), intent(in) :: Y_local(:)
+  !  type(wk_local_matrix_t), intent(in) :: Y_local(:)
   !  integer, intent(in) :: Y_desc(desc_size), full_vecs_desc(desc_size), H1_alpha_desc(desc_size)
   !  logical, intent(in) :: is_init, is_restart_mode, is_group_filter_mode
   !  real(8), intent(in) :: temperature, delta_time
@@ -326,9 +326,9 @@ contains
        t, temperature, delta_time, perturb_interval, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_process_t), intent(in) :: proc
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(in) :: basis
     logical, intent(in) :: is_init, is_restart_mode
     integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
@@ -350,11 +350,11 @@ contains
 
     if (check_master()) then
       do atom = 1, structure%num_atoms
-        call wp_random_number(seed, val)  ! 0 <= phase < 1
+        call wk_random_number(seed, val)  ! 0 <= phase < 1
         random_val(atom) = val
       end do
     end if
-    call mpi_bcast(random_val, structure%num_atoms, mpi_double_precision, g_wp_master_pnum, mpi_comm_world, ierr)
+    call mpi_bcast(random_val, structure%num_atoms, mpi_double_precision, g_wk_master_pnum, mpi_comm_world, ierr)
 
     do atom = 1, structure%num_atoms
       if (to_refresh) then
@@ -394,13 +394,13 @@ contains
       if (check_master()) then
         do site = 1, num_sites
           do e_or_h = 1, 2
-            call wp_random_number(seed, val)  ! 0 <= phase < 1
+            call wk_random_number(seed, val)  ! 0 <= phase < 1
             random_val((site - 1) * 2 + e_or_h) = val
           end do
         end do
       end if
       call mpi_bcast(random_val, num_sites * 2, mpi_double_precision, &
-           g_wp_master_pnum, mpi_comm_world, ierr)
+           g_wk_master_pnum, mpi_comm_world, ierr)
 
       do site = 1, num_sites
         do e_or_h = 1, 2
@@ -425,9 +425,9 @@ contains
        t, temperature, delta_time, perturb_interval, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_process_t), intent(in) :: proc
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(in) :: basis
     logical, intent(in) :: is_init, is_restart_mode
     integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
@@ -464,14 +464,14 @@ contains
        charge_on_basis, charge_on_atoms, charge_factor, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     character(*), intent(in) :: h1_type
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(in) :: basis
     type(sparse_mat), intent(in) :: S_sparse
     integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
-    type(wp_charge_factor_t), intent(in) :: charge_factor
+    type(wk_charge_factor_t), intent(in) :: charge_factor
     real(8), intent(in) :: charge_on_basis(:), charge_on_atoms(structure%num_atoms)
     logical, intent(in) :: is_init, is_restart_mode
     real(8), intent(inout) :: dv_atom_perturb(:)
@@ -549,7 +549,7 @@ contains
         call print_offdiag_norm('A', A, A_desc)
         call mpi_barrier(mpi_comm_world, ierr)
         if (check_master()) then
-          write (0, '(A, F16.6, A, F16.6)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+          write (0, '(A, F16.6, A, F16.6)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] make_A() : Print large amplitude elements in t = ', t
         end if
         max_amp_row = 0
@@ -580,4 +580,4 @@ contains
       end if
     end if
   end subroutine make_A
-end module wp_matrix_generation_m
+end module wk_matrix_generation_m

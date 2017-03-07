@@ -1,25 +1,25 @@
-module wp_main_aux_m
+module wk_main_aux_m
   use mpi
-  use wp_descriptor_parameters_m
-  use wp_distribute_matrix_m
-  use wp_processes_m
-  use wp_fson_m
-  use wp_fson_path_m
-  use wp_fson_string_m
-  use wp_fson_value_m
-  use wp_event_logger_m
-  use wp_atom_m
-  use wp_charge_m
-  use wp_conversion_m
-  use wp_global_variables_m
-  use wp_initialization_m
-  use wp_linear_algebra_m
-  use wp_matrix_generation_m
-  use wp_output_m
-  use wp_setting_m
-  use wp_state_m
-  use wp_time_evolution_m
-  use wp_util_m
+  use wk_descriptor_parameters_m
+  use wk_distribute_matrix_m
+  use wk_processes_m
+  use wk_fson_m
+  use wk_fson_path_m
+  use wk_fson_string_m
+  use wk_fson_value_m
+  use wk_event_logger_m
+  use wk_atom_m
+  use wk_charge_m
+  use wk_conversion_m
+  use wk_global_variables_m
+  use wk_initialization_m
+  use wk_linear_algebra_m
+  use wk_matrix_generation_m
+  use wk_output_m
+  use wk_setting_m
+  use wk_state_m
+  use wk_time_evolution_m
+  use wk_util_m
   implicit none
 
 contains
@@ -30,7 +30,7 @@ contains
 
     call mpi_barrier(mpi_comm_world, ierr)
     wtime_total = mpi_wtime()
-    g_wp_mpi_wtime_init = wtime_total
+    g_wk_mpi_wtime_init = wtime_total
     wtime = wtime_total
   end subroutine init_timers
 
@@ -60,7 +60,7 @@ contains
 
 
   subroutine read_bcast_setting(setting, dim)
-    type(wp_setting_t), intent(out) :: setting
+    type(wk_setting_t), intent(out) :: setting
     integer, intent(out) :: dim
     integer :: dim_overlap, num_atoms, num_groups, max_group_size, ierr
 
@@ -84,15 +84,15 @@ contains
       call verify_setting(dim, setting)
       call print_setting(setting)
     end if
-    call bcast_setting(g_wp_master_pnum, setting)
-    call mpi_bcast(dim, 1, mpi_integer, g_wp_master_pnum, mpi_comm_world, ierr)
-    call mpi_bcast(g_wp_block_size, 1, mpi_integer, g_wp_master_pnum, mpi_comm_world, ierr)
+    call bcast_setting(g_wk_master_pnum, setting)
+    call mpi_bcast(dim, 1, mpi_integer, g_wk_master_pnum, mpi_comm_world, ierr)
+    call mpi_bcast(g_wk_block_size, 1, mpi_integer, g_wk_master_pnum, mpi_comm_world, ierr)
   end subroutine read_bcast_setting
 
 
   subroutine allocate_dv_vectors(setting, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_state_t), intent(inout) :: state
 
     integer :: n, a, m
 
@@ -112,9 +112,9 @@ contains
 
 
   subroutine setup_distributed_matrices(setting, proc, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
+    type(wk_state_t), intent(inout) :: state
     ! The parameters below are in 'state'.
     !integer, intent(out) :: Y_desc(desc_size), Y_filtered_desc(desc_size)
     !integer, intent(out) :: H1_desc(desc_size), A_desc(desc_size)
@@ -161,7 +161,7 @@ contains
   ! read_matrix_file は allocation も同時に行う
   subroutine read_bcast_matrix_files(dim, setting, step, H_sparse, S_sparse)
     integer, intent(in) :: dim, step
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     type(sparse_mat), intent(inout) :: H_sparse, S_sparse
 
     real(8) :: wtime
@@ -182,8 +182,8 @@ contains
         call add_timer_event('read_bcast_matrix_files', 'read_matrix_file_S', wtime)
       end if
     end if
-    call bcast_sparse_matrix(g_wp_master_pnum, H_sparse)
-    call bcast_sparse_matrix(g_wp_master_pnum, S_sparse)
+    call bcast_sparse_matrix(g_wk_master_pnum, H_sparse)
+    call bcast_sparse_matrix(g_wk_master_pnum, S_sparse)
     call add_timer_event('read_bcast_matrix_files', 'bcast_sparse_matrices', wtime)
   end subroutine read_bcast_matrix_files
 
@@ -191,13 +191,13 @@ contains
   ! dv_psi is not referenced when is_initial is true.
   subroutine add_perturbation_for_zero_damp_charge(setting, proc, is_initial, &
        dim, structure, S_sparse, basis, dv_psi, H_sparse)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
     logical, intent(in) :: is_initial
     integer, intent(in) :: dim
     type(sparse_mat), intent(in) :: S_sparse
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(in) :: basis
     complex(kind(0d0)), intent(in) :: dv_psi(:, :)
 
     type(sparse_mat), intent(inout) :: H_sparse
@@ -220,7 +220,7 @@ contains
       if (check_master()) then
         psi(:) = cmplx(eigenvector(:, 1), 0d0, kind(0d0))
       end if
-      call mpi_bcast(psi, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
+      call mpi_bcast(psi, dim, mpi_double_complex, g_wk_master_pnum, mpi_comm_world, ierr)
     else
       psi(:) = dv_psi(:, 1)
     end if
@@ -259,12 +259,12 @@ contains
 
   subroutine set_aux_matrices(setting, proc, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
     logical, intent(in) :: to_use_precomputed_eigenpairs
     integer, intent(in) :: desc_eigenvectors(desc_size)
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
-    type(wp_state_t), intent(inout) :: state
+    type(wk_state_t), intent(inout) :: state
 
     integer :: end_filter, ierr
     real(8), allocatable :: eigenstate_charges(:, :)
@@ -281,7 +281,7 @@ contains
     end if
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] set_aux_matrices() start '
     end if
 
@@ -342,7 +342,7 @@ contains
     end if
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] get_msd_of_eigenstates() start '
     end if
 
@@ -354,12 +354,12 @@ contains
 
   subroutine set_aux_matrices_for_multistep(setting, proc, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: desc_eigenvectors(desc_size)
     logical, intent(in) :: to_use_precomputed_eigenpairs
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
-    type(wp_state_t), intent(inout) :: state
+    type(wk_state_t), intent(inout) :: state
 
     integer :: j, end_filter, S_desc(desc_size), SY_desc(desc_size)
     real(8), allocatable :: dv_eigenvalues_prev(:)
@@ -371,7 +371,7 @@ contains
     integer, parameter :: iunit = 90
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] set_aux_matrices_for_multistep() start '
     end if
 
@@ -389,7 +389,7 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
       call setup_distributed_matrix_real('S', proc, state%dim, state%dim, S_desc, S, .true.)
-      call distribute_global_sparse_matrix_wp(state%S_sparse, S_desc, S)
+      call distribute_global_sparse_matrix_wk(state%S_sparse, S_desc, S)
       call setup_distributed_matrix_real('SY', proc, state%dim, setting%num_filter, SY_desc, SY)
       call pdgemm('No', 'No', state%dim, setting%num_filter, state%dim, 1d0, &
            S, 1, 1, S_desc, &
@@ -500,7 +500,7 @@ contains
 
     if (check_master()) then
       do j = 1, setting%num_multiple_initials
-        write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+        write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
              '] psi error after re-initialization is ', state%errors(j)%absolute, &
              ' (absolute) and ', state%errors(j)%relative, ' (relative)'
       end do
@@ -510,8 +510,8 @@ contains
 
   subroutine read_bcast_structure(dim, setting, step, structure)
     integer, intent(in) :: dim, step
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_structure_t), intent(out) :: structure
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_structure_t), intent(out) :: structure
 
     if (allocated(structure%atom_indices)) then
       deallocate(structure%atom_indices)
@@ -530,7 +530,7 @@ contains
         call make_dummy_structure(dim, structure)
       end if
     end if
-    call bcast_structure(g_wp_master_pnum, structure)
+    call bcast_structure(g_wk_master_pnum, structure)
     if (structure%atom_indices(structure%num_atoms + 1) - 1 /= dim) then
       stop 'invalid atom index file'
     else if (setting%is_restart_mode .and. trim(setting%h1_type) == 'maxwell') then
@@ -546,7 +546,7 @@ contains
 
 
   subroutine read_bcast_group_id(setting, num_atoms, group_id)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     integer, intent(in) :: num_atoms
     integer, allocatable, intent(out) :: group_id(:, :)
 
@@ -557,19 +557,19 @@ contains
         call make_dummy_group_id(num_atoms, group_id)
       end if
     end if
-    call bcast_group_id(g_wp_master_pnum, group_id)
+    call bcast_group_id(g_wk_master_pnum, group_id)
   end subroutine read_bcast_group_id
 
 
   subroutine set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, basis, &
        H1_lcao_sparse_charge_overlap)
     integer, intent(in) :: dim
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: filter_group_id(:, :)
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H1_lcao_sparse_charge_overlap
-    type(wp_basis_t), intent(inout) :: basis  ! value of last step is needed for offdiag norm calculation.
+    type(wk_basis_t), intent(inout) :: basis  ! value of last step is needed for offdiag norm calculation.
 
     integer :: i, j, num_groups, atom_min, atom_max, index_min, index_max, dim_sub, Y_sub_desc(desc_size)
     integer :: homo_level, filter_lowest_level, base_index_of_group, sum_dim_sub
@@ -589,8 +589,8 @@ contains
     if (setting%filter_mode == 'all') then
       call setup_distributed_matrix_real('H', proc, dim, dim, H_desc, H, .true.)
       call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
-      call distribute_global_sparse_matrix_wp(H_sparse, H_desc, H)
-      call distribute_global_sparse_matrix_wp(S_sparse, S_desc, S)
+      call distribute_global_sparse_matrix_wk(H_sparse, H_desc, H)
+      call distribute_global_sparse_matrix_wk(S_sparse, S_desc, S)
 
       if (trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
         ! Add perturbation term for Hamiltonian to get non-degenerated eigenstates.
@@ -603,12 +603,12 @@ contains
         end do
       else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
         if (check_master()) then
-          write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+          write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] set_eigenpairs() : add charge overlap type Hamiltonian perturbation of previous step'
         end if
         call setup_distributed_matrix_real('H1_lcao_charge_overlap', proc, dim, dim, &
              H_desc, H1_lcao_charge_overlap, .true.)
-        call distribute_global_sparse_matrix_wp(H1_lcao_sparse_charge_overlap, H_desc, H1_lcao_charge_overlap)
+        call distribute_global_sparse_matrix_wk(H1_lcao_sparse_charge_overlap, H_desc, H1_lcao_charge_overlap)
         H(:, :) = H(:, :) + H1_lcao_charge_overlap(:, :)  ! distributed sum.
       end if
 
@@ -646,7 +646,7 @@ contains
       print *, 'E', structure%atom_indices
       do i = 1, num_groups  ! Assumes that atoms in a group have successive indices.
         if (check_master()) then
-          write (0, '(A, F16.6, A, I0, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+          write (0, '(A, F16.6, A, I0, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] solve_gevp: solve group ', i, ' start'
         end if
         atom_min = basis%dim
@@ -708,9 +708,9 @@ contains
 
   !subroutine set_local_eigenvectors(proc, Y_filtered_desc, Y_filtered, filter_group_indices, Y_local)
   !  integer, intent(in) :: Y_filtered_desc(desc_size), filter_group_indices(:, :)
-  !  type(wp_process_t), intent(in) :: proc
+  !  type(wk_process_t), intent(in) :: proc
   !  real(8), intent(in) :: Y_filtered(:, :)
-  !  type(wp_local_matrix_t), allocatable, intent(out) :: Y_local(:)
+  !  type(wk_local_matrix_t), allocatable, intent(out) :: Y_local(:)
   !  integer :: g, num_groups, i, j, m, n, p, nprow, npcol, myp, myprow, mypcol, np, prow, pcol
   !  integer :: blacs_pnum
   !  real(8) :: wtime
@@ -746,10 +746,10 @@ contains
 
 
   subroutine set_H1_base(proc, filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: filter_group_indices(:, :), H1_desc(desc_size)
     type(sparse_mat), intent(in) :: H_sparse
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    type(wk_local_matrix_t), intent(in) :: Y_local(:)
     real(8), intent(out) :: H1_base(:, :)
 
     call change_basis_lcao_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
@@ -758,7 +758,7 @@ contains
 
 
   subroutine clear_offdiag_blocks_of_overlap(setting, filter_group_indices, S_sparse)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     integer, intent(in) :: filter_group_indices(:, :)
     type(sparse_mat) :: S_sparse
 
@@ -769,13 +769,13 @@ contains
 
 
   subroutine prepare_json(setting, proc, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
+    type(wk_state_t), intent(inout) :: state
     ! The commented out parameters below are in 'state'.
     !integer, intent(in) :: dim
-    !type(wp_structure_t), intent(in) :: structure
-    !type(wp_error_t), intent(in) :: errors
+    !type(wk_structure_t), intent(in) :: structure
+    !type(wk_error_t), intent(in) :: errors
     !integer, intent(in) :: group_id(:, :), filter_group_id(:, :)
     !real(8), intent(in) :: eigenstate_mean(3, setting%num_filter), eigenstate_msd(4, setting%num_filter)
     !real(8), intent(in) :: dv_eigenvalues(:), dv_ipratios(:)
@@ -784,7 +784,7 @@ contains
     type(fson_value), pointer :: split_files_metadata_elem
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] prepare_json(): start'
     end if
 
@@ -840,11 +840,11 @@ contains
   !     to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, &
   !     H1_lcao_sparse_charge_overlap)
   !  integer, intent(in) :: dim, group_id(:, :), filter_group_id(:, :)
-  !  type(wp_process_t), intent(in) :: proc
-  !  type(wp_setting_t), intent(in) :: setting
+  !  type(wk_process_t), intent(in) :: proc
+  !  type(wk_setting_t), intent(in) :: setting
   !  real(8), intent(in) :: t
-  !  type(wp_structure_t), intent(in) :: structure
-  !  type(wp_charge_factor_t), intent(in) :: charge_factor
+  !  type(wk_structure_t), intent(in) :: structure
+  !  type(wk_charge_factor_t), intent(in) :: charge_factor
   !  integer, allocatable, intent(inout) :: filter_group_indices(:, :)
   !  type(sparse_mat), intent(inout) :: H_sparse  ! Modified when h1_type == zero_damp_charge_*
   !  type(sparse_mat), intent(in) :: S_sparse, H_sparse_prev, S_sparse_prev, H1_lcao_sparse_charge_overlap
@@ -857,10 +857,10 @@ contains
   !  real(8), intent(inout) :: dv_atom_perturb(:)
   !  complex(kind(0d0)), intent(in) :: dv_psi(:, :), dv_alpha(:, :)
   !  complex(kind(0d0)), intent(out) :: dv_psi_reconcile(:, :), dv_alpha_reconcile(:, :)
-  !  type(wp_local_matrix_t), allocatable, intent(out) :: Y_local(:)
-  !  type(wp_charge_moment_t), intent(out) :: charge_moment(:)
-  !  type(wp_energy_t), intent(out) :: energies(:)
-  !  type(wp_error_t), intent(out) :: errors(:)
+  !  type(wk_local_matrix_t), allocatable, intent(out) :: Y_local(:)
+  !  type(wk_charge_moment_t), intent(out) :: charge_moment(:)
+  !  type(wk_energy_t), intent(out) :: energies(:)
+  !  type(wk_error_t), intent(out) :: errors(:)
   !  real(8), intent(out) :: eigenstate_ipratios(:)
   !  real(8), intent(out) :: eigenstate_mean(:, :), eigenstate_msd(:, :)
   !  logical, intent(in) :: to_use_precomputed_eigenpairs
@@ -878,7 +878,7 @@ contains
   !     S_multistep_sparse, &
   !     filter_group_indices)
   !  integer, intent(in) :: filter_group_indices(:, :)
-  !  type(wp_setting_t), intent(in) :: setting
+  !  type(wk_setting_t), intent(in) :: setting
   !  type(sparse_mat), intent(inout) :: S_multistep_sparse
   !
   !  call clear_offdiag_blocks_of_overlap(setting, filter_group_indices, S_multistep_sparse)
@@ -889,8 +889,8 @@ contains
 
 
   subroutine post_process_after_matrix_replace(setting, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_state_t), intent(inout) :: state
 
     state%dv_psi(1 : state%dim, :) = state%dv_psi_reconcile(1 : state%dim, :)
     state%dv_alpha(1 : setting%num_filter, :) = state%dv_alpha_reconcile(1 : setting%num_filter, :)
@@ -900,20 +900,20 @@ contains
 
 
   subroutine make_matrix_step_forward(setting, proc, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
+    type(wk_state_t), intent(inout) :: state
     ! The commented out parameters below are in 'state'.
-    !type(wp_structure_t), intent(in) :: structure
+    !type(wk_structure_t), intent(in) :: structure
     !integer, intent(in) :: input_step, filter_group_indices(:, :)
-    !type(wp_charge_factor_t), intent(in) :: charge_factor
+    !type(wk_charge_factor_t), intent(in) :: charge_factor
     !type(sparse_mat), intent(in) :: H_sparse, S_sparse
     !integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size), A_desc(desc_size)
     !real(8), intent(in) :: t, dv_charge_on_atoms(:), dv_eigenvalues(:)
     !complex(kind(0d0)), intent(inout) :: A(:, :)
     !real(8), intent(inout) :: H1(:, :), H1_base(:, :)
     !real(8), intent(in) :: Y_filtered(:, :)
-    !type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    !type(wk_local_matrix_t), intent(in) :: Y_local(:)
     !complex(kind(0d0)) :: dv_alpha(:), dv_alpha_next(:)
 
     integer :: j, i, k
@@ -930,7 +930,7 @@ contains
     wtime = mpi_wtime()
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] make_matrix_step_forward() start '
     end if
 
@@ -966,11 +966,11 @@ contains
         state%dv_alpha_next(:, j) = state%dv_alpha_next(:, j) / alpha_next_norm
         amplitude_after_normalize = abs(state%dv_alpha_next(k, j)) / abs(state%dv_alpha(k, j))
         if (check_master()) then
-          write (0, '(A, F16.6, A, 2E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+          write (0, '(A, F16.6, A, 2E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] make_matrix_step_forward() t, t + dt ', state%t, state%t + setting%delta_t
-          write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+          write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] make_matrix_step_forward() alpha_next_norm ', alpha_next_norm
-          write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+          write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] make_matrix_step_forward()  amplitude_after_normalize', amplitude_after_normalize
         end if
       end do
@@ -1015,7 +1015,7 @@ contains
         end if
       end do
       call mpi_bcast(state%dv_psi_next, state%dim * setting%num_multiple_initials, mpi_double_complex, &
-           g_wp_master_pnum, mpi_comm_world, ierr)
+           g_wk_master_pnum, mpi_comm_world, ierr)
     else
       ! dv_charge_on_atoms must not be referenced when setting%num_multiple_initials > 1.
       call make_H1(proc, trim(setting%h1_type), state%structure, &
@@ -1049,7 +1049,7 @@ contains
   subroutine make_matrices_for_sparse(proc, delta_t, multistep_input_read_interval, t, t_last_replace, &
        H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
        SP1, SP2, SP2IPIV, Sw, desc)
-    type(wp_process_t) :: proc
+    type(wk_process_t) :: proc
     real(8) :: delta_t, t, multistep_input_read_interval, t_last_replace, t_next, weight
     type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
     complex(kind(0d0)), allocatable :: SP1(:, :), SP2(:, :)
@@ -1069,10 +1069,10 @@ contains
     call setup_distributed_matrix_real('H1', proc, dim, dim, desc, H1, .true.)
     call setup_distributed_matrix_real('S0', proc, dim, dim, desc, S0, .true.)
     call setup_distributed_matrix_real('S1', proc, dim, dim, desc, S1, .true.)
-    call distribute_global_sparse_matrix_wp(H_sparse_prev, desc, H0)
-    call distribute_global_sparse_matrix_wp(H_sparse, desc, H1)
-    call distribute_global_sparse_matrix_wp(S_sparse_prev, desc, S0)
-    call distribute_global_sparse_matrix_wp(S_sparse, desc, S1)
+    call distribute_global_sparse_matrix_wk(H_sparse_prev, desc, H0)
+    call distribute_global_sparse_matrix_wk(H_sparse, desc, H1)
+    call distribute_global_sparse_matrix_wk(S_sparse_prev, desc, S0)
+    call distribute_global_sparse_matrix_wk(S_sparse, desc, S1)
     m = size(H0, 1)
     n = size(H0, 2)
     allocate(Hp(m, n), Sp(m, n), SP1(m, n), SP2(m, n), Sw(m, n), &
@@ -1093,20 +1093,20 @@ contains
 
 
   subroutine step_forward_post_process(setting, proc, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
+    type(wk_state_t), intent(inout) :: state
     ! The commented out parameters below are in 'state'.
     !integer, intent(in) :: dim
     !type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    !type(wp_structure_t), intent(in) :: structure
-    !type(wp_charge_factor_t), intent(in) :: charge_factor
+    !type(wk_structure_t), intent(in) :: structure
+    !type(wk_charge_factor_t), intent(in) :: charge_factor
     !integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size)
     !complex(kind(0d0)), intent(in) :: dv_alpha_next(:)
     !complex(kind(0d0)), intent(out) :: dv_alpha(:), dv_psi(dim)
     !real(8), intent(in) :: t, Y_filtered(:, :), dv_eigenvalues(:), H1(:, :)
-    !type(wp_charge_moment_t), intent(out) :: charge_moment
-    !type(wp_energy_t), intent(out) :: energies
+    !type(wk_charge_moment_t), intent(out) :: charge_moment
+    !type(wk_energy_t), intent(out) :: energies
 
     integer :: num_filter, j
     real(8) :: wtime
@@ -1181,15 +1181,15 @@ contains
 
 
   subroutine save_state(setting, is_after_matrix_replace, state)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     logical, intent(in) :: is_after_matrix_replace
-    type(wp_state_t), intent(inout) :: state
+    type(wk_state_t), intent(inout) :: state
     ! The commented out parameters below are in 'state'.
     !integer, intent(in) :: dim, i, group_id(:, :), Y_filtered_desc(desc_size)
-    !type(wp_structure_t), intent(in) :: structure
+    !type(wk_structure_t), intent(in) :: structure
     !complex(kind(0d0)), intent(in) :: dv_psi(dim), dv_alpha(structure%num_atoms)
-    !type(wp_energy_t), intent(in) :: energies
-    !type(wp_charge_moment_t), intent(in) :: charge_moment
+    !type(wk_energy_t), intent(in) :: energies
+    !type(wk_charge_moment_t), intent(in) :: charge_moment
     !real(8), intent(in) :: dv_atom_perturb(:), dv_atom_speed(:), dv_charge_on_basis(:), dv_charge_on_atoms(:)
     !real(8), intent(in) :: t, t_last_replace, Y_filtered(:, :)
     !integer, intent(inout) :: total_state_count, input_step
@@ -1256,7 +1256,7 @@ contains
 
   subroutine output_split_states(setting, total_state_count, multiple_initial_index, states, &
        structures, split_files_metadata)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     integer, intent(in) :: total_state_count, multiple_initial_index
     type(fson_value), pointer, intent(in) :: states, structures
     type(fson_value), pointer, intent(inout) :: split_files_metadata
@@ -1357,7 +1357,7 @@ contains
 
   subroutine output_fson_and_destroy(setting, multiple_initial_index, output, split_files_metadata, &
        states, structures, wtime_total)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     integer, intent(in) :: multiple_initial_index
     type(fson_value), pointer, intent(inout) :: output, split_files_metadata, states, structures
     real(8), intent(inout) :: wtime_total
@@ -1399,10 +1399,10 @@ contains
     end if
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] main loop end'
     end if
 
     call fson_destroy(output)
   end subroutine output_fson_and_destroy
-end module wp_main_aux_m
+end module wk_main_aux_m

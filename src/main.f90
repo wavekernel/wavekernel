@@ -1,10 +1,10 @@
 program main
-  use wp_main_aux_m
+  use wk_main_aux_m
   implicit none
 
-  type(wp_setting_t) :: setting
-  type(wp_process_t) :: proc
-  type(wp_state_t) :: state
+  type(wk_setting_t) :: setting
+  type(wk_process_t) :: proc
+  type(wk_state_t) :: state
   ! Dummy variables velow are not used from this main.f90.
   real(8) :: dummy_eigenvalues(1), dummy_eigenvectors(1, 1)
   integer :: dummy_desc_eigenvectors(desc_size), j
@@ -38,7 +38,7 @@ program main
   call read_bcast_group_id(setting, state%structure%num_atoms, state%group_id)
   if (trim(setting%filter_mode) == 'group') then
     call read_group_id(trim(setting%filter_group_filename), state%basis%filter_group_id)
-    call bcast_group_id(g_wp_master_pnum, state%basis%filter_group_id)
+    call bcast_group_id(g_wk_master_pnum, state%basis%filter_group_id)
   end if
   call add_timer_event('main', 'read_bcast_atom_indices_and_coordinates', state%wtime)
 
@@ -56,7 +56,7 @@ program main
   call add_timer_event('main', 'initialize', state%wtime)
 
   if (check_master()) then
-    write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+    write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
          '] main loop start'
   end if
 
@@ -85,7 +85,7 @@ program main
     if (check_master()) then
       if (state%t > (setting%limit_t - setting%restart_t) / 10d0 * dble(state%print_count) .or. &
            state%i == 1 .or. state%i == 10) then
-        write (0, '(A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+        write (0, '(A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
              '] simulation time ', state%t, ' a.u. start'
         state%print_count = state%print_count + 1
       end if
@@ -107,7 +107,7 @@ program main
          state%t - setting%delta_t < setting%multistep_input_read_interval * state%input_step) then
 
       if (check_master()) then
-        write (0, '(A, F16.6, A, I0, A, F16.6)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+        write (0, '(A, F16.6, A, I0, A, F16.6)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
              '] read next input step ', state%input_step + 1, ' at simulation time ', state%t
       end if
       ! The step to be read is 'input_step + 1', not 'input_step + 2' because XYZ information is not interpolated.

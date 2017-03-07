@@ -64,20 +64,20 @@ def read_and_write_step(state, split_dir, is_little_endian,
     with open(out_path, 'w') as fp:
         json.dump(output, fp, indent=2)
 
-def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, out_dir, start_time, time_end):
-    cond = wavepacket_out['condition']
+def calc(wavekernel_out, stride, wavekernel_out_path, is_little_endian, out_dir, start_time, time_end):
+    cond = wavekernel_out['condition']
     # Common.
     dim = cond['dim']
     ts = []
     # Alpha
-    fst_filter = wavepacket_out['setting']['fst_filter']
-    num_filter = wavepacket_out['setting']['end_filter'] - fst_filter + 1
+    fst_filter = wavekernel_out['setting']['fst_filter']
+    num_filter = wavekernel_out['setting']['end_filter'] - fst_filter + 1
 
-    assert(wavepacket_out['setting']['is_output_split'])
-    split_dir = os.path.dirname(wavepacket_out_path)
-    header = re.sub('\.[^.]+$', '', wavepacket_out_path)
+    assert(wavekernel_out['setting']['is_output_split'])
+    split_dir = os.path.dirname(wavekernel_out_path)
+    header = re.sub('\.[^.]+$', '', wavekernel_out_path)
     i = 0
-    for meta in wavepacket_out['split_files_metadata']:
+    for meta in wavekernel_out['split_files_metadata']:
         path = os.path.join(split_dir, meta['filename'])
         with open(path, 'r') as fp:
             diff = datetime.datetime.now() - start_time
@@ -94,7 +94,7 @@ def calc(wavepacket_out, stride, wavepacket_out_path, is_little_endian, out_dir,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('wavepacket_out_path', metavar='JSON', type=str,
+    parser.add_argument('wavekernel_out_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('-s', metavar='STRIDE', dest='skip_stride_num', type=int, default=1,
                         help='')
@@ -108,12 +108,12 @@ if __name__ == '__main__':
 
     start_time = datetime.datetime.now()
 
-    if not os.path.isfile(args.wavepacket_out_path):
-        sys.stderr.write('file ' + args.wavepacket_out_path + ' does not exist\n')
+    if not os.path.isfile(args.wavekernel_out_path):
+        sys.stderr.write('file ' + args.wavekernel_out_path + ' does not exist\n')
         sys.exit(1)
 
     if args.out_dir is None:
-        out_dir = re.sub('\.[^.]+$', '', args.wavepacket_out_path) + '_alpha_distribution'
+        out_dir = re.sub('\.[^.]+$', '', args.wavekernel_out_path) + '_alpha_distribution'
     else:
         out_dir = args.out_dir
     if os.path.isdir(out_dir):
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     else:
         os.mkdir(out_dir)
 
-    with open(args.wavepacket_out_path, 'r') as fp:
-        wavepacket_out = json.load(fp)
-    calc(wavepacket_out, args.skip_stride_num, args.wavepacket_out_path,
+    with open(args.wavekernel_out_path, 'r') as fp:
+        wavekernel_out = json.load(fp)
+    calc(wavekernel_out, args.skip_stride_num, args.wavekernel_out_path,
          args.is_little_endian, out_dir, start_time, args.time_end)

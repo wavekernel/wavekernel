@@ -4,10 +4,10 @@ kAuPerAngstrom = 1.8897259885789
 kAngstromPerAu = kAuPerAngstrom ** -1.0
 kAngstrom2PerAu2 = kAuPerAngstrom ** -2.0
 
-def select(wavepacket_out, num_states, min_energy):
-    condition = wavepacket_out['condition']
-    fst_filter = wavepacket_out['setting']['fst_filter']
-    end_filter = wavepacket_out['setting']['end_filter']
+def select(wavekernel_out, num_states, min_energy):
+    condition = wavekernel_out['condition']
+    fst_filter = wavekernel_out['setting']['fst_filter']
+    end_filter = wavekernel_out['setting']['end_filter']
     indices = range(fst_filter, end_filter + 1)
     eigenvalues = condition['eigenvalues']
     eigenstate_msds = condition['eigenstate_msd_total']
@@ -38,7 +38,7 @@ def select(wavepacket_out, num_states, min_energy):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('wavepacket_out_path', metavar='JSON', type=str,
+    parser.add_argument('wavekernel_out_path', metavar='JSON', type=str,
                         help='')
     parser.add_argument('-n', metavar='NUM', dest='num_states', type=int, default=30,
                         help='')
@@ -46,9 +46,9 @@ if __name__ == '__main__':
                         help='')
     args = parser.parse_args()
 
-    with open(args.wavepacket_out_path, 'r') as fp:
-        wavepacket_out = json.load(fp)
-    select(wavepacket_out, args.num_states, args.min_energy)
+    with open(args.wavekernel_out_path, 'r') as fp:
+        wavekernel_out = json.load(fp)
+    select(wavekernel_out, args.num_states, args.min_energy)
 
 # Old codes.
 #def main():

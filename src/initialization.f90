@@ -1,18 +1,18 @@
-module wp_initialization_m
+module wk_initialization_m
   use mpi
-  use wp_descriptor_parameters_m
-  use wp_distribute_matrix_m
-  use wp_global_variables_m
-  use wp_processes_m
-  use wp_atom_m
-  use wp_charge_m
-  use wp_conversion_m
-  use wp_global_variables_m
-  use wp_linear_algebra_m
-  use wp_matrix_generation_m
-  use wp_setting_m
-  use wp_state_m
-  use wp_util_m
+  use wk_descriptor_parameters_m
+  use wk_distribute_matrix_m
+  use wk_global_variables_m
+  use wk_processes_m
+  use wk_atom_m
+  use wk_charge_m
+  use wk_conversion_m
+  use wk_global_variables_m
+  use wk_linear_algebra_m
+  use wk_matrix_generation_m
+  use wk_setting_m
+  use wk_state_m
+  use wk_util_m
   implicit none
 
   private
@@ -48,7 +48,7 @@ contains
   ! Because group_id file describes (group -> [atom index]),
   ! atom_indices is needed to convert an atom index to orbital indices.
   subroutine make_localized_indices(setting, dim, group_id, atom_indices, localized_indices)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     integer, intent(in) :: dim, group_id(:, :), atom_indices(:)
     logical, intent(out) :: localized_indices(dim)
     integer :: i, j, atom
@@ -73,7 +73,7 @@ contains
     logical, intent(in) :: localized_indices(dim)
     integer :: i
     write (0, '(A, F16.6, A)', advance='no') &
-         ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, '] initialize() : localized indices are '
+         ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, '] initialize() : localized indices are '
     do i = 1, dim
       if (localized_indices(i)) then
         write(0, '(I0, " ")', advance='no') i
@@ -85,7 +85,7 @@ contains
 
   integer function get_actual_alpha_delta_index(setting, dim, localized_indices, &
        alpha_delta_index)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
     integer, intent(in) :: dim, alpha_delta_index
     logical, intent(in) :: localized_indices(dim)
     integer :: num_localized_indices, i
@@ -114,7 +114,7 @@ contains
       get_actual_alpha_delta_index = alpha_delta_index
     end if
     if (check_master()) then
-      write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] initialize() : set index of initial eigenstate to ', get_actual_alpha_delta_index
     end if
   end function get_actual_alpha_delta_index
@@ -127,7 +127,7 @@ contains
   subroutine get_filtering_errors(dim, dv_psi_orig, dv_psi_filtered, errors)
     integer, intent(in) :: dim
     complex(kind(0d0)), intent(in) :: dv_psi_orig(dim), dv_psi_filtered(dim)
-    type(wp_error_t), intent(out) :: errors
+    type(wk_error_t), intent(out) :: errors
 
     complex(kind(0d0)) :: dv_psi_diff(dim)
     real(8) :: psi_norm
@@ -241,7 +241,7 @@ contains
        dv_eigenvalues_prev, dv_eigenvalues, basis, YSY_filtered, YSY_filtered_desc, &
        dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
     integer, intent(in) :: YSY_filtered_desc(desc_size)
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_basis_t), intent(in) :: basis
     real(8), intent(in) :: t, suppress_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
     real(8), intent(in) :: YSY_filtered(:, :)
     complex(kind(0d0)), intent(in) :: dv_alpha(:)
@@ -375,7 +375,7 @@ contains
     !end do
 
     if (check_master()) then
-      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
            dznrm2(basis%num_basis, dv_alpha_reconcile, 1)
     end if
@@ -422,7 +422,7 @@ contains
   !       dv_alpha, dv_alpha_reconcile, YSY_filtered_orthogonal)
   !
   !  if (check_master()) then
-  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
   !         '] reconcile_from_alpha_matrix_suppress_orthogonal() : evcoef norm before normalization ', &
   !         dznrm2(num_filter, dv_alpha_reconcile, 1)
   !  end if
@@ -446,7 +446,7 @@ contains
   !  integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc
   !  real(8) :: dv_suppress_factor(num_filter)
   !  real(8), allocatable, save :: YSY_filtered_suppress(:, :)
-  !  type(wp_energy_t) :: energies
+  !  type(wk_energy_t) :: energies
   !
   !  integer, save :: count = 0
   !  character(len=100) :: filename
@@ -461,7 +461,7 @@ contains
   !  real(8) :: dznrm2
   !
   !  if (check_master()) then
-  !    write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !    write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
   !         '] reconcile_from_alpha_matrix_suppress_adaptive() : start for time ', t, ' au, ', &
   !         t * kPsecPerAu, ' ps'
   !  end if
@@ -525,7 +525,7 @@ contains
   !  call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
   !
   !  if (check_master()) then
-  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
   !         '] reconcile_from_alpha_matrix_suppress() : evcoef norm before normalization ', &
   !         dznrm2(num_filter, dv_alpha_reconcile, 1)
   !  end if
@@ -564,7 +564,7 @@ contains
   !  real(8) :: dznrm2
   !
   !  if (check_master()) then
-  !    write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !    write (0, '(A, F16.6, A, F16.6, A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
   !         '] reconcile_from_alpha_matrix_suppress_select() : start for time ', t, ' au, ', &
   !         t * kPsecPerAu, ' ps'
   !  end if
@@ -688,13 +688,13 @@ contains
   !  end do
   !
   !  if (check_master()) then
-  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !    write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
   !         '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm before normalization ', &
   !         dznrm2(num_filter, dv_alpha_reconcile, 1)
   !  end if
   !  if (dznrm2(num_filter, dv_alpha_reconcile, 1) < 1d-16) then
   !    if (check_master()) then
-  !      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+  !      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
   !           '] reconcile_from_alpha_matrix_suppress_select() : evcoef norm missing'
   !    end if
   !    dv_alpha_reconcile(:) = dv_alpha(:)
@@ -708,14 +708,14 @@ contains
   subroutine set_initial_value(setting, proc, dim, structure, group_id, &
        H_sparse, S_sparse, basis, &
        dv_psi, dv_alpha, errors)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: dim, group_id(:, :)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(in) :: basis
     complex(kind(0d0)), intent(out) :: dv_psi(:, :), dv_alpha(:, :)
-    type(wp_error_t), intent(out) :: errors(:)
+    type(wk_error_t), intent(out) :: errors(:)
 
     integer :: nprow, npcol, myrow, mycol, ierr
     real(8) :: min_msd, eigenvalues(dim)
@@ -845,7 +845,7 @@ contains
       !if (check_master()) then
       !  call read_vector(dim, trim(setting%lcao_filename), dv_psi)
       !end if
-      !call mpi_bcast(dv_psi, dim, mpi_double_complex, g_wp_master_pnum, mpi_comm_world, ierr)
+      !call mpi_bcast(dv_psi, dim, mpi_double_complex, g_wk_master_pnum, mpi_comm_world, ierr)
       !!if (setting%to_multiply_phase_factor) then
       !!  call multiply_phase_factors(dim, num_atoms, atom_indices, atom_coordinates, &
       !!       setting%phase_factor_coef, psi)
@@ -859,11 +859,11 @@ contains
 
   subroutine compute_charges(dim, structure, S_sparse, dv_psi, dv_charge_on_basis, dv_charge_on_atoms, charge_moment)
     integer, intent(in) :: dim
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: S_sparse
     complex(kind(0d0)), intent(in) :: dv_psi(dim)
     real(8), intent(out) :: dv_charge_on_basis(:), dv_charge_on_atoms(:)
-    type(wp_charge_moment_t), intent(out) :: charge_moment
+    type(wk_charge_moment_t), intent(out) :: charge_moment
 
     call get_mulliken_charges_on_basis(dim, S_sparse, dv_psi, dv_charge_on_basis)
     call get_mulliken_charges_on_atoms(dim, structure, S_sparse, dv_psi, dv_charge_on_atoms)
@@ -877,7 +877,7 @@ contains
     complex(kind(0d0)), intent(in) :: dv_alpha(num_filter)
     ! Because this subroutine does not determine all fields of energies,
     ! intent(in) is needed to save the undetermined fields.
-    type(wp_energy_t), intent(inout) :: energies
+    type(wk_energy_t), intent(inout) :: energies
 
     integer :: i
     real(8) :: dv_alpha_squared(num_filter), alpha_norm
@@ -907,18 +907,18 @@ contains
        dv_psi, dv_alpha, &
        dv_atom_perturb, &
        H1, H1_desc, energies)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
-    type(wp_structure_t), intent(in) :: structure
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
+    type(wk_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_basis_t), intent(in) :: basis
     integer, intent(in) :: H1_desc(desc_size)
-    type(wp_charge_factor_t), intent(in) :: charge_factor
+    type(wk_charge_factor_t), intent(in) :: charge_factor
     real(8), intent(in) :: dv_charge_on_basis(:), dv_charge_on_atoms(structure%num_atoms)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
     real(8), intent(inout) :: dv_atom_perturb(structure%num_atoms)
     real(8), intent(out) :: H1(:, :)
-    type(wp_energy_t), intent(out) :: energies
+    type(wk_energy_t), intent(out) :: energies
 
     integer :: dim
     complex(kind(0d0)) :: energy_tmp
@@ -954,9 +954,9 @@ contains
 
 
   subroutine initialize(setting, proc, state)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
-    type(wp_state_t), intent(inout) :: state
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
+    type(wk_state_t), intent(inout) :: state
     ! intent(out) parameters in state are:
     ! H1(:, :), dv_psi(dim), dv_alpha(Y_filtered_desc(cols_))
     ! dv_charge_on_basis(dim), dv_charge_on_atoms(structure%num_atoms)
@@ -965,7 +965,7 @@ contains
     integer :: i
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] initialize() : start, set initial value'
     end if
 
@@ -975,7 +975,7 @@ contains
 
     if (setting%is_restart_mode) then
       if (check_master()) then
-        write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+        write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
              '] initialize() : read restarting atom speed or atom perturb'
       end if
       if (trim(setting%h1_type) == 'maxwell') then
@@ -992,7 +992,7 @@ contains
     end if
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] initialize() : compute charges form initial value'
     end if
 
@@ -1003,7 +1003,7 @@ contains
     end do
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] initialize() : compute energies form initial value'
     end if
 
@@ -1026,15 +1026,15 @@ contains
        dv_charge_on_basis, dv_charge_on_atoms, &
        dv_atom_perturb, &
        charge_moment, energies, errors)
-    type(wp_setting_t), intent(in) :: setting
-    type(wp_process_t), intent(in) :: proc
-    type(wp_structure_t), intent(in) :: structure
-    type(wp_charge_factor_t), intent(in) :: charge_factor
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_process_t), intent(in) :: proc
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_charge_factor_t), intent(in) :: charge_factor
     logical, intent(in) :: is_first_in_multiple_initials
     integer, intent(in) :: dim
     real(8), intent(in) :: t, dv_eigenvalues_prev(setting%num_filter)!, dv_eigenvalues(setting%num_filter)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_basis_t), intent(in) :: basis
     integer, intent(in) :: YSY_filtered_desc(desc_size), H1_desc(desc_size)
     real(8), intent(in) :: YSY_filtered(:, :)
     complex(kind(0d0)), intent(in) :: dv_psi(:), dv_alpha(:)
@@ -1042,9 +1042,9 @@ contains
     real(8), intent(out) :: H1(:, :)
     real(8), intent(out) :: dv_charge_on_basis(dim), dv_charge_on_atoms(structure%num_atoms)
     real(8), intent(inout) :: dv_atom_perturb(structure%num_atoms)
-    type(wp_charge_moment_t), intent(out) :: charge_moment
-    type(wp_energy_t), intent(out) :: energies
-    type(wp_error_t), intent(out) :: errors
+    type(wk_charge_moment_t), intent(out) :: charge_moment
+    type(wk_energy_t), intent(out) :: energies
+    type(wk_error_t), intent(out) :: errors
 
     complex(kind(0d0)) :: dv_psi_evol(dim), dv_alpha_evol(setting%num_filter)
     if (.true.) then
@@ -1099,10 +1099,10 @@ contains
     !     absolute_alpha_error, relative_alpha_error)
 
     if (check_master()) then
-      write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A, E26.16e3, A, E26.16e3, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] alpha error after re-initialization is ', &
            errors%absolute, ' (absolute) and ', errors%relative, ' (relative)'
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] re_initialize_from_lcao_coef() : compute charges form initial value'
     end if
 
@@ -1110,7 +1110,7 @@ contains
          dv_charge_on_basis, dv_charge_on_atoms, charge_moment)
 
     if (check_master()) then
-      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wp_mpi_wtime_init, &
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] re_initialize_from_lcao_coef() : compute energies form initial value'
     end if
 
@@ -1148,4 +1148,4 @@ contains
       end do
     end do
   end subroutine clear_offdiag_blocks
-end module wp_initialization_m
+end module wk_initialization_m

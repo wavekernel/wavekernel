@@ -17,19 +17,19 @@ def get_real_array(split_dir, is_little_endian, element):
     else:
         return element
 
-def make_restarter(wavepacket_out, wavepacket_out_path, is_little_endian):
-    if wavepacket_out['setting']['is_output_split']:
-        # Delete elements. They are discarded by wavepacket in restart mode if exist.
-        wavepacket_out.pop('condition')
-        wavepacket_out.pop('events')
+def make_restarter(wavekernel_out, wavekernel_out_path, is_little_endian):
+    if wavekernel_out['setting']['is_output_split']:
+        # Delete elements. They are discarded by wavekernel in restart mode if exist.
+        wavekernel_out.pop('condition')
+        wavekernel_out.pop('events')
         uninherited_settings = ['version', 'command', 'limit_t',
                                 'num_mpi_processes', 'num_mpi_processes_row', 'num_mpi_processes_col',
                                 'num_omp_threads']
         for key in uninherited_settings:
-            wavepacket_out['setting'].pop(key)
+            wavekernel_out['setting'].pop(key)
         # Get the last state.
-        split_dir = os.path.dirname(wavepacket_out_path)
-        path_last = os.path.join(split_dir, wavepacket_out['split_files_metadata'][-1]['filename'])
+        split_dir = os.path.dirname(wavekernel_out_path)
+        path_last = os.path.join(split_dir, wavekernel_out['split_files_metadata'][-1]['filename'])
         with open(path_last, 'r') as fp:
             states_split_last = json.load(fp)
         last_state = states_split_last[-1]
@@ -41,35 +41,35 @@ def make_restarter(wavepacket_out, wavepacket_out_path, is_little_endian):
         last_state_psi_real = get_real_array(split_dir, is_little_endian, last_state['psi']['real'])
         last_state_psi_imag = get_real_array(split_dir, is_little_endian, last_state['psi']['imag'])
         last_state['psi'] = {'real': last_state_psi_real, 'imag': last_state_psi_imag}
-        if wavepacket_out['setting']['h1_type'] == 'maxwell':
+        if wavekernel_out['setting']['h1_type'] == 'maxwell':
             last_state_atom_speed = get_real_array(split_dir, is_little_endian, last_state['atom_speed'])
             last_state['atom_speed'] = last_state_atom_speed
-        elif wavepacket_out['setting']['h1_type'] == 'harmonic':
+        elif wavekernel_out['setting']['h1_type'] == 'harmonic':
             last_state_atom_perturb = get_real_array(split_dir, is_little_endian, last_state['atom_perturb'])
             last_state['atom_perturb'] = last_state_atom_perturb
-        elif wavepacket_out['setting']['h1_type'] == 'zero':  # Nothing to inherit.
+        elif wavekernel_out['setting']['h1_type'] == 'zero':  # Nothing to inherit.
             ()
         else:
             assert(False)
-        wavepacket_out['states'] = [last_state]
+        wavekernel_out['states'] = [last_state]
         #
         match = re.search("(\d{6,6})-(\d{6,6})", path_last)
         restart_total_states_count = int(match.group(2))
-        wavepacket_out['setting']['restart_total_states_count'] = restart_total_states_count
-        wavepacket_out['setting']['restart_input_step'] = last_state['input_step']
+        wavekernel_out['setting']['restart_total_states_count'] = restart_total_states_count
+        wavekernel_out['setting']['restart_input_step'] = last_state['input_step']
     else:
         assert(False)
 
 if __name__ == '__main__':
-    wavepacket_out_path = sys.argv[1]
-    with open(wavepacket_out_path, 'r') as fp:
-        wavepacket_out = json.load(fp)
+    wavekernel_out_path = sys.argv[1]
+    with open(wavekernel_out_path, 'r') as fp:
+        wavekernel_out = json.load(fp)
 
     if (len(sys.argv) >= 3 and sys.argv[2] == '--big-endian'):
         is_little_endian = False
     else:
         is_little_endian = True
 
-    make_restarter(wavepacket_out, wavepacket_out_path, is_little_endian)
+    make_restarter(wavekernel_out, wavekernel_out_path, is_little_endian)
     with open('restart.json', 'w') as fp:
-        json.dump(wavepacket_out, fp, indent=2)
+        json.dump(wavekernel_out, fp, indent=2)

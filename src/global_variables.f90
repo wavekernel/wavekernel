@@ -1,8 +1,8 @@
-module wp_global_variables_m
+module wk_global_variables_m
   implicit none
 
-  integer :: g_wp_block_size = 64, g_wp_master_pnum = 0
-  real(8) :: g_wp_mpi_wtime_init = 0d0
+  integer :: g_wk_block_size = 64, g_wk_master_pnum = 0
+  real(8) :: g_wk_mpi_wtime_init = 0d0
 
   character(*), parameter :: kVersion = '20160624'
   real(8), parameter :: kAuPerAngstrom = 1.8897259885789d0
@@ -19,4 +19,4 @@ module wp_global_variables_m
   real(8), parameter :: charge_sum_error_tol = 1d-6
   complex(kind(0d0)), parameter :: kOne = (1d0, 0d0), kZero = (0d0, 0d0), &
        kImagUnit = (0d0, 1d0)
-end module wp_global_variables_m
+end module wk_global_variables_m

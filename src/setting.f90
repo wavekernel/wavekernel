@@ -1,15 +1,15 @@
-module wp_setting_m
-  use wp_fson_m
-  use wp_fson_value_m
-  use wp_fson_path_m
-  use wp_global_variables_m
+module wk_setting_m
+  use wk_fson_m
+  use wk_fson_value_m
+  use wk_fson_path_m
+  use wk_global_variables_m
   implicit none
 
   private
-  public :: wp_setting_t, read_alpha_delta_multiple_indices, read_setting, inherit_setting, fill_filtering_setting, &
+  public :: wk_setting_t, read_alpha_delta_multiple_indices, read_setting, inherit_setting, fill_filtering_setting, &
        verify_setting, print_setting, bcast_setting, print_help
 
-  type wp_setting_t
+  type wk_setting_t
     ! Temperature: commandline input is in Kelvin and internal value is in atomic unit.
     real(8) :: delta_t = 0.1d0, limit_t = 1.0d0, &
          charge_factor_common, charge_factor_H = -1d0, charge_factor_C = -1d0, &  ! Negative means unset.
@@ -49,7 +49,7 @@ module wp_setting_m
     complex(kind(0d0)), allocatable :: restart_psi(:)
     character(len=1024), allocatable :: restart_split_files_metadata(:)
     real(8), allocatable :: restart_atom_speed(:), restart_atom_perturb(:)
-  end type wp_setting_t
+  end type wk_setting_t
 
 contains
 
@@ -131,7 +131,7 @@ contains
 
 
   subroutine read_setting(setting)
-    type(wp_setting_t), intent(out) :: setting
+    type(wk_setting_t), intent(out) :: setting
 
     integer :: index_arg, i, j
     character(len=1024) :: argv
@@ -333,7 +333,7 @@ contains
           index_arg = index_arg + 1
         case ('-block-size')
           call getarg(index_arg + 1, argv)
-          read(argv, *) g_wp_block_size
+          read(argv, *) g_wk_block_size
           index_arg = index_arg + 1
         case ('-skip-out')
           call getarg(index_arg + 1, argv)
@@ -401,7 +401,7 @@ contains
 
 
   subroutine inherit_setting(setting)
-    type(wp_setting_t), intent(inout) :: setting
+    type(wk_setting_t), intent(inout) :: setting
     type(fson_value), pointer :: restart_fson, setting_fson, split_files_metadata_fson
     type(fson_value), pointer :: atom_speed_fson, atom_perturb_fson
     type(fson_value), pointer :: last_state_fson, psi_fson, psi_real_fson, psi_imag_fson, value_fson
@@ -537,7 +537,7 @@ contains
 
   subroutine fill_filtering_setting(dim, num_groups, setting)
     integer, intent(in) :: dim, num_groups
-    type(wp_setting_t), intent(inout) :: setting
+    type(wk_setting_t), intent(inout) :: setting
 
     if (trim(setting%filter_mode) == 'all' .and. setting%fst_filter == 0) then  ! -f option was not specified.
       setting%fst_filter = 1
@@ -551,7 +551,7 @@ contains
 
   subroutine verify_setting(dim, setting)
     integer, intent(in) :: dim
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
 
     if (setting%time_evolution_mode /= 'crank_nicolson' .and. &
     setting%time_evolution_mode /= 'taylor1' .and. &
@@ -646,7 +646,7 @@ contains
 
 
   subroutine print_setting(setting)
-    type(wp_setting_t), intent(in) :: setting
+    type(wk_setting_t), intent(in) :: setting
 
     integer :: index_arg
     character(len=1024) :: argv
@@ -770,7 +770,7 @@ contains
   subroutine bcast_setting(root, setting)
     use mpi
     integer, intent(in) :: root
-    type(wp_setting_t), intent(inout) :: setting
+    type(wk_setting_t), intent(inout) :: setting
     integer, parameter :: num_real = 18, num_integer = 17, num_logical = 9, num_character = 16
     real(8) :: buf_real(num_real)
     integer :: buf_integer(num_integer), my_rank, ierr, size_psi, size_split_files_metadata, size_atom_speed, size_atom_perturb
@@ -977,4 +977,4 @@ contains
     print *, '  --re-init [minimize_lcao_error | minimize_alpha_error]'
     print *, '  --cutoff-resid <float>  vector cutoff residual'
   end subroutine print_help
-end module wp_setting_m
+end module wk_setting_m

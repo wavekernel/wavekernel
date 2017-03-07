@@ -2,13 +2,13 @@
 
 import json, sys, os.path, re, copy
 
-def crop(wavepacket_out, stride):
-    wavepacket_out_copy = copy.deepcopy(wavepacket_out)
-    num_ticks = len(wavepacket_out["states"])
-    wavepacket_out_copy["states"] = []
+def crop(wavekernel_out, stride):
+    wavekernel_out_copy = copy.deepcopy(wavekernel_out)
+    num_ticks = len(wavekernel_out["states"])
+    wavekernel_out_copy["states"] = []
     for i in range(0, num_ticks, stride):
-        wavepacket_out_copy["states"].append(wavepacket_out["states"][i])
-    return wavepacket_out_copy
+        wavekernel_out_copy["states"].append(wavekernel_out["states"][i])
+    return wavekernel_out_copy
 
 def crop_from_splits(out, out_dir, stride, step_num_first, step_num_last):
     states_joined = []
@@ -32,16 +32,16 @@ if __name__ == "__main__":
         print "Usage: python crop_states.py <JSON file> <crop stride>"
         sys.exit(0)
     fp = open(sys.argv[1], 'r')
-    wavepacket_out = json.load(fp)
+    wavekernel_out = json.load(fp)
     fp.close()
     stride = int(sys.argv[2])
     step_num_first = int(sys.argv[3])
     step_num_last = int(sys.argv[4])
 
-    if wavepacket_out["setting"]["is_output_split"]:
-        wavepacket_out_cropped = crop_from_splits(wavepacket_out,
+    if wavekernel_out["setting"]["is_output_split"]:
+        wavekernel_out_cropped = crop_from_splits(wavekernel_out,
                                                   os.path.dirname(sys.argv[1]),
                                                   stride, step_num_first, step_num_last)
     else:
-        wavepacket_out_cropped = crop(wavepacket_out, stride)
-    print json.dumps(wavepacket_out_cropped, indent=2)
+        wavekernel_out_cropped = crop(wavekernel_out, stride)
+    print json.dumps(wavekernel_out_cropped, indent=2)

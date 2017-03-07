@@ -1,11 +1,11 @@
-module wp_conversion_m
+module wk_conversion_m
   use mpi
-  use wp_descriptor_parameters_m
-  use wp_distribute_matrix_m
-  use wp_linear_algebra_m
-  use wp_processes_m
-  use wp_global_variables_m
-  use wp_state_m
+  use wk_descriptor_parameters_m
+  use wk_distribute_matrix_m
+  use wk_linear_algebra_m
+  use wk_processes_m
+  use wk_global_variables_m
+  use wk_state_m
   implicit none
 
   private
@@ -20,7 +20,7 @@ contains
 
   ! psi = Y alpha.
   subroutine alpha_to_lcao_coef(basis, dv_alpha, dv_psi)
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_basis_t), intent(in) :: basis
     complex(kind(0d0)), intent(in) :: dv_alpha(basis%num_basis)
     complex(kind(0d0)), intent(out) :: dv_psi(basis%dim)
 
@@ -34,8 +34,8 @@ contains
 
 
   subroutine change_basis_lcao_to_alpha(proc, basis, A_lcao_sparse, A_alpha, A_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_process_t), intent(in) :: proc
+    type(wk_basis_t), intent(in) :: basis
     type(sparse_mat), intent(in) :: A_lcao_sparse
     integer, intent(in) :: A_alpha_desc(desc_size)
     real(8), intent(out) :: A_alpha(:, :)
@@ -51,7 +51,7 @@ contains
 
 
   subroutine change_basis_lcao_to_alpha_all(proc, Y_filtered, Y_filtered_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     real(8), intent(in) :: Y_filtered(:, :)
     type(sparse_mat), intent(in) :: A_lcao_sparse
     integer, intent(in) :: Y_filtered_desc(desc_size), A_alpha_desc(desc_size)
@@ -63,7 +63,7 @@ contains
     dim = Y_filtered_desc(rows_)
     num_filter = Y_filtered_desc(cols_)
     call setup_distributed_matrix_real('A', proc, dim, dim, A_lcao_desc, A_lcao, .true.)
-    call distribute_global_sparse_matrix_wp(A_lcao_sparse, A_lcao_desc, A_lcao)
+    call distribute_global_sparse_matrix_wk(A_lcao_sparse, A_lcao_desc, A_lcao)
     call setup_distributed_matrix_real('AY', proc, dim, num_filter, AY_desc, AY)
 
     ! A' = A_lcao * Y, AY <- A'
@@ -84,8 +84,8 @@ contains
 
   subroutine change_basis_lcao_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
        A_lcao_sparse, A_alpha, A_alpha_desc, to_ignore_diag_block_)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    type(wk_process_t), intent(in) :: proc
+    type(wk_local_matrix_t), intent(in) :: Y_local(:)
     type(sparse_mat), intent(in) :: A_lcao_sparse
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: filter_group_indices(:, :), A_alpha_desc(desc_size)
@@ -125,7 +125,7 @@ contains
   !  is_group_member = myg <= num_groups
   !
   !  call setup_distributed_matrix_complex('A', proc, dim, dim, A_lcao_desc, A_lcao_cmplx, .true.)
-  !  call distribute_global_sparse_matrix_wp(A_lcao_sparse, A_lcao_desc, A_lcao_cmplx)
+  !  call distribute_global_sparse_matrix_wk(A_lcao_sparse, A_lcao_desc, A_lcao_cmplx)
   !
   !  allocate(A_lcao(size(A_lcao_cmplx, 1), size(A_lcao_cmplx, 2)), &
   !       A_alpha(size(A_alpha_cmplx, 1), size(A_alpha_cmplx, 2)))
@@ -287,8 +287,8 @@ contains
 
 
   subroutine change_basis_lcao_diag_to_alpha(proc, basis, A_lcao_diag, A_alpha, A_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_process_t), intent(in) :: proc
+    type(wk_basis_t), intent(in) :: basis
     real(8), intent(in) :: A_lcao_diag(:)
     integer, intent(in) :: A_alpha_desc(desc_size)
     real(8), intent(out) :: A_alpha(:, :)
@@ -308,7 +308,7 @@ contains
   ! Complexity: O(m n^2).
   subroutine change_basis_lcao_diag_to_alpha_all(proc, Y_filtered, Y_filtered_desc, &
        A_lcao_diag, A_alpha, A_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
+    type(wk_process_t), intent(in) :: proc
     real(8), intent(in) :: Y_filtered(:, :), A_lcao_diag(:)
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: Y_filtered_desc(desc_size), A_alpha_desc(desc_size)
@@ -358,8 +358,8 @@ contains
   subroutine change_basis_lcao_diag_to_alpha_group_filter(proc, &
        filter_group_indices, Y_local, &
        A_lcao_diag, A_alpha, A_alpha_desc)
-    type(wp_process_t), intent(in) :: proc
-    type(wp_local_matrix_t), intent(in) :: Y_local(:)
+    type(wk_process_t), intent(in) :: proc
+    type(wk_local_matrix_t), intent(in) :: Y_local(:)
     real(8), intent(in) :: A_lcao_diag(:)
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: A_alpha_desc(desc_size), filter_group_indices(:, :)
@@ -458,7 +458,7 @@ contains
 
   subroutine lcao_coef_to_alpha(S_sparse, basis, dv_psi, dv_alpha)
     type(sparse_mat), intent(in) :: S_sparse
-    type(wp_basis_t), intent(in) :: basis
+    type(wk_basis_t), intent(in) :: basis
     complex(kind(0d0)), intent(in) :: dv_psi(basis%dim)
     complex(kind(0d0)), intent(out) :: dv_alpha(basis%num_basis)
 
@@ -473,4 +473,4 @@ contains
       call matvec_dd_z('Trans', basis%Y_filtered, basis%Y_filtered_desc, kOne, dv_s_psi, kZero, dv_alpha)
     end if
   end subroutine lcao_coef_to_alpha
-end module wp_conversion_m
+end module wk_conversion_m
