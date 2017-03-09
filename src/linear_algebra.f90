@@ -239,8 +239,8 @@ contains
 
     call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
     dim = A_desc(cols_)
-    buf_column_sum(:) = kZero
-    buf_column_sum_recv(:) = kZero
+    buf_column_sum(:) = 0d0
+    buf_column_sum_recv(:) = 0d0
     do i = 1, dim
       do j = 1, dim
         call infog2l(i, j, A_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
