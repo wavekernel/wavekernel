@@ -115,13 +115,6 @@ contains
     type(wk_setting_t), intent(in) :: setting
     type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
-    ! The parameters below are in 'state'.
-    !integer, intent(out) :: Y_desc(desc_size), Y_filtered_desc(desc_size)
-    !integer, intent(out) :: H1_desc(desc_size), A_desc(desc_size)
-    !real(8), allocatable, intent(out) :: Y(:, :)  ! m x m
-    !real(8), allocatable, intent(out) :: Y_filtered(:, :)  ! m x n
-    !real(8), allocatable, intent(out) :: H1(:, :), H1_base(:, :)
-    !complex(kind(0d0)), allocatable, intent(out) :: A(:, :)  ! n x n
 
     integer :: num_groups, group, m_local, n_local, ierr
 
@@ -761,14 +754,6 @@ contains
     type(wk_setting_t), intent(in) :: setting
     type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
-    ! The commented out parameters below are in 'state'.
-    !integer, intent(in) :: dim
-    !type(wk_structure_t), intent(in) :: structure
-    !type(wk_error_t), intent(in) :: errors
-    !integer, intent(in) :: group_id(:, :), filter_group_id(:, :)
-    !real(8), intent(in) :: eigenstate_mean(3, setting%num_filter), eigenstate_msd(4, setting%num_filter)
-    !real(8), intent(in) :: dv_eigenvalues(:), dv_ipratios(:)
-    !type(fson_value), pointer, intent(out) :: output, states, structures, split_files_metadata
     integer :: i, j, master_prow, master_pcol, iunit_header
     type(fson_value), pointer :: split_files_metadata_elem
 
@@ -892,18 +877,6 @@ contains
     type(wk_setting_t), intent(in) :: setting
     type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
-    ! The commented out parameters below are in 'state'.
-    !type(wk_structure_t), intent(in) :: structure
-    !integer, intent(in) :: input_step, filter_group_indices(:, :)
-    !type(wk_charge_factor_t), intent(in) :: charge_factor
-    !type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    !integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size), A_desc(desc_size)
-    !real(8), intent(in) :: t, dv_charge_on_atoms(:), dv_eigenvalues(:)
-    !complex(kind(0d0)), intent(inout) :: A(:, :)
-    !real(8), intent(inout) :: H1(:, :), H1_base(:, :)
-    !real(8), intent(in) :: Y_filtered(:, :)
-    !type(wk_local_matrix_t), intent(in) :: Y_local(:)
-    !complex(kind(0d0)) :: dv_alpha(:), dv_alpha_next(:)
 
     integer :: j, i, k
     real(8) :: wtime, norm, diff_eigenvalue, damp_factor, alpha_next_norm, amplitude_after_normalize
@@ -1085,17 +1058,6 @@ contains
     type(wk_setting_t), intent(in) :: setting
     type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
-    ! The commented out parameters below are in 'state'.
-    !integer, intent(in) :: dim
-    !type(sparse_mat), intent(in) :: H_sparse, S_sparse
-    !type(wk_structure_t), intent(in) :: structure
-    !type(wk_charge_factor_t), intent(in) :: charge_factor
-    !integer, intent(in) :: Y_filtered_desc(desc_size), H1_desc(desc_size)
-    !complex(kind(0d0)), intent(in) :: dv_alpha_next(:)
-    !complex(kind(0d0)), intent(out) :: dv_alpha(:), dv_psi(dim)
-    !real(8), intent(in) :: t, Y_filtered(:, :), dv_eigenvalues(:), H1(:, :)
-    !type(wk_charge_moment_t), intent(out) :: charge_moment
-    !type(wk_energy_t), intent(out) :: energies
 
     integer :: num_filter, j
     real(8) :: wtime
@@ -1173,16 +1135,6 @@ contains
     type(wk_setting_t), intent(in) :: setting
     logical, intent(in) :: is_after_matrix_replace
     type(wk_state_t), intent(inout) :: state
-    ! The commented out parameters below are in 'state'.
-    !integer, intent(in) :: dim, i, group_id(:, :), Y_filtered_desc(desc_size)
-    !type(wk_structure_t), intent(in) :: structure
-    !complex(kind(0d0)), intent(in) :: dv_psi(dim), dv_alpha(structure%num_atoms)
-    !type(wk_energy_t), intent(in) :: energies
-    !type(wk_charge_moment_t), intent(in) :: charge_moment
-    !real(8), intent(in) :: dv_atom_perturb(:), dv_atom_speed(:), dv_charge_on_basis(:), dv_charge_on_atoms(:)
-    !real(8), intent(in) :: t, t_last_replace, Y_filtered(:, :)
-    !integer, intent(inout) :: total_state_count, input_step
-    !type(fson_value), pointer, intent(inout) :: split_files_metadata, states, structures
 
     real(8) :: wtime
     integer :: master_prow, master_pcol, states_count, input_step_backup, j

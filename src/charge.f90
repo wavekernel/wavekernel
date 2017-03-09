@@ -254,10 +254,7 @@ contains
 
   subroutine get_msd_of_eigenstates(structure, S_sparse, basis)
     type(sparse_mat), intent(in) :: S_sparse
-    !integer, intent(in) :: Y_filtered_desc(desc_size)
     type(wk_structure_t), intent(in) :: structure
-    !real(8), intent(in) :: Y_filtered(:, :)
-    !real(8), intent(out) :: means_all(3, Y_filtered_desc(cols_)), msds_all(4, Y_filtered_desc(cols_))
     type(wk_basis_t), intent(inout) :: basis
 
     real(8), allocatable :: dv_psi_local(:), dv_psi(:)
