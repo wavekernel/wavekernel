@@ -705,11 +705,10 @@ contains
   !end subroutine reconcile_from_alpha_matrix_suppress_select
 
 
-  subroutine set_initial_value(setting, proc, dim, structure, group_id, &
+  subroutine set_initial_value(setting, dim, structure, group_id, &
        H_sparse, S_sparse, basis, &
        dv_psi, dv_alpha, errors)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: dim, group_id(:, :)
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
     type(wk_structure_t), intent(in) :: structure
@@ -901,14 +900,13 @@ contains
   end subroutine compute_tightbinding_energy
 
 
-  subroutine compute_energies(setting, proc, structure, &
+  subroutine compute_energies(setting, structure, &
        H_sparse, S_sparse, basis, &
        dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
        dv_psi, dv_alpha, &
        dv_atom_perturb, &
        H1, H1_desc, energies)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     type(wk_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: H_sparse, S_sparse
     type(wk_basis_t), intent(in) :: basis
@@ -928,7 +926,7 @@ contains
 
     call compute_tightbinding_energy(basis%num_basis, dv_alpha, basis%dv_eigenvalues, energies)
 
-    call make_H1(proc, setting%h1_type, structure, &
+    call make_H1(setting%h1_type, structure, &
          S_sparse, basis, &
          .true., &  ! H and H_desc are not referenced because is_init is true.
          setting%is_restart_mode, &
@@ -953,9 +951,8 @@ contains
   end subroutine compute_energies
 
 
-  subroutine initialize(setting, proc, state)
+  subroutine initialize(setting, state)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
     ! intent(out) parameters in state are:
     ! H1(:, :), dv_psi(dim), dv_alpha(Y_filtered_desc(cols_))
@@ -969,7 +966,7 @@ contains
            '] initialize() : start, set initial value'
     end if
 
-    call set_initial_value(setting, proc, state%dim, state%structure, state%group_id, &
+    call set_initial_value(setting, state%dim, state%structure, state%group_id, &
          state%H_sparse, state%S_sparse, state%basis, &
          state%dv_psi, state%dv_alpha, state%errors)
 
@@ -1008,7 +1005,7 @@ contains
     end if
 
     do i = 1, setting%num_multiple_initials
-      call compute_energies(setting, proc, state%structure, &
+      call compute_energies(setting, state%structure, &
            state%H_sparse, state%S_sparse, state%basis, &
            state%dv_charge_on_basis(:, i), state%dv_charge_on_atoms(:, i), state%charge_factor, &
            state%dv_psi(:, i), state%dv_alpha(:, i), &
@@ -1018,7 +1015,7 @@ contains
   end subroutine initialize
 
 
-  subroutine re_initialize_state(setting, proc, dim, t, structure, charge_factor, is_first_in_multiple_initials, &
+  subroutine re_initialize_state(setting, dim, t, structure, charge_factor, is_first_in_multiple_initials, &
        H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
        basis, YSY_filtered, YSY_filtered_desc, &
        dv_eigenvalues_prev, H1, H1_desc, &
@@ -1027,7 +1024,6 @@ contains
        dv_atom_perturb, &
        charge_moment, energies, errors)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     type(wk_structure_t), intent(in) :: structure
     type(wk_charge_factor_t), intent(in) :: charge_factor
     logical, intent(in) :: is_first_in_multiple_initials
@@ -1051,7 +1047,7 @@ contains
       dv_psi_evol = dv_psi
       dv_alpha_evol = dv_alpha
     else
-      call matvec_time_evolution_by_matrix_replace(proc, setting%delta_t, &
+      call matvec_time_evolution_by_matrix_replace(setting%delta_t, &
            H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
            dv_psi, dv_psi_evol)
       call lcao_coef_to_alpha(S_sparse, basis, dv_psi_evol, dv_alpha_evol)
@@ -1114,7 +1110,7 @@ contains
            '] re_initialize_from_lcao_coef() : compute energies form initial value'
     end if
 
-    call compute_energies(setting, proc, structure, &
+    call compute_energies(setting, structure, &
        H_sparse, S_sparse, basis, &
        dv_charge_on_basis, dv_charge_on_atoms, charge_factor, &
        dv_psi_reconcile, dv_alpha_reconcile, &

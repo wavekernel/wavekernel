@@ -5,7 +5,6 @@ module wk_charge_m
   use wk_event_logger_m
   use wk_linear_algebra_m
   use wk_matrix_io_m
-  use wk_processes_m
   use wk_global_variables_m
   use wk_state_m
   use wk_util_m
@@ -264,6 +263,8 @@ contains
 
     if (basis%is_group_filter_mode) then
       stop 'IMPLEMENT HERE (get_msd_of_eigenstates)'
+    else if (.true.) then
+
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)

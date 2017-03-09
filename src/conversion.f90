@@ -33,25 +33,23 @@ contains
   end subroutine alpha_to_lcao_coef
 
 
-  subroutine change_basis_lcao_to_alpha(proc, basis, A_lcao_sparse, A_alpha, A_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
+  subroutine change_basis_lcao_to_alpha(basis, A_lcao_sparse, A_alpha, A_alpha_desc)
     type(wk_basis_t), intent(in) :: basis
     type(sparse_mat), intent(in) :: A_lcao_sparse
     integer, intent(in) :: A_alpha_desc(desc_size)
     real(8), intent(out) :: A_alpha(:, :)
 
     if (basis%is_group_filter_mode) then
-      call change_basis_lcao_to_alpha_group_filter(proc, basis%filter_group_indices, basis%Y_local, &
+      call change_basis_lcao_to_alpha_group_filter(basis%filter_group_indices, basis%Y_local, &
            A_lcao_sparse, A_alpha, A_alpha_desc)
     else
-      call change_basis_lcao_to_alpha_all(proc, basis%Y_filtered, basis%Y_filtered_desc, &
+      call change_basis_lcao_to_alpha_all(basis%Y_filtered, basis%Y_filtered_desc, &
            A_lcao_sparse, A_alpha, A_alpha_desc)
     end if
   end subroutine change_basis_lcao_to_alpha
 
 
-  subroutine change_basis_lcao_to_alpha_all(proc, Y_filtered, Y_filtered_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
+  subroutine change_basis_lcao_to_alpha_all(Y_filtered, Y_filtered_desc, A_lcao_sparse, A_alpha, A_alpha_desc)
     real(8), intent(in) :: Y_filtered(:, :)
     type(sparse_mat), intent(in) :: A_lcao_sparse
     integer, intent(in) :: Y_filtered_desc(desc_size), A_alpha_desc(desc_size)
@@ -62,9 +60,9 @@ contains
 
     dim = Y_filtered_desc(rows_)
     num_filter = Y_filtered_desc(cols_)
-    call setup_distributed_matrix_real('A', proc, dim, dim, A_lcao_desc, A_lcao, .true.)
+    call setup_distributed_matrix_real('A', dim, dim, A_lcao_desc, A_lcao, .true.)
     call distribute_global_sparse_matrix_wk(A_lcao_sparse, A_lcao_desc, A_lcao)
-    call setup_distributed_matrix_real('AY', proc, dim, num_filter, AY_desc, AY)
+    call setup_distributed_matrix_real('AY', dim, num_filter, AY_desc, AY)
 
     ! A' = A_lcao * Y, AY <- A'
     call pdgemm('No', 'No', dim, num_filter, dim, 1d0, &
@@ -82,9 +80,8 @@ contains
   end subroutine change_basis_lcao_to_alpha_all
 
 
-  subroutine change_basis_lcao_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
+  subroutine change_basis_lcao_to_alpha_group_filter(filter_group_indices, Y_local, &
        A_lcao_sparse, A_alpha, A_alpha_desc, to_ignore_diag_block_)
-    type(wk_process_t), intent(in) :: proc
     type(wk_distributed_block_matrices_t), intent(in) :: Y_local
     type(sparse_mat), intent(in) :: A_lcao_sparse
     real(8), intent(out) :: A_alpha(:, :)
@@ -286,19 +283,17 @@ contains
   end subroutine change_basis_lcao_to_alpha_group_filter
 
 
-  subroutine change_basis_lcao_diag_to_alpha(proc, basis, A_lcao_diag, A_alpha, A_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
+  subroutine change_basis_lcao_diag_to_alpha(basis, A_lcao_diag, A_alpha, A_alpha_desc)
     type(wk_basis_t), intent(in) :: basis
     real(8), intent(in) :: A_lcao_diag(:)
     integer, intent(in) :: A_alpha_desc(desc_size)
     real(8), intent(out) :: A_alpha(:, :)
 
     if (basis%is_group_filter_mode) then
-      call change_basis_lcao_diag_to_alpha_group_filter(proc, &
-           basis%filter_group_indices, basis%Y_local, &
+      call change_basis_lcao_diag_to_alpha_group_filter(basis%filter_group_indices, basis%Y_local, &
            A_lcao_diag, A_alpha, A_alpha_desc)
     else
-      call change_basis_lcao_diag_to_alpha_all(proc, basis%Y_filtered, basis%Y_filtered_desc, &
+      call change_basis_lcao_diag_to_alpha_all(basis%Y_filtered, basis%Y_filtered_desc, &
        A_lcao_diag, A_alpha, A_alpha_desc)
     end if
   end subroutine change_basis_lcao_diag_to_alpha
@@ -306,9 +301,8 @@ contains
 
   ! A_alpha <- Y^\dagger diag(A_lcao_diag) Y.
   ! Complexity: O(m n^2).
-  subroutine change_basis_lcao_diag_to_alpha_all(proc, Y_filtered, Y_filtered_desc, &
+  subroutine change_basis_lcao_diag_to_alpha_all(Y_filtered, Y_filtered_desc, &
        A_lcao_diag, A_alpha, A_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
     real(8), intent(in) :: Y_filtered(:, :), A_lcao_diag(:)
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: Y_filtered_desc(desc_size), A_alpha_desc(desc_size)
@@ -321,7 +315,7 @@ contains
 
     dim = Y_filtered_desc(rows_)
     num_filter = Y_filtered_desc(cols_)
-    call setup_distributed_matrix_real('', proc, num_filter, dim, Y_dagger_desc, Y_dagger)
+    call setup_distributed_matrix_real('', num_filter, dim, Y_dagger_desc, Y_dagger)
 
     wtime_end = mpi_wtime()
     call add_event('change_basis_lcao_diag_to_alpha:setup', wtime_end - wtime_start)
@@ -355,10 +349,8 @@ contains
   end subroutine change_basis_lcao_diag_to_alpha_all
 
 
-  subroutine change_basis_lcao_diag_to_alpha_group_filter(proc, &
-       filter_group_indices, Y_local, &
+  subroutine change_basis_lcao_diag_to_alpha_group_filter(filter_group_indices, Y_local, &
        A_lcao_diag, A_alpha, A_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
     type(wk_distributed_block_matrices_t), intent(in) :: Y_local
     real(8), intent(in) :: A_lcao_diag(:)
     real(8), intent(out) :: A_alpha(:, :)

@@ -3,7 +3,6 @@ program main
   implicit none
 
   type(wk_setting_t) :: setting
-  type(wk_process_t) :: proc
   type(wk_state_t) :: state
   ! Dummy variables velow are not used from this main.f90.
   real(8) :: dummy_eigenvalues(1), dummy_eigenvectors(1, 1)
@@ -25,8 +24,8 @@ program main
   call read_bcast_setting(setting, state%dim)
   call add_timer_event('main', 'read_bcast_setting', state%wtime)
 
-  call setup_distribution(proc)
-  call setup_distributed_matrices(setting, proc, state)
+  call setup_distribution()
+  call setup_distributed_matrices(setting, state)
   call add_timer_event('main', 'setup_distributed_matrices', state%wtime)
 
   call read_bcast_matrix_files(state%dim, setting, 1, state%H_sparse, state%S_sparse)
@@ -48,11 +47,11 @@ program main
   state%charge_factor%charge_factor_H = setting%charge_factor_H
   state%charge_factor%charge_factor_C = setting%charge_factor_C
 
-  call set_aux_matrices(setting, proc, &
+  call set_aux_matrices(setting, &
        .false., dummy_eigenvalues, dummy_desc_eigenvectors, dummy_eigenvectors, state)
   call add_timer_event('main', 'set_aux_matrices', state%wtime)
 
-  call initialize(setting, proc, state)
+  call initialize(setting, state)
   call add_timer_event('main', 'initialize', state%wtime)
 
   if (check_master()) then
@@ -76,7 +75,7 @@ program main
   end if
   state%print_count = 1
 
-  call prepare_json(setting, proc, state)
+  call prepare_json(setting, state)
   ! add_structure_json() must be called after both of coordinates reading and prepare_json().
   call add_structure_json(setting, state)
   call add_timer_event('main', 'prepare_json', state%wtime)
@@ -116,7 +115,7 @@ program main
       call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
       call read_bcast_matrix_files(state%dim, setting, state%input_step + 1, state%H_sparse, state%S_sparse)
 
-      call set_aux_matrices_for_multistep(setting, proc, &
+      call set_aux_matrices_for_multistep(setting, &
            .false., dummy_eigenvalues, dummy_desc_eigenvectors, dummy_eigenvectors, state)
       call post_process_after_matrix_replace(setting, state)
 
@@ -127,9 +126,9 @@ program main
       call add_timer_event('main', 'save_state', state%wtime)
     end if
 
-    call make_matrix_step_forward(setting, proc, state)
+    call make_matrix_step_forward(setting, state)
 
-    call step_forward_post_process(setting, proc, state)
+    call step_forward_post_process(setting, state)
 
     state%i = state%i + 1
     state%t = setting%delta_t * state%i

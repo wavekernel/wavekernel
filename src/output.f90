@@ -20,9 +20,8 @@ module wk_output_m
 
 contains
 
-  subroutine add_setting_json(setting, proc, multiple_initial_index, output)
+  subroutine add_setting_json(setting, multiple_initial_index, output)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: multiple_initial_index
     type(fson_value), pointer, intent(inout) :: output
 
@@ -291,22 +290,22 @@ contains
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
     call fson_set_name('num_mpi_processes', setting_elem)
-    setting_elem%value_integer = proc%n_procs
+    setting_elem%value_integer = g_n_procs
     call fson_value_add(setting_in_fson, setting_elem)
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
     call fson_set_name('num_mpi_processes_row', setting_elem)
-    setting_elem%value_integer = proc%n_procs_row
+    setting_elem%value_integer = g_n_procs_row
     call fson_value_add(setting_in_fson, setting_elem)
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
     call fson_set_name('num_mpi_processes_col', setting_elem)
-    setting_elem%value_integer = proc%n_procs_col
+    setting_elem%value_integer = g_n_procs_col
     call fson_value_add(setting_in_fson, setting_elem)
     setting_elem => fson_value_create()
     setting_elem%value_type = TYPE_INTEGER
     call fson_set_name('num_omp_threads', setting_elem)
-    setting_elem%value_integer = proc%n_omp_threads
+    setting_elem%value_integer = g_n_omp_threads
     call fson_value_add(setting_in_fson, setting_elem)
 
     ! Set group id related settings.

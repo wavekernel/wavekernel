@@ -3,50 +3,47 @@ module wk_processes_m
   use wk_global_variables_m
   implicit none
 
-  type wk_process_t
-    integer :: my_rank, n_procs, context
-    integer :: n_procs_row, n_procs_col, my_proc_row, my_proc_col
-    integer :: n_omp_threads
-  end type wk_process_t
+  integer :: g_my_rank, g_n_procs, g_context
+  integer :: g_n_procs_row, g_n_procs_col, g_my_proc_row, g_my_proc_col
+  integer :: g_n_omp_threads
 
   private
-  public :: wk_process_t, setup_distribution, print_proc, get_num_procs, layout_procs, &
+  public :: g_my_rank, g_n_procs, g_context, &
+       g_n_procs_row, g_n_procs_col, g_my_proc_row, g_my_proc_col, &
+       g_n_omp_threads
+  public :: setup_distribution, print_proc, get_num_procs, layout_procs, &
        print_map_of_grid_to_processes, check_master, terminate, &
        check_nan_scalar, check_nan_vector, check_nan_matrix
 
 contains
 
-  subroutine setup_distribution(proc)
-    type(wk_process_t), intent(out) :: proc
-
-    call get_num_procs(proc%n_procs, proc%n_omp_threads)
-    call blacs_pinfo(proc%my_rank, proc%n_procs)
-    call layout_procs(proc%n_procs, proc%n_procs_row, proc%n_procs_col)
-    call blacs_get(-1, 0, proc%context)
-    call blacs_gridinit(proc%context, 'R', proc%n_procs_row, proc%n_procs_col)
-    call blacs_gridinfo(proc%context, proc%n_procs_row, proc%n_procs_col, &
-         proc%my_proc_row, proc%my_proc_col)
+  subroutine setup_distribution()
+    call get_num_procs(g_n_procs, g_n_omp_threads)
+    call blacs_pinfo(g_my_rank, g_n_procs)
+    call layout_procs(g_n_procs, g_n_procs_row, g_n_procs_col)
+    call blacs_get(-1, 0, g_context)
+    call blacs_gridinit(g_context, 'R', g_n_procs_row, g_n_procs_col)
+    call blacs_gridinfo(g_context, g_n_procs_row, g_n_procs_col, &
+         g_my_proc_row, g_my_proc_col)
 
     if (check_master()) then
       write (0, '(A, F16.6, A, I0, " x ", I0, " (", I0, ")" )') &
            ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, "] BLACS process grid: ", &
-           proc%n_procs_row, proc%n_procs_col, proc%n_procs
+           g_n_procs_row, g_n_procs_col, g_n_procs
     end if
 
-    if (proc%my_proc_row >= proc%n_procs_row .or. proc%my_proc_col >= proc%n_procs_col) then
+    if (g_my_proc_row >= g_n_procs_row .or. g_my_proc_col >= g_n_procs_col) then
        call blacs_exit(0)
        stop '[Warning] setup_distribution: Out of process grid, process exit'
     end if
   end subroutine setup_distribution
 
 
-  subroutine print_proc(proc)
-    type(wk_process_t), intent(in) :: proc
-
-    print *, 'num_mpi_processes: ', proc%n_procs
-    print *, 'num_mpi_processes_row: ', proc%n_procs_row
-    print *, 'num_mpi_processes_col: ', proc%n_procs_col
-    print *, 'num_omp_threads: ', proc%n_omp_threads
+  subroutine print_proc()
+    print *, 'num_mpi_processes: ', g_n_procs
+    print *, 'num_mpi_processes_row: ', g_n_procs_row
+    print *, 'num_mpi_processes_col: ', g_n_procs_col
+    print *, 'num_omp_threads: ', g_n_omp_threads
   end subroutine print_proc
 
 

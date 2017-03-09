@@ -159,10 +159,9 @@ contains
   end subroutine aux_make_H1_charge_with_overlap
 
 
-  subroutine make_H1_charge_with_overlap(proc, structure, S_sparse, basis, &
+  subroutine make_H1_charge_with_overlap(structure, S_sparse, basis, &
        charge_on_basis, charge_on_atoms, charge_factor, &
        H1_alpha, H1_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
     type(wk_structure_t), intent(in) :: structure
     type(wk_basis_t), intent(in) :: basis
     type(sparse_mat), intent(in) :: S_sparse
@@ -185,7 +184,7 @@ contains
     call add_event('make_H1_charge_with_overlap:multiply_overlap_by_charge', wtime_end - wtime_start)
     wtime_start = wtime_end
 
-    call change_basis_lcao_to_alpha(proc, basis, H1_lcao_sparse, H1_alpha, H1_alpha_desc)
+    call change_basis_lcao_to_alpha(basis, H1_lcao_sparse, H1_alpha, H1_alpha_desc)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_charge_with_overlap:change_basis', wtime_end - wtime_start)
@@ -321,12 +320,11 @@ contains
   !end subroutine make_H1_maxwell
   !
 
-  subroutine make_H1_harmonic(proc, structure, basis, &
+  subroutine make_H1_harmonic(structure, basis, &
        is_init, is_restart_mode, &
        t, temperature, delta_time, perturb_interval, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
     type(wk_structure_t), intent(in) :: structure
     type(wk_basis_t), intent(in) :: basis
     logical, intent(in) :: is_init, is_restart_mode
@@ -368,7 +366,7 @@ contains
     call add_event('make_H1_harmonic:set_diag', wtime_end - wtime_start)
     wtime_start = wtime_end
 
-    call change_basis_lcao_diag_to_alpha(proc, basis, H1_lcao_diag, H1_alpha, H1_alpha_desc)
+    call change_basis_lcao_diag_to_alpha(basis, H1_lcao_diag, H1_alpha, H1_alpha_desc)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_harmonic:change_basis', wtime_end - wtime_start)
@@ -420,12 +418,11 @@ contains
   end subroutine aux_make_H1_harmonic_for_nn_exciton
 
 
-  subroutine make_H1_harmonic_for_nn_exciton(proc, structure, basis, &
+  subroutine make_H1_harmonic_for_nn_exciton(structure, basis, &
        is_init, is_restart_mode, &
        t, temperature, delta_time, perturb_interval, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
     type(wk_structure_t), intent(in) :: structure
     type(wk_basis_t), intent(in) :: basis
     logical, intent(in) :: is_init, is_restart_mode
@@ -451,20 +448,19 @@ contains
     call add_event('make_H1_harmonic_for_nn_exciton:set_diag', wtime_end - wtime_start)
     wtime_start = wtime_end
 
-    call change_basis_lcao_diag_to_alpha(proc, basis, H1_lcao_diag, H1_alpha, H1_alpha_desc)
+    call change_basis_lcao_diag_to_alpha(basis, H1_lcao_diag, H1_alpha, H1_alpha_desc)
 
     wtime_end = mpi_wtime()
     call add_event('make_H1_harmonic_for_nn_exciton:change_basis', wtime_end - wtime_start)
   end subroutine make_H1_harmonic_for_nn_exciton
 
 
-  subroutine make_H1(proc, h1_type, structure, &
+  subroutine make_H1(h1_type, structure, &
        S_sparse, basis, is_init, is_restart_mode, &
        t, temperature, delta_time, perturb_interval, &
        charge_on_basis, charge_on_atoms, charge_factor, &
        dv_atom_perturb, &
        H1_alpha, H1_alpha_desc)
-    type(wk_process_t), intent(in) :: proc
     character(*), intent(in) :: h1_type
     type(wk_structure_t), intent(in) :: structure
     type(wk_basis_t), intent(in) :: basis
@@ -478,33 +474,33 @@ contains
     real(8), intent(out) :: H1_alpha(:, :)
 
     !if (trim(h1_type) == 'diag') then
-    !  call make_H1_diag(proc, Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
+    !  call make_H1_diag(Y, Y_desc, is_group_filter_mode, filter_group_indices, Y_local, &
     !       H1_alpha, H1_alpha_desc)
     if (trim(h1_type) == 'zero' .or. trim(h1_type) == 'zero_damp' .or. trim(h1_type) == 'zero_sparse' .or. &
          trim(h1_type) == 'zero_damp_charge_base' .or. trim(h1_type) == 'zero_damp_charge_atom') then
       call make_H1_zero(H1_alpha)
     !else if (trim(h1_type) == 'charge') then
-    !  call make_H1_charge_on_atoms(proc, structure, Y, Y_desc, &
+    !  call make_H1_charge_on_atoms(structure, Y, Y_desc, &
     !       is_group_filter_mode, filter_group_indices, Y_local, &
     !       charge_on_atoms, charge_factor, &
     !       H1_alpha, H1_alpha_desc)
     else if (trim(h1_type) == 'charge_overlap') then
-      call make_H1_charge_with_overlap(proc, structure, S_sparse, basis, &
+      call make_H1_charge_with_overlap(structure, S_sparse, basis, &
            charge_on_basis, charge_on_atoms, charge_factor, &
            H1_alpha, H1_alpha_desc)
     !else if (trim(h1_type) == 'maxwell') then
-    !  call make_H1_maxwell(proc, structure, Y, Y_desc, &
+    !  call make_H1_maxwell(structure, Y, Y_desc, &
     !       is_group_filter_mode, filter_group_indices, Y_local, &
     !       is_init, is_restart_mode, temperature, delta_time, &
     !       H1_alpha, H1_alpha_desc)
     else if (trim(h1_type) == 'harmonic') then
-      call make_H1_harmonic(proc, structure, basis, &
+      call make_H1_harmonic(structure, basis, &
            is_init, is_restart_mode, &
            t, temperature, delta_time, perturb_interval, &
            dv_atom_perturb, &
            H1_alpha, H1_alpha_desc)
     else if (trim(h1_type) == 'harmonic_for_nn_exciton') then
-      call make_H1_harmonic_for_nn_exciton(proc, structure, basis, &
+      call make_H1_harmonic_for_nn_exciton(structure, basis, &
            is_init, is_restart_mode, &
            t, temperature, delta_time, perturb_interval, &
            dv_atom_perturb, &

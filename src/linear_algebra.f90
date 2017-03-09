@@ -161,10 +161,10 @@ contains
   end subroutine matvec_dd_z
 
 
-  subroutine matvec_time_evolution_by_matrix_replace(proc, delta_t, &
+  subroutine matvec_time_evolution_by_matrix_replace(delta_t, &
        H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
        dv_psi_in, dv_psi_out)
-    type(wk_process_t), intent(in) :: proc
+
     real(8), intent(in) :: delta_t
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
     complex(kind(0d0)), intent(in) :: dv_psi_in(H_sparse%size)
@@ -177,10 +177,10 @@ contains
     complex(kind(0d0)) :: dv_psi_work(H_sparse%size)
 
     dim = H_sparse%size
-    call setup_distributed_matrix_real('H0', proc, dim, dim, desc, H0, .true.)
-    call setup_distributed_matrix_real('H1', proc, dim, dim, desc, H1, .true.)
-    call setup_distributed_matrix_real('Hdiff', proc, dim, dim, desc, Hdiff, .true.)
-    call setup_distributed_matrix_real('V', proc, dim, dim, desc, Eigenvectors, .true.)
+    call setup_distributed_matrix_real('H0', dim, dim, desc, H0, .true.)
+    call setup_distributed_matrix_real('H1', dim, dim, desc, H1, .true.)
+    call setup_distributed_matrix_real('Hdiff', dim, dim, desc, Hdiff, .true.)
+    call setup_distributed_matrix_real('V', dim, dim, desc, Eigenvectors, .true.)
     call distribute_global_sparse_matrix_wk(H_sparse_prev, desc, H0)
     call distribute_global_sparse_matrix_wk(H_sparse, desc, H1)
     Hdiff(:, :) = -1d0 * (H1(:, :) - H0(:, :)) * delta_t / 2.0
@@ -261,11 +261,10 @@ contains
 
   ! 最初に一般化固有値問題を解く部分.
   ! Complexity: O(m^3).
-  subroutine solve_gevp(dim, origin, proc, H, H_desc, S, S_desc, eigenvalues, Y_all, Y_all_desc)
+  subroutine solve_gevp(dim, origin, H, H_desc, S, S_desc, eigenvalues, Y_all, Y_all_desc)
     integer, intent(in) :: dim, origin
     integer, intent(in) :: H_desc(desc_size), S_desc(desc_size)
     integer, intent(in) :: Y_all_desc(desc_size)
-    type(wk_process_t), intent(in) :: proc
     real(8), intent(in) :: H(:, :), S(:, :)
     real(8), intent(out) :: eigenvalues(dim)
     real(8), intent(out) :: Y_all(:, :)
@@ -284,23 +283,23 @@ contains
            '] solve_gevp: workspace preparation start. dim, origin: ', dim, ', ', origin
     end if
 
-    call setup_distributed_matrix_real('H2', proc, dim, dim, H2_desc, H2, .true.)
-    call setup_distributed_matrix_real('L', proc, dim, dim, L_desc, L, .true.)
+    call setup_distributed_matrix_real('H2', dim, dim, H2_desc, H2, .true.)
+    call setup_distributed_matrix_real('L', dim, dim, L_desc, L, .true.)
     call pdgemr2d(dim, dim, H, origin, origin, H_desc, H2, 1, 1, H2_desc, H_desc(context_))
     call pdgemr2d(dim, dim, S, origin, origin, S_desc, L, 1, 1, L_desc, S_desc(context_))
 
     ! Workspace for pdsyngst
     nb = H_desc(block_col_)
-    npg = numroc(dim, nb, 0, 0, proc%n_procs_row)
+    npg = numroc(dim, nb, 0, 0, g_n_procs_row)
     lwork_pdsyngst = 3 * npg * nb + nb * nb
     ! Workspace for pdsyevd
-    npe = numroc(dim, nb, proc%my_proc_row, 0, proc%n_procs_row)
-    nqe = numroc(dim, nb, proc%my_proc_col, 0, proc%n_procs_col)
+    npe = numroc(dim, nb, g_my_proc_row, 0, g_n_procs_row)
+    nqe = numroc(dim, nb, g_my_proc_col, 0, g_n_procs_col)
     trilwmin = 3 * dim + max(nb * (npe + 1), 3 * nb)
     lwork = max(1 + 6 * dim + 2 * npe * nqe, trilwmin) + 2 * dim
     ! Temporary implementation. Under some unknown condition, pdormtr in pdsyevd fails due to small lwork.
     lwork = (lwork + 1000) * 2
-    liwork = 7 * dim + 8 * proc%n_procs_col + 2
+    liwork = 7 * dim + 8 * g_n_procs_col + 2
     allocate(work_pdsyngst(lwork_pdsyngst), work(lwork), iwork(liwork), stat=info)
     if (info /= 0) then
       call terminate('allocation failed in solve_gevp', info)

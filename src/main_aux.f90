@@ -111,15 +111,14 @@ contains
   end subroutine allocate_dv_vectors
 
 
-  subroutine setup_distributed_matrices(setting, proc, state)
+  subroutine setup_distributed_matrices(setting, state)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
 
     integer :: num_groups, group, m_local, n_local, ierr
 
     if (check_master()) then
-      call print_proc(proc)
+      call print_proc()
     end if
 
     state%basis%is_group_filter_mode = (trim(setting%filter_mode) == 'group')
@@ -132,8 +131,8 @@ contains
       state%basis%Y_local%m = state%basis%dim
       state%basis%Y_local%n = state%basis%num_basis
       state%basis%Y_local%num_blocks = num_groups
-      state%basis%Y_local%num_procs = proc%n_procs
-      state%basis%Y_local%my_rank = proc%my_rank
+      state%basis%Y_local%num_procs = g_n_procs
+      state%basis%Y_local%my_rank = g_my_rank
       allocate(state%basis%Y_local%block_to_row(num_groups + 1), state%basis%Y_local%block_to_col(num_groups + 1))
       state%basis%Y_local%block_to_row = state%basis%filter_group_indices(1, 1 : num_groups + 1)
       state%basis%Y_local%block_to_col = state%basis%filter_group_indices(2, 1 : num_groups + 1)
@@ -152,19 +151,19 @@ contains
       call terminate('setup_distributed_matrices: reduction mode is not implemented in this version', 1)
     end if
     if (state%basis%is_group_filter_mode) then
-      call setup_distributed_matrix_real('H1_base', proc, &
+      call setup_distributed_matrix_real('H1_base', &
            state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%basis%H1_base, .true.)
     else
-      call setup_distributed_matrix_real('Y_all', proc, state%dim, state%dim, &
+      call setup_distributed_matrix_real('Y_all', state%dim, state%dim, &
            state%basis%Y_all_desc, state%basis%Y_all, .true.)
-      call setup_distributed_matrix_real('Y_filtered', proc, &
+      call setup_distributed_matrix_real('Y_filtered', &
            state%dim, state%basis%num_basis, state%basis%Y_filtered_desc, state%basis%Y_filtered)
     end if
-    call setup_distributed_matrix_real('H1', proc, &
+    call setup_distributed_matrix_real('H1', &
          state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%H1, .true.)
-    call setup_distributed_matrix_complex('A', proc, &
+    call setup_distributed_matrix_complex('A', &
          state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%A, .true.)
-    call setup_distributed_matrix_real('YSY_filtered', proc, &
+    call setup_distributed_matrix_real('YSY_filtered', &
          state%basis%num_basis, state%basis%num_basis, state%YSY_filtered_desc, state%YSY_filtered)
   end subroutine setup_distributed_matrices
 
@@ -200,10 +199,9 @@ contains
 
 
   ! dv_psi is not referenced when is_initial is true.
-  subroutine add_perturbation_for_zero_damp_charge(setting, proc, is_initial, &
+  subroutine add_perturbation_for_zero_damp_charge(setting, is_initial, &
        dim, structure, S_sparse, basis, dv_psi, H_sparse)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     logical, intent(in) :: is_initial
     integer, intent(in) :: dim
     type(sparse_mat), intent(in) :: S_sparse
@@ -268,10 +266,9 @@ contains
   end subroutine add_perturbation_for_zero_damp_charge
 
 
-  subroutine set_aux_matrices(setting, proc, &
+  subroutine set_aux_matrices(setting, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, state)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     logical, intent(in) :: to_use_precomputed_eigenpairs
     integer, intent(in) :: desc_eigenvectors(desc_size)
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
@@ -322,18 +319,18 @@ contains
            state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
            state%basis%Y_filtered_desc(context_))
     else
-      call set_eigenpairs(state%dim, setting, proc, state%basis%filter_group_id, state%structure, &
+      call set_eigenpairs(state%dim, setting, state%basis%filter_group_id, state%structure, &
            state%H_sparse, state%S_sparse, state%basis, &
            state%H1_lcao_sparse_charge_overlap)
     end if
     call add_timer_event('set_aux_matrices', 'set_eigenpairs', wtime)
 
     if (trim(setting%h1_type(1 : 16)) == 'zero_damp_charge') then
-      call add_perturbation_for_zero_damp_charge(setting, proc, .true., &
+      call add_perturbation_for_zero_damp_charge(setting, .true., &
            state%dim, state%structure, state%S_sparse, &
            state%basis, state%dv_psi, state%H_sparse)
       ! After adding perturbation to the Hamiltonian, calculate eigenpairs again.
-      call set_eigenpairs(state%dim, setting, proc, state%basis%filter_group_id, state%structure, &
+      call set_eigenpairs(state%dim, setting, state%basis%filter_group_id, state%structure, &
            state%H_sparse, state%S_sparse, state%basis, &
            state%H1_lcao_sparse_charge_overlap)
       call add_timer_event('set_aux_matrices', 'set_eigenpairs_second_for_zero_damp_charge_*', wtime)
@@ -350,10 +347,9 @@ contains
   end subroutine set_aux_matrices
 
 
-  subroutine set_aux_matrices_for_multistep(setting, proc, &
+  subroutine set_aux_matrices_for_multistep(setting, &
        to_use_precomputed_eigenpairs, eigenvalues, desc_eigenvectors, eigenvectors, state)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: desc_eigenvectors(desc_size)
     logical, intent(in) :: to_use_precomputed_eigenpairs
     real(8), intent(in) :: eigenvalues(:), eigenvectors(:, :)
@@ -389,9 +385,9 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
-      call setup_distributed_matrix_real('S', proc, state%dim, state%dim, S_desc, S, .true.)
+      call setup_distributed_matrix_real('S', state%dim, state%dim, S_desc, S, .true.)
       call distribute_global_sparse_matrix_wk(state%S_sparse, S_desc, S)
-      call setup_distributed_matrix_real('SY', proc, state%dim, setting%num_filter, SY_desc, SY)
+      call setup_distributed_matrix_real('SY', state%dim, setting%num_filter, SY_desc, SY)
       call pdgemm('No', 'No', state%dim, setting%num_filter, state%dim, 1d0, &
            S, 1, 1, S_desc, &
            state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
@@ -424,11 +420,11 @@ contains
     else
       if (trim(setting%h1_type(1 : 16)) == 'zero_damp_charge') then
         print *, 'ZZZZZX', state%t, maxval(abs(state%dv_psi(:, 1)))
-        call add_perturbation_for_zero_damp_charge(setting, proc, .false., &
+        call add_perturbation_for_zero_damp_charge(setting, .false., &
              state%dim, state%structure, state%S_sparse, &
              state%basis, state%dv_psi, state%H_sparse)
       end if
-      call set_eigenpairs(state%dim, setting, proc, state%basis%filter_group_id, state%structure, &
+      call set_eigenpairs(state%dim, setting, state%basis%filter_group_id, state%structure, &
            state%H_sparse, state%S_sparse, state%basis, &
            state%H1_lcao_sparse_charge_overlap)
     end if
@@ -463,7 +459,7 @@ contains
     ! so the time for conversion between LCAO coefficient and eigenstate expansion
     ! is t - setting%delta_t, not t.
     do j = 1, setting%num_multiple_initials
-      call re_initialize_state(setting, proc, state%dim, state%t - setting%delta_t, state%structure, &
+      call re_initialize_state(setting, state%dim, state%t - setting%delta_t, state%structure, &
            state%charge_factor, j == 1, &
            state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
            state%basis, state%YSY_filtered, state%YSY_filtered_desc, &
@@ -560,11 +556,10 @@ contains
   end subroutine read_bcast_group_id
 
 
-  subroutine set_eigenpairs(dim, setting, proc, filter_group_id, structure, H_sparse, S_sparse, basis, &
+  subroutine set_eigenpairs(dim, setting, filter_group_id, structure, H_sparse, S_sparse, basis, &
        H1_lcao_sparse_charge_overlap)
     integer, intent(in) :: dim
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: filter_group_id(:, :)
     type(wk_structure_t), intent(in) :: structure
     type(sparse_mat), intent(in) :: H_sparse, S_sparse, H1_lcao_sparse_charge_overlap
@@ -590,8 +585,8 @@ contains
     wtime = mpi_wtime()
 
     if (.not. basis%is_group_filter_mode) then
-      call setup_distributed_matrix_real('H', proc, dim, dim, H_desc, H, .true.)
-      call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
+      call setup_distributed_matrix_real('H', dim, dim, H_desc, H, .true.)
+      call setup_distributed_matrix_real('S', dim, dim, S_desc, S, .true.)
       call distribute_global_sparse_matrix_wk(H_sparse, H_desc, H)
       call distribute_global_sparse_matrix_wk(S_sparse, S_desc, S)
 
@@ -609,7 +604,7 @@ contains
           write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] set_eigenpairs() : add charge overlap type Hamiltonian perturbation of previous step'
         end if
-        call setup_distributed_matrix_real('H1_lcao_charge_overlap', proc, dim, dim, &
+        call setup_distributed_matrix_real('H1_lcao_charge_overlap', dim, dim, &
              H_desc, H1_lcao_charge_overlap, .true.)
         call distribute_global_sparse_matrix_wk(H1_lcao_sparse_charge_overlap, H_desc, H1_lcao_charge_overlap)
         H(:, :) = H(:, :) + H1_lcao_charge_overlap(:, :)  ! distributed sum.
@@ -617,10 +612,10 @@ contains
 
       allocate(Y_filtered_last(size(basis%Y_filtered, 1), size(basis%Y_filtered, 2)), &
            SY(size(basis%Y_filtered, 1), size(basis%Y_filtered, 2)))
-      call setup_distributed_matrix_real('YSY', proc, setting%num_filter, setting%num_filter, YSY_desc, YSY)
+      call setup_distributed_matrix_real('YSY', setting%num_filter, setting%num_filter, YSY_desc, YSY)
       !Y_filtered_last(:, :) = Y_filtered(:, :)
       call add_timer_event('set_eigenpairs', 'prepare_matrices_for_offdiag_norm_calculation', wtime)
-      call solve_gevp(dim, 1, proc, H, H_desc, S, S_desc, dv_eigenvalues, basis%Y_all, basis%Y_all_desc)
+      call solve_gevp(dim, 1, H, H_desc, S, S_desc, dv_eigenvalues, basis%Y_all, basis%Y_all_desc)
       call add_timer_event('set_eigenpairs', 'solve_gevp_in_filter_all', wtime)
       ! Filter eigenvalues.
       basis%dv_eigenvalues(1 : setting%num_filter) = &
@@ -646,8 +641,8 @@ contains
       allocate(dv_eigenvalues_buf(basis%num_basis))
       dv_eigenvalues_buf(:) = 0d0  ! Initialization for mpi_allreduce.
       do g = 1, num_groups  ! Assumes that atoms in a group have successive indices.
-        p = indxg2p(g, 1, 0, 0, proc%n_procs)
-        if (proc%my_rank == p) then
+        p = indxg2p(g, 1, 0, 0, g_n_procs)
+        if (g_my_rank == p) then
           i1 = basis%filter_group_indices(1, g)
           i2 = basis%filter_group_indices(1, g + 1)
           j1 = basis%filter_group_indices(2, g)
@@ -665,7 +660,7 @@ contains
             call terminate('set_eigenpairs: dsygvd failed', 1)
           end if
           dv_eigenvalues_buf(j1 : j2 - 1) = w(setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
-          l = indxg2l(g, 1, 0, 0, proc%n_procs)
+          l = indxg2l(g, 1, 0, 0, g_n_procs)
           basis%Y_local%local_matrices(l)%val(1 : m, 1 : n) = &
                H(1 : m, setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
         end if
@@ -681,7 +676,7 @@ contains
     end if
 
     if (basis%is_group_filter_mode) then
-      call set_H1_base(proc, basis%filter_group_indices, basis%Y_local, &
+      call set_H1_base(basis%filter_group_indices, basis%Y_local, &
            H_sparse, basis%H1_base, basis%H1_desc)
       call add_timer_event('set_eigenpairs', 'set_H1_base', wtime)
     end if
@@ -727,14 +722,13 @@ contains
   !end subroutine set_local_eigenvectors
 
 
-  subroutine set_H1_base(proc, filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
-    type(wk_process_t), intent(in) :: proc
+  subroutine set_H1_base(filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
     integer, intent(in) :: filter_group_indices(:, :), H1_desc(desc_size)
     type(sparse_mat), intent(in) :: H_sparse
     type(wk_distributed_block_matrices_t), intent(in) :: Y_local
     real(8), intent(out) :: H1_base(:, :)
 
-    call change_basis_lcao_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
+    call change_basis_lcao_to_alpha_group_filter(filter_group_indices, Y_local, &
          H_sparse, H1_base, H1_desc, .true.)
   end subroutine set_H1_base
 
@@ -750,9 +744,8 @@ contains
   end subroutine clear_offdiag_blocks_of_overlap
 
 
-  subroutine prepare_json(setting, proc, state)
+  subroutine prepare_json(setting, state)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
     integer :: i, j, master_prow, master_pcol, iunit_header
     type(fson_value), pointer :: split_files_metadata_elem
@@ -766,7 +759,7 @@ contains
       ! Create whole output fson object.
       state%fsons(j)%output => fson_value_create()
       state%fsons(j)%output%value_type = TYPE_OBJECT
-      call add_setting_json(setting, proc, j, state%fsons(j)%output)
+      call add_setting_json(setting, j, state%fsons(j)%output)
       if (check_master()) then
         call add_condition_json(state%dim, setting, state%structure, state%errors(j), &
              state%group_id, state%basis%filter_group_id, &
@@ -873,9 +866,8 @@ contains
   end subroutine post_process_after_matrix_replace
 
 
-  subroutine make_matrix_step_forward(setting, proc, state)
+  subroutine make_matrix_step_forward(setting, state)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
 
     integer :: j, i, k
@@ -937,7 +929,7 @@ contains
         end if
       end do
     else if (trim(setting%h1_type) == 'zero_sparse' .and. trim(setting%filter_mode) /= 'group') then
-      call make_matrices_for_sparse(proc, setting%delta_t, setting%multistep_input_read_interval, &
+      call make_matrices_for_sparse(setting%delta_t, setting%multistep_input_read_interval, &
            state%t, state%t_last_replace, &
            state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
            SP1, SP2, SP2IPIV, Sw, desc)
@@ -948,11 +940,11 @@ contains
         norm = sqrt(truncate_imag(dot))
         !print *, 'ZZZZZZnormBefore', j, norm
       end do
-      call setup_distributed_matrix_complex('psi', proc, state%dim, setting%num_multiple_initials, &
+      call setup_distributed_matrix_complex('psi', state%dim, setting%num_multiple_initials, &
            psi_desc, psi)
-      call setup_distributed_matrix_complex('SP1psi', proc, state%dim, setting%num_multiple_initials, &
+      call setup_distributed_matrix_complex('SP1psi', state%dim, setting%num_multiple_initials, &
            psi_desc, SP1psi)
-      call distribute_matrix_complex(proc%context, 0, 0, state%dim, state%dv_psi, psi_desc, psi)
+      call distribute_matrix_complex(g_context, 0, 0, state%dim, state%dv_psi, psi_desc, psi)
       !print *, 'ZZZZZZZZZZZZA1', psi(1:20,1)
 
       call pzgemm('No', 'No', state%dim, setting%num_multiple_initials, state%dim, kOne, &
@@ -964,7 +956,7 @@ contains
       call pzgetrs('No', state%dim, setting%num_multiple_initials, SP2, 1, 1, desc, SP2IPIV, &
            SP1psi, 1, 1, psi_desc, ierr)
       !print *, 'ZZZZZZZZZZZZB', SP1psi(1:20,1)
-      call gather_matrix_complex_with_pzgemr2d(proc%context, psi_desc, SP1psi, &
+      call gather_matrix_complex_with_pzgemr2d(g_context, psi_desc, SP1psi, &
            0, 0, state%dim, state%dv_psi_next)
 
       do j = 1, setting%num_multiple_initials
@@ -980,7 +972,7 @@ contains
            g_wk_master_pnum, mpi_comm_world, ierr)
     else
       ! dv_charge_on_atoms must not be referenced when setting%num_multiple_initials > 1.
-      call make_H1(proc, trim(setting%h1_type), state%structure, &
+      call make_H1(trim(setting%h1_type), state%structure, &
            state%S_sparse, state%basis, .false., setting%is_restart_mode, &
            state%t, setting%temperature, setting%delta_t, setting%perturb_interval, &
            state%dv_charge_on_basis(:, 1), state%dv_charge_on_atoms(:, 1), state%charge_factor, &
@@ -1008,10 +1000,9 @@ contains
   end subroutine make_matrix_step_forward
 
 
-  subroutine make_matrices_for_sparse(proc, delta_t, multistep_input_read_interval, t, t_last_replace, &
+  subroutine make_matrices_for_sparse(delta_t, multistep_input_read_interval, t, t_last_replace, &
        H_sparse, S_sparse, H_sparse_prev, S_sparse_prev, &
        SP1, SP2, SP2IPIV, Sw, desc)
-    type(wk_process_t) :: proc
     real(8) :: delta_t, t, multistep_input_read_interval, t_last_replace, t_next, weight
     type(sparse_mat) :: H_sparse, S_sparse, H_sparse_prev, S_sparse_prev
     complex(kind(0d0)), allocatable :: SP1(:, :), SP2(:, :)
@@ -1027,10 +1018,10 @@ contains
       weight = 0d0
     end if
     !print *, 'ZZZZZZZZZZZZZzweight', weight
-    call setup_distributed_matrix_real('H0', proc, dim, dim, desc, H0, .true.)
-    call setup_distributed_matrix_real('H1', proc, dim, dim, desc, H1, .true.)
-    call setup_distributed_matrix_real('S0', proc, dim, dim, desc, S0, .true.)
-    call setup_distributed_matrix_real('S1', proc, dim, dim, desc, S1, .true.)
+    call setup_distributed_matrix_real('H0', dim, dim, desc, H0, .true.)
+    call setup_distributed_matrix_real('H1', dim, dim, desc, H1, .true.)
+    call setup_distributed_matrix_real('S0', dim, dim, desc, S0, .true.)
+    call setup_distributed_matrix_real('S1', dim, dim, desc, S1, .true.)
     call distribute_global_sparse_matrix_wk(H_sparse_prev, desc, H0)
     call distribute_global_sparse_matrix_wk(H_sparse, desc, H1)
     call distribute_global_sparse_matrix_wk(S_sparse_prev, desc, S0)
@@ -1054,9 +1045,8 @@ contains
   end subroutine make_matrices_for_sparse
 
 
-  subroutine step_forward_post_process(setting, proc, state)
+  subroutine step_forward_post_process(setting, state)
     type(wk_setting_t), intent(in) :: setting
-    type(wk_process_t), intent(in) :: proc
     type(wk_state_t), intent(inout) :: state
 
     integer :: num_filter, j
@@ -1088,7 +1078,7 @@ contains
            state%charge_moment(j))
       call add_timer_event('step_forward_post_process', 'get_mulliken_charge_coordinate_moments', wtime)
 
-      call compute_energies(setting, proc, state%structure, &
+      call compute_energies(setting, state%structure, &
            state%H_sparse, state%S_sparse, state%basis, &
            state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), state%charge_factor, &
            state%dv_psi(:, j), state%dv_alpha(:, j), &

@@ -4,7 +4,7 @@ module wk_distribute_matrix_m
   use wk_descriptor_parameters_m
   use wk_global_variables_m
   use wk_matrix_io_m
-  use wk_processes_m, only : check_master, wk_process_t, layout_procs, terminate
+  use wk_processes_m
   implicit none
 
   type wk_local_matrix_t
@@ -28,14 +28,13 @@ module wk_distribute_matrix_m
 
 contains
 
-  integer function get_local_cols_wk(proc, desc)
-    type(wk_process_t), intent(in) :: proc
+  integer function get_local_cols_wk(desc)
     integer, intent(in) :: desc(desc_size)
 
     integer :: numroc
 
     get_local_cols_wk = max(1, numroc(desc(cols_), desc(block_col_), &
-         proc%my_proc_col, 0, proc%n_procs_col))
+         g_my_proc_col, 0, g_n_procs_col))
   end function get_local_cols_wk
 
 
@@ -59,10 +58,9 @@ contains
   end subroutine correct_block_size
 
 
-  subroutine setup_distributed_matrix_real(name, proc, rows, cols, &
+  subroutine setup_distributed_matrix_real(name, rows, cols, &
        desc, mat, is_square_block, block_size_row, block_size_col)
     character(*), intent(in) :: name
-    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: rows, cols
 
     integer, intent(out) :: desc(desc_size)
@@ -78,13 +76,13 @@ contains
       actual_block_size_row = block_size_row
     else
       actual_block_size_row = g_wk_block_size
-      call correct_block_size(name, rows, proc%n_procs_row, actual_block_size_row)
+      call correct_block_size(name, rows, g_n_procs_row, actual_block_size_row)
     end if
     if (present(block_size_col)) then
       actual_block_size_col = block_size_col
     else
       actual_block_size_col = g_wk_block_size
-      call correct_block_size(name, cols, proc%n_procs_col, actual_block_size_col)
+      call correct_block_size(name, cols, g_n_procs_col, actual_block_size_col)
     end if
 
     if (present(is_square_block)) then
@@ -102,16 +100,16 @@ contains
     end if
 
     local_rows = max(1, numroc(rows, actual_block_size_row, &
-         proc%my_proc_row, 0, proc%n_procs_row))
+         g_my_proc_row, 0, g_n_procs_row))
 
     call descinit(desc, rows, cols, actual_block_size_row, actual_block_size_col, &
-         0, 0, proc%context, local_rows, info)
+         0, 0, g_context, local_rows, info)
     if (info /= 0) then
       print *, 'info(descinit): ', info
       call terminate('setup_distributed_matrix_real: descinit failed', info)
     end if
 
-    allocate(mat(1 : local_rows, 1 : get_local_cols_wk(proc, desc)), stat = info)
+    allocate(mat(1 : local_rows, 1 : get_local_cols_wk(desc)), stat = info)
     if (info /= 0) then
       print *, 'stat(allocate): ', info
       call terminate('setup_distributed_matrix_real: allocation failed', info)
@@ -121,10 +119,9 @@ contains
   end subroutine setup_distributed_matrix_real
 
 
-  subroutine setup_distributed_matrix_complex(name, proc, rows, cols, &
+  subroutine setup_distributed_matrix_complex(name, rows, cols, &
        desc, mat, is_square_block, block_size_row, block_size_col)
     character(*), intent(in) :: name
-    type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: rows, cols
 
     integer, intent(out) :: desc(desc_size)
@@ -140,13 +137,13 @@ contains
       actual_block_size_row = block_size_row
     else
       actual_block_size_row = g_wk_block_size
-      call correct_block_size(name, rows, proc%n_procs_row, actual_block_size_row)
+      call correct_block_size(name, rows, g_n_procs_row, actual_block_size_row)
     end if
     if (present(block_size_col)) then
       actual_block_size_col = block_size_col
     else
       actual_block_size_col = g_wk_block_size
-      call correct_block_size(name, cols, proc%n_procs_col, actual_block_size_col)
+      call correct_block_size(name, cols, g_n_procs_col, actual_block_size_col)
     end if
 
     if (present(is_square_block)) then
@@ -164,16 +161,16 @@ contains
     end if
 
     local_rows = max(1, numroc(rows, actual_block_size_row, &
-         proc%my_proc_row, 0, proc%n_procs_row))
+         g_my_proc_row, 0, g_n_procs_row))
 
     call descinit(desc, rows, cols, actual_block_size_row, actual_block_size_col, &
-         0, 0, proc%context, local_rows, info)
+         0, 0, g_context, local_rows, info)
     if (info /= 0) then
       print *, 'info(descinit): ', info
       call terminate('setup_distributed_matrix_complex: descinit failed', info)
     end if
 
-    allocate(mat(1 : local_rows, 1 : get_local_cols_wk(proc, desc)), stat = info)
+    allocate(mat(1 : local_rows, 1 : get_local_cols_wk(desc)), stat = info)
     if (info /= 0) then
       print *, 'stat(allocate): ', info
       call terminate('setup_distributed_matrix_complex: allocation failed', info)
