@@ -7,7 +7,8 @@ module wk_atom_m
   private
   public :: wk_structure_t, read_structure, multiply_phase_factors, &
        make_dummy_structure, read_group_id, read_group_id_header, make_dummy_group_id, print_group_id, &
-       bcast_structure, bcast_group_id, lcao_index_to_atom_index, print_structure, filter_group_id_to_indices
+       bcast_structure, bcast_group_id, lcao_index_to_atom_index, print_structure, filter_group_id_to_indices, &
+       base_index_to_atom
 
   type wk_structure_t
     integer :: num_atoms
@@ -317,4 +318,19 @@ contains
     indices(1, num_groups + 1) = dim + 1
     indices(2, num_groups + 1) = num_groups * num_filter + 1
   end subroutine filter_group_id_to_indices
+
+
+  integer function base_index_to_atom(structure, base_index)
+    type(wk_structure_t), intent(in) :: structure
+    integer, intent(in) :: base_index
+
+    integer :: atom
+
+    do atom = 1, structure%num_atoms
+      if (structure%atom_indices(atom) <= base_index .and. base_index < structure%atom_indices(atom + 1)) then
+        base_index_to_atom = atom
+        return
+      end if
+    end do
+  end function base_index_to_atom
 end module wk_atom_m

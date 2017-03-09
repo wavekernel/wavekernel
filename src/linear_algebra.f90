@@ -17,7 +17,7 @@ module wk_linear_algebra_m
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
        get_symmetricity, print_offdiag_norm, cutoff_vector, get_moment_for_each_column, &
-       add_diag
+       add_diag, sum_columns, maxloc_columns
 
 contains
 
@@ -727,4 +727,76 @@ contains
       end do
     end if
   end subroutine get_moment_for_each_column
+
+
+  ! sums(j) = \sum_i X(i, j)
+  subroutine sum_columns(X, X_desc, sums)
+    real(8), intent(in) :: X(:, :)
+    integer, intent(in) :: X_desc(desc_size)
+    real(8), intent(out) :: sums(X_desc(cols_))
+
+    integer :: n, n_procs_row, n_procs_col, my_proc_row, my_proc_col, cols_local, c_l, c_g, ierr
+    real(8) :: sums_buf(X_desc(cols_))
+    ! Functions.
+    integer :: numroc, indxl2g
+
+    n = X_desc(cols_)
+    call blacs_gridinfo(X_desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
+    sums_buf(:) = 0d0
+    cols_local = numroc(n, X_desc(block_col_), my_proc_col, X_desc(csrc_), n_procs_col)
+    do c_l = 1, cols_local
+      c_g = indxl2g(c_l, X_desc(block_col_), my_proc_col, X_desc(csrc_), n_procs_col)
+      sums_buf(c_g) = sums_buf(c_g) + sum(X(:, c_l))
+    end do
+    call mpi_allreduce(sums_buf, sums, n, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+    if (ierr /= 0) then
+      call terminate('sum_columns: mpi_allreduce failed', 1)
+    end if
+  end subroutine sum_columns
+
+
+  ! maxlocs(j) = \maxloc_i X(i, j)
+  subroutine maxloc_columns(X, X_desc, maxlocs)
+    real(8), intent(in) :: X(:, :)
+    integer, intent(in) :: X_desc(desc_size)
+    integer, intent(out) :: maxlocs(X_desc(cols_))
+
+    integer :: n, n_procs_row, n_procs_col, my_proc_row, my_proc_col, cols_local
+    integer :: c_l, c_g, r_l, r_g, r_p, ierr1, ierr2
+    real(8) :: val
+    integer, allocatable :: maxlocs_local(:)  ! rank-1 array for column of X as a local matrix.
+    integer :: maxlocs_global(X_desc(cols_))  ! rank-1 array for column of X as a distributed matrix.
+    ! For below 2 buffers, dim 1: global processor row, dim 2: global matrix col.
+    real(8), allocatable :: values_buf(:, :), values(:, :)
+    integer, allocatable :: indices_buf(:, :), indices(:, :)
+    ! Functions.
+    integer :: numroc, indxl2g, indxg2p
+
+    n = X_desc(cols_)
+    call blacs_gridinfo(X_desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
+    cols_local = numroc(n, X_desc(block_col_), my_proc_col, X_desc(csrc_), n_procs_col)
+    allocate(maxlocs_local(cols_local))
+    allocate(values_buf(n_procs_row, n), indices_buf(n_procs_row, n))
+    allocate(values(n_procs_row, n), indices(n_procs_row, n))
+    values_buf(:, :) = 0d0
+    indices_buf(:, :) = 0
+    maxlocs_local = maxloc(X, 1)
+    do c_l = 1, cols_local
+      r_l = maxlocs_local(c_l)
+      c_g = indxl2g(c_l, X_desc(block_col_), my_proc_col, X_desc(csrc_), n_procs_col)
+      r_g = indxl2g(r_l, X_desc(block_row_), my_proc_row, X_desc(rsrc_), n_procs_row)
+      r_p = indxg2p(r_g, X_desc(block_row_), my_proc_row, X_desc(rsrc_), n_procs_row)
+      values_buf(r_p + 1, c_g) = X(r_l, c_l)
+      indices_buf(r_p + 1, c_g) = r_g
+    end do
+    call mpi_allreduce(values_buf, values, n_procs_row * n, mpi_double_precision, mpi_sum, mpi_comm_world, ierr1)
+    call mpi_allreduce(indices_buf, indices, n_procs_row * n, mpi_integer, mpi_sum, mpi_comm_world, ierr2)
+    if (ierr1 /= 0 .or. ierr2 /= 0) then
+      call terminate('maxloc_columns: mpi_allreduce failed', 1)
+    end if
+    maxlocs_global = maxloc(values_buf, 1)
+    do c_g = 1, n
+      maxlocs(c_g) = indices(maxlocs_global(c_g), c_g)
+    end do
+  end subroutine maxloc_columns
 end module wk_linear_algebra_m

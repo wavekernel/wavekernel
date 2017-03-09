@@ -262,41 +262,83 @@ contains
   end subroutine get_mulliken_charge_coordinate_moments
 
 
+  subroutine multiply_coordinates_to_charge_matrix(structure, axis, order, X_desc, X)
+    type(wk_structure_t), intent(in) :: structure
+    integer, intent(in) :: axis  ! 1 / 2 / 3 is x / y / z, respectively.
+    integer, intent(in) :: order  ! Order of moment to compute (1 or 2).
+    integer, intent(in) :: X_desc(desc_size)
+    real(8), intent(inout) :: X(:, :)
+
+    integer :: a, i, j, maxlocs(X_desc(cols_))
+    real(8) :: center, unit, coord, coord_original, elem
+
+    ! Warning: searching basis with max charge, not atom.
+    !          This is incompatible with get_mulliken_charge_coordinate_moments.
+    call maxloc_columns(X, X_desc, maxlocs)
+    do j = 1, X_desc(cols_)
+      if (structure%periodic_xyz(axis)) then  ! Periodic boundary condition is imposed.
+        unit = structure%unitcell_xyz(axis)
+        center = structure%atom_coordinates(axis, base_index_to_atom(structure, maxlocs(j)))
+      end if
+      do a = 1, structure%num_atoms
+        coord_original = structure%atom_coordinates(axis, a)
+        if (structure%periodic_xyz(axis)) then
+          coord = wrap_around_center(coord_original, unit, center)
+        else
+          coord = coord_original
+        end if
+        do i = structure%atom_indices(a), structure%atom_indices(a + 1) - 1
+          call pdelget('Self', ' ', elem, X, i, j, X_desc)
+          call pdelset(X, i, j, X_desc, elem * (coord ** order))
+        end do
+      end do
+    end do
+  end subroutine multiply_coordinates_to_charge_matrix
+
+
   subroutine get_msd_of_eigenstates(structure, S_sparse, basis)
     type(sparse_mat), intent(in) :: S_sparse
     type(wk_structure_t), intent(in) :: structure
     type(wk_basis_t), intent(inout) :: basis
 
-    real(8), allocatable :: dv_psi_local(:), dv_psi(:)
+    real(8), allocatable :: dv_psi_local(:), dv_psi(:), Y_work(:, :), Y_work_coord(:, :), sums(:)
     real(8) :: dv_charge_on_atoms(structure%num_atoms)
-    integer :: dim, num_filter, i, j, print_count, ierr
+    integer :: dim, num_filter, i, j, print_count, ierr, m_local, n_local, axis
     type(wk_charge_moment_t) ::charge_moment
 
     if (basis%is_group_filter_mode) then
       stop 'IMPLEMENT HERE (get_msd_of_eigenstates)'
-    else if (.false.) then
-
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)
-      allocate(dv_psi_local(dim), dv_psi(dim))
-      print_count = 1
-      do i = 1, num_filter
-        if (i > num_filter / 10 * print_count .and. &
-             check_master()) then
-          write (0, '(A, F16.6, A, I0)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
-               '] calculating MSD of eigenstate ', i
-          print_count = print_count + 1
-        end if
-        dv_psi_local(:) = 0d0
-        do j = 1, dim
-          call pdelget('Self', ' ', dv_psi_local(j), basis%Y_filtered, j, i, basis%Y_filtered_desc)
-        end do
-        call mpi_allreduce(dv_psi_local, dv_psi, dim, mpi_real8, mpi_sum, mpi_comm_world, ierr)
-        call get_mulliken_charges_on_atoms(dim, structure, S_sparse, dcmplx(dv_psi), dv_charge_on_atoms)
-        call get_mulliken_charge_coordinate_moments(structure, dv_charge_on_atoms, charge_moment)
-        basis%eigenstate_mean(1 : 3, i) = charge_moment%means(1 : 3)
-        basis%eigenstate_msd(1 : 4, i) = charge_moment%msds(1 : 4)
+      m_local = size(basis%Y_filtered, 1)
+      n_local = size(basis%Y_filtered, 2)
+      allocate(Y_work(m_local, n_local), Y_work_coord(m_local, n_local))
+      allocate(sums(num_filter))
+      ! Make matrices SY and Y .* SY where '.*' means element-wise multiplication.
+      call matmul_sd_d(S_sparse, basis%Y_filtered, basis%Y_filtered_desc, 1d0, Y_work, 0d0)
+      Y_work(:, :) = basis%Y_filtered(:, :) * Y_work(:, :)
+      ! Normalize charge distributions.
+      call sum_columns(Y_work, basis%Y_filtered_desc, sums)
+      do j = 1, num_filter
+        call pdscal(dim, 1d0 / sums(j), Y_work, 1, j, basis%Y_filtered_desc, 1)
+      end do
+      do axis = 1, 3
+        ! Get mean.
+        Y_work_coord(:, :) = Y_work(:, :)
+        call multiply_coordinates_to_charge_matrix(structure, axis, 1, basis%Y_filtered_desc, Y_work_coord)
+        call sum_columns(Y_work_coord, basis%Y_filtered_desc, sums)
+        basis%eigenstate_mean(axis, :) = sums(:)
+        ! Get MSD.
+        Y_work_coord(:, :) = Y_work(:, :)
+        call multiply_coordinates_to_charge_matrix(structure, axis, 2, basis%Y_filtered_desc, Y_work_coord)
+        call sum_columns(Y_work_coord, basis%Y_filtered_desc, sums)
+        basis%eigenstate_msd(axis, :) = sums(:)
+        ! Use formula for varianve <(x - <x>)^2> = <x^2> - <x>^2.
+        basis%eigenstate_msd(axis, :) = basis%eigenstate_msd(axis, :) - (basis%eigenstate_mean(axis, :) ** 2d0)
+      end do
+      do j = 1, num_filter
+        basis%eigenstate_msd(4, j) = sum(basis%eigenstate_msd(1 : 3, j))
       end do
     end if
   end subroutine get_msd_of_eigenstates
