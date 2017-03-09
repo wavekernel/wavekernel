@@ -263,7 +263,7 @@ contains
 
     if (basis%is_group_filter_mode) then
       stop 'IMPLEMENT HERE (get_msd_of_eigenstates)'
-    else if (.true.) then
+    else if (.false.) then
 
     else
       dim = basis%Y_filtered_desc(rows_)
