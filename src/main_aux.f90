@@ -385,14 +385,8 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
-      call setup_distributed_matrix_real('S', state%dim, state%dim, S_desc, S, .true.)
-      call distribute_global_sparse_matrix_wk(state%S_sparse, S_desc, S)
       call setup_distributed_matrix_real('SY', state%dim, setting%num_filter, SY_desc, SY)
-      call pdgemm('No', 'No', state%dim, setting%num_filter, state%dim, 1d0, &
-           S, 1, 1, S_desc, &
-           state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
-           0d0, &
-           SY, 1, 1, SY_desc)
+      call matmul_sd_d(state%S_sparse, state%basis%Y_filtered, state%basis%Y_filtered_desc, 1d0, SY, 1d0)
     end if
 
     if (setting%is_reduction_mode) then
@@ -442,7 +436,6 @@ contains
              SY, 1, 1, SY_desc, &
              0d0, &
              state%YSY_filtered, 1, 1, state%YSY_filtered_desc)
-        deallocate(S, SY)
       end if
     end if
 

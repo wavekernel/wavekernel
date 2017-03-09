@@ -12,7 +12,7 @@ module wk_linear_algebra_m
   complex(kind(0d0)) :: zdotc
   integer :: numroc, indxg2p, blacs_pnum
 
-  public :: matvec_sd_z, matvec_dd_z, matvec_time_evolution_by_matrix_replace, &
+  public :: matvec_sd_z, matvec_dd_z, matmul_sd_d, matvec_time_evolution_by_matrix_replace, &
        matvec_nearest_orthonormal_matrix, scale_columns_to_stochastic_matrix, &
        solve_gevp, normalize_vector, get_A_inner_product, get_A_sparse_inner_product, &
        get_ipratio, set_inv_sqrt, reduce_hamiltonian, &
@@ -159,6 +159,33 @@ contains
     call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
     call add_event('matvec_dd_z', mpi_wtime() - wtime_start)
   end subroutine matvec_dd_z
+
+
+  ! Compute C <- alpha * A * B + beta * C.
+  ! where A: symmetric sparse redundant.
+  !       B, C: dense distributed and share descriptor.
+  subroutine matmul_sd_d(A, B, B_desc, alpha, C, beta)
+    type(sparse_mat), intent(in) :: A
+    real(8), intent(in) :: B(:, :), alpha, beta
+    integer, intent(in) :: B_desc(desc_size)
+    real(8), intent(inout) :: C(:, :)
+
+    integer :: m, n, A_desc(desc_size)
+    real(8), allocatable :: A_dist(:, :)
+
+    m = B_desc(rows_)
+    n = B_desc(cols_)
+    if (m /= A%size) then
+      call terminate('matmul_sd_d: invalid matrix size', 1)
+    end if
+    call setup_distributed_matrix_real('A', m, m, A_desc, A_dist, .true.)
+    call distribute_global_sparse_matrix_wk(A, A_desc, A_dist)
+    call pdgemm('No', 'No', m, n, m, alpha, &
+         A_dist, 1, 1, A_desc, &
+         B, 1, 1, B_desc, &
+         beta, &
+         C, 1, 1, B_desc)
+  end subroutine matmul_sd_d
 
 
   subroutine matvec_time_evolution_by_matrix_replace(delta_t, &
