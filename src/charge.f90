@@ -189,6 +189,22 @@ contains
   end subroutine get_charge_overlap_energy
 
 
+  real(8) function wrap_around_center(coord, unit, center)
+    real(8), intent(in) :: coord, unit, center
+
+    real(8) :: c
+
+    c = coord
+    do while (c < center - unit / 2d0)  ! Move from left outside to unitcell.
+      c = c + unit
+    end do
+    do while (center + unit / 2d0 <= c)  ! Move from right outside to unitcell.
+      c = c - unit
+    end do
+    wrap_around_center = c
+  end function wrap_around_center
+
+
   subroutine get_mulliken_charge_coordinate_moments(structure, dv_charge_on_atoms, charge_moment)
     type(wk_structure_t), intent(in) :: structure
     real(8), intent(in) :: dv_charge_on_atoms(structure%num_atoms)
@@ -207,13 +223,7 @@ contains
         ! New unitcell range is center - unit / 2 <= x < center + unit / 2
         do i = 1, structure%num_atoms
           coord = structure%atom_coordinates(j, i)
-          do while (coord < center - unit / 2d0)  ! Move from left outside to unitcell.
-            coord = coord + unit
-          end do
-          do while (center + unit / 2d0 <= coord)  ! Move from right outside to unitcell.
-            coord = coord - unit
-          end do
-          atom_coordinates_copy(j, i) = coord
+          atom_coordinates_copy(j, i) = wrap_around_center(coord, unit, center)
         end do
       else  ! Non-periodic boundary condition is imposed.
         atom_coordinates_copy(j, :) = structure%atom_coordinates(j, :)
