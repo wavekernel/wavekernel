@@ -191,8 +191,9 @@ def extract_main(wavekernel_out, extracted_types, stride, wavekernel_out_path, i
     # Common.
     dim = cond["dim"]
     initial_eigenvalues = cond["eigenvalues"]
+    # Select filtered eigenvalues from the largest one to max 100-th under it.
     last_eigenvalue_index = len(initial_eigenvalues)
-    first_eigenvalue_index = 0  #last_eigenvalue_index - 1
+    first_eigenvalue_index = max(0, last_eigenvalue_index - 100)
     ts = []
     # Charge on groups.
     charges_on_groups_all = []
