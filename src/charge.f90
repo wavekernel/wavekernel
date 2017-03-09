@@ -197,6 +197,7 @@ contains
     real(8) :: normalizer, ratio, coord, unit, center, coord_old
     integer :: i, j, max_charge_atom_index
     real(8) :: atom_coordinates_copy(size(structure%atom_coordinates, 1), size(structure%atom_coordinates, 2))
+    logical :: is_debug = .false.
 
     max_charge_atom_index = maxloc(dv_charge_on_atoms, 1)  ! The i-th atom is considered as a new center.
     do j = 1, 3
@@ -220,7 +221,7 @@ contains
     end do
 
     ! Output moved atoms for debugging.
-    if (check_master()) then
+    if (is_debug .and. check_master()) then
       do i = 1, structure%num_atoms
         do j = 1, 3
           coord_old = structure%atom_coordinates(j, i)
