@@ -347,35 +347,22 @@ contains
   subroutine get_ipratio_of_eigenstates(basis)
     type(wk_basis_t), intent(inout) :: basis
 
-    integer :: dim, num_filter, i, j, n_procs_row, n_procs_col, my_proc_row, my_proc_col
-    real(8), allocatable :: sum_power4(:), sum_power2(:)
-    real(8) :: elem
-    integer :: indxg2p
+    integer :: dim, num_filter, j, m_local, n_local
+    real(8), allocatable :: Y_work_power4(:, :), Y_work_power2(:, :), sum_power4(:), sum_power2(:)
 
     if (basis%is_group_filter_mode) then
       stop 'IMPLEMENT HERE (get_ipratio_of_eigenstates)'
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)
+      m_local = size(basis%Y_filtered, 1)
+      n_local = size(basis%Y_filtered, 2)
+      allocate(Y_work_power4(m_local, n_local), Y_work_power2(m_local, n_local))
       allocate(sum_power4(num_filter), sum_power2(num_filter))
-
-      call blacs_gridinfo(basis%Y_filtered_desc(context_), n_procs_row, n_procs_col, my_proc_row, my_proc_col)
-      sum_power4(:) = 0d0
-      sum_power2(:) = 0d0
-      do j = 1, num_filter
-        if (indxg2p(j, basis%Y_filtered_desc(block_col_), 0, 0, n_procs_col) == my_proc_col) then
-          do i = 1, dim
-            if (indxg2p(i, basis%Y_filtered_desc(block_row_), 0, 0, n_procs_row) == my_proc_row) then
-              call pdelget('', '', elem, basis%Y_filtered, i, j, basis%Y_filtered_desc)
-              sum_power4(j) = sum_power4(j) + elem ** 4d0
-              sum_power2(j) = sum_power2(j) + elem ** 2d0
-            end if
-          end do
-        end if
-      end do
-      call dgsum2d(basis%Y_filtered_desc(context_), 'All', ' ', 1, num_filter, sum_power4, 1, -1, -1)
-      call dgsum2d(basis%Y_filtered_desc(context_), 'All', ' ', 1, num_filter, sum_power2, 1, -1, -1)
-
+      Y_work_power4(:, :) = basis%Y_filtered(:, :) ** 4d0
+      Y_work_power2(:, :) = basis%Y_filtered(:, :) ** 2d0
+      call sum_columns(Y_work_power4, basis%Y_filtered_desc, sum_power4)
+      call sum_columns(Y_work_power2, basis%Y_filtered_desc, sum_power2)
       do j = 1, num_filter
         basis%dv_ipratios(j) = sum_power4(j) / (sum_power2(j) ** 2d0)
       end do
