@@ -1013,7 +1013,7 @@ contains
            state%dv_charge_on_basis(:, i), state%dv_charge_on_atoms(:, i), state%charge_factor, &
            state%dv_psi(:, i), state%dv_alpha(:, i), &
            state%dv_atom_perturb, &
-           state%H1, state%H1_desc, state%energies(i))
+           state%H1, state%basis%H1_desc, state%energies(i))
     end do
   end subroutine initialize
 

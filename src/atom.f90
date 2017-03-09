@@ -7,7 +7,7 @@ module wk_atom_m
   private
   public :: wk_structure_t, read_structure, multiply_phase_factors, &
        make_dummy_structure, read_group_id, read_group_id_header, make_dummy_group_id, print_group_id, &
-       bcast_structure, bcast_group_id, lcao_index_to_atom_index, print_structure
+       bcast_structure, bcast_group_id, lcao_index_to_atom_index, print_structure, filter_group_id_to_indices
 
   type wk_structure_t
     integer :: num_atoms
@@ -278,4 +278,43 @@ contains
       write(iunit, *) structure%atom_coordinates(:, i)
     end do
   end subroutine print_structure
+
+
+  subroutine filter_group_id_to_indices(dim, num_filter, structure, group_id, indices)
+    integer, intent(in) :: dim, num_filter, group_id(:, :)
+    type(wk_structure_t), intent(in) :: structure
+    integer, allocatable, intent(out) :: indices(:, :)
+
+    integer :: num_groups, atom_min, atom_max, index_min, index_max
+    integer :: dim_sub, sum_dim_sub, i, j, base_index_of_group
+
+    num_groups = size(group_id, 2)
+    index_max = 0  ! Initialization for overlap checking.
+    sum_dim_sub = 0
+    if (allocated(indices)) then
+      deallocate(indices)
+    end if
+    allocate(indices(2, num_groups + 1))
+    do i = 1, num_groups  ! Assumes that atoms in a group have successive indices.
+      atom_min = dim
+      atom_max = 0
+      do j = 2, group_id(1, i) + 1
+        atom_min = min(atom_min, group_id(j, i))
+        atom_max = max(atom_max, group_id(j, i))
+      end do
+      index_min = structure%atom_indices(atom_min)
+      if (index_min <= index_max) then
+        stop 'indeices for groups are overlapping'
+      end if
+
+      base_index_of_group = (i - 1) * num_filter
+      index_max = structure%atom_indices(atom_max + 1) - 1
+      dim_sub = index_max - index_min + 1
+      indices(1, i) = sum_dim_sub + 1
+      indices(2, i) = base_index_of_group + 1
+      sum_dim_sub = sum_dim_sub + dim_sub
+    end do
+    indices(1, num_groups + 1) = dim + 1
+    indices(2, num_groups + 1) = num_groups * num_filter + 1
+  end subroutine filter_group_id_to_indices
 end module wk_atom_m

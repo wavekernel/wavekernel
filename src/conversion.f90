@@ -85,7 +85,7 @@ contains
   subroutine change_basis_lcao_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
        A_lcao_sparse, A_alpha, A_alpha_desc, to_ignore_diag_block_)
     type(wk_process_t), intent(in) :: proc
-    type(wk_local_matrix_t), intent(in) :: Y_local(:)
+    type(wk_distributed_block_matrices_t), intent(in) :: Y_local
     type(sparse_mat), intent(in) :: A_lcao_sparse
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: filter_group_indices(:, :), A_alpha_desc(desc_size)
@@ -359,7 +359,7 @@ contains
        filter_group_indices, Y_local, &
        A_lcao_diag, A_alpha, A_alpha_desc)
     type(wk_process_t), intent(in) :: proc
-    type(wk_local_matrix_t), intent(in) :: Y_local(:)
+    type(wk_distributed_block_matrices_t), intent(in) :: Y_local
     real(8), intent(in) :: A_lcao_diag(:)
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: A_alpha_desc(desc_size), filter_group_indices(:, :)

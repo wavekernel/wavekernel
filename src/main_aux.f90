@@ -123,7 +123,7 @@ contains
     !real(8), allocatable, intent(out) :: H1(:, :), H1_base(:, :)
     !complex(kind(0d0)), allocatable, intent(out) :: A(:, :)  ! n x n
 
-    integer :: ierr
+    integer :: num_groups, group, m_local, n_local, ierr
 
     if (check_master()) then
       call print_proc(proc)
@@ -132,7 +132,25 @@ contains
     state%basis%is_group_filter_mode = (trim(setting%filter_mode) == 'group')
     state%basis%dim = state%dim
     if (state%basis%is_group_filter_mode) then
-      state%basis%num_basis = setting%num_filter * size(state%basis%filter_group_id, 1)
+      num_groups = size(state%basis%filter_group_id, 2)
+      state%basis%num_basis = setting%num_filter * num_groups
+      call filter_group_id_to_indices(state%basis%dim, setting%num_filter, state%structure, &
+           state%basis%filter_group_id, state%basis%filter_group_indices)
+      state%basis%Y_local%m = state%basis%dim
+      state%basis%Y_local%n = state%basis%num_basis
+      state%basis%Y_local%num_blocks = num_groups
+      state%basis%Y_local%num_procs = proc%n_procs
+      state%basis%Y_local%my_rank = proc%my_rank
+      allocate(state%basis%Y_local%block_to_row(num_groups + 1), state%basis%Y_local%block_to_col(num_groups + 1))
+      state%basis%Y_local%block_to_row = state%basis%filter_group_indices(1, 1 : num_groups + 1)
+      state%basis%Y_local%block_to_col = state%basis%filter_group_indices(2, 1 : num_groups + 1)
+      allocate(state%basis%Y_local%local_matrices(num_groups))
+      do group = 1, num_groups
+        m_local = state%basis%filter_group_indices(1, group + 1) - state%basis%filter_group_indices(1, group)
+        n_local = state%basis%filter_group_indices(2, group + 1) - state%basis%filter_group_indices(2, group)
+        allocate(state%basis%Y_local%local_matrices(group)%val(m_local, n_local))
+        state%basis%Y_local%local_matrices(group)%val(:, :) = 0d0
+      end do
     else
       state%basis%num_basis = setting%num_filter
     end if
@@ -140,19 +158,19 @@ contains
     if (setting%is_reduction_mode) then
       call terminate('setup_distributed_matrices: reduction mode is not implemented in this version', 1)
     end if
-    if (trim(setting%filter_mode) == 'all') then
+    if (state%basis%is_group_filter_mode) then
+      call setup_distributed_matrix_real('H1_base', proc, &
+           state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%basis%H1_base, .true.)
+    else
       call setup_distributed_matrix_real('Y_all', proc, state%dim, state%dim, &
            state%basis%Y_all_desc, state%basis%Y_all, .true.)
       call setup_distributed_matrix_real('Y_filtered', proc, &
            state%dim, state%basis%num_basis, state%basis%Y_filtered_desc, state%basis%Y_filtered)
-    else if (trim(setting%filter_mode) == 'group') then
-      call setup_distributed_matrix_real('H1_base', proc, &
-           state%basis%num_basis, state%basis%num_basis, state%H1_desc, state%basis%H1_base, .true.)
     end if
     call setup_distributed_matrix_real('H1', proc, &
-         state%basis%num_basis, state%basis%num_basis, state%H1_desc, state%H1, .true.)
+         state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%H1, .true.)
     call setup_distributed_matrix_complex('A', proc, &
-         state%basis%num_basis, state%basis%num_basis, state%A_desc, state%A, .true.)
+         state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%A, .true.)
     call setup_distributed_matrix_real('YSY_filtered', proc, &
          state%basis%num_basis, state%basis%num_basis, state%YSY_filtered_desc, state%YSY_filtered)
   end subroutine setup_distributed_matrices
@@ -289,6 +307,11 @@ contains
     call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
     call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
 
+    if (setting%filter_mode == 'group') then
+      call clear_offdiag_blocks_of_overlap(setting, state%basis%filter_group_indices, state%S_sparse)
+      call add_timer_event('set_aux_matrices', 'clear_offdiag_blocks_of_overlap', wtime)
+    end if
+
     if (to_use_precomputed_eigenpairs) then
       if (state%basis%is_group_filter_mode) then
         stop 'to_use_precomputed_eigenpairs cannot be used with group filter mode'
@@ -313,7 +336,6 @@ contains
     call add_timer_event('set_aux_matrices', 'set_eigenpairs', wtime)
 
     if (trim(setting%h1_type(1 : 16)) == 'zero_damp_charge') then
-      print *, 'ZZZZZY1', state%basis%dv_eigenvalues
       call add_perturbation_for_zero_damp_charge(setting, proc, .true., &
            state%dim, state%structure, state%S_sparse, &
            state%basis, state%dv_psi, state%H_sparse)
@@ -321,24 +343,7 @@ contains
       call set_eigenpairs(state%dim, setting, proc, state%basis%filter_group_id, state%structure, &
            state%H_sparse, state%S_sparse, state%basis, &
            state%H1_lcao_sparse_charge_overlap)
-      print *, 'ZZZZZY2', state%basis%dv_eigenvalues
       call add_timer_event('set_aux_matrices', 'set_eigenpairs_second_for_zero_damp_charge_*', wtime)
-    end if
-
-    !call get_eigenstate_charges_on_groups(state%basis, state%structure, state%group_id)
-    !call add_timer_event('set_aux_matrices', 'get_eigenstate_charges_on_groups', wtime)
-
-    if (setting%filter_mode == 'group') then
-      call clear_offdiag_blocks_of_overlap(setting, state%basis%filter_group_indices, state%S_sparse)
-      call add_timer_event('set_aux_matrices', 'clear_offdiag_blocks_of_overlap', wtime)
-
-      !call set_local_eigenvectors(proc, state%Y_filtered_desc, &
-      !     state%Y_filtered, state%filter_group_indices, state%Y_local)
-      !call add_timer_event('set_aux_matrices', 'set_local_eigenvectors', wtime)
-
-      call set_H1_base(proc, state%basis%filter_group_indices, state%basis%Y_local, &
-           state%H_sparse, state%basis%H1_base, state%H1_desc)
-      call add_timer_event('set_aux_matrices', 'set_H1_base', wtime)
     end if
 
     if (check_master()) then
@@ -382,8 +387,11 @@ contains
       call add_timer_event('read_next_input_step_with_basis_replace', 'clear_offdiag_blocks_of_overlap', wtime)
     end if
 
+    ! Save eigenvalues in the previous step.
     allocate(dv_eigenvalues_prev(size(state%basis%dv_eigenvalues, 1)))
     dv_eigenvalues_prev(:) = state%basis%dv_eigenvalues(:)
+    ! Compute SY in advance because YSY needs eigenvectors in two steps.
+    ! TODO: copy the basis variable and abstract generating YSY.
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
@@ -409,12 +417,17 @@ contains
       if (desc_eigenvectors(rows_) /= state%dim .or. desc_eigenvectors(cols_) /= state%dim) then
         call terminate('wrong size of eigenvectors', 1)
       end if
-      end_filter = setting%fst_filter + setting%num_filter - 1
-      state%basis%dv_eigenvalues(1 : setting%num_filter) = eigenvalues(setting%fst_filter : end_filter)
-      call pdgemr2d(state%dim, setting%num_filter, &
-           eigenvectors, 1, setting%fst_filter, desc_eigenvectors, &
-           state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
-           desc_eigenvectors(context_))
+
+      if (state%basis%is_group_filter_mode) then
+        stop 'IMPLEMENT HERE (pdgemr2d)'
+      else
+        end_filter = setting%fst_filter + setting%num_filter - 1
+        state%basis%dv_eigenvalues(1 : setting%num_filter) = eigenvalues(setting%fst_filter : end_filter)
+        call pdgemr2d(state%dim, setting%num_filter, &
+             eigenvectors, 1, setting%fst_filter, desc_eigenvectors, &
+             state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
+             desc_eigenvectors(context_))
+      end if
     else
       if (trim(setting%h1_type(1 : 16)) == 'zero_damp_charge') then
         print *, 'ZZZZZX', state%t, maxval(abs(state%dv_psi(:, 1)))
@@ -432,23 +445,16 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
-      call pdgemm('Trans', 'No', setting%num_filter, setting%num_filter, state%dim, 1d0, &
-           state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
-           SY, 1, 1, SY_desc, &
-           0d0, &
-           state%YSY_filtered, 1, 1, state%YSY_filtered_desc)
-      deallocate(S, SY)
-    end if
-
-    !call get_eigenstate_charges_on_groups(state%basis, state%structure, state%group_id)
-    !call add_timer_event('read_next_input_step_with_basis_replace', 'get_eigenstate_charges_on_groups', wtime)
-
-    if (setting%filter_mode == 'group') then
-      !call set_local_eigenvectors(setting, proc, Y_filtered_desc, Y_filtered, filter_group_indices, Y_local)
-      !call add_timer_event('read_next_input_step_with_basis_replace', 'set_local_eigenvectors', wtime)
-      call set_H1_base(proc, state%basis%filter_group_indices, state%basis%Y_local, &
-           state%H_sparse, state%basis%H1_base, state%H1_desc)
-      call add_timer_event('read_next_input_step_with_basis_replace', 'set_H1_base', wtime)
+      if (state%basis%is_group_filter_mode) then
+        stop 'IMPLEMENT HERE (get YSY)'
+      else
+        call pdgemm('Trans', 'No', setting%num_filter, setting%num_filter, state%dim, 1d0, &
+             state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
+             SY, 1, 1, SY_desc, &
+             0d0, &
+             state%YSY_filtered, 1, 1, state%YSY_filtered_desc)
+        deallocate(S, SY)
+      end if
     end if
 
     if (setting%to_calculate_eigenstate_moment_every_step) then
@@ -468,7 +474,7 @@ contains
            state%charge_factor, j == 1, &
            state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
            state%basis, state%YSY_filtered, state%YSY_filtered_desc, &
-           dv_eigenvalues_prev, state%H1, state%H1_desc, &
+           dv_eigenvalues_prev, state%H1, state%basis%H1_desc, &
            state%dv_psi(:, j), state%dv_alpha(:, j), &
            state%dv_psi_reconcile(:, j), state%dv_alpha_reconcile(:, j), &
            state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), &
@@ -576,17 +582,21 @@ contains
     integer :: H_desc(desc_size), S_desc(desc_size)
     real(8) :: elem
     real(8) :: dv_eigenvalues(dim), wtime
-    integer :: YSY_desc(desc_size)
-    real(8), allocatable :: H(:, :), S(:, :), Y_sub(:, :), Y_filtered_last(:, :), SY(:, :), YSY(:, :)
-    real(8), allocatable :: H1_lcao_charge_overlap(:, :)
-    integer, allocatable :: filter_group_indices(:, :)
+    integer :: YSY_desc(desc_size), l, i1, i2, j1, j2, m, n, lwork, liwork, g, p, ierr
+    real(8), allocatable :: H(:, :), S(:, :), Y_sub(:, :), Y_filtered_last(:, :), SY(:, :), YSY(:, :), w(:)
+    real(8), allocatable :: H1_lcao_charge_overlap(:, :), dv_eigenvalues_buf(:), work(:)
+    integer, allocatable :: filter_group_indices(:, :), iwork(:)
+    type(sparse_mat) :: H_sparse_work
 
     ! For harmonic_for_nn_exciton.
     real(8) :: dv_atom_perturb(structure%num_atoms / 3 * 2), t_last_refresh, H1_lcao_diag(dim)
 
+    ! Functions.
+    integer :: indxg2p, indxg2l
+
     wtime = mpi_wtime()
 
-    if (setting%filter_mode == 'all') then
+    if (.not. basis%is_group_filter_mode) then
       call setup_distributed_matrix_real('H', proc, dim, dim, H_desc, H, .true.)
       call setup_distributed_matrix_real('S', proc, dim, dim, S_desc, S, .true.)
       call distribute_global_sparse_matrix_wk(H_sparse, H_desc, H)
@@ -628,80 +638,59 @@ contains
            basis%Y_filtered, 1, 1, basis%Y_filtered_desc, &
            basis%Y_all_desc(context_))
       call add_timer_event('set_eigenpairs', 'copy_filtering_eigenvectors_in_filter_all', wtime)
-    else if (setting%filter_mode == 'group') then
+    else
+      call copy_sparse_matrix(H_sparse, H_sparse_work)
       if (trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
-        stop 'IMPLEMENT HERE (set_eigenpairs 1)'
+        ! Add perturbation term for Hamiltonian to get non-degenerated eigenstates.
+        ! Now refreshing atom perturbation is forced. It may cause problem when multiple input mode.
+        call aux_make_H1_harmonic_for_nn_exciton(dv_atom_perturb, setting%temperature, .true., &
+             0d0, t_last_refresh, structure%num_atoms / 3, H1_lcao_diag)
+        call add_diag_to_sparse_matrix(dim, H1_lcao_diag, H_sparse_work)
       else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
         stop 'IMPLEMENT HERE (set_eigenpairs 2)'
       end if
       stop 'IMPLEMENT HERE (set_eigenpairs 3)'
-      num_groups = size(basis%filter_group_id, 2)
-      index_max = 0  ! Initialization for overlap checking.
-      sum_dim_sub = 0
-      if (allocated(filter_group_indices)) then
-        deallocate(filter_group_indices)
-      end if
-      allocate(filter_group_indices(2, num_groups + 1))
-      call add_timer_event('set_eigenpairs', 'allocate_in_filter_group', wtime)
-      print *, 'E', structure%atom_indices
-      do i = 1, num_groups  ! Assumes that atoms in a group have successive indices.
-        if (check_master()) then
-          write (0, '(A, F16.6, A, I0, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
-               '] solve_gevp: solve group ', i, ' start'
+      allocate(dv_eigenvalues_buf(basis%num_basis))
+      dv_eigenvalues_buf(:) = 0d0  ! Initialization for mpi_allreduce.
+      do g = 1, num_groups  ! Assumes that atoms in a group have successive indices.
+        p = indxg2p(g, 1, 0, 0, proc%n_procs)
+        if (proc%my_rank == p) then
+          i1 = basis%filter_group_indices(1, g)
+          i2 = basis%filter_group_indices(1, g + 1)
+          j1 = basis%filter_group_indices(2, g)
+          j2 = basis%filter_group_indices(2, g + 1)
+          m = i2 - i1
+          n = j2 - j1
+          print *, 'set_eigenpairs: start dsygvd', p, i1, i2, j1, j2
+          lwork = 1 + 6 * m + 2 * m ** 2
+          liwork = 3 + 5 * m
+          allocate(H(m, m), S(m, m), w(m), work(lwork), iwork(liwork))
+          call get_block_in_sparse_matrix(H_sparse_work, i1, i1, m, m, H)
+          call get_block_in_sparse_matrix(S_sparse, i1, i1, m, m, S)
+          call dsygvd(1, 'V', 'L', m, H, m, S, m, w, work, lwork, iwork, liwork, ierr)
+          if (ierr /= 0) then
+            call terminate('set_eigenpairs: dsygvd failed', 1)
+          end if
+          dv_eigenvalues_buf(j1 : j2 - 1) = w(setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
+          l = indxg2l(g, 1, 0, 0, proc%n_procs)
+          basis%Y_local%local_matrices(l)%val(1 : m, 1 : n) = &
+               H(1 : m, setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
         end if
-        atom_min = basis%dim
-        atom_max = 0
-        do j = 2, basis%filter_group_id(1, i) + 1
-          atom_min = min(atom_min, basis%filter_group_id(j, i))
-          atom_max = max(atom_max, basis%filter_group_id(j, i))
-        end do
-        index_min = structure%atom_indices(atom_min)
-        if (index_min <= index_max) then
-          call terminate('indeices for groups are overlapping', 1)
-        end if
-        index_max = structure%atom_indices(atom_max + 1) - 1
-        dim_sub = index_max - index_min + 1
-      !
-      !  call setup_distributed_matrix_complex('Y_sub', proc, dim_sub, dim_sub, Y_sub_desc, Y_sub, .true.)
-      !  allocate(eigenvalues_sub(dim_sub))
-      !  call add_timer_event('set_eigenpairs', 'setup_indices_and_distributed_matrix_in_filter_group', wtime)
-      !
-      !  call solve_gevp(dim_sub, index_min, proc, H, H_desc, S, S_desc, eigenvalues_sub, Y_sub, Y_sub_desc)
-      !  call add_timer_event('set_eigenpairs', 'solve_gevp_in_filter_group', wtime)
-      !
-      !  homo_level = (dim_sub + 1) / 2
-      !  filter_lowest_level = homo_level - setting%num_group_filter_from_homo + 1
-      !  base_index_of_group = (i - 1) * setting%num_group_filter_from_homo
-      !  !print *, 'Q', atom_min, atom_max, index_min, index_max, dim_sub, filter_lowest_level, base_index_of_group
-      !  do j = filter_lowest_level, homo_level
-      !    elem = eigenvalues_sub(j)
-      !    call pzelset(filtered_vecs, base_index_of_group + j - filter_lowest_level + 1, &
-      !         col_eigenvalues_filtered, filtered_vecs_desc, elem)
-      !  end do
-      !  call add_timer_event('set_eigenpairs', 'filter_eigenvalues_in_filter_group', wtime)
-      !  ! Filter eigenvectors (eigenvalues are already filtered).
-      !
-      !  !if (check_master()) then
-      !  !  print *, 'W', homo_level, filter_lowest_level, base_index_of_group, sum_dim_sub
-      !  !end if
-      !
-      !  call pzgemr2d(dim_sub, setting%num_group_filter_from_homo, &
-      !       Y_sub, 1, filter_lowest_level, Y_sub_desc, &
-      !       Y_filtered, sum_dim_sub + 1, base_index_of_group + 1, Y_filtered_desc, &
-      !       Y_desc(context_))
-        filter_group_indices(1, i) = sum_dim_sub + 1
-        filter_group_indices(2, i) = base_index_of_group + 1
-        sum_dim_sub = sum_dim_sub + dim_sub
-      !  deallocate(Y_sub, eigenvalues_sub)
-      !  call add_timer_event('set_eigenpairs', 'filter_eigenvectors_in_filter_group', wtime)
       end do
-      filter_group_indices(1, num_groups + 1) = basis%dim + 1
-      filter_group_indices(2, num_groups + 1) = setting%num_filter + 1
+      call mpi_allreduce(dv_eigenvalues_buf, basis%dv_eigenvalues, basis%num_basis, &
+           mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+      deallocate(dv_eigenvalues_buf)
     end if
 
     deallocate(H, S)
     if (allocated(H1_lcao_charge_overlap)) then
       deallocate(H1_lcao_charge_overlap)
+    end if
+
+    if (basis%is_group_filter_mode) then
+      call set_H1_base(proc, basis%filter_group_indices, basis%Y_local, &
+           H_sparse, basis%H1_base, basis%H1_desc)
+      call add_timer_event('set_eigenpairs', 'set_H1_base', wtime)
     end if
   end subroutine set_eigenpairs
 
@@ -749,7 +738,7 @@ contains
     type(wk_process_t), intent(in) :: proc
     integer, intent(in) :: filter_group_indices(:, :), H1_desc(desc_size)
     type(sparse_mat), intent(in) :: H_sparse
-    type(wk_local_matrix_t), intent(in) :: Y_local(:)
+    type(wk_distributed_block_matrices_t), intent(in) :: Y_local
     real(8), intent(out) :: H1_base(:, :)
 
     call change_basis_lcao_to_alpha_group_filter(proc, filter_group_indices, Y_local, &
@@ -1023,22 +1012,22 @@ contains
            state%t, setting%temperature, setting%delta_t, setting%perturb_interval, &
            state%dv_charge_on_basis(:, 1), state%dv_charge_on_atoms(:, 1), state%charge_factor, &
            state%dv_atom_perturb, &
-           state%H1, state%H1_desc)
+           state%H1, state%basis%H1_desc)
       call add_timer_event('make_matrix_step_forward', 'make_matrix_H1_not_multistep', wtime)
 
       if (state%basis%is_group_filter_mode) then
         state%H1(:, :) = state%H1(:, :) + state%basis%H1_base(:, :)  ! Sum of distributed matrices.
       end if
 
-      call make_A(state%H1, state%H1_desc, state%basis%dv_eigenvalues, state%t, &
+      call make_A(state%H1, state%basis%H1_desc, state%basis%dv_eigenvalues, state%t, &
            setting%amplitude_print_threshold, setting%amplitude_print_interval, &
            setting%delta_t, setting%fst_filter, &
-           state%A, state%A_desc)
+           state%A, state%basis%H1_desc)
       call add_timer_event('make_matrix_step_forward', 'make_matrix_A', wtime)
 
       ! Note that step_forward destroys A.
       do j = 1, setting%num_multiple_initials
-        call step_forward(setting%time_evolution_mode, state%A, state%A_desc, setting%delta_t, &
+        call step_forward(setting%time_evolution_mode, state%A, state%basis%H1_desc, setting%delta_t, &
              state%dv_alpha(:, j), state%dv_alpha_next(:, j))
         call add_timer_event('make_matrix_step_forward', 'step_forward', wtime)
       end do
@@ -1142,7 +1131,7 @@ contains
            state%dv_charge_on_basis(:, j), state%dv_charge_on_atoms(:, j), state%charge_factor, &
            state%dv_psi(:, j), state%dv_alpha(:, j), &
            state%dv_atom_perturb, &
-           state%H1, state%H1_desc, state%energies(j))
+           state%H1, state%basis%H1_desc, state%energies(j))
 
       state%dv_alpha(:, j) = state%dv_alpha_next(:, j)
       call add_timer_event('step_forward_post_process', 'move_alpha_between_time_steps', wtime)

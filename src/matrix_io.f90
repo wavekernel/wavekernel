@@ -13,7 +13,8 @@ module wk_matrix_io_m
 
   private
   public :: get_dimension, read_matrix_file, set_sparse_matrix_identity, print_matrix, sparse_mat, &
-       destroy_sparse_mat, copy_sparse_matrix, sparse_matrix_to_diag, print_sparse_matrix
+       destroy_sparse_mat, copy_sparse_matrix, sparse_matrix_to_diag, print_sparse_matrix, &
+       add_diag_to_sparse_matrix, get_block_in_sparse_matrix
 
 contains
 
@@ -304,4 +305,50 @@ contains
       write(iunit, *) matrix%suffix(1, i), matrix%suffix(2, i), matrix%value(i)
     end do
   end subroutine print_sparse_matrix
+
+
+  subroutine add_diag_to_sparse_matrix(dim, diag, A)
+    integer, intent(in) :: dim
+    real(8), intent(in) :: diag(dim)
+    type(sparse_mat), intent(inout) :: A
+
+    integer :: i, j
+    logical :: is_added(dim)
+
+    is_added(:) = .false.
+    do i = 1, A%num_non_zeros
+      j = A%suffix(1, i)
+      if (j == A%suffix(2, i)) then
+        A%value(i) = A%value(i) + diag(j)
+        is_added(i) = .true.
+      end if
+    end do
+
+    if (.not. all(is_added)) then
+      call terminate('add_diag_to_sparse_matrix: some diagonal indices are missing in matrix', 1)
+    end if
+  end subroutine add_diag_to_sparse_matrix
+
+
+  ! A_block = A(i : i + m - 1, j : j + n - 1)
+  subroutine get_block_in_sparse_matrix(A, i, j, m, n, A_block)
+    type(sparse_mat), intent(in) :: A
+    integer, intent(in) :: i, j, m, n
+    real(8), intent(out) :: A_block(m, n)
+
+    integer :: k, r, c
+
+    if (i < 1 .or. j < 1 .or. i + m - 1 > A%size .or. j + n - 1 > A%size) then
+      call terminate('get_block_in_sparse_matrix: invalid index', 1)
+    end if
+
+    A_block(:, :) = 0d0
+    do k = 1, A%num_non_zeros
+      r = A%suffix(1, k)
+      c = A%suffix(2, k)
+      if (i <= r .and. r <= i + m - 1 .and. j <= c .and. c <= j + n - 1) then
+        A_block(r - i + 1, c - j + 1) = A%value(k)
+      end if
+    end do
+  end subroutine get_block_in_sparse_matrix
 end module wk_matrix_io_m

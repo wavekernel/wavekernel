@@ -8,9 +8,17 @@ module wk_distribute_matrix_m
   implicit none
 
   type wk_local_matrix_t
-    integer :: m, n
     real(8), allocatable :: val(:, :)
   end type wk_local_matrix_t
+
+  type wk_distributed_block_matrices_t
+    ! Global values.
+    integer :: m, n, num_blocks, num_procs
+    integer, allocatable :: block_to_row(:), block_to_col(:)
+    ! Local values.
+    integer :: my_rank
+    type(wk_local_matrix_t), allocatable :: local_matrices(:)
+  end type wk_distributed_block_matrices_t
 
   public :: get_local_cols_wk, setup_distributed_matrix_complex, setup_distributed_matrix_real, &
        distribute_matrix_real_part, distribute_matrix_complex, &
