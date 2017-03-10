@@ -297,14 +297,14 @@ contains
     call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
     call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
 
-    if (setting%filter_mode == 'group') then
+    if (state%basis%is_group_filter_mode) then
       call clear_offdiag_blocks_of_overlap(setting, state%basis%filter_group_indices, state%S_sparse)
       call add_timer_event('set_aux_matrices', 'clear_offdiag_blocks_of_overlap', wtime)
     end if
 
     if (to_use_precomputed_eigenpairs) then
       if (state%basis%is_group_filter_mode) then
-        stop 'to_use_precomputed_eigenpairs cannot be used with group filter mode'
+        call terminate('to_use_precomputed_eigenpairs cannot be used with group filter mode', 1)
       end if
       if (size(eigenvalues, 1) /= state%dim) then
         call terminate('wrong size of eigenvalues', 1)
@@ -394,26 +394,23 @@ contains
     end if
 
     if (to_use_precomputed_eigenpairs) then
+      if (state%basis%is_group_filter_mode) then
+        call terminate('to_use_precomputed_eigenpairs cannot be used with group filter mode', 1)
+      end if
       if (size(eigenvalues, 1) /= state%dim) then
         call terminate('wrong size of eigenvalues', 1)
       end if
       if (desc_eigenvectors(rows_) /= state%dim .or. desc_eigenvectors(cols_) /= state%dim) then
         call terminate('wrong size of eigenvectors', 1)
       end if
-
-      if (state%basis%is_group_filter_mode) then
-        stop 'IMPLEMENT HERE (pdgemr2d)'
-      else
-        end_filter = setting%fst_filter + setting%num_filter - 1
-        state%basis%dv_eigenvalues(1 : setting%num_filter) = eigenvalues(setting%fst_filter : end_filter)
-        call pdgemr2d(state%dim, setting%num_filter, &
-             eigenvectors, 1, setting%fst_filter, desc_eigenvectors, &
-             state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
-             desc_eigenvectors(context_))
-      end if
+      end_filter = setting%fst_filter + setting%num_filter - 1
+      state%basis%dv_eigenvalues(1 : setting%num_filter) = eigenvalues(setting%fst_filter : end_filter)
+      call pdgemr2d(state%dim, setting%num_filter, &
+           eigenvectors, 1, setting%fst_filter, desc_eigenvectors, &
+           state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
+           desc_eigenvectors(context_))
     else
       if (trim(setting%h1_type(1 : 16)) == 'zero_damp_charge') then
-        print *, 'ZZZZZX', state%t, maxval(abs(state%dv_psi(:, 1)))
         call add_perturbation_for_zero_damp_charge(setting, .false., &
              state%dim, state%structure, state%S_sparse, &
              state%basis, state%dv_psi, state%H_sparse)
