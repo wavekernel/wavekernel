@@ -347,11 +347,24 @@ contains
   subroutine get_ipratio_of_eigenstates(basis)
     type(wk_basis_t), intent(inout) :: basis
 
-    integer :: dim, num_filter, j, m_local, n_local
+    integer :: dim, num_filter, j, m_local, n_local, l, g, c1, c2, ierr
+    real(8), allocatable :: ipratios_buf(:)
     real(8), allocatable :: Y_work_power4(:, :), Y_work_power2(:, :), sum_power4(:), sum_power2(:)
+    ! Functions.
+    integer :: numroc, indxl2g
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE (get_ipratio_of_eigenstates)'
+      allocate(ipratios_buf(basis%num_basis))  ! basis%num_basis == basis%Y_local%n.
+      ipratios_buf(:) = 0d0
+      do l = 1, numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
+        g = indxl2g(l, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
+        c1 = basis%Y_local%block_to_col(g)
+        c2 = basis%Y_local%block_to_col(g + 1)
+        ipratios_buf(c1 : c2 - 1) = sum(basis%Y_local%local_matrices(l)%val(:, :) ** 4d0, 1) / &
+             (sum(basis%Y_local%local_matrices(l)%val(:, :) ** 2d0, 1) ** 2d0)
+      end do
+      call mpi_allreduce(ipratios_buf, basis%dv_ipratios, basis%num_basis, mpi_double_precision, mpi_sum, &
+           mpi_comm_world, ierr)
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)
@@ -363,9 +376,7 @@ contains
       Y_work_power2(:, :) = basis%Y_filtered(:, :) ** 2d0
       call sum_columns(Y_work_power4, basis%Y_filtered_desc, sum_power4)
       call sum_columns(Y_work_power2, basis%Y_filtered_desc, sum_power2)
-      do j = 1, num_filter
-        basis%dv_ipratios(j) = sum_power4(j) / (sum_power2(j) ** 2d0)
-      end do
+      basis%dv_ipratios(1 : num_filter) = sum_power4(1 : num_filter) / (sum_power2(1 : num_filter) ** 2d0) * 2d0
     end if
   end subroutine get_ipratio_of_eigenstates
 
