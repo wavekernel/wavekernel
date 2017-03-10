@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import argparse, json, pylab, sys, math, re
+import argparse, json, pylab, sys, math, re, os.path
 
 kPsecPerAu = 2.418884326505e-5  # Time
 
@@ -70,7 +70,9 @@ def plot(energy_calc, time_start, time_end, energy_min, energy_max, is_diff_mode
     ys = energy_calc['tb_energy']
     if is_diff_mode:
         ys = diff_list(ys)
-    print_energy(ts, ys, 'tb_energy_%s.txt' % fig_path)
+    path_head, path_tail = os.path.split(fig_path)
+    path_tail_wo_ext = re.sub('\.[^.]+$', '', path_tail)
+    print_energy(ts, ys, os.path.join(path_head, 'tb_energy_%s.txt' % path_tail_wo_ext))
     pylab.plot(ts, ys, '+-', label='TB_energy (H0)', ms=mark_size)
     if is_tb_only:
         pylab.plot(ts, energy_calc['nl_energy'], '+', label='NL_energy (H1)', ms=mark_size)
@@ -80,7 +82,7 @@ def plot(energy_calc, time_start, time_end, energy_min, energy_max, is_diff_mode
             ys = map(lambda l: l['eigenvalues'][-1 - i], energy_calc['eigenvalues_log'])
             #if is_diff_mode:
             #    ys = diff_list(ys)
-            print_energy(ts, ys, 'homo_%d_energy_%s.txt' % (i, fig_path))
+            print_energy(ts, ys, os.path.join(path_head, 'highstate_%d_energy_%s.txt' % (i, path_tail_wo_ext)))
             label = 'HOMO' if i == 0 else ('HOMO-%d' % i)
             pylab.plot(ts, ys, 'x-', label=label, ms=mark_size - 2)
 
