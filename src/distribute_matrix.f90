@@ -11,6 +11,16 @@ module wk_distribute_matrix_m
     real(8), allocatable :: val(:, :)
   end type wk_local_matrix_t
 
+  ! Index range of g-th group block is
+  ! [block_to_row(g) : block_to_row(g + 1) - 1, block_to_col(g) : block_to_col(g + 1) - 1]
+  ! (entire matrix is [1 : m, 1 : n]).
+  ! Blocks are assinged to processes in cyclic manner.
+  ! Therefore, index conversion can be performed by the ScaLAPACK utility routines as follows.
+  ! The g-th group block is stored in local_matrices(l) in p-th process,
+  ! where l = indxg2l(g, 1, my_rank, 0, num_procs),
+  ! and p = indxg2p(g, 1, my_rank, 0, num_procs).
+  ! Eack process has numroc(num_blocks, 1, my_rank, 0, num_procs) blocks.
+  ! The l-th local block corresponds to g-th global block, where g = indxl2g(l, 1, my_rank, 0, num_procs),
   type wk_distributed_block_matrices_t
     ! Global values.
     integer :: m, n, num_blocks, num_procs
