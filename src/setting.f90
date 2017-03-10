@@ -29,7 +29,7 @@ module wk_setting_m
     logical :: is_atom_indices_enabled = .false., to_multiply_phase_factor = .false., &
          is_output_split = .false., &
          is_group_id_used = .false., is_overlap_ignored = .false., is_restart_mode = .false., &
-         is_binary_output_mode = .false., is_multistep_input_mode = .false., is_reduction_mode = .false., &
+         is_binary_output_mode = .false., is_multistep_input_mode = .false., &
          to_calculate_eigenstate_moment_every_step = .true.
     character(len=1024) :: &
          filename_hamiltonian = '', &
@@ -355,8 +355,6 @@ contains
             read(argv(i + 1 :), *) setting%amplitude_print_interval
           end if
           index_arg = index_arg + 1
-        case ('-reduce')
-          setting%is_reduction_mode = .true.
         case ('-re-init')
           call getarg(index_arg + 1, setting%re_initialize_method)
           index_arg = index_arg + 1
@@ -491,7 +489,6 @@ contains
     if (setting%is_multistep_input_mode) then
       call fson_path_get(setting_fson, 'multistep_input_read_interval', setting%multistep_input_read_interval)
     end if
-    call fson_path_get(setting_fson, 'is_reduction_mode', setting%is_reduction_mode)
 
     allocate(setting%restart_psi(fson_value_count(psi_real_fson)), &
          setting%restart_split_files_metadata(fson_value_count(split_files_metadata_fson)))
@@ -554,9 +551,10 @@ contains
     type(wk_setting_t), intent(in) :: setting
 
     if (setting%time_evolution_mode /= 'crank_nicolson' .and. &
-    setting%time_evolution_mode /= 'taylor1' .and. &
-    setting%time_evolution_mode /= 'taylor2' .and. &
-    setting%time_evolution_mode /= 'taylor3') then
+         setting%time_evolution_mode /= 'taylor1' .and. &
+         setting%time_evolution_mode /= 'taylor2' .and. &
+         setting%time_evolution_mode /= 'taylor3') then
+      print *, 'a',trim(setting%time_evolution_mode),'b'
       stop 'invalid time evolution scheme'
     end if
 
@@ -710,11 +708,6 @@ contains
     else
       print *, 'is_overlap_ignored: false'
     end if
-    if (setting%is_reduction_mode) then
-      print *, 'is_reduction_mode: true'
-    else
-      print *, 'is_reduction_mode: false'
-    end if
     print *, 're_initialize_method: ', trim(setting%re_initialize_method)
     if (setting%re_initialize_method == 'minimize_lcao_error_cutoff') then
       print *, 'vector_cutoff_residual: ', setting%vector_cutoff_residual
@@ -771,7 +764,7 @@ contains
     use mpi
     integer, intent(in) :: root
     type(wk_setting_t), intent(inout) :: setting
-    integer, parameter :: num_real = 18, num_integer = 17, num_logical = 9, num_character = 16
+    integer, parameter :: num_real = 18, num_integer = 17, num_logical = 8, num_character = 16
     real(8) :: buf_real(num_real)
     integer :: buf_integer(num_integer), my_rank, ierr, size_psi, size_split_files_metadata, size_atom_speed, size_atom_perturb
     logical :: buf_logical(num_logical)
@@ -833,12 +826,11 @@ contains
       buf_logical(1) = setting%is_atom_indices_enabled
       buf_logical(2) = setting%to_multiply_phase_factor
       buf_logical(3) = setting%is_output_split
-      buf_logical(4) = .true. ! Dummy value.
+      buf_logical(4) = .true.  ! Dummy value.
       buf_logical(5) = setting%is_group_id_used
       buf_logical(6) = setting%is_overlap_ignored
       buf_logical(7) = setting%is_restart_mode
       buf_logical(8) = setting%is_multistep_input_mode
-      buf_logical(9) = setting%is_reduction_mode
     end if
     call mpi_bcast(buf_real, num_real, mpi_double_precision, root, mpi_comm_world, ierr)
     call mpi_bcast(buf_integer, num_integer, mpi_integer, root, mpi_comm_world, ierr)
@@ -921,7 +913,6 @@ contains
       setting%is_overlap_ignored = buf_logical(6)
       setting%is_restart_mode = buf_logical(7)
       setting%is_multistep_input_mode = buf_logical(8)
-      setting%is_reduction_mode = buf_logical(9)
       setting%filename_hamiltonian  = buf_character(1)
       setting%filename_overlap = buf_character(2)
       setting%output_filename = buf_character(3)
@@ -966,7 +957,6 @@ contains
     print *, '  -s <n>  Split output files per <n> times steps'
     print *, '  -r <file>  Restart calculation using <file>'
     print *, '  -b Output array of real values in binary mode'
-    print *, '  --reduce  reduce Hamiltonian by approximated inverse square root of overlap matrix'
     print *, '  --ignore-overlap  Use identity matrix for overlap matrix'
     print *, '  --no-replace-basis  With -m option, treat changes of matrices as perturbation without replacing eigenvectors'
     print *, '  --block-size <n>  Set default block size to <n> (Default: 64)'

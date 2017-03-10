@@ -321,13 +321,6 @@ contains
       call fson_value_add(setting_in_fson, setting_elem)
     end if
 
-    ! Set misc flags.
-    setting_elem => fson_value_create()
-    setting_elem%value_type = TYPE_LOGICAL
-    call fson_set_name('is_reduction_mode', setting_elem)
-    setting_elem%value_logical = setting%is_reduction_mode
-    call fson_value_add(setting_in_fson, setting_elem)
-
     ! Set re-initialize settings
     setting_elem => fson_value_create()
     call fson_set_name('re_initialize_method', setting_elem)

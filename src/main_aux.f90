@@ -147,9 +147,6 @@ contains
       state%basis%num_basis = setting%num_filter
     end if
 
-    if (setting%is_reduction_mode) then
-      call terminate('setup_distributed_matrices: reduction mode is not implemented in this version', 1)
-    end if
     if (state%basis%is_group_filter_mode) then
       call setup_distributed_matrix_real('H1_base', &
            state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%basis%H1_base, .true.)
@@ -284,10 +281,6 @@ contains
       call make_dummy_group_id(state%structure%num_atoms, state%group_id)
     end if
 
-    if (setting%is_reduction_mode) then
-      call terminate('set_aux_matrices: reduction mode is not implemented in this version', 1)
-    end if
-
     if (check_master()) then
       write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] set_aux_matrices() start '
@@ -387,10 +380,6 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
       call setup_distributed_matrix_real('SY', state%dim, setting%num_filter, SY_desc, SY)
       call matmul_sd_d(state%S_sparse, state%basis%Y_filtered, state%basis%Y_filtered_desc, 1d0, SY, 1d0)
-    end if
-
-    if (setting%is_reduction_mode) then
-      call terminate('read_next_input_step_with_basis_replace: reduction mode is not implemented in this version', 1)
     end if
 
     if (to_use_precomputed_eigenpairs) then
@@ -839,9 +828,6 @@ contains
   !  type(sparse_mat), intent(inout) :: S_multistep_sparse
   !
   !  call clear_offdiag_blocks_of_overlap(setting, filter_group_indices, S_multistep_sparse)
-  !  if (setting%is_reduction_mode) then
-  !    call terminate('read_next_input_step_matrix: reduction mode is not implemented in this version', 1)
-  !  end if
   !end subroutine read_next_input_step_matrix
 
 
