@@ -5,7 +5,8 @@ module wk_util_m
   public :: wk_energy_t, wk_error_t, index_to_coordinate, truncate_imag, &
        add_number_to_filename, add_numbers_to_filename, add_numbers_to_filename_multiple_initial, &
        add_postfix_to_filename, &
-       remove_directory_from_filename, read_vector, wk_random_number, comb_sort
+       remove_directory_from_filename, read_vector, wk_random_number, comb_sort, &
+       find_range_index
 
   type wk_energy_t
     real(8) :: tightbinding, nonlinear, total, tightbinding_deviation
@@ -237,4 +238,41 @@ contains
       end do
     end do
   end subroutine comb_sort
+
+
+  ! Find index of the range that contains given element.
+  ! when ranges = [1, 3, 6, 11], it expresses list of successive ranges
+  ! 1 <= x < 3, 3 <= x < 6, 6 <= x < 11.
+  ! Searched element x is 5, returned range index is 2 (3 <= x < 6).
+  integer function find_range_index(ranges, x)
+    integer, intent(in) :: ranges(:), x
+
+    integer :: n, s, e, m, i
+
+    n = size(ranges, 1) - 1
+    if (n < 1) then
+      stop 'find_range_index: input does not express ranges '
+    end if
+
+    ! Bisection method.
+    s = 1
+    e = n
+    do while (e - s > 7)
+      m = (s + e) / 2
+      if (x < ranges(m)) then
+        e = m - 1
+      else
+        s = m
+      end if
+    end do
+
+    ! When the width of range reaches 8, do sequential search.
+    do i = s, e
+      if (ranges(i) <= x .and. x < ranges(i + 1)) then
+        find_range_index = i
+        return
+      end if
+    end do
+    find_range_index = 0  ! Not found.
+  end function find_range_index
 end module wk_util_m

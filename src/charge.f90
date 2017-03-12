@@ -269,28 +269,30 @@ contains
     integer, intent(in) :: X_desc(desc_size)
     real(8), intent(inout) :: X(:, :)
 
-    integer :: a, i, j, maxlocs(X_desc(cols_))
+    integer :: a, i, j, i_local, j_local, maxlocs(X_desc(cols_))
     real(8) :: center, unit, coord, coord_original, elem
+    ! Functions.
+    integer :: numroc, indxl2g
 
     ! Warning: searching basis with max charge, not atom.
     !          This is incompatible with get_mulliken_charge_coordinate_moments.
     call maxloc_columns(X, X_desc, maxlocs)
-    do j = 1, X_desc(cols_)
+    do j_local = 1, numroc(X_desc(cols_), X_desc(block_col_), g_my_proc_col, X_desc(csrc_), g_n_procs_col)
+      j = indxl2g(j_local, X_desc(block_col_), g_my_proc_col, X_desc(csrc_), g_n_procs_col)
       if (structure%periodic_xyz(axis)) then  ! Periodic boundary condition is imposed.
         unit = structure%unitcell_xyz(axis)
         center = structure%atom_coordinates(axis, base_index_to_atom(structure, maxlocs(j)))
       end if
-      do a = 1, structure%num_atoms
+      do i_local = 1, numroc(X_desc(rows_), X_desc(block_row_), g_my_proc_row, X_desc(rsrc_), g_n_procs_row)
+        i = indxl2g(i_local, X_desc(block_row_), g_my_proc_row, X_desc(rsrc_), g_n_procs_row)
+        a = find_range_index(structure%atom_indices, i)
         coord_original = structure%atom_coordinates(axis, a)
         if (structure%periodic_xyz(axis)) then
           coord = wrap_around_center(coord_original, unit, center)
         else
           coord = coord_original
         end if
-        do i = structure%atom_indices(a), structure%atom_indices(a + 1) - 1
-          call pdelget('Self', ' ', elem, X, i, j, X_desc)
-          call pdelset(X, i, j, X_desc, elem * (coord ** order))
-        end do
+        X(i_local, j_local) = X(i_local, j_local) * (coord ** order)
       end do
     end do
   end subroutine multiply_coordinates_to_charge_matrix
