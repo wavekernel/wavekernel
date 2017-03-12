@@ -376,7 +376,7 @@ contains
       Y_work_power2(:, :) = basis%Y_filtered(:, :) ** 2d0
       call sum_columns(Y_work_power4, basis%Y_filtered_desc, sum_power4)
       call sum_columns(Y_work_power2, basis%Y_filtered_desc, sum_power2)
-      basis%dv_ipratios(1 : num_filter) = sum_power4(1 : num_filter) / (sum_power2(1 : num_filter) ** 2d0) * 2d0
+      basis%dv_ipratios(1 : num_filter) = sum_power4(1 : num_filter) / (sum_power2(1 : num_filter) ** 2d0)
     end if
   end subroutine get_ipratio_of_eigenstates
 
