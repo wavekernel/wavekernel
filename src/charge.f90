@@ -274,6 +274,9 @@ contains
     ! Functions.
     integer :: numroc, indxl2g
 
+    write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] multiply_coordinates_to_charge_matrix() : start'
+
     ! Warning: searching basis with max charge, not atom.
     !          This is incompatible with get_mulliken_charge_coordinate_moments.
     call maxloc_columns(X, X_desc, maxlocs)
@@ -295,6 +298,9 @@ contains
         X(i_local, j_local) = X(i_local, j_local) * (coord ** order)
       end do
     end do
+
+    write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] multiply_coordinates_to_charge_matrix() : complete'
   end subroutine multiply_coordinates_to_charge_matrix
 
 
@@ -308,6 +314,9 @@ contains
     integer :: dim, num_filter, i, j, print_count, ierr, m_local, n_local, axis
     type(wk_charge_moment_t) ::charge_moment
 
+    write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] get_msd_of_eigenstates() : start'
+
     if (basis%is_group_filter_mode) then
       stop 'IMPLEMENT HERE (get_msd_of_eigenstates)'
     else
@@ -319,13 +328,21 @@ contains
       allocate(sums(num_filter))
       ! Make matrices SY and Y .* SY where '.*' means element-wise multiplication.
       call matmul_sd_d(S_sparse, basis%Y_filtered, basis%Y_filtered_desc, 1d0, Y_work, 0d0)
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] get_msd_of_eigenstates() : matmul_sd_d end'
       Y_work(:, :) = basis%Y_filtered(:, :) * Y_work(:, :)
       ! Normalize charge distributions.
       call sum_columns(Y_work, basis%Y_filtered_desc, sums)
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+         '] get_msd_of_eigenstates() : sum_columns end'
       do j = 1, num_filter
         call pdscal(dim, 1d0 / sums(j), Y_work, 1, j, basis%Y_filtered_desc, 1)
       end do
+      write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] get_msd_of_eigenstates() : pdscal end'
       do axis = 1, 3
+        write (0, '(A, F16.6, A, I0, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] get_msd_of_eigenstates() : mean and MSD calculation for axis ', axis, ' start'
         ! Get mean.
         Y_work_coord(:, :) = Y_work(:, :)
         call multiply_coordinates_to_charge_matrix(structure, axis, 1, basis%Y_filtered_desc, Y_work_coord)
@@ -343,6 +360,9 @@ contains
         basis%eigenstate_msd(4, j) = sum(basis%eigenstate_msd(1 : 3, j))
       end do
     end if
+
+    write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] get_msd_of_eigenstates() : complete'
   end subroutine get_msd_of_eigenstates
 
 
