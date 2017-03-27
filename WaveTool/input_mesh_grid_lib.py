@@ -110,7 +110,7 @@ def read_xyz(filename,periodic):
     data["atom"] = atom # all atom data
     data["atom_num"] = atom_num # all atom num
     data["matrix_num"] = data["C_num"]*4 + data["H_num"]*1 + data["O_num"]*4
-    print "matrix num",data["matrix_num"]
+    #print "matrix num",data["matrix_num"]
     return data
 
 def input_mesh_grid_t(xyz_t,cutoff):

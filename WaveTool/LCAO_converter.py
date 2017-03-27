@@ -147,7 +147,7 @@ def crop_from_splits( out , stride , max_num , min_num ,
 
 def print_wavefunction(LCAO_header, position_data,
                        states, out_dir,
-                       name,multistep_input_mode):  # name = real/imag
+                       name,multistep_input_mode,matrix_num):  # name = real/imag
     #m = 200
     out_dir_part = os.path.join(out_dir, name)
     if os.path.isdir(out_dir_part):
@@ -180,7 +180,7 @@ def print_wavefunction(LCAO_header, position_data,
                      position_data["xyz_t"]["z"][0][i])))
         out.write(LCAO_header[-1])
         out.write("         1\n")
-        for j in xrange(position_data["matrix_num"]):
+        for j in xrange(matrix_num):
             out.write("        %d        %1.15f   k=         1\n" %
                       (j + 1, t["psi"][name][j]))
         t_index += 1
@@ -188,7 +188,7 @@ def print_wavefunction(LCAO_header, position_data,
     return out_paths
 
 def LCAO_converter(wave_out, position_data, out_dir,periodic,basis_path):
-    header = read_basis(basis_path)#LCAO_header(position_data,periodic)
+    header,matrix_num = read_basis(basis_path)#LCAO_header(position_data,periodic)
     states = wave_out["states"]
     base_number = wave_out["condition"]["dim"]
     if wave_out["setting"]["is_multistep_input_mode"]:
@@ -199,9 +199,9 @@ def LCAO_converter(wave_out, position_data, out_dir,periodic,basis_path):
         multistep_input_mode = False
         sys.stderr.write("mode one step\n")
     out_paths = print_wavefunction(
-        header,position_data, states, out_dir, "real",multistep_input_mode)
+        header,position_data, states, out_dir, "real",multistep_input_mode,matrix_num)
     out_paths.extend(print_wavefunction(
-        header, position_data, states, out_dir, "imag",multistep_input_mode))
+        header, position_data, states, out_dir, "imag",multistep_input_mode,matrix_num))
     return out_paths
 
 def read_basis(filename):
@@ -261,7 +261,8 @@ def read_basis(filename):
             for k in xrange(atom_info[j][1]):
                 orbital_group += [j]
         """
-    return header
+        print len(header) 
+    return header,matrix_num
 
 def LCAO_header(position_data,periodic):
     header = []
