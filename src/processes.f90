@@ -6,11 +6,12 @@ module wk_processes_m
   integer :: g_my_rank, g_n_procs, g_context
   integer :: g_n_procs_row, g_n_procs_col, g_my_proc_row, g_my_proc_col
   integer :: g_n_omp_threads
+  integer :: g_wk_num_procs_per_color = 1
 
   private
   public :: g_my_rank, g_n_procs, g_context, &
        g_n_procs_row, g_n_procs_col, g_my_proc_row, g_my_proc_col, &
-       g_n_omp_threads
+       g_n_omp_threads, g_wk_num_procs_per_color
   public :: setup_distribution, print_proc, get_num_procs, layout_procs, &
        print_map_of_grid_to_processes, check_master, terminate, &
        check_nan_scalar, check_nan_vector, check_nan_matrix

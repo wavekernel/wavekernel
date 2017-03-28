@@ -128,21 +128,9 @@ contains
       state%basis%num_basis = setting%num_filter * num_groups
       call filter_group_id_to_indices(state%basis%dim, setting%num_filter, state%structure, &
            state%basis%filter_group_id, state%basis%filter_group_indices)
-      state%basis%Y_local%m = state%basis%dim
-      state%basis%Y_local%n = state%basis%num_basis
-      state%basis%Y_local%num_blocks = num_groups
-      state%basis%Y_local%num_procs = g_n_procs
-      state%basis%Y_local%my_rank = g_my_rank
-      allocate(state%basis%Y_local%block_to_row(num_groups + 1), state%basis%Y_local%block_to_col(num_groups + 1))
-      state%basis%Y_local%block_to_row = state%basis%filter_group_indices(1, 1 : num_groups + 1)
-      state%basis%Y_local%block_to_col = state%basis%filter_group_indices(2, 1 : num_groups + 1)
-      allocate(state%basis%Y_local%local_matrices(num_groups))
-      do group = 1, num_groups
-        m_local = state%basis%filter_group_indices(1, group + 1) - state%basis%filter_group_indices(1, group)
-        n_local = state%basis%filter_group_indices(2, group + 1) - state%basis%filter_group_indices(2, group)
-        allocate(state%basis%Y_local%local_matrices(group)%val(m_local, n_local))
-        state%basis%Y_local%local_matrices(group)%val(:, :) = 0d0
-      end do
+      call initialize_distributed_block_diagonal_matrices(mpi_comm_world, state%basis%dim, state%basis%num_basis, &
+           num_groups, state%basis%filter_group_indices(1, 1 : num_groups + 1), &
+           state%basis%filter_group_indices(2, 1 : num_groups + 1), state%basis%Y_local)
     else
       state%basis%num_basis = setting%num_filter
     end if
@@ -356,6 +344,7 @@ contains
     character(len=6) :: count_str
     integer, save :: count = 1
     integer, parameter :: iunit = 90
+    type(wk_distributed_block_diagonal_matrices_t) :: Y_local_prev
 
     if (check_master()) then
       write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
@@ -364,7 +353,7 @@ contains
 
     wtime = mpi_wtime()
 
-    if (setting%filter_mode == 'group') then
+    if (state%basis%is_group_filter_mode) then
       call clear_offdiag_blocks_of_overlap(setting, state%basis%filter_group_indices, state%S_sparse)
       call add_timer_event('read_next_input_step_with_basis_replace', 'clear_offdiag_blocks_of_overlap', wtime)
     end if
@@ -372,14 +361,19 @@ contains
     ! Save eigenvalues in the previous step.
     allocate(dv_eigenvalues_prev(size(state%basis%dv_eigenvalues, 1)))
     dv_eigenvalues_prev(:) = state%basis%dv_eigenvalues(:)
-    ! Compute SY in advance because YSY needs eigenvectors in two steps.
+    ! Compute SY or backup Y_local in advance because YSY needs eigenvectors in two steps.
     ! TODO: copy the basis variable and abstract generating YSY.
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
-      call setup_distributed_matrix_real('SY', state%dim, setting%num_filter, SY_desc, SY)
-      call matmul_sd_d(state%S_sparse, state%basis%Y_filtered, state%basis%Y_filtered_desc, 1d0, SY, 1d0)
+      if (state%basis%is_group_filter_mode) then
+        call copy_allocation_distributed_block_diagonal_matrices(state%basis%Y_local, Y_local_prev)
+        call copy_distributed_block_diagonal_matrices(state%basis%Y_local, Y_local_prev)
+      else
+        call setup_distributed_matrix_real('SY', state%dim, setting%num_filter, SY_desc, SY)
+        call matmul_sd_d(state%S_sparse, state%basis%Y_filtered, state%basis%Y_filtered_desc, 1d0, SY, 1d0)
+      end if
     end if
 
     if (to_use_precomputed_eigenpairs) then
@@ -415,7 +409,8 @@ contains
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
       if (state%basis%is_group_filter_mode) then
-        stop 'IMPLEMENT HERE (get YSY)'
+        call matmul_bsb_d(state%basis%Y_local, state%S_sparse, Y_local_prev, 1d0, &
+             state%YSY_filtered, state%YSY_filtered_desc, 0d0)
       else
         call pdgemm('Trans', 'No', setting%num_filter, setting%num_filter, state%dim, 1d0, &
              state%basis%Y_filtered, 1, 1, state%basis%Y_filtered_desc, &
@@ -614,36 +609,54 @@ contains
              0d0, t_last_refresh, structure%num_atoms / 3, H1_lcao_diag)
         call add_diag_to_sparse_matrix(dim, H1_lcao_diag, H_sparse_work)
       else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
-        stop 'IMPLEMENT HERE (set_eigenpairs 2)'
+        call terminate('set_eigenpairs: not implemented (charge_overlap with group filtering mode)', 1)
       end if
-      stop 'IMPLEMENT HERE (set_eigenpairs 3)'
       allocate(dv_eigenvalues_buf(basis%num_basis))
       dv_eigenvalues_buf(:) = 0d0  ! Initialization for mpi_allreduce.
-      do g = 1, num_groups  ! Assumes that atoms in a group have successive indices.
-        p = indxg2p(g, 1, 0, 0, g_n_procs)
-        if (g_my_rank == p) then
-          i1 = basis%filter_group_indices(1, g)
-          i2 = basis%filter_group_indices(1, g + 1)
-          j1 = basis%filter_group_indices(2, g)
-          j2 = basis%filter_group_indices(2, g + 1)
-          m = i2 - i1
-          n = j2 - j1
-          print *, 'set_eigenpairs: start dsygvd', p, i1, i2, j1, j2
-          lwork = 1 + 6 * m + 2 * m ** 2
-          liwork = 3 + 5 * m
-          allocate(H(m, m), S(m, m), w(m), work(lwork), iwork(liwork))
-          call get_block_in_sparse_matrix(H_sparse_work, i1, i1, m, m, H)
-          call get_block_in_sparse_matrix(S_sparse, i1, i1, m, m, S)
-          call dsygvd(1, 'V', 'L', m, H, m, S, m, w, work, lwork, iwork, liwork, ierr)
-          if (ierr /= 0) then
-            call terminate('set_eigenpairs: dsygvd failed', 1)
-          end if
-          dv_eigenvalues_buf(j1 : j2 - 1) = w(setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
-          l = indxg2l(g, 1, 0, 0, g_n_procs)
-          basis%Y_local%local_matrices(l)%val(1 : m, 1 : n) = &
-               H(1 : m, setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
-        end if
+      do l = 1, 1 !numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_color_index - 1, 0, basis%Y_local%num_colors)
+        !g = indxl2g(l, 1, basis%Y_local%my_color_index, 0, basis%Y_local%num_colors)
+        i1 = basis%filter_group_indices(1, g)
+        i2 = basis%filter_group_indices(1, g + 1)
+        j1 = basis%filter_group_indices(2, g)
+        j2 = basis%filter_group_indices(2, g + 1)
+        m = i2 - i1
+        n = j2 - j1
+        !call setup_distributed_matrix_real(name, rows, cols, &
+        !     desc, mat, is_square_block, block_size_row, block_size_col)
+        !call distribute_global_sparse_matrix_wk(mat_in, desc, mat)
+        !call solve_gevp(dim, origin, H, H_desc, S, S_desc, eigenvalues, Y_all, Y_all_desc)
       end do
+     ! call PDGEMR2D( M, N,
+     !                     A, IA, JA, ADESC,
+     !                     B, IB, JB, BDESC,
+     !                     CTXT)
+     !dv_eigenvalues_buf()=xxxxx
+      stop 'IMPLEMENTE HERE 12'
+      !do g = 1, basis%Y_local%num_blocks
+      !  p = indxg2p(g, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
+      !  if (basis%Y_local%my_rank == p) then
+      !    i1 = basis%filter_group_indices(1, g)
+      !    i2 = basis%filter_group_indices(1, g + 1)
+      !    j1 = basis%filter_group_indices(2, g)
+      !    j2 = basis%filter_group_indices(2, g + 1)
+      !    m = i2 - i1
+      !    n = j2 - j1
+      !    print *, 'set_eigenpairs: start dsygvd', p, i1, i2, j1, j2
+      !    lwork = 1 + 6 * m + 2 * m ** 2
+      !    liwork = 3 + 5 * m
+      !    allocate(H(m, m), S(m, m), w(m), work(lwork), iwork(liwork))
+      !    call get_block_in_sparse_matrix(H_sparse_work, i1, i1, m, m, H)
+      !    call get_block_in_sparse_matrix(S_sparse, i1, i1, m, m, S)
+      !    call dsygvd(1, 'V', 'L', m, H, m, S, m, w, work, lwork, iwork, liwork, ierr)
+      !    if (ierr /= 0) then
+      !      call terminate('set_eigenpairs: dsygvd failed', 1)
+      !    end if
+      !    dv_eigenvalues_buf(j1 : j2 - 1) = w(setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
+      !    l = indxg2l(g, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
+      !    basis%Y_local%local_matrices(l)%val(1 : m, 1 : n) = &
+      !         H(1 : m, setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
+      !  end if
+      !end do
       call mpi_allreduce(dv_eigenvalues_buf, basis%dv_eigenvalues, basis%num_basis, &
            mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
       deallocate(dv_eigenvalues_buf)
@@ -704,7 +717,7 @@ contains
   subroutine set_H1_base(filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
     integer, intent(in) :: filter_group_indices(:, :), H1_desc(desc_size)
     type(sparse_mat), intent(in) :: H_sparse
-    type(wk_distributed_block_matrices_t), intent(in) :: Y_local
+    type(wk_distributed_block_diagonal_matrices_t), intent(in) :: Y_local
     real(8), intent(out) :: H1_base(:, :)
 
     call change_basis_lcao_to_alpha_group_filter(filter_group_indices, Y_local, &
@@ -842,19 +855,67 @@ contains
   end subroutine post_process_after_matrix_replace
 
 
+  subroutine step_forward_sparse(setting, state)
+    type(wk_setting_t), intent(in) :: setting
+    type(wk_state_t), intent(inout) :: state
+
+    real(8) :: norm
+    real(8), allocatable :: Sw(:, :)
+    complex(kind(0d0)), allocatable :: SP1(:, :), SP2(:, :), psi(:, :), SP1psi(:, :)
+    integer, allocatable :: SP2IPIV(:)
+    complex(kind(0d0)), allocatable :: Spsi(:)
+    integer :: j, psi_desc(desc_size), desc(desc_size), ierr
+    complex(kind(0d0)) :: dot
+    ! Functions.
+    complex(kind(0d0)) :: zdotc
+
+    call make_matrices_for_sparse(setting%delta_t, setting%multistep_input_read_interval, &
+         state%t, state%t_last_replace, &
+         state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
+         SP1, SP2, SP2IPIV, Sw, desc)
+    allocate(Spsi(state%dim))
+    do j = 1, setting%num_multiple_initials
+      call matvec_dd_z('No', Sw, desc, kOne, state%dv_psi(:, j), kZero, Spsi)
+      dot = zdotc(state%dim, state%dv_psi(:, j), 1, Spsi, 1)
+      norm = sqrt(truncate_imag(dot))
+    end do
+    call setup_distributed_matrix_complex('psi', state%dim, setting%num_multiple_initials, &
+         psi_desc, psi)
+    call setup_distributed_matrix_complex('SP1psi', state%dim, setting%num_multiple_initials, &
+         psi_desc, SP1psi)
+    call distribute_matrix_complex(g_context, 0, 0, state%dim, state%dv_psi, psi_desc, psi)
+
+    call pzgemm('No', 'No', state%dim, setting%num_multiple_initials, state%dim, kOne, &
+         SP1, 1, 1, desc, &
+         psi, 1, 1, psi_desc, &
+         kZero, &
+         SP1psi, 1, 1, psi_desc)
+    call pzgetrs('No', state%dim, setting%num_multiple_initials, SP2, 1, 1, desc, SP2IPIV, &
+         SP1psi, 1, 1, psi_desc, ierr)
+    call gather_matrix_complex_with_pzgemr2d(g_context, psi_desc, SP1psi, &
+         0, 0, state%dim, state%dv_psi_next)
+
+    do j = 1, setting%num_multiple_initials
+      call matvec_dd_z('No', Sw, desc, kOne, state%dv_psi_next(:, j), kZero, Spsi)
+      dot = zdotc(state%dim, state%dv_psi_next(:, j), 1, Spsi, 1)
+      norm = sqrt(truncate_imag(dot))
+      if (norm > 1d-16) then
+        state%dv_psi_next(:, j) = state%dv_psi_next(:, j) / norm
+      end if
+    end do
+    call mpi_bcast(state%dv_psi_next, state%dim * setting%num_multiple_initials, mpi_double_complex, &
+         g_wk_master_pnum, mpi_comm_world, ierr)
+  end subroutine step_forward_sparse
+
+
   subroutine make_matrix_step_forward(setting, state)
     type(wk_setting_t), intent(in) :: setting
     type(wk_state_t), intent(inout) :: state
 
     integer :: j, i, k
     real(8) :: wtime, norm, diff_eigenvalue, damp_factor, alpha_next_norm, amplitude_after_normalize
-    real(8), allocatable :: Sw(:, :)
-    complex(kind(0d0)), allocatable :: SP1(:, :), SP2(:, :), psi(:, :), SP1psi(:, :)
-    integer, allocatable :: SP2IPIV(:)
-    complex(kind(0d0)), allocatable :: Spsi(:)
-    integer :: psi_desc(desc_size), desc(desc_size), ierr
-    complex(kind(0d0)) :: dot
-    complex(kind(0d0)) :: zdotc
+    integer :: ierr
+
     real(8) :: dznrm2
 
     wtime = mpi_wtime()
@@ -864,7 +925,7 @@ contains
            '] make_matrix_step_forward() start '
     end if
 
-    if (trim(setting%h1_type) == 'zero' .and. trim(setting%filter_mode) /= 'group') then
+    if (trim(setting%h1_type) == 'zero' .and. .not. state%basis%is_group_filter_mode) then
       ! Skip time evolution calculation.
       do j = 1, setting%num_multiple_initials
         do i = 1, setting%num_filter
@@ -872,7 +933,7 @@ contains
         end do
       end do
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
-    else if (trim(setting%h1_type(1 : 9)) == 'zero_damp' .and. trim(setting%filter_mode) /= 'group') then
+    else if (trim(setting%h1_type(1 : 9)) == 'zero_damp' .and. .not. state%basis%is_group_filter_mode) then
       ! Skip time evolution calculation.
       do j = 1, setting%num_multiple_initials
         if (trim(setting%init_type) == 'alpha_delta') then
@@ -904,48 +965,8 @@ contains
                '] make_matrix_step_forward()  amplitude_after_normalize', amplitude_after_normalize
         end if
       end do
-    else if (trim(setting%h1_type) == 'zero_sparse' .and. trim(setting%filter_mode) /= 'group') then
-      call make_matrices_for_sparse(setting%delta_t, setting%multistep_input_read_interval, &
-           state%t, state%t_last_replace, &
-           state%H_sparse, state%S_sparse, state%H_sparse_prev, state%S_sparse_prev, &
-           SP1, SP2, SP2IPIV, Sw, desc)
-      allocate(Spsi(state%dim))
-      do j = 1, setting%num_multiple_initials
-        call matvec_dd_z('No', Sw, desc, kOne, state%dv_psi(:, j), kZero, Spsi)
-        dot = zdotc(state%dim, state%dv_psi(:, j), 1, Spsi, 1)
-        norm = sqrt(truncate_imag(dot))
-        !print *, 'ZZZZZZnormBefore', j, norm
-      end do
-      call setup_distributed_matrix_complex('psi', state%dim, setting%num_multiple_initials, &
-           psi_desc, psi)
-      call setup_distributed_matrix_complex('SP1psi', state%dim, setting%num_multiple_initials, &
-           psi_desc, SP1psi)
-      call distribute_matrix_complex(g_context, 0, 0, state%dim, state%dv_psi, psi_desc, psi)
-      !print *, 'ZZZZZZZZZZZZA1', psi(1:20,1)
-
-      call pzgemm('No', 'No', state%dim, setting%num_multiple_initials, state%dim, kOne, &
-           SP1, 1, 1, desc, &
-           psi, 1, 1, psi_desc, &
-           kZero, &
-           SP1psi, 1, 1, psi_desc)
-      !print *, 'ZZZZZZZZZZZZA', SP1psi(1:20,1)
-      call pzgetrs('No', state%dim, setting%num_multiple_initials, SP2, 1, 1, desc, SP2IPIV, &
-           SP1psi, 1, 1, psi_desc, ierr)
-      !print *, 'ZZZZZZZZZZZZB', SP1psi(1:20,1)
-      call gather_matrix_complex_with_pzgemr2d(g_context, psi_desc, SP1psi, &
-           0, 0, state%dim, state%dv_psi_next)
-
-      do j = 1, setting%num_multiple_initials
-        call matvec_dd_z('No', Sw, desc, kOne, state%dv_psi_next(:, j), kZero, Spsi)
-        dot = zdotc(state%dim, state%dv_psi_next(:, j), 1, Spsi, 1)
-        norm = sqrt(truncate_imag(dot))
-        !print *, 'ZZZZZZnorm', j, norm
-        if (norm > 1d-16) then
-          state%dv_psi_next(:, j) = state%dv_psi_next(:, j) / norm
-        end if
-      end do
-      call mpi_bcast(state%dv_psi_next, state%dim * setting%num_multiple_initials, mpi_double_complex, &
-           g_wk_master_pnum, mpi_comm_world, ierr)
+    else if (trim(setting%h1_type) == 'zero_sparse' .and. .not. state%basis%is_group_filter_mode) then
+      call step_forward_sparse(setting, state)
     else
       ! dv_charge_on_atoms must not be referenced when setting%num_multiple_initials > 1.
       call make_H1(trim(setting%h1_type), state%structure, &

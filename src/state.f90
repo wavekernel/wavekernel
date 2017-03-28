@@ -32,7 +32,7 @@ module wk_state_m
     real(8), allocatable :: Y_filtered(:, :)  ! m x n
     ! Variables for filter mode.
     real(8), allocatable :: H1_base(:, :)  ! n x n
-    type(wk_distributed_block_matrices_t) :: Y_local
+    type(wk_distributed_block_diagonal_matrices_t) :: Y_local
     integer, allocatable :: filter_group_id(:, :), filter_group_indices(:, :)
     integer :: H1_desc(desc_size)
   end type wk_basis_t

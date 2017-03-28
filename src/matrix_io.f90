@@ -7,8 +7,8 @@ module wk_matrix_io_m
 
   type sparse_mat
     integer :: size, num_non_zeros
-    real(8), allocatable :: value(:)
-    integer, allocatable :: suffix(:, :)
+    real(8), allocatable :: value(:)  ! size: (num_non_zeros)
+    integer, allocatable :: suffix(:, :)  ! size: (2, num_non_zeros). For the first index, (1, 2) = (row, col).
   end type sparse_mat
 
   private

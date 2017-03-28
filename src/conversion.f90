@@ -25,7 +25,7 @@ contains
     complex(kind(0d0)), intent(out) :: dv_psi(basis%dim)
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE (alpha_to_lcao_coef)'
+      call matvec_bd_z('No', basis%Y_local, kOne, dv_alpha, kZero, dv_psi)
     else
       dv_psi(:) = kZero
       call matvec_dd_z('No', basis%Y_filtered, basis%Y_filtered_desc, kOne, dv_alpha, kZero, dv_psi)
@@ -82,13 +82,13 @@ contains
 
   subroutine change_basis_lcao_to_alpha_group_filter(filter_group_indices, Y_local, &
        A_lcao_sparse, A_alpha, A_alpha_desc, to_ignore_diag_block_)
-    type(wk_distributed_block_matrices_t), intent(in) :: Y_local
+    type(wk_distributed_block_diagonal_matrices_t), intent(in) :: Y_local
     type(sparse_mat), intent(in) :: A_lcao_sparse
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: filter_group_indices(:, :), A_alpha_desc(desc_size)
     logical, intent(in), optional :: to_ignore_diag_block_
 
-    stop 'IMPLEMENT HERE (change_basis_lcao_to_alpha_group_filter)'
+    call matmul_bsb_d(Y_local, A_lcao_sparse, Y_local, 1d0, A_alpha, A_alpha_desc, 0d0)
   !
   !  integer :: num_groups, dim, num_filter
   !  integer :: g, p, nprow, npcol, myp, myg, myprow, mypcol, np, prow, pcol
@@ -351,12 +351,15 @@ contains
 
   subroutine change_basis_lcao_diag_to_alpha_group_filter(filter_group_indices, Y_local, &
        A_lcao_diag, A_alpha, A_alpha_desc)
-    type(wk_distributed_block_matrices_t), intent(in) :: Y_local
+    type(wk_distributed_block_diagonal_matrices_t), intent(in) :: Y_local
     real(8), intent(in) :: A_lcao_diag(:)
     real(8), intent(out) :: A_alpha(:, :)
     integer, intent(in) :: A_alpha_desc(desc_size), filter_group_indices(:, :)
 
-    stop 'IMPLEMENT HERE (change_basis_lcao_diag_to_alpha_group_filter)'
+    type(sparse_mat) :: A_lcao_sparse
+
+    call diag_to_sparse_matrix(Y_local%m, A_lcao_diag, A_lcao_sparse)
+    call matmul_bsb_d(Y_local, A_lcao_sparse, Y_local, 1d0, A_alpha, A_alpha_desc, 0d0)
   !
   !  integer :: num_groups, dim, num_filter
   !  integer :: g, p, nprow, npcol, myp, myg, myprow, mypcol, np, prow, pcol
@@ -458,7 +461,8 @@ contains
 
     ! c = Y^\dagger S \psi, \alpha <- c
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE (lcao_coef_to_alpha)'
+      call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)
+      call matvec_bd_z('Trans', basis%Y_local, kOne, dv_s_psi, kZero, dv_alpha)
     else
       dv_s_psi(:) = kZero
       call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)

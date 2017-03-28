@@ -304,6 +304,52 @@ contains
   end subroutine multiply_coordinates_to_charge_matrix
 
 
+  subroutine multiply_coordinates_to_charge_matrix_block(structure, axis, order, X)
+    type(wk_structure_t), intent(in) :: structure
+    integer, intent(in) :: axis  ! 1 / 2 / 3 is x / y / z, respectively.
+    integer, intent(in) :: order  ! Order of moment to compute (1 or 2).
+    type(wk_distributed_block_diagonal_matrices_t), intent(inout) :: X
+
+    integer :: l, g, a, i, j, i_local, j_local
+    integer, allocatable :: maxlocs(:)
+    real(8) :: center, unit, coord, coord_original
+    ! Functions.
+    integer :: numroc, indxl2g
+
+    write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+         '] multiply_coordinates_to_charge_matrix() : start'
+
+    stop 'IMPLEMENT HERE 11'
+
+    !! Warning: searching basis with max charge, not atom.
+    !!          This is incompatible with get_mulliken_charge_coordinate_moments.
+    !allocate(maxlocs(X%n))
+    !call maxloc_columns_block(X, maxlocs)
+    !do l = 1, numroc(X%n, 1, X%my_rank, 0, X%num_procs)
+    !  g = indxl2g(l, 1, X%my_rank, 0, X%num_procs)
+    !  do j = X%block_to_col(g), X%block_to_col(g + 1) - 1
+    !    if (structure%periodic_xyz(axis)) then  ! Periodic boundary condition is imposed.
+    !      unit = structure%unitcell_xyz(axis)
+    !      center = structure%atom_coordinates(axis, find_range_index(structure%atom_indices, maxlocs(j)))
+    !    end if
+    !    do i = X%block_to_row(g), X%block_to_row(g + 1) - 1
+    !      a = find_range_index(structure%atom_indices, i)
+    !      coord_original = structure%atom_coordinates(axis, a)
+    !      if (structure%periodic_xyz(axis)) then
+    !        coord = wrap_around_center(coord_original, unit, center)
+    !      else
+    !        coord = coord_original
+    !      end if
+    !      !i_local = i - X%block_to_row(g) + 1
+    !      !j_local = j - X%block_to_col(g) + 1
+    !      !X%local_matrices(l)%val(i_local, j_local) = X%local_matrices(l)%val(i_local, j_local) * (coord ** order)
+    !      call pdscal_elem_block(coord ** order, i, j, X)
+    !    end do
+    !  end do
+    !end do
+  end subroutine multiply_coordinates_to_charge_matrix_block
+
+
   subroutine get_msd_of_eigenstates(structure, S_sparse, basis)
     type(sparse_mat), intent(in) :: S_sparse
     type(wk_structure_t), intent(in) :: structure
@@ -313,12 +359,40 @@ contains
     real(8) :: dv_charge_on_atoms(structure%num_atoms)
     integer :: dim, num_filter, i, j, print_count, ierr, m_local, n_local, axis
     type(wk_charge_moment_t) ::charge_moment
+    type(wk_distributed_block_diagonal_matrices_t) :: YSY_work, YSY_work_coord
 
     write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
            '] get_msd_of_eigenstates() : start'
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE (get_msd_of_eigenstates)'
+      allocate(sums(basis%num_basis))
+      call copy_allocation_distributed_block_diagonal_matrices(basis%Y_local, YSY_work)
+      call copy_allocation_distributed_block_diagonal_matrices(basis%Y_local, YSY_work_coord)
+      call matmul_sb_d_diagonal(S_sparse, basis%Y_local, 1d0, YSY_work, 0d0)  ! YSY_work := Y * S.
+      call elementwise_matmul_bb_d_inplace(basis%Y_local, YSY_work)  ! YSY_work := Y *. YSY_work = Y *. (S * Y).
+      call sum_columns_block(YSY_work, sums)
+      do j = 1, basis%num_basis
+        call pdscal_column_block(1d0 / sums(j), j, YSY_work)
+      end do
+      do axis = 1, 3
+        write (0, '(A, F16.6, A, I0, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] get_msd_of_eigenstates() : mean and MSD calculation (in block filtering) for axis ', axis, ' start'
+        ! Get mean.
+        call copy_distributed_block_diagonal_matrices(YSY_work, YSY_work_coord)
+        call multiply_coordinates_to_charge_matrix_block(structure, axis, 1, YSY_work_coord)
+        call sum_columns_block(YSY_work_coord, sums)
+        basis%eigenstate_mean(axis, :) = sums(:)
+        ! Get MSD.
+        call copy_distributed_block_diagonal_matrices(YSY_work, YSY_work_coord)
+        call multiply_coordinates_to_charge_matrix_block(structure, axis, 2, YSY_work_coord)
+        call sum_columns_block(YSY_work_coord, sums)
+        basis%eigenstate_msd(axis, :) = sums(:)
+        ! Use formula for varianve <(x - <x>)^2> = <x^2> - <x>^2.
+        basis%eigenstate_msd(axis, :) = basis%eigenstate_msd(axis, :) - (basis%eigenstate_mean(axis, :) ** 2d0)
+      end do
+      do j = 1, basis%num_basis
+        basis%eigenstate_msd(4, j) = sum(basis%eigenstate_msd(1 : 3, j))
+      end do
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)
@@ -376,17 +450,18 @@ contains
     integer :: numroc, indxl2g
 
     if (basis%is_group_filter_mode) then
-      allocate(ipratios_buf(basis%num_basis))  ! basis%num_basis == basis%Y_local%n.
-      ipratios_buf(:) = 0d0
-      do l = 1, numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
-        g = indxl2g(l, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
-        c1 = basis%Y_local%block_to_col(g)
-        c2 = basis%Y_local%block_to_col(g + 1)
-        ipratios_buf(c1 : c2 - 1) = sum(basis%Y_local%local_matrices(l)%val(:, :) ** 4d0, 1) / &
-             (sum(basis%Y_local%local_matrices(l)%val(:, :) ** 2d0, 1) ** 2d0)
-      end do
-      call mpi_allreduce(ipratios_buf, basis%dv_ipratios, basis%num_basis, mpi_double_precision, mpi_sum, &
-           mpi_comm_world, ierr)
+      stop 'IMPLEMENT HERE 5'
+      !allocate(ipratios_buf(basis%num_basis))  ! basis%num_basis == basis%Y_local%n.
+      !ipratios_buf(:) = 0d0
+      !do l = 1, numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
+      !  g = indxl2g(l, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
+      !  c1 = basis%Y_local%block_to_col(g)
+      !  c2 = basis%Y_local%block_to_col(g + 1)
+      !  ipratios_buf(c1 : c2 - 1) = sum(basis%Y_local%local_matrices(l)%val(:, :) ** 4d0, 1) / &
+      !       (sum(basis%Y_local%local_matrices(l)%val(:, :) ** 2d0, 1) ** 2d0)
+      !end do
+      !call mpi_allreduce(ipratios_buf, basis%dv_ipratios, basis%num_basis, mpi_double_precision, mpi_sum, &
+      !     mpi_comm_world, ierr)
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)
