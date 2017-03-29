@@ -238,6 +238,7 @@ def plot_charge_moment(charge_moment,
     #pylab.xticks(xticks_new)
     #pylab.xlim(time_start, time_end)  # limit setting again is needed.
 
+    pylab.legend()
     pylab.title(title)
     pylab.savefig(fig_path, dpi=80)  # dpi=80 correspond to figsize=(10, 7.5).
 
@@ -303,7 +304,7 @@ if __name__ == '__main__':
     if args.window_widths_str is None:
         window_widths = None
     else:
-        window_widths = map(lambda s: int(s), args.window_widths_str.split())
+        window_widths = map(lambda s: int(s), args.window_widths_str.split(','))
 
     plot_charge_moment(charge_moment,
                        args.msd_axis, args.msd_min, args.msd_max,
