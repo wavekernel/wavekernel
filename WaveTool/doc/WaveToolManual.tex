@@ -253,6 +253,25 @@ xyzファイルを読み込みその原子が全て含まれるように自動�
 oakleaf,Kでのbynari出力を読み込む時に使用する\\
 \item -\--LCAO\\
 LCAO係数データファイル(output\_wavefunction)のみを出力するモード(mpi並列で実行しても意味ありません)\\
+\item -periodic periodic\\
+周期境界条件を適用するときに使用する。入力したxyzファイルにcellの情報が書かれていない場合は動きません。入力方法は -periodic zxy のように拡張したい方向を入力する(順不同)。周期セルに合わせるようにinput\_mesh\_grid.txtを作成する。ただし、他の自動作成のオプションを使用した場合はそちらが優先される。\\
+\\
+注)現在(2017/03/17)、このオプションを使用しても余り意味がありません(周期境界条件ぴったりのinput\_mesh\_grid.txtを作成するのみ)。周期境界条件を変更したい場合は、「output\_basis\_infomation.txt」の中を直接編集してください。\\
+3から5行目の右端の数字が周期境界条件を適用するかどうか現しているので、この値を適用する場合は「1」、適用しない場合は「0」にしてください。
+\begin{Verbatim}[frame=single]
+# file_format= v0.04.05
+       209       518
+     40.95296659      0.00000000      0.00000000    0
+      0.00000000     31.59932121      0.00000000    0
+      0.00000000      0.00000000     29.04442559    0
+\end{Verbatim}
+xyzファイルにcellの情報を追加していない時に周期境界条件を適用する場合は、「input\_mesh\_grid.txt」を自動で作成せずに以下のように手動で作成してください。\\
+\begin{Verbatim}[frame=single]
+80 80 80 # Number of mesh points
+0.0d0 0.0d0 0.0d0 internal # origin of the mesh grid region
+1.0d0 1.0d0 1.0d0 internal # sizes of the mesh grid region
+\end{Verbatim}
+
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -570,7 +589,8 @@ $ python setup.py install --user
 \item 「CUBE → png へのバッチ処理によるグリッド可視化」をsectionに変更し、可視化方法の例を掲載。\\
 付録にargparseとmpi4pyのインストール方法を追加。\\
 「WaveToolに必要な環境・入力ファイル」を追加\\
-2017/03/10\\
+2017/03/10
+\item オプション「-periodic」の説明を追加 2017/03/17\\
 
 
 \end{itemize}
