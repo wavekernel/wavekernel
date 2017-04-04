@@ -739,8 +739,10 @@ contains
   subroutine prepare_json(setting, state)
     type(wk_setting_t), intent(in) :: setting
     type(wk_state_t), intent(inout) :: state
-    integer :: i, j, master_prow, master_pcol, iunit_header
+    integer :: i, j, master_prow, master_pcol
     type(fson_value), pointer :: split_files_metadata_elem
+
+    integer, parameter :: iunit_header = 21
 
     if (check_master()) then
       write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
