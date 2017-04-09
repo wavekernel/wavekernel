@@ -49,9 +49,10 @@ module wk_distribute_matrix_m
     integer :: m, n, num_blocks
     integer :: comm_master, color_master, num_colors
     integer, allocatable :: block_to_row(:), block_to_col(:), colors(:)
+    real(8), allocatable :: dv_block_eigenvalues_full(:), dv_block_eigenvalues_filtered(:)
     ! Local values.
     integer :: my_comm, my_blacs_context
-    integer :: my_color_index  ! 1-origin.
+    integer :: my_color_index  ! 0-origin.
     type(wk_local_matrix_t), allocatable :: local_matrices(:)
     integer, allocatable :: descs(:, :)
   end type wk_distributed_block_diagonal_matrices_t
@@ -66,13 +67,20 @@ module wk_distribute_matrix_m
     real(8), allocatable :: values(:)  ! Size is (block_size).
   end type wk_sparse_matrix_block_with_group_t
 
+  private
   public :: wk_distributed_block_diagonal_matrices_t, &
        get_local_cols_wk, setup_distributed_matrix_complex, setup_distributed_matrix_real, &
+       setup_distributed_matrix_with_context_real, &
        distribute_matrix_real_part, distribute_matrix_complex, &
        gather_matrix_complex, gather_matrix_real_part, gather_matrix_complex_part, &
+       gather_matrix_complex_with_pzgemr2d, &
+       distribute_global_sparse_matrix_wk, distribute_global_sparse_matrix_wk_part, &
        read_distribute_eigenvalues, read_distribute_eigenvectors, &
        bcast_sparse_matrix, diag_to_sparse_matrix, &
+       sort_sparse_matrix_by_group, &
        initialize_distributed_block_diagonal_matrices, &
+       destroy_distributed_block_diagonal_matrices, &
+       check_eq_distributed_block_diagonal_matrices, &
        copy_distributed_block_diagonal_matrices, &
        copy_allocation_distributed_block_diagonal_matrices
 
@@ -167,6 +175,67 @@ contains
 
     mat(:, :) = 0d0
   end subroutine setup_distributed_matrix_real
+
+
+  subroutine setup_distributed_matrix_with_context_real(name, context, rows, cols, &
+       desc, mat, is_square_block, block_size_row, block_size_col)
+    character(*), intent(in) :: name
+    integer, intent(in) :: context, rows, cols
+
+    integer, intent(out) :: desc(desc_size)
+    real(8), intent(out), allocatable :: mat(:, :)
+    logical, intent(in), optional :: is_square_block
+    integer, intent(in), optional :: block_size_row, block_size_col
+
+    integer :: numroc
+    integer :: actual_block_size_row, actual_block_size_col, &
+         local_rows, info
+
+    if (present(block_size_row)) then
+      actual_block_size_row = block_size_row
+    else
+      actual_block_size_row = g_wk_block_size
+      call correct_block_size(name, rows, g_n_procs_row, actual_block_size_row)
+    end if
+    if (present(block_size_col)) then
+      actual_block_size_col = block_size_col
+    else
+      actual_block_size_col = g_wk_block_size
+      call correct_block_size(name, cols, g_n_procs_col, actual_block_size_col)
+    end if
+
+    if (present(is_square_block)) then
+      if (is_square_block) then
+        actual_block_size_row = min(actual_block_size_row, actual_block_size_col)
+        actual_block_size_col = actual_block_size_row
+      end if
+    end if
+
+    if (check_master() .and. trim(name) /= '') then
+      write (0, '(A, F16.6, 3A, I0, ", ", I0, ", ", I0, ", ", I0)') &
+           ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] setup_distributed_matrix_real() ', trim(name), ' with M, N, MB, NB: ', &
+           rows, cols, actual_block_size_row, actual_block_size_col
+    end if
+
+    local_rows = max(1, numroc(rows, actual_block_size_row, &
+         g_my_proc_row, 0, g_n_procs_row))
+
+    call descinit(desc, rows, cols, actual_block_size_row, actual_block_size_col, &
+         0, 0, context, local_rows, info)
+    if (info /= 0) then
+      print *, 'info(descinit): ', info
+      call terminate('setup_distributed_matrix_real: descinit failed', info)
+    end if
+
+    allocate(mat(1 : local_rows, 1 : get_local_cols_wk(desc)), stat = info)
+    if (info /= 0) then
+      print *, 'stat(allocate): ', info
+      call terminate('setup_distributed_matrix_real: allocation failed', info)
+    end if
+
+    mat(:, :) = 0d0
+  end subroutine setup_distributed_matrix_with_context_real
 
 
   subroutine setup_distributed_matrix_complex(name, rows, cols, &
@@ -550,6 +619,32 @@ contains
     time_end = mpi_wtime()
     call add_event('distribute_global_sparse_matrix', time_end - time_start)
   end subroutine distribute_global_sparse_matrix_wk
+
+
+  subroutine distribute_global_sparse_matrix_wk_part(mat_in, i, j, m, n, desc, mat)
+    type(sparse_mat), intent(in) :: mat_in
+    integer, intent(in) :: i, j, m, n, desc(desc_size)
+    real(8), intent(out) :: mat(:, :)
+
+    integer :: k, r, c
+    real(8) :: time_start, time_end
+
+    time_start = mpi_wtime()
+
+    do k = 1, mat_in%num_non_zeros
+      r = mat_in%suffix(1, k)
+      c = mat_in%suffix(2, k)
+      if (i <= r .and. r < i + m .and. j <= c .and. c < j + n) then
+        call pdelset(mat, r, c, desc, mat_in%value(k))
+        if (c /= r) then
+          call pdelset(mat, c, r, desc, mat_in%value(k))
+        endif
+      end if
+    enddo
+
+    time_end = mpi_wtime()
+    call add_event('distribute_global_sparse_matrix_wk_part', time_end - time_start)
+  end subroutine distribute_global_sparse_matrix_wk_part
 
 
   subroutine read_distribute_eigenvalues(filename, dim, full_vecs, col_eigenvalues, full_vecs_desc)
@@ -965,24 +1060,25 @@ contains
     end if
     A%num_colors = g_n_procs / g_wk_num_procs_per_color
     allocate(A%block_to_row(num_blocks + 1), A%block_to_col(num_blocks + 1), A%colors(A%num_colors))
+    allocate(A%dv_block_eigenvalues_full(m), A%dv_block_eigenvalues_filtered(n))
     ! Set colors and BLACS process grid.
     call mpi_comm_group(mpi_comm_world, A%color_master, ierr)
-    do color_index = 1, A%num_colors
-      rank_range_for_color(1, 1) = g_wk_num_procs_per_color * (color_index - 1)
-      rank_range_for_color(2, 1) = g_wk_num_procs_per_color * color_index - 1
+    do color_index = 0, A%num_colors - 1
+      rank_range_for_color(1, 1) = g_wk_num_procs_per_color * color_index
+      rank_range_for_color(2, 1) = g_wk_num_procs_per_color * (color_index + 1) - 1
       rank_range_for_color(3, 1) = 1
       call mpi_group_range_incl(A%color_master, 1, rank_range_for_color, color_tmp, ierr)
-      A%colors(color_index) = color_tmp
+      A%colors(color_index + 1) = color_tmp
       if (rank_range_for_color(1, 1) <= g_my_rank .and. g_my_rank <= rank_range_for_color(2, 1)) then
         A%my_color_index = color_index  ! Save the color which my rank belongs to.
         ! my_comm is related to my_color.
-        call mpi_comm_create(mpi_comm_world, A%colors(color_index), A%my_comm, ierr)
+        call mpi_comm_create(mpi_comm_world, A%colors(color_index + 1), A%my_comm, ierr)
         if (ierr /= 0) then
           call terminate('initialize_distributed_block_diagonal_matrices: mpi_comm_create failed', ierr)
         end if
         ! Get BLACS context that is related to the communicator my_comm.
         call layout_procs(g_wk_num_procs_per_color, num_procs_row_per_color, num_procs_col_per_color)
-        A%my_blacs_context = A%my_comm
+        A%my_blacs_context = A%my_comm  ! A%my_blacs_context is rewritten in blacs_gridinit below.
         call blacs_gridinit(A%my_blacs_context, 'R', num_procs_row_per_color, num_procs_col_per_color, ierr)
         if (ierr /= 0) then
           call terminate('initialize_distributed_block_diagonal_matrices: blacs_gridinit failed', ierr)
@@ -990,10 +1086,10 @@ contains
       end if
     end do
     ! Set local matrices.
-    num_local_blocks = numroc(A%num_blocks, 1, A%my_color_index - 1, 0, A%num_colors)
+    num_local_blocks = numroc(A%num_blocks, 1, A%my_color_index, 0, A%num_colors)
     allocate(A%local_matrices(num_local_blocks), A%descs(desc_size, num_local_blocks))
     do l = 1, num_local_blocks
-      g = indxl2g(l, 1, A%my_color_index - 1, 0, A%num_colors)
+      g = indxl2g(l, 1, A%my_color_index, 0, A%num_colors)
       rows = A%block_to_row(g + 1) - A%block_to_row(g)
       cols = A%block_to_col(g + 1) - A%block_to_col(g)
       call setup_distributed_matrix_real('Y_block', rows, cols, &
@@ -1009,15 +1105,32 @@ contains
     integer :: l, color_index, ierr
 
     call mpi_group_free(A%color_master, ierr)
-    do color_index = 1, A%num_colors
-      call mpi_group_free(A%colors(color_index), ierr)
+    do color_index = 0, A%num_colors - 1
+      call mpi_group_free(A%colors(color_index + 1), ierr)
     end do
     deallocate(A%block_to_row, A%block_to_col, A%colors)
+    deallocate(A%dv_block_eigenvalues_full, A%dv_block_eigenvalues_filtered)
     do l = 1, size(A%local_matrices, 1)
       deallocate(A%local_matrices(l)%val)
     end do
     deallocate(A%local_matrices, A%descs)
   end subroutine destroy_distributed_block_diagonal_matrices
+
+
+  subroutine check_eq_distributed_block_diagonal_matrices(A, B)
+    type(wk_distributed_block_diagonal_matrices_t), intent(in) :: A, B
+
+    if (B%m /= A%m .or. B%n /= A%n .or. B%num_blocks /= A%num_blocks) then
+      call terminate('check_eq_distributed_block_diagonal_matrices: inconsistent matrix shape', 1)
+    end if
+    if (B%comm_master /= A%comm_master .or.  B%color_master /= A%color_master .or. &
+         B%num_colors /= A%num_colors .or. any(B%colors(:) /= A%colors(:))) then
+      call terminate('check_eq_distributed_block_diagonal_matrices: inconsistent communication setting', 1)
+    end if
+    if (any(B%block_to_row(:) /= A%block_to_row(:)) .or. any(B%block_to_col(:) /= A%block_to_col(:))) then
+      call terminate('check_eq_distributed_block_diagonal_matrices: inconsistent block structure', 1)
+    end if
+  end subroutine check_eq_distributed_block_diagonal_matrices
 
 
   subroutine copy_distributed_block_diagonal_matrices(A, B)
@@ -1028,17 +1141,10 @@ contains
     ! Functions.
     integer :: numroc
 
-    if (B%m /= A%m .or. B%n /= A%n .or. B%num_blocks /= A%num_blocks) then
-      call terminate('copy_distributed_block_diagonal_matrices: inconsistent matrix shape', 1)
-    end if
-    if (B%comm_master /= A%comm_master .or.  B%color_master /= A%color_master .or. &
-         B%num_colors /= A%num_colors .or. any(B%colors(:) /= A%colors(:))) then
-      call terminate('copy_distributed_block_diagonal_matrices: inconsistent communication setting', 1)
-    end if
-    if (any(B%block_to_row(:) /= A%block_to_row(:)) .or. any(B%block_to_col(:) /= A%block_to_col(:))) then
-      call terminate('copy_distributed_block_diagonal_matrices: inconsistent block structure', 1)
-    end if
-    do l = 1, numroc(A%num_blocks, 1, A%my_color_index - 1, 0, A%num_colors)
+    call check_eq_distributed_block_diagonal_matrices(A, B)
+    B%dv_block_eigenvalues_full(:) = A%dv_block_eigenvalues_full(:)
+    B%dv_block_eigenvalues_filtered(:) = B%dv_block_eigenvalues_filtered(:)
+    do l = 1, numroc(A%num_blocks, 1, A%my_color_index, 0, A%num_colors)
       B%local_matrices(l)%val(:, :) = A%local_matrices(l)%val(:, :)
     end do
   end subroutine copy_distributed_block_diagonal_matrices
@@ -1057,6 +1163,7 @@ contains
     B%color_master = A%color_master
     B%num_colors = A%num_colors
     allocate(B%block_to_row(A%num_blocks + 1), B%block_to_col(A%num_blocks + 1), B%colors(A%num_colors))
+    allocate(B%dv_block_eigenvalues_full(A%m), B%dv_block_eigenvalues_filtered(A%n))
     num_local_blocks = size(A%local_matrices, 1)
     allocate(B%local_matrices(num_local_blocks))
     do l = 1, num_local_blocks

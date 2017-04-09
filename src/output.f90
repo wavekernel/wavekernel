@@ -336,7 +336,8 @@ contains
          setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress' .or. &
          setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
-         setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_select') then
+         setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_select' .or. &
+         setting%re_initialize_method == 'minimize_lcao_error_matrix_suppress_damp') then
       setting_elem => fson_value_create()
       call fson_set_name('suppress_constant', setting_elem)
       setting_elem%value_type = TYPE_REAL

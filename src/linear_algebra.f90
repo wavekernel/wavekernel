@@ -1,9 +1,11 @@
 module wk_linear_algebra_m
+  use mpi
   use wk_descriptor_parameters_m
   use wk_distribute_matrix_m
   use wk_event_logger_m
   use wk_processes_m
   use wk_global_variables_m
+  use wk_matrix_io_m
   use wk_util_m
   implicit none
 
@@ -164,6 +166,93 @@ contains
   end subroutine matvec_dd_z
 
 
+  subroutine matvec_dd_z_comm(trans, A, A_desc, alpha, dv_x, beta, dv_y)
+    character(len=*), intent(in) :: trans
+    real(8), intent(in) :: A(:, :)
+    integer, intent(in) :: A_desc(desc_size)
+    complex(kind(0d0)), intent(in) :: alpha, beta, dv_x(:)
+    complex(kind(0d0)), intent(inout) :: dv_y(:)
+
+    integer :: i, j, m, n, nprow, npcol, myrow, mycol, li, lj, pi, pj, comm, ierr
+    integer :: mb, nb, brow, bcol, bi, bj, ml, nl, li1, li2, lj1, lj2
+    real(8) :: elem, wtime_start
+    complex(kind(0d0)), allocatable :: dv_Ax(:), dv_Ax_recv(:)
+
+    wtime_start = mpi_wtime()
+    call check_nan_vector('matvec_dd_z input real', dreal(dv_x))
+    call check_nan_vector('matvec_dd_z input imag', aimag(dv_x))
+    call check_nan_matrix('matvec_dd_z input matrix', A)
+
+    call blacs_gridinfo(A_desc(context_), nprow, npcol, myrow, mycol)
+    if (trans(1 : 1) == 'T') then
+      m = A_desc(cols_)
+      n = A_desc(rows_)
+    else
+      m = A_desc(rows_)
+      n = A_desc(cols_)
+    end if
+    allocate(dv_Ax(m), dv_Ax_recv(m))
+    dv_Ax(:) = kZero
+    dv_Ax_recv(:) = kZero
+    if (trans(1 : 1) == 'T') then
+      mb = A_desc(block_col_)
+      nb = A_desc(block_row_)
+      brow = (numroc(m, mb, mycol, A_desc(csrc_), npcol) - 1) / mb + 1
+      bcol = (numroc(n, nb, myrow, A_desc(rsrc_), nprow) - 1) / nb + 1
+      do bi = 1, brow
+        do bj = 1, bcol
+          i = mb * (npcol * (bi - 1) + mycol) + 1
+          j = nb * (nprow * (bj - 1) + myrow) + 1
+          ml = min(mb, m - i + 1)
+          nl = min(nb, n - j + 1)
+          li1 = mb * (bi - 1) + 1
+          li2 = li1 + ml - 1
+          lj1 = nb * (bj - 1) + 1
+          lj2 = lj1 + nl - 1
+          do li = li1, li2
+            do lj = lj1, lj2
+              dv_Ax(i + li - li1) = dv_Ax(i + li - li1) + A(lj, li) * dv_x(j + lj - lj1)
+            end do
+          end do
+        end do
+      end do
+    else
+      mb = A_desc(block_row_)
+      nb = A_desc(block_col_)
+      brow = (numroc(m, mb, myrow, A_desc(rsrc_), nprow) - 1) / mb + 1
+      bcol = (numroc(n, nb, mycol, A_desc(csrc_), npcol) - 1) / nb + 1
+      do bi = 1, brow
+        do bj = 1, bcol
+          i = mb * (nprow * (bi - 1) + myrow) + 1
+          j = nb * (npcol * (bj - 1) + mycol) + 1
+          ml = min(mb, m - i + 1)
+          nl = min(nb, n - j + 1)
+          li1 = mb * (bi - 1) + 1
+          li2 = li1 + ml - 1
+          lj1 = nb * (bj - 1) + 1
+          lj2 = lj1 + nl - 1
+          do li = li1, li2
+            do lj = lj1, lj2
+              dv_Ax(i + li - li1) = dv_Ax(i + li - li1) + A(li, lj) * dv_x(j + lj - lj1)
+            end do
+          end do
+        end do
+      end do
+    end if
+    call blacs_get(A_desc(context_), 10, comm)
+    call mpi_allreduce(dv_Ax, dv_Ax_recv, m, mpi_double_complex, mpi_sum, comm, ierr)
+
+    if (beta == kZero) then
+      dv_y(:) = kZero
+    end if
+    dv_y(:) = alpha * dv_Ax_recv(:) + beta * dv_y(:)
+
+    call check_nan_vector('matvec_dd_z output real', dreal(dv_y))
+    call check_nan_vector('matvec_dd_z output imag', aimag(dv_y))
+    call add_event('matvec_dd_z', mpi_wtime() - wtime_start)
+  end subroutine matvec_dd_z_comm
+
+
   ! Compuet y <- alpha * op(A) * x + beta * y.
   ! A: block diagonal matrix.
   ! x, y: redundant vector.
@@ -174,62 +263,52 @@ contains
     complex(kind(0d0)), intent(in) :: alpha, beta, dv_x(:)
     complex(kind(0d0)), intent(inout) :: dv_y(:)
 
-    integer :: l
-    real(8), allocatable :: dv_x_real_work(:), dv_x_imag_work(:), dv_y_real_work(:), dv_y_imag_work(:)
+    integer :: l, g, i1, i2, j1, j2, i1_local, i2_local, j1_local, j2_local, my_rank_in_color, ierr
+    complex(kind(0d0)), allocatable :: dv_x_work(:), dv_y_work(:)
     complex(kind(0d0)), allocatable :: dv_y_buf(:)
-
-    stop 'IMPLEMENT HERE 6'
+    ! Functions.
+    integer :: numroc, indxl2g
 
     if (trans(1 : 1) == 'T') then
       allocate(dv_y_buf(A%n))
     else
       allocate(dv_y_buf(A%m))
     end if
-    !dv_y_buf(:) = kZero
-    !do l = 1, numroc(A%num_blocks, 1, A%my_rank, 0, A%num_procs)  ! Iteration for local blocks.
-    !  g = indxl2g(l, 1, A%my_rank, 0, A%num_procs)
-    !  i1 = A%block_to_row(g)
-    !  i2 = A%block_to_row(g + 1) - 1
-    !  i1_local = 1
-    !  i2_local = i2 - i1 + 1
-    !  j1 = A%block_to_col(g)
-    !  j2 = A%block_to_col(g + 1) - 1
-    !  j1_local = 1
-    !  j2_local = j2 - j1 + 1
-    !  if (l > 1) then
-    !    deallocate(dv_x_real_work, dv_x_imag_work, dv_y_real_work, dv_y_imag_work)
-    !  end if
-    !  if (trans(1 : 1) == 'T') then
-    !    allocate(dv_x_real_work(i2_local), &
-    !         dv_x_imag_work(i2_local), &
-    !         dv_y_real_work(j2_local), &
-    !         dv_y_imag_work(j2_local))
-    !    dv_x_real_work(:) = real(dv_x(i1 : i2))
-    !    dv_x_imag_work(:) = aimag(dv_x(i1 : i2))
-    !    call dgemv('T', i2_local, j2_local, 1d0, A%local_matrices(l)%val, i2_local, &
-    !         dv_x_real_work, 1, 0d0, dv_y_real_work, 1)
-    !    call dgemv('T', i2_local, j2_local, 1d0, A%local_matrices(l)%val, i2_local, &
-    !         dv_x_imag_work, 1, 0d0, dv_y_imag_work, 1)
-    !    dv_y_buf(j1 : j2) = dv_y_real_work(1 : j2_local) + kImagUnit * dv_y_imag_work(1 : j2_local)
-    !  else
-    !    allocate(dv_x_real_work(j2_local), &
-    !         dv_x_imag_work(j2_local), &
-    !         dv_y_real_work(i2_local), &
-    !         dv_y_imag_work(i2_local))
-    !    dv_x_real_work(:) = real(dv_x(j1 : j2))
-    !    dv_x_imag_work(:) = aimag(dv_x(j1 : j2))
-    !    call dgemv('N', i2_local, j2_local, 1d0, A%local_matrices(l)%val, i2_local, &
-    !         dv_x_real_work, 1, 0d0, dv_y_real_work, 1)
-    !    call dgemv('N', i2_local, j2_local, 1d0, A%local_matrices(l)%val, i2_local, &
-    !         dv_x_imag_work, 1, 0d0, dv_y_imag_work, 1)
-    !    dv_y_buf(i1 : i2) = dv_y_real_work(1 : i2_local) + kImagUnit * dv_y_imag_work(1 : i2_local)
-    !  end if
-    !end do
-    !if (trans(1 : 1) == 'T') then
-    !  call mpi_allreduce(dv_y_buf, dv_y, A%n, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
-    !else
-    !  call mpi_allreduce(dv_y_buf, dv_y, A%m, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
-    !end if
+    dv_y_buf(:) = kZero
+    do l = 1, numroc(A%num_blocks, 1, A%my_color_index, 0, A%num_colors)  ! Iteration for local blocks.
+      g = indxl2g(l, 1, A%my_color_index, 0, A%num_colors)
+      i1 = A%block_to_row(g)
+      i2 = A%block_to_row(g + 1) - 1
+      j1 = A%block_to_col(g)
+      j2 = A%block_to_col(g + 1) - 1
+      i1_local = 1
+      i2_local = i2 - i1 + 1
+      j1_local = 1
+      j2_local = j2 - j1 + 1
+      if (trans(1 : 1) == 'T') then
+        allocate(dv_x_work(i2_local), dv_y_work(j2_local))
+        dv_x_work(:) = real(dv_x(i1 : i2))
+        call matvec_dd_z_comm('T', A%local_matrices(l)%val, A%descs(:, l), &
+             kOne, dv_x_work, kZero, dv_y_work)
+        dv_y_buf(j1 : j2) = dv_y_work(1 : j2_local)
+      else
+        allocate(dv_x_work(j2_local), dv_y_work(i2_local))
+        dv_x_work(:) = real(dv_x(j1 : j2))
+        call matvec_dd_z_comm('N', A%local_matrices(l)%val, A%descs(:, l), &
+             kOne, dv_x_work, kZero, dv_y_work)
+        dv_y_buf(i1 : i2) = dv_y_work(1 : i2_local)
+      end if
+      deallocate(dv_x_work, dv_y_work)
+    end do
+    call mpi_comm_rank(A%my_comm, my_rank_in_color, ierr)
+    if (my_rank_in_color > 0) then  ! Alleviate duplicated sum.
+      dv_y_buf(:) = 0d0
+    end if
+    if (trans(1 : 1) == 'T') then
+      call mpi_allreduce(dv_y_buf, dv_y, A%n, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
+    else
+      call mpi_allreduce(dv_y_buf, dv_y, A%m, mpi_double_complex, mpi_sum, mpi_comm_world, ierr)
+    end if
   end subroutine matvec_bd_z
 
 
@@ -270,53 +349,40 @@ contains
     type(wk_distributed_block_diagonal_matrices_t), intent(in) :: B
     type(wk_distributed_block_diagonal_matrices_t), intent(inout) :: C
 
-    integer :: num_groups, l, g, col, index_offset, k, k1, k2, i, j
+    integer :: l, g, col, index_offset, k, k1, k2, i, j
     type(sparse_mat) :: A_work
     integer, allocatable :: group_nonzero_indices(:)
-    real(8) :: x
+    real(8) :: x, elem_B, elem_C
     ! Functions.
     integer :: indxl2g
 
-    stop 'IMPLEMENT HERE 7'
-
-    !! Check block structure identity.
-    !if (B%m /= C%m .or. B%n /= C%n) then
-    !  call terminate('matmul_sb_d_diagonal: different matrix size', 1)
-    !end if
-    !if ((B%num_blocks /= C%num_blocks) .or. &
-    !     any(B%block_to_row(:) /= C%block_to_row(:)) .or. &
-    !     any(B%block_to_col(:) /= C%block_to_col(:))) then
-    !  call terminate('matmul_sb_d_diagonal: different block structure', 1)
-    !end if
-    !if (B%num_procs /= C%num_procs .or. B%my_rank /= C%my_rank) then
-    !  call terminate('matmul_sb_d_diagonal: different process assignment', 1)
-    !end if
-    !
-    !! Prepare sorted A.
-    !call copy_sparse_matrix(A, A_work)
-    !num_groups = B%num_blocks
-    !allocate(group_nonzero_indices(num_groups * num_groups + 1))
-    !call sort_sparse_matrix_by_group(num_groups, B%block_to_row, A_work, group_nonzero_indices)
-    !do l = 1, numroc(num_groups, 1, B%my_rank, 0, B%num_procs)
-    !  g = indxl2g(l, 1, B%my_rank, 0, B%num_procs)
-    !  index_offset = B%block_to_row(g) - 1
-    !  ! C_g := beta * C_g, where '_g' means the g-th diagonal block.
-    !  C%local_matrices(l)%val(:, :) = beta * C%local_matrices(l)%val(:, :)
-    !  ! Get corresponding block diagonal part of A.
-    !  k1 = group_nonzero_indices(num_groups * (g - 1) + g)
-    !  k2 = group_nonzero_indices(num_groups * (g - 1) + g + 1)
-    !  ! C_g += alpha * bd(A)_g * B_g.
-    !  do k = k1, k2
-    !    i = A_work%suffix(1, k)
-    !    j = A_work%suffix(2, k)
-    !    x = A_work%value(k)
-    !    do col = 1, B%block_to_col(g + 1) - B%block_to_col(g)
+    call check_eq_distributed_block_diagonal_matrices(B, C)
+    ! Prepare sorted A.
+    call copy_sparse_matrix(A, A_work)
+    allocate(group_nonzero_indices(B%num_blocks * B%num_blocks + 1))
+    call sort_sparse_matrix_by_group(B%num_blocks, B%block_to_row, A_work, group_nonzero_indices)
+    do l = 1, numroc(B%num_blocks, 1, B%my_color_index, 0, B%num_colors)
+      g = indxl2g(l, 1, B%my_color_index, 0, B%num_colors)
+      index_offset = B%block_to_row(g) - 1
+      ! Get corresponding block diagonal part of A.
+      k1 = group_nonzero_indices(B%num_blocks * (g - 1) + g)
+      k2 = group_nonzero_indices(B%num_blocks * (g - 1) + g + 1)
+      ! C_g = alpha * bd(A)_g * B_g + beta * C_g.
+      do k = k1, k2
+        i = A_work%suffix(1, k)
+        j = A_work%suffix(2, k)
+        x = A_work%value(k)
+        do col = 1, B%block_to_col(g + 1) - B%block_to_col(g)
+          call pdelget('Self', ' ', elem_B, B%local_matrices(l)%val, j - index_offset, col)
+          call pdelget('Self', ' ', elem_C, C%local_matrices(l)%val, i - index_offset, col)
+          elem_C = alpha * x * elem_B + beta * elem_C
     !      C%local_matrices(l)%val(i - index_offset, col) = C%local_matrices(l)%val(i - index_offset, col) + &
     !           alpha * x * B%local_matrices(l)%val(j - index_offset, col)
-    !    end do
-    !  end do
-    !end do
+        end do
+      end do
+    end do
   end subroutine matmul_sb_d_diagonal
+
 
   integer function get_rg(X, large_block_col, rg_cycle)
     type(wk_distributed_block_diagonal_matrices_t), intent(in) :: X
@@ -396,22 +462,10 @@ contains
     ! Functions.
     integer :: numroc
 
-    stop 'IMPLEMENT HERE 10'
-    !if (A%m /= X%m .or. A%n /= X%n) then
-    !  call terminate('elementwise_matmul_bb_d_inplace: different matrix size', 1)
-    !end if
-    !if ((A%num_blocks /= X%num_blocks) .or. &
-    !     any(A%block_to_row(:) /= X%block_to_row(:)) .or. &
-    !     any(A%block_to_col(:) /= X%block_to_col(:))) then
-    !  call terminate('elementwise_matmul_bb_d_inplace: different block structure', 1)
-    !end if
-    !if (A%num_procs /= X%num_procs .or. A%my_rank /= X%my_rank) then
-    !  call terminate('elementwise_matmul_bb_d_inplace: different process assignment', 1)
-    !end if
-    !
-    !do l = 1, numroc(A%num_blocks, 1, A%my_rank, 0, A%num_procs)
-    !  X%local_matrices(l)%val(:, :) = A%local_matrices(l)%val(:, :) * X%local_matrices(l)%val(:, :)
-    !end do
+    call check_eq_distributed_block_diagonal_matrices(A, X)
+    do l = 1, numroc(A%num_blocks, 1, A%my_color_index, 0, A%num_colors)
+      X%local_matrices(l)%val(:, :) = A%local_matrices(l)%val(:, :) * X%local_matrices(l)%val(:, :)
+    end do
   end subroutine elementwise_matmul_bb_d_inplace
 
 
@@ -537,8 +591,8 @@ contains
            '] solve_gevp: workspace preparation start. dim, origin: ', dim, ', ', origin
     end if
 
-    call setup_distributed_matrix_real('H2', dim, dim, H2_desc, H2, .true.)
-    call setup_distributed_matrix_real('L', dim, dim, L_desc, L, .true.)
+    call setup_distributed_matrix_with_context_real('H2', H_desc(context_), dim, dim, H2_desc, H2, .true.)
+    call setup_distributed_matrix_with_context_real('L', H_desc(context_), dim, dim, L_desc, L, .true.)
     call pdgemr2d(dim, dim, H, origin, origin, H_desc, H2, 1, 1, H2_desc, H_desc(context_))
     call pdgemr2d(dim, dim, S, origin, origin, S_desc, L, 1, 1, L_desc, S_desc(context_))
 
@@ -987,21 +1041,23 @@ contains
     type(wk_distributed_block_diagonal_matrices_t), intent(in) :: X
     real(8) :: sums(X%n)
 
-    integer :: l, g, c1, c2, ierr
+    integer :: l, g, c1, c2, my_rank_in_color, ierr
     real(8) :: sums_buf(X%n)
     ! Functions.
     integer :: numroc, indxl2g
 
-    stop 'IMPLEMENT HERE 1'
-
-    !sums_buf(:) = 0d0
-    !do l = 1, numroc(X%num_blocks, 1, X%my_rank, 0, X%num_procs)
-    !  g = indxl2g(l, 1, X%my_rank, 0, X%num_procs)
-    !  c1 = X%block_to_col(g)
-    !  c2 = X%block_to_col(g + 1) - 1
-    !  sums_buf(c1 : c2) = sum(X%local_matrices(l)%val(:, 1 : c2 - c1 + 1), 1)
-    !end do
-    !call mpi_allreduce(sums_buf, sums, X%n, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+    sums_buf(:) = 0d0
+    do l = 1, numroc(X%num_blocks, 1, X%my_color_index, 0, X%num_colors)
+      g = indxl2g(l, 1, X%my_color_index, 0, X%num_colors)
+      c1 = X%block_to_col(g)
+      c2 = X%block_to_col(g + 1) - 1
+      call sum_columns(X%local_matrices(l)%val, X%descs(:, l), sums_buf(c1 : c2))
+    end do
+    call mpi_comm_rank(X%my_comm, my_rank_in_color, ierr)
+    if (my_rank_in_color > 0) then  ! Alleviate duplicated sum.
+      sums_buf(:) = 0d0
+    end if
+    call mpi_allreduce(sums_buf, sums, X%n, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
   end subroutine sum_columns_block
 
 
@@ -1056,51 +1112,66 @@ contains
     type(wk_distributed_block_diagonal_matrices_t), intent(in) :: X
     integer :: maxlocs(X%n)
 
-    integer :: l, g, c1, c2, ierr
+    integer :: l, g, c1, c2, my_rank_in_color, ierr
     integer :: maxlocs_buf(X%n)
     ! Functions.
     integer :: numroc, indxl2g
 
-    stop 'IMPLEMENT HERE 4'
-
-    !maxlocs_buf(:) = 0
-    !do l = 1, numroc(X%num_blocks, 1, X%my_rank, 0, X%num_procs)
-    !  g = indxl2g(l, 1, X%my_rank, 0, X%num_procs)
-    !  c1 = X%block_to_col(g)
-    !  c2 = X%block_to_col(g + 1) - 1
-    !  maxlocs_buf(c1 : c2) = X%block_to_row(g) - 1 + maxloc(X%local_matrices(l)%val(:, 1 : c2 - c1 + 1), 1)
-    !end do
-    !call mpi_allreduce(maxlocs_buf, maxlocs, X%n, mpi_integer, mpi_sum, mpi_comm_world, ierr)
+    maxlocs_buf(:) = 0
+    do l = 1, numroc(X%num_blocks, 1, X%my_color_index, 0, X%num_colors)
+      g = indxl2g(l, 1, X%my_color_index, 0, X%num_colors)
+      c1 = X%block_to_col(g)
+      c2 = X%block_to_col(g + 1) - 1
+      call maxloc_columns(X%local_matrices(l)%val, X%descs(:, l), maxlocs_buf(c1 : c2))
+    end do
+    call mpi_comm_rank(X%my_comm, my_rank_in_color, ierr)
+    if (my_rank_in_color > 0) then  ! Alleviate duplicated sum.
+      maxlocs_buf(:) = 0
+    end if
+    call mpi_allreduce(maxlocs_buf, maxlocs, X%n, mpi_integer, mpi_sum, mpi_comm_world, ierr)
   end subroutine maxloc_columns_block
 
 
-  subroutine pdscal_elem_block(alpha, j, A)
+  subroutine pdscal_elem_block(alpha, i, j, X)
     real(8), intent(in) :: alpha
-    integer, intent(in) :: j
-    type(wk_distributed_block_diagonal_matrices_t), intent(inout) ::A
+    integer, intent(in) :: i, j
+    type(wk_distributed_block_diagonal_matrices_t), intent(inout) :: X
 
-    stop 'IMPLEMENT HERE 3'
+    integer :: g, c, l, i_in_block, j_in_block
+    ! Functions.
+    integer :: indxg2p, indxg2l
+
+    g = find_range_index(X%block_to_row, i)
+    if (g /= find_range_index(X%block_to_col, j)) then  ! (i, j) is out of the blocks.
+      return
+    end if
+    c = indxg2p(g, 1, X%my_color_index, 0, X%num_colors)
+    if (X%my_color_index == c) then
+      l = indxg2l(g, 1, X%my_color_index, 0, X%num_colors)
+      i_in_block = i - X%block_to_row(g) + 1
+      j_in_block = j - X%block_to_col(g) + 1
+      call pdscal(1, alpha, X%local_matrices(l)%val, i_in_block, j_in_block, X%descs(:, l), 1)
+    end if
   end subroutine pdscal_elem_block
 
 
   ! X(:, j) *= alpha for block diagonal matrix X.
-  subroutine pdscal_column_block(alpha, col, X)
+  subroutine pdscal_column_block(alpha, j, X)
     real(8), intent(in) :: alpha
-    integer, intent(in) :: col
+    integer, intent(in) :: j
     type(wk_distributed_block_diagonal_matrices_t), intent(inout) :: X
 
-    integer :: g, l, p, col_local, ierr
+    integer :: g, l, c, j_in_block, m, ierr
     ! Functions.
     integer :: indxg2p, indxg2l
 
-    stop 'IMPLEMENT HERE 2'
-
-    !g = find_range_index(X%block_to_col, col)
-    !p = indxg2p(g, 1, X%my_rank, 0, X%num_procs)
-    !if (X%my_rank == p) then
-    !  l = indxg2l(g, 1, X%my_rank, 0, X%num_procs)
-    !  col_local = col - X%block_to_col(g) +  1
-    !  X%local_matrices(l)%val(:, col_local) = alpha * X%local_matrices(l)%val(:, col_local)
-    !end if
+    g = find_range_index(X%block_to_col, j)
+    c = indxg2p(g, 1, X%my_color_index, 0, X%num_colors)
+    if (X%my_color_index == c) then
+      l = indxg2l(g, 1, X%my_color_index, 0, X%num_colors)
+      j_in_block = j - X%block_to_col(g) + 1
+      m = X%block_to_row(g + 1) - X%block_to_row(g)
+      call pdscal(m, alpha, X%local_matrices(l)%val, 1, j_in_block, X%descs(:, l), 1)
+    end if
   end subroutine pdscal_column_block
 end module wk_linear_algebra_m

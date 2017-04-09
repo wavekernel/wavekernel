@@ -138,6 +138,10 @@ contains
     if (state%basis%is_group_filter_mode) then
       call setup_distributed_matrix_real('H1_base', &
            state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%basis%H1_base, .true.)
+      call setup_distributed_matrix_real('S1', &
+           state%basis%num_basis, state%basis%num_basis, state%basis%H1_desc, state%basis%S1, .true.)
+      call setup_distributed_matrix_real('Y_filtered', &
+           state%basis%num_basis, state%basis%num_basis, state%basis%Y_filtered_desc, state%basis%Y_filtered)
     else
       call setup_distributed_matrix_real('Y_all', state%dim, state%dim, &
            state%basis%Y_all_desc, state%basis%Y_all, .true.)
@@ -366,7 +370,8 @@ contains
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
-         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_damp') then
       if (state%basis%is_group_filter_mode) then
         call copy_allocation_distributed_block_diagonal_matrices(state%basis%Y_local, Y_local_prev)
         call copy_distributed_block_diagonal_matrices(state%basis%Y_local, Y_local_prev)
@@ -407,7 +412,8 @@ contains
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal' .or. &
          trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_adaptive' .or. &
-         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select') then
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_select' .or. &
+         trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_damp') then
       if (state%basis%is_group_filter_mode) then
         call matmul_bsb_d(state%basis%Y_local, state%S_sparse, Y_local_prev, 1d0, &
              state%YSY_filtered, state%YSY_filtered_desc, 0d0)
@@ -540,13 +546,14 @@ contains
     type(wk_basis_t), intent(inout) :: basis  ! value of last step is needed for offdiag norm calculation.
 
     integer :: i, j, num_groups, atom_min, atom_max, index_min, index_max, dim_sub, Y_sub_desc(desc_size)
-    integer :: homo_level, filter_lowest_level, base_index_of_group, sum_dim_sub
+    integer :: homo_level, filter_lowest_level, base_index_of_group, sum_dim_sub, my_rank_in_color
     integer :: H_desc(desc_size), S_desc(desc_size)
     real(8) :: elem
     real(8) :: dv_eigenvalues(dim), wtime
     integer :: YSY_desc(desc_size), l, i1, i2, j1, j2, m, n, lwork, liwork, g, p, ierr
     real(8), allocatable :: H(:, :), S(:, :), Y_sub(:, :), Y_filtered_last(:, :), SY(:, :), YSY(:, :), w(:)
-    real(8), allocatable :: H1_lcao_charge_overlap(:, :), dv_eigenvalues_buf(:), work(:)
+    real(8), allocatable :: H1_lcao_charge_overlap(:, :), work(:)
+    real(8), allocatable :: dv_block_eigenvalues_full_buf(:), dv_block_eigenvalues_filtered_buf(:)
     integer, allocatable :: filter_group_indices(:, :), iwork(:)
     type(sparse_mat) :: H_sparse_work
 
@@ -554,7 +561,7 @@ contains
     real(8) :: dv_atom_perturb(structure%num_atoms / 3 * 2), t_last_refresh, H1_lcao_diag(dim)
 
     ! Functions.
-    integer :: indxg2p, indxg2l
+    integer :: numroc, indxg2p, indxg2l, indxl2g
 
     wtime = mpi_wtime()
 
@@ -611,66 +618,58 @@ contains
       else if (setting%h1_type == 'charge_overlap' .and. allocated(H1_lcao_sparse_charge_overlap%value)) then
         call terminate('set_eigenpairs: not implemented (charge_overlap with group filtering mode)', 1)
       end if
-      allocate(dv_eigenvalues_buf(basis%num_basis))
-      dv_eigenvalues_buf(:) = 0d0  ! Initialization for mpi_allreduce.
-      do l = 1, 1 !numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_color_index - 1, 0, basis%Y_local%num_colors)
-        !g = indxl2g(l, 1, basis%Y_local%my_color_index, 0, basis%Y_local%num_colors)
+      ! Initialization for mpi_allreduce.
+      allocate(dv_block_eigenvalues_full_buf(basis%dim), dv_block_eigenvalues_filtered_buf(basis%num_basis))
+      dv_block_eigenvalues_full_buf(:) = 0d0
+      dv_block_eigenvalues_filtered_buf(:) = 0d0
+      do l = 1, numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_color_index, 0, basis%Y_local%num_colors)
+        g = indxl2g(l, 1, basis%Y_local%my_color_index, 0, basis%Y_local%num_colors)
         i1 = basis%filter_group_indices(1, g)
         i2 = basis%filter_group_indices(1, g + 1)
         j1 = basis%filter_group_indices(2, g)
         j2 = basis%filter_group_indices(2, g + 1)
         m = i2 - i1
         n = j2 - j1
-        !call setup_distributed_matrix_real(name, rows, cols, &
-        !     desc, mat, is_square_block, block_size_row, block_size_col)
-        !call distribute_global_sparse_matrix_wk(mat_in, desc, mat)
-        !call solve_gevp(dim, origin, H, H_desc, S, S_desc, eigenvalues, Y_all, Y_all_desc)
+        allocate(w(m))
+        call setup_distributed_matrix_with_context_real('H_group', basis%Y_local%my_blacs_context, m, m, &
+             H_desc, H, .true.)
+        call setup_distributed_matrix_with_context_real('S_group', basis%Y_local%my_blacs_context, m, m, &
+             S_desc, S, .true.)
+        call setup_distributed_matrix_with_context_real('Y_group', basis%Y_local%my_blacs_context, m, m, &
+             Y_sub_desc, Y_sub, .true.)
+        call distribute_global_sparse_matrix_wk_part(H_sparse_work, i1, i1, m, m, H_desc, H)
+        call distribute_global_sparse_matrix_wk_part(S_sparse, i1, i1, m, m, S_desc, S)
+        call solve_gevp(m, 1, H, H_desc, S, S_desc, w, Y_sub, Y_sub_desc)
+        dv_block_eigenvalues_full_buf(i1 : i2 - 1) = w(1 : m)
+        dv_block_eigenvalues_filtered_buf(j1 : j2 - 1) = &
+             w(setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
+        call pdgemr2d(m, n, &
+             Y_sub, 1, setting%fst_filter, Y_sub_desc, &
+             basis%Y_local%local_matrices(l), 1, 1, basis%Y_local%descs(:, l), &
+             basis%Y_local%descs(context_, l))
+        deallocate(w, H, S, Y_sub)
       end do
-     ! call PDGEMR2D( M, N,
-     !                     A, IA, JA, ADESC,
-     !                     B, IB, JB, BDESC,
-     !                     CTXT)
-     !dv_eigenvalues_buf()=xxxxx
-      stop 'IMPLEMENTE HERE 12'
-      !do g = 1, basis%Y_local%num_blocks
-      !  p = indxg2p(g, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
-      !  if (basis%Y_local%my_rank == p) then
-      !    i1 = basis%filter_group_indices(1, g)
-      !    i2 = basis%filter_group_indices(1, g + 1)
-      !    j1 = basis%filter_group_indices(2, g)
-      !    j2 = basis%filter_group_indices(2, g + 1)
-      !    m = i2 - i1
-      !    n = j2 - j1
-      !    print *, 'set_eigenpairs: start dsygvd', p, i1, i2, j1, j2
-      !    lwork = 1 + 6 * m + 2 * m ** 2
-      !    liwork = 3 + 5 * m
-      !    allocate(H(m, m), S(m, m), w(m), work(lwork), iwork(liwork))
-      !    call get_block_in_sparse_matrix(H_sparse_work, i1, i1, m, m, H)
-      !    call get_block_in_sparse_matrix(S_sparse, i1, i1, m, m, S)
-      !    call dsygvd(1, 'V', 'L', m, H, m, S, m, w, work, lwork, iwork, liwork, ierr)
-      !    if (ierr /= 0) then
-      !      call terminate('set_eigenpairs: dsygvd failed', 1)
-      !    end if
-      !    dv_eigenvalues_buf(j1 : j2 - 1) = w(setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
-      !    l = indxg2l(g, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
-      !    basis%Y_local%local_matrices(l)%val(1 : m, 1 : n) = &
-      !         H(1 : m, setting%fst_filter : setting%fst_filter + setting%num_filter - 1)
-      !  end if
-      !end do
-      call mpi_allreduce(dv_eigenvalues_buf, basis%dv_eigenvalues, basis%num_basis, &
-           mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
-      deallocate(dv_eigenvalues_buf)
+      call mpi_comm_rank(basis%Y_local%my_comm, my_rank_in_color, ierr)
+      if (my_rank_in_color > 0) then  ! Alleviate duplicated sum.
+        dv_block_eigenvalues_full_buf(:) = 0d0
+        dv_block_eigenvalues_filtered_buf(:) = 0d0
+      end if
+      call mpi_allreduce(dv_block_eigenvalues_full_buf, basis%Y_local%dv_block_eigenvalues_full, &
+           basis%dim, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+      call mpi_allreduce(dv_block_eigenvalues_filtered_buf, basis%Y_local%dv_block_eigenvalues_filtered, &
+           basis%num_basis, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
+      call change_basis_lcao_to_alpha_group_filter(filter_group_indices, basis%Y_local, &
+           H_sparse_work, basis%H1_base, basis%H1_desc, .true.)
+      call change_basis_lcao_to_alpha_group_filter(filter_group_indices, basis%Y_local, &
+           S_sparse, basis%S1, basis%H1_desc, .true.)
+      ! Filtering not needed after solve_gevp.
+      call solve_gevp(basis%num_basis, 1, basis%H1_base, basis%H1_desc, basis%S1, basis%H1_desc, &
+           basis%dv_eigenvalues, basis%Y_filtered, basis%Y_filtered_desc)
     end if
 
     deallocate(H, S)
     if (allocated(H1_lcao_charge_overlap)) then
       deallocate(H1_lcao_charge_overlap)
-    end if
-
-    if (basis%is_group_filter_mode) then
-      call set_H1_base(basis%filter_group_indices, basis%Y_local, &
-           H_sparse, basis%H1_base, basis%H1_desc)
-      call add_timer_event('set_eigenpairs', 'set_H1_base', wtime)
     end if
   end subroutine set_eigenpairs
 
@@ -714,15 +713,15 @@ contains
   !end subroutine set_local_eigenvectors
 
 
-  subroutine set_H1_base(filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
-    integer, intent(in) :: filter_group_indices(:, :), H1_desc(desc_size)
-    type(sparse_mat), intent(in) :: H_sparse
-    type(wk_distributed_block_diagonal_matrices_t), intent(in) :: Y_local
-    real(8), intent(out) :: H1_base(:, :)
-
-    call change_basis_lcao_to_alpha_group_filter(filter_group_indices, Y_local, &
-         H_sparse, H1_base, H1_desc, .true.)
-  end subroutine set_H1_base
+  !subroutine set_H1_base(filter_group_indices, Y_local, H_sparse, H1_base, H1_desc)
+  !  integer, intent(in) :: filter_group_indices(:, :), H1_desc(desc_size)
+  !  type(sparse_mat), intent(in) :: H_sparse
+  !  type(wk_distributed_block_diagonal_matrices_t), intent(in) :: Y_local
+  !  real(8), intent(out) :: H1_base(:, :)
+  !
+  !  call change_basis_lcao_to_alpha_group_filter(filter_group_indices, Y_local, &
+  !       H_sparse, H1_base, H1_desc, .true.)
+  !end subroutine set_H1_base
 
 
   subroutine clear_offdiag_blocks_of_overlap(setting, filter_group_indices, S_sparse)
@@ -927,7 +926,7 @@ contains
            '] make_matrix_step_forward() start '
     end if
 
-    if (trim(setting%h1_type) == 'zero' .and. .not. state%basis%is_group_filter_mode) then
+    if (trim(setting%h1_type) == 'zero') then
       ! Skip time evolution calculation.
       do j = 1, setting%num_multiple_initials
         do i = 1, setting%num_filter
@@ -935,7 +934,7 @@ contains
         end do
       end do
       call add_timer_event('make_matrix_step_forward', 'step_forward_linear', wtime)
-    else if (trim(setting%h1_type(1 : 9)) == 'zero_damp' .and. .not. state%basis%is_group_filter_mode) then
+    else if (trim(setting%h1_type(1 : 9)) == 'zero_damp') then
       ! Skip time evolution calculation.
       do j = 1, setting%num_multiple_initials
         if (trim(setting%init_type) == 'alpha_delta') then
@@ -947,7 +946,11 @@ contains
         end if
         do i = 1, setting%num_filter
           diff_eigenvalue = state%basis%dv_eigenvalues(k) - state%basis%dv_eigenvalues(i)
-          damp_factor = setting%eigenstate_damp_constant * (diff_eigenvalue ** 2d0)
+          if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_damp') then
+            damp_factor = 0d0
+          else
+            damp_factor = setting%eigenstate_damp_constant * (diff_eigenvalue ** 2d0)
+          end if
           !print *, 'ZZZZZ zero_damp ', j, k, i, ': ', &
           !     state%dv_eigenvalues(k), state%dv_eigenvalues(i), damp_factor * setting%delta_t
           state%dv_alpha_next(i, j) = &
@@ -989,6 +992,7 @@ contains
            state%A, state%basis%H1_desc)
       call add_timer_event('make_matrix_step_forward', 'make_matrix_A', wtime)
 
+      ! In group filtering mode, S is ignored in this implementation.
       ! Note that step_forward destroys A.
       do j = 1, setting%num_multiple_initials
         call step_forward(setting%time_evolution_mode, state%A, state%basis%H1_desc, setting%delta_t, &

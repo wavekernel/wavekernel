@@ -385,6 +385,66 @@ contains
   end subroutine reconcile_from_alpha_matrix_suppress
 
 
+  subroutine reconcile_from_alpha_matrix_suppress_damp(t, suppress_constant, damp_constant, &
+       dv_eigenvalues_prev, dv_eigenvalues, basis, YSY_filtered, YSY_filtered_desc, &
+       dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
+    integer, intent(in) :: YSY_filtered_desc(desc_size)
+    type(wk_basis_t), intent(in) :: basis
+    real(8), intent(in) :: t, suppress_constant, damp_constant, dv_eigenvalues_prev(:), dv_eigenvalues(:)
+    real(8), intent(in) :: YSY_filtered(:, :)
+    complex(kind(0d0)), intent(in) :: dv_alpha(:)
+    complex(kind(0d0)), intent(out) :: dv_alpha_reconcile(:), dv_psi_reconcile(:)
+
+    integer :: i, j, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc, ks(basis%num_basis)
+    real(8) :: dv_suppress_factor(basis%num_basis), suppress_factor_sum, dv_suppress_factor_copy(basis%num_basis)
+    real(8) :: dv_suppress_factor2(basis%num_basis), suppress_factor_sum2
+    complex(kind(0d0)) :: dv_evcoef_amplitude(basis%num_basis), dv_evcoef_amplitude_reconcile(basis%num_basis)
+    real(8), allocatable :: ENE_suppress(:, :), YSY_filtered_suppress(:, :)
+    real(8) :: ysy_ipratios(basis%num_basis), ysy_suppress_ipratios(basis%num_basis)
+    real(8) :: average_pratio, weighted_average_pratio, average_pratio_suppress, weighted_average_pratio_suppress
+    real(8) :: work(1000), energy_normalizer, diff
+    integer, save :: count = 0
+    character(len=50) :: filename
+    character(len=6) :: count_str
+    character(len=12) :: time_str
+    integer, parameter :: iunit_YSY = 20
+    real(8) :: dznrm2
+
+    call blacs_gridinfo(YSY_filtered_desc(context_), nprow, npcol, myrow, mycol)
+    allocate(ENE_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    allocate(YSY_filtered_suppress(size(YSY_filtered, 1), size(YSY_filtered, 2)))
+    ENE_suppress(:, :) = 0d0
+
+    do j = 1, basis%num_basis
+      do i = 1, basis%num_basis
+        diff = dv_eigenvalues(i) - dv_eigenvalues_prev(j)
+        dv_suppress_factor(i) = exp(- ((suppress_constant * diff) ** 2d0) + damp_constant * diff)
+      end do
+      call check_nan_vector('reconcile_from_alpha_matrix_suppress_damp dv_suppress_factor', dv_suppress_factor)
+      do i = 1, basis%num_basis
+        call infog2l(i, j, YSY_filtered_desc, nprow, npcol, myrow, mycol, i_local, j_local, rsrc, csrc)
+        if (myrow == rsrc .and. mycol == csrc) then
+          YSY_filtered_suppress(i_local, j_local) = YSY_filtered(i_local, j_local) * dv_suppress_factor(i)
+        end if
+      end do
+    end do
+
+    dv_alpha_reconcile(:) = kZero
+    print *, '------------------ ZZZZstart', t * 2.418884326505d-5, 'ps ------------------'
+    call matvec_dd_z('No', YSY_filtered_suppress, YSY_filtered_desc, kOne, dv_alpha, kZero, dv_alpha_reconcile)
+    count = count + 1
+
+    if (check_master()) then
+      write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+           '] reconcile_from_alpha_matrix_suppress_damp() : evcoef norm before normalization ', &
+           dznrm2(basis%num_basis, dv_alpha_reconcile, 1)
+    end if
+    call normalize_vector(basis%num_basis, dv_alpha_reconcile)
+    call alpha_to_lcao_coef(basis, dv_alpha_reconcile, dv_psi_reconcile)
+    deallocate(YSY_filtered_suppress, ENE_suppress)
+  end subroutine reconcile_from_alpha_matrix_suppress_damp
+
+
   !subroutine reconcile_from_alpha_matrix_suppress_orthogonal(num_filter, t, suppress_constant, &
   !     dv_eigenvalues_prev, dv_eigenvalues, Y_filtered, Y_filtered_desc, YSY_filtered, YSY_filtered_desc, &
   !     dv_alpha, dv_alpha_reconcile, dv_psi_reconcile)
@@ -1067,6 +1127,11 @@ contains
     !       dv_psi_evol, dv_alpha_reconcile, dv_psi_reconcile)
     if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress') then
       call reconcile_from_alpha_matrix_suppress(t, setting%suppress_constant, &
+           dv_eigenvalues_prev, basis%dv_eigenvalues, basis, YSY_filtered, YSY_filtered_desc, &
+           dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
+    else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_damp') then
+      call reconcile_from_alpha_matrix_suppress_damp(t, &
+           setting%suppress_constant, setting%eigenstate_damp_constant, &
            dv_eigenvalues_prev, basis%dv_eigenvalues, basis, YSY_filtered, YSY_filtered_desc, &
            dv_alpha_evol, dv_alpha_reconcile, dv_psi_reconcile)
     !else if (trim(setting%re_initialize_method) == 'minimize_lcao_error_matrix_suppress_orthogonal') then

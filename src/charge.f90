@@ -6,6 +6,7 @@ module wk_charge_m
   use wk_linear_algebra_m
   use wk_matrix_io_m
   use wk_global_variables_m
+  use wk_processes_m
   use wk_state_m
   use wk_util_m
   implicit none
@@ -319,34 +320,29 @@ contains
     write (0, '(A, F16.6, A)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
          '] multiply_coordinates_to_charge_matrix() : start'
 
-    stop 'IMPLEMENT HERE 11'
-
-    !! Warning: searching basis with max charge, not atom.
-    !!          This is incompatible with get_mulliken_charge_coordinate_moments.
-    !allocate(maxlocs(X%n))
-    !call maxloc_columns_block(X, maxlocs)
-    !do l = 1, numroc(X%n, 1, X%my_rank, 0, X%num_procs)
-    !  g = indxl2g(l, 1, X%my_rank, 0, X%num_procs)
-    !  do j = X%block_to_col(g), X%block_to_col(g + 1) - 1
-    !    if (structure%periodic_xyz(axis)) then  ! Periodic boundary condition is imposed.
-    !      unit = structure%unitcell_xyz(axis)
-    !      center = structure%atom_coordinates(axis, find_range_index(structure%atom_indices, maxlocs(j)))
-    !    end if
-    !    do i = X%block_to_row(g), X%block_to_row(g + 1) - 1
-    !      a = find_range_index(structure%atom_indices, i)
-    !      coord_original = structure%atom_coordinates(axis, a)
-    !      if (structure%periodic_xyz(axis)) then
-    !        coord = wrap_around_center(coord_original, unit, center)
-    !      else
-    !        coord = coord_original
-    !      end if
-    !      !i_local = i - X%block_to_row(g) + 1
-    !      !j_local = j - X%block_to_col(g) + 1
-    !      !X%local_matrices(l)%val(i_local, j_local) = X%local_matrices(l)%val(i_local, j_local) * (coord ** order)
-    !      call pdscal_elem_block(coord ** order, i, j, X)
-    !    end do
-    !  end do
-    !end do
+    ! Warning: searching basis with max charge, not atom.
+    !          This is incompatible with get_mulliken_charge_coordinate_moments.
+    allocate(maxlocs(X%n))
+    call maxloc_columns_block(X, maxlocs)
+    do l = 1, numroc(X%num_blocks, 1, X%my_color_index, 0, X%num_colors)
+      g = indxl2g(l, 1, X%my_color_index, 0, X%num_colors)
+      do j = X%block_to_col(g), X%block_to_col(g + 1) - 1
+        if (structure%periodic_xyz(axis)) then  ! Periodic boundary condition is imposed.
+          unit = structure%unitcell_xyz(axis)
+          center = structure%atom_coordinates(axis, find_range_index(structure%atom_indices, maxlocs(j)))
+        end if
+        do i = X%block_to_row(g), X%block_to_row(g + 1) - 1
+          a = find_range_index(structure%atom_indices, i)
+          coord_original = structure%atom_coordinates(axis, a)
+          if (structure%periodic_xyz(axis)) then
+            coord = wrap_around_center(coord_original, unit, center)
+          else
+            coord = coord_original
+          end if
+          call pdscal_elem_block(coord ** order, i, j, X)
+        end do
+      end do
+    end do
   end subroutine multiply_coordinates_to_charge_matrix_block
 
 
@@ -443,25 +439,26 @@ contains
   subroutine get_ipratio_of_eigenstates(basis)
     type(wk_basis_t), intent(inout) :: basis
 
-    integer :: dim, num_filter, j, m_local, n_local, l, g, c1, c2, ierr
+    integer :: dim, num_filter, j, m_local, n_local, l, g, c1, c2, my_rank_in_color, ierr
     real(8), allocatable :: ipratios_buf(:)
     real(8), allocatable :: Y_work_power4(:, :), Y_work_power2(:, :), sum_power4(:), sum_power2(:)
+    type(wk_distributed_block_diagonal_matrices_t) :: power4, power2
     ! Functions.
     integer :: numroc, indxl2g
 
     if (basis%is_group_filter_mode) then
-      stop 'IMPLEMENT HERE 5'
-      !allocate(ipratios_buf(basis%num_basis))  ! basis%num_basis == basis%Y_local%n.
-      !ipratios_buf(:) = 0d0
-      !do l = 1, numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
-      !  g = indxl2g(l, 1, basis%Y_local%my_rank, 0, basis%Y_local%num_procs)
-      !  c1 = basis%Y_local%block_to_col(g)
-      !  c2 = basis%Y_local%block_to_col(g + 1)
-      !  ipratios_buf(c1 : c2 - 1) = sum(basis%Y_local%local_matrices(l)%val(:, :) ** 4d0, 1) / &
-      !       (sum(basis%Y_local%local_matrices(l)%val(:, :) ** 2d0, 1) ** 2d0)
-      !end do
-      !call mpi_allreduce(ipratios_buf, basis%dv_ipratios, basis%num_basis, mpi_double_precision, mpi_sum, &
-      !     mpi_comm_world, ierr)
+      allocate(sum_power4(basis%num_basis), sum_power2(basis%num_basis))
+      call copy_allocation_distributed_block_diagonal_matrices(basis%Y_local, power4)
+      call copy_allocation_distributed_block_diagonal_matrices(basis%Y_local, power2)
+      call copy_distributed_block_diagonal_matrices(basis%Y_local, power4)
+      call copy_distributed_block_diagonal_matrices(basis%Y_local, power2)
+      do l = 1, numroc(basis%Y_local%num_blocks, 1, basis%Y_local%my_color_index, 0, basis%Y_local%num_colors)
+        power4%local_matrices(l)%val(:, :) = power4%local_matrices(l)%val(:, :) ** 4d0
+        power2%local_matrices(l)%val(:, :) = power2%local_matrices(l)%val(:, :) ** 2d0
+      end do
+      call sum_columns_block(power4, sum_power4)
+      call sum_columns_block(power2, sum_power2)
+      basis%dv_ipratios(:) = sum_power4(:) / (sum_power2(:) ** 2d0)
     else
       dim = basis%Y_filtered_desc(rows_)
       num_filter = basis%Y_filtered_desc(cols_)

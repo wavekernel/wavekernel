@@ -1,7 +1,9 @@
 module wk_state_m
   use wk_atom_m
+  use wk_descriptor_parameters_m
   use wk_distribute_matrix_m
   use wk_fson_m
+  use wk_global_variables_m
   use wk_linear_algebra_m
   use wk_matrix_io_m
   use wk_util_m
@@ -26,12 +28,13 @@ module wk_state_m
     integer :: dim, num_basis
     real(8), allocatable :: dv_eigenvalues(:), dv_ipratios(:), eigenstate_mean(:, :), eigenstate_msd(:, :)
     real(8), allocatable :: eigenstate_ipratios(:)
-    ! Variables for no filter mode.
-    integer :: Y_all_desc(desc_size), Y_filtered_desc(desc_size)
-    real(8), allocatable :: Y_all(:, :)  ! m x m
+    integer :: Y_filtered_desc(desc_size)
     real(8), allocatable :: Y_filtered(:, :)  ! m x n
+    ! Variables for no filter mode.
+    integer :: Y_all_desc(desc_size)
+    real(8), allocatable :: Y_all(:, :)  ! m x m
     ! Variables for filter mode.
-    real(8), allocatable :: H1_base(:, :)  ! n x n
+    real(8), allocatable :: H1_base(:, :), S1(:, :)  ! n x n
     type(wk_distributed_block_diagonal_matrices_t) :: Y_local
     integer, allocatable :: filter_group_id(:, :), filter_group_indices(:, :)
     integer :: H1_desc(desc_size)

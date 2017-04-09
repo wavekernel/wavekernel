@@ -2,6 +2,7 @@ module wk_conversion_m
   use mpi
   use wk_descriptor_parameters_m
   use wk_distribute_matrix_m
+  use wk_event_logger_m
   use wk_linear_algebra_m
   use wk_processes_m
   use wk_global_variables_m
@@ -24,8 +25,13 @@ contains
     complex(kind(0d0)), intent(in) :: dv_alpha(basis%num_basis)
     complex(kind(0d0)), intent(out) :: dv_psi(basis%dim)
 
+    complex(kind(0d0)) :: dv_beta(basis%num_basis)
+
     if (basis%is_group_filter_mode) then
-      call matvec_bd_z('No', basis%Y_local, kOne, dv_alpha, kZero, dv_psi)
+      dv_beta(:) = kZero
+      dv_psi(:) = kZero
+      call matvec_dd_z('No', basis%Y_all, basis%Y_all_desc, kOne, dv_alpha, kZero, dv_beta)
+      call matvec_bd_z('No', basis%Y_local, kOne, dv_beta, kZero, dv_psi)
     else
       dv_psi(:) = kZero
       call matvec_dd_z('No', basis%Y_filtered, basis%Y_filtered_desc, kOne, dv_alpha, kZero, dv_psi)
@@ -461,8 +467,9 @@ contains
 
     ! c = Y^\dagger S \psi, \alpha <- c
     if (basis%is_group_filter_mode) then
-      call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)
-      call matvec_bd_z('Trans', basis%Y_local, kOne, dv_s_psi, kZero, dv_alpha)
+      !call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)
+      !call matvec_bd_z('Trans', basis%Y_local, kOne, dv_s_psi, kZero, dv_alpha)
+      call terminate('lcao_coef_to_alpha: group filter mode is not supported', 1)
     else
       dv_s_psi(:) = kZero
       call matvec_sd_z('No', S_sparse, kOne, dv_psi, kZero, dv_s_psi)
