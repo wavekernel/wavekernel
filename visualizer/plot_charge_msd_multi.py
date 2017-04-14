@@ -39,11 +39,83 @@ def read_plain_extracted(fp):
             means.append([mean, 0.0, 0.0])  # x, y, z
     return {'ts': ts, 'msds': msds, 'means': means}  # Note: TB_energy_deviations is not supported.
 
+def plot_diffusion_coef(ts, msds, label, time_start_diffusion, time_end_diffusion):
+    if time_start_diffusion is None:
+        time_start_diffusion = min(ts)
+    if time_end_diffusion is None:
+        time_end_diffusion = max(ts)
+    xys = zip(ts, msds)
+    xys = filter(lambda xy: time_start_diffusion <= xy[0] and xy[0] < time_end_diffusion, xys)
+    n = len(xys)
+    x_bar = y_bar = xy_bar = xx_bar = 0.0
+    for (x, y) in xys:
+        x_bar += x
+        y_bar += y
+        xy_bar += x * y
+        xx_bar += x ** 2.0
+    x_bar /= float(n)
+    y_bar /= float(n)
+    xy_bar /= float(n)
+    xx_bar /= float(n)
+    a = (xy_bar - x_bar * y_bar) / (xx_bar - x_bar ** 2.0)
+    b = (-x_bar * xy_bar + xx_bar * y_bar) / (xx_bar - x_bar ** 2.0)
+    ts_new = map(lambda xy: xy[0], xys)
+    ys_hat = map(lambda t: a * t + b, ts_new)
+    intercept_relative_error_left = abs((b - xys[0][1]) / xys[0][1])
+    intercept_relative_error_right = abs((a * xys[-1][0] + b - xys[-1][1]) / xys[-1][1])
+    rmse = pylab.sqrt(sum(map(lambda xy: (xy[1] - a * xy[0] - b) ** 2.0, xys)) / float(n))
+    print 'T0, T1: ', xys[0][0], xys[-1][0]
+    print 'a T0 + b, y(T0), IRE(0): ', b, xys[0][1], intercept_relative_error_left
+    print 'a T1 + b, y(T1), IRE(1): ', \
+        a * xys[-1][0] + b, xys[0][1], intercept_relative_error_right
+    print 'RMSE [angstrom^2]: ', rmse
+    print 'diffusion coefficient [angstrom^2 / ps]: ', a / 2.0
+    print 'diffusion coefficient [cm^2 / s]: ', a / 2.0 * 1e-4
+    # '1.0' = [e]
+    # 'kBoltzmann * 1.0' = [V / K]
+    mbt = a / 2.0 * 1e-4 / (kBoltzmann * 1.0)
+    print 'mobility * temperature [cm^2 K / V s]', mbt
+    pylab.plot(ts_new[0:n:n-1], ys_hat[0:n:n-1], 'x-', label=label, markersize=10)
+    return mbt, rmse
+
+def get_window_averaged_msds(ts, msdss, window_width):
+    num_groups = len(msdss)
+    msdss_trans = list(map(list, zip(*msdss)))
+    assert(len(ts) == len(msdss_trans))
+    new_ts = []
+    new_msdss_trans = []
+    # Remove dups first.
+    t_prev = -1e100
+    for t, group_to_msd in zip(ts, msdss_trans):
+        if t != t_prev:
+            new_msdss_trans.append(group_to_msd)
+            new_ts.append(t)
+            t_prev = t
+    n = len(new_ts)
+    m = n - window_width + 1
+    msds_avg = [0.] * m
+    for i in range(m):
+        for j in range(window_width):
+            assert(len(new_msdss_trans[i + j]) == num_groups)
+            msds_avg[i] += sum(new_msdss_trans[i + j])
+        msds_avg[i] /= float(window_width * num_groups)
+    #print 'time range', max(new_ts[: m]) - min(new_ts[: m])
+    return new_ts[: m], msds_avg
+
+# Check time series in tss are identical.
+def check_tss(group_to_tss):
+    group_to_ts = []
+    for tss in group_to_tss:
+        ts_represent = tss[0]
+        assert(all(map(lambda ts: ts == ts_represent, tss[1 :])))
+        group_to_ts.append(ts_represent)
+    return group_to_ts
+
 def plot_charge_moment(grouped_charge_moments,
                        msd_axis, msd_min, msd_max,
                        energy_min, energy_max, to_plot_tb_energy_deviation,
                        time_start, time_end,
-                       time_start_diffusion, time_end_diffusion,
+                       time_start_diffusion, time_end_diffusion, window_width,
                        grouped_labels, group_to_avg_label, to_plot_avg_only,
                        title, fig_path):
     #font = {'size': 20}
@@ -52,9 +124,9 @@ def plot_charge_moment(grouped_charge_moments,
     # Cancel axis offset.
     ax = fig.gca()
     ax.ticklabel_format(useOffset=False)
+
     axis_name_to_num = {'x': 0, 'y': 1, 'z': 2, 'total': 3}
     msd_axis_num = axis_name_to_num[msd_axis]
-    #mean_axis_num = axis_name_to_num[mean_axis]
     to_show_diffusion_coef = True
 
     group_to_tss = map(lambda cms:
@@ -66,113 +138,53 @@ def plot_charge_moment(grouped_charge_moments,
     #means = map(lambda m: m[mean_axis_num] * kAngstromPerAu, charge_moment['means'])
     #tb_energy_deviations = charge_moment['tb_energy_deviations']
 
-    if time_start_diffusion is None:
-        time_start_diffusion = min(group_to_tss[0][0])
-    if time_end_diffusion is None:
-        time_end_diffusion = max(group_to_tss[0][0])
+    group_to_ts = check_tss(group_to_tss)
+    if window_width is None:
+        group_to_avg_ts = group_to_ts
+        group_to_avg_msds = map(avg, group_to_msdss)
+    else:
+        group_to_avg_ts = []
+        group_to_avg_msds = []
+        for ts, msds in zip(group_to_ts, group_to_msdss):
+            avg_ts, avg_msds = get_window_averaged_msds(ts, msds, window_width)
+            group_to_avg_ts.append(avg_ts)
+            group_to_avg_msds.append(avg_msds)
 
-    group_to_avg_msds = map(avg, group_to_msdss)
-    #for g, avg_msds in enumerate(group_to_avg_msds):
-    #    print_avged(ts, avg_msds, 'avg_%02d.txt' % g)  # ps, Angstrom^2
-
-    group_to_diffusion_coef_info = []
-    if to_show_diffusion_coef:
-        for tss, avg_msds, avg_label in zip(group_to_tss, group_to_avg_msds, group_to_avg_label):
-            xys = zip(tss[0], avg_msds)
-            xys = filter(lambda xy: time_start_diffusion <= xy[0] and xy[0] < time_end_diffusion, xys)
-            n = len(xys)
-            x_bar = y_bar = xy_bar = xx_bar = 0.0
-            for (x, y) in xys:
-                x_bar += x
-                y_bar += y
-                xy_bar += x * y
-                xx_bar += x ** 2.0
-            x_bar /= float(n)
-            y_bar /= float(n)
-            xy_bar /= float(n)
-            xx_bar /= float(n)
-            a = (xy_bar - x_bar * y_bar) / (xx_bar - x_bar ** 2.0)
-            b = (-x_bar * xy_bar + xx_bar * y_bar) / (xx_bar - x_bar ** 2.0)
-            ts_new = map(lambda xy: xy[0], xys)
-            ys_hat = map(lambda t: a * t + b, ts_new)
-            intercept_relative_error_left = abs((b - xys[0][1]) / xys[0][1])
-            intercept_relative_error_right = abs((a * xys[-1][0] + b - xys[-1][1]) / xys[-1][1])
-            rmse = pylab.sqrt(sum(map(lambda xy: (xy[1] - a * xy[0] - b) ** 2.0, xys)) / float(n))
-            print 'T0, T1: ', xys[0][0], xys[-1][0]
-            print 'a T0 + b, y(T0), IRE(0): ', b, xys[0][1], intercept_relative_error_left
-            print 'a T1 + b, y(T1), IRE(1): ', \
-                a * xys[-1][0] + b, xys[0][1], intercept_relative_error_right
-            print 'RMSE [angstrom^2]: ', rmse
-            print 'diffusion coefficient [angstrom^2 / ps]: ', a / 2.0
-            print 'diffusion coefficient [cm^2 / s]: ', a / 2.0 * 1e-4
-            # '1.0' = [e]
-            # 'kBoltzmann * 1.0' = [V / K]
-            mbt = a / 2.0 * 1e-4 / (kBoltzmann * 1.0)
-            print 'mobility * temperature [cm^2 K / V s]', mbt
-            group_to_diffusion_coef_info.append({'mbt': mbt,
-                                                 'IRE0': intercept_relative_error_left,
-                                                 'IRE1': intercept_relative_error_right,
-                                                 'RMSE': rmse})
-            #k, s, d = fig_path_to_params(fig_path)
-            #print 'ZZZ', fig_path, k, s, d, mbt
-            pylab.plot(ts_new[0:n:n-1], ys_hat[0:n:n-1], 'x-', markersize=10, label='%s fit' % avg_label)
-
-    pylab.xlabel('Time [ps]')
-    pylab.ylabel('MSD ' + msd_axis + ' [$\AA^2$]', color='blue')
-    pylab.grid(True)
+    mbts = []
+    rmses = []
+    for ts, avg_msds, avg_label in zip(group_to_avg_ts, group_to_avg_msds, group_to_avg_label):
+        pylab.plot(ts, avg_msds, '+-', label=avg_label,
+               markersize=10)
+        if to_show_diffusion_coef:
+            mbt, rmse = plot_diffusion_coef(ts, avg_msds, avg_label, time_start_diffusion, time_end_diffusion)
+            mbts.append(mbt)
+            rmses.append(rmse)
 
     if not to_plot_avg_only:
         for tss, msdss, labels in zip(group_to_tss, group_to_msdss, grouped_labels):
             for ts, msds, label in zip(tss, msdss, labels):
-                pylab.plot(ts, msds, '+-', label=label, markerfacecolor='none')
+                pylab.plot(ts, msds, '+-', label=label)
 
-    for tss, avg_msds, avg_label in zip(group_to_tss, group_to_avg_msds, group_to_avg_label):
-        pylab.plot(tss[0], avg_msds, 'o-', label=avg_label,
-                   markerfacecolor='none', markersize=10)  #, markeredgecolor='red'
+    pylab.xlabel('Time [ps]')
+    pylab.ylabel('MSD ' + msd_axis + ' [$\AA^2$]')
+    pylab.grid()
     pylab.legend()
-
-    if msd_min is None:
-        msd_min = pylab.ylim()[0]
-    if msd_max is None:
-        msd_max = pylab.ylim()[1]
-    pylab.ylim(msd_min, msd_max)
-    #yticks_new = list(pylab.yticks()[0])
-    #yticks_new.extend([msd_min, msd_max])
-    #pylab.yticks(yticks_new)
-    #pylab.ylim(msd_min, msd_max)  # limit setting again is needed.
-
-    if time_start is None:
-        time_start = pylab.xlim()[0]
-    if time_end is None:
-        time_end = pylab.xlim()[1]
-
-    if to_show_diffusion_coef:
-        for g, diffusion_coef_info in enumerate(group_to_diffusion_coef_info):
-            pylab.text(time_start + (time_end - time_start) * 0.01,
-                       msd_min + (msd_max - msd_min) * (0.94 - 0.04 * g),
-                       str(diffusion_coef_info['mbt']) + ' [cm^2 K / V s]')
-            #pylab.text(time_start + (time_end - time_start) * 0.01,
-            #           msd_min + (msd_max - msd_min) * 0.9,
-            #           'IRE(0) ' + str(intercept_relative_error_left))
-            #pylab.text(time_start + (time_end - time_start) * 0.01,
-            #           msd_min + (msd_max - msd_min) * 0.86,
-            #           'IRE(1) ' + str(intercept_relative_error_right))
-            #pylab.text(time_start + (time_end - time_start) * 0.01,
-            #           msd_min + (msd_max - msd_min) * 0.82,
-            #           'RMSE ' + str(rmse) + ' [$\AA^2$]')
-
-    #pylab.twinx()
-    ## Cancel axis offset.
-    #ax = fig.gca()
-    #ax.ticklabel_format(useOffset=False)
-
     pylab.xlim(time_start, time_end)
-    #xticks_new = list(pylab.xticks()[0])
-    #xticks_new.extend([time_start, time_end])
-    #pylab.xticks(xticks_new)
-    #pylab.xlim(time_start, time_end)  # limit setting again is needed.
-
+    pylab.ylim(msd_min, msd_max)
     pylab.title(title)
+
+    time_start_ = pylab.xlim()[0]
+    time_end_ = pylab.xlim()[1]
+    msd_min_ = pylab.ylim()[0]
+    msd_max_ = pylab.ylim()[1]
+    if to_show_diffusion_coef:
+        for i, (mbt, rmse, label) in enumerate(zip(mbts, rmses, group_to_avg_label)):
+            y_ratio = 0.94 - 0.04 * i
+            pylab.text(time_start_ + (time_end_ - time_start_) * 0.01,
+                       msd_min_ + (msd_max_ - msd_min_) * y_ratio,
+                       '%s: %.2f [cm^2 K / V s], %.2f [$\AA^2$]' % (label, mbt, rmse))
+
+    print 'output:', fig_path
     pylab.savefig(fig_path, dpi=80)  # dpi=80 correspond to figsize=(10, 7.5).
 
 def parse_charge_moment_calc_paths(ss):
@@ -223,6 +235,8 @@ if __name__ == '__main__':
                         help='')  # in ps.
     parser.add_argument('--avg-only', action='store_true', dest='to_plot_avg_only',
                         default=False, help='')
+    parser.add_argument('-w', metavar='WINDOW_WIDTH', dest='window_width', type=int, default=None,
+                        help='')
     parser.add_argument('-o', metavar='OUT', dest='fig_path', type=str, default=None,
                         help='')
     args = parser.parse_args()
@@ -266,5 +280,5 @@ if __name__ == '__main__':
                        args.msd_axis, args.msd_min, args.msd_max,
                        args.energy_min, args.energy_max, args.to_plot_tb_energy_deviation,
                        args.time_start, args.time_end,
-                       args.time_start_diffusion, args.time_end_diffusion,
+                       args.time_start_diffusion, args.time_end_diffusion, args.window_width,
                        grouped_labels, group_to_avg_label, args.to_plot_avg_only, title, fig_path)
