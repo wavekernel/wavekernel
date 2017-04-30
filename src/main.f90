@@ -7,6 +7,7 @@ program main
   ! Dummy variables velow are not used from this main.f90.
   real(8) :: dummy_eigenvalues(1), dummy_eigenvectors(1, 1)
   integer :: dummy_desc_eigenvectors(desc_size), j
+  real(8), allocatable :: H1_lcao_diag(:)
 
   ! Functions.
   integer :: iargc
@@ -110,10 +111,22 @@ program main
              '] read next input step ', state%input_step + 1, ' at simulation time ', state%t
       end if
       ! The step to be read is 'input_step + 1', not 'input_step + 2' because XYZ information is not interpolated.
-      call read_bcast_structure(state%dim, setting, state%input_step + 1, state%structure)
       call copy_sparse_matrix(state%H_sparse, state%H_sparse_prev)
       call copy_sparse_matrix(state%S_sparse, state%S_sparse_prev)
-      call read_bcast_matrix_files(state%dim, setting, state%input_step + 1, state%H_sparse, state%S_sparse)
+      if (trim(setting%multistep_kind) == 'file') then
+        call read_bcast_structure(state%dim, setting, state%input_step + 1, state%structure)
+        call read_bcast_matrix_files(state%dim, setting, state%input_step + 1, state%H_sparse, state%S_sparse)
+      else if (trim(setting%multistep_kind) == 'harmonic') then
+        allocate(H1_lcao_diag(state%dim))
+        call make_H1_harmonic_aux(state%structure, state%basis, &
+             .true., &  ! Force update.
+             .false., &
+             state%t, setting%temperature, &
+             setting%delta_t, setting%delta_t, &
+             state%dv_atom_perturb, H1_lcao_diag)
+        call add_diag_to_sparse_matrix(state%dim, H1_lcao_diag, state%H_sparse)
+        deallocate(H1_lcao_diag)
+      end if
 
       call set_aux_matrices_for_multistep(setting, &
            .false., dummy_eigenvalues, dummy_desc_eigenvectors, dummy_eigenvectors, state)

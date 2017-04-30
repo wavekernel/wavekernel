@@ -960,14 +960,14 @@ contains
         end do
         alpha_next_norm = dznrm2(setting%num_filter, state%dv_alpha_next(:, j), 1)
         state%dv_alpha_next(:, j) = state%dv_alpha_next(:, j) / alpha_next_norm
-        amplitude_after_normalize = abs(state%dv_alpha_next(k, j)) / abs(state%dv_alpha(k, j))
+        !amplitude_after_normalize = abs(state%dv_alpha_next(k, j)) / abs(state%dv_alpha(k, j))
         if (check_master()) then
           write (0, '(A, F16.6, A, 2E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] make_matrix_step_forward() t, t + dt ', state%t, state%t + setting%delta_t
           write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
                '] make_matrix_step_forward() alpha_next_norm ', alpha_next_norm
-          write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
-               '] make_matrix_step_forward()  amplitude_after_normalize', amplitude_after_normalize
+          !write (0, '(A, F16.6, A, E26.16e3)') ' [Event', mpi_wtime() - g_wk_mpi_wtime_init, &
+          !     '] make_matrix_step_forward()  amplitude_after_normalize', amplitude_after_normalize
         end if
       end do
     else if (trim(setting%h1_type) == 'zero_sparse' .and. .not. state%basis%is_group_filter_mode) then

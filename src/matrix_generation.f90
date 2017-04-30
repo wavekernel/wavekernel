@@ -15,7 +15,7 @@ module wk_matrix_generation_m
   implicit none
 
   private
-  public :: make_H1, make_A, aux_make_H1_charge_with_overlap, aux_make_H1_harmonic_for_nn_exciton
+  public :: make_H1, make_A, aux_make_H1_charge_with_overlap, aux_make_H1_harmonic_for_nn_exciton, make_H1_harmonic_aux
 
 contains
 
@@ -320,23 +320,21 @@ contains
   !end subroutine make_H1_maxwell
   !
 
-  subroutine make_H1_harmonic(structure, basis, &
+  subroutine make_H1_harmonic_aux(structure, basis, &
        is_init, is_restart_mode, &
        t, temperature, delta_time, perturb_interval, &
-       dv_atom_perturb, &
-       H1_alpha, H1_alpha_desc)
+       dv_atom_perturb, H1_lcao_diag)
     type(wk_structure_t), intent(in) :: structure
     type(wk_basis_t), intent(in) :: basis
     logical, intent(in) :: is_init, is_restart_mode
-    integer, intent(in) :: H1_alpha_desc(desc_size)
     real(8), intent(in) :: t, temperature, delta_time, perturb_interval
     real(8), intent(inout) :: dv_atom_perturb(:)
-    real(8), intent(out) :: H1_alpha(:, :)
+    real(8), intent(out) :: H1_lcao_diag(basis%dim)
 
     integer :: atom, i, j, ierr
     integer :: seed = 10  ! Static variable.
     real(8) :: phase, energy, wtime_start, wtime_end, random_val(structure%num_atoms), val
-    real(8) :: H1_lcao_diag(basis%dim)
+
     logical :: to_refresh
 
     wtime_start = mpi_wtime()
@@ -362,14 +360,29 @@ contains
       H1_lcao_diag(structure%atom_indices(atom) : structure%atom_indices(atom + 1) - 1) = dv_atom_perturb(atom)
     end do
 
-    wtime_end = mpi_wtime()
-    call add_event('make_H1_harmonic:set_diag', wtime_end - wtime_start)
-    wtime_start = wtime_end
+  end subroutine make_H1_harmonic_aux
 
+
+  subroutine make_H1_harmonic(structure, basis, &
+       is_init, is_restart_mode, &
+       t, temperature, delta_time, perturb_interval, &
+       dv_atom_perturb, &
+       H1_alpha, H1_alpha_desc)
+    type(wk_structure_t), intent(in) :: structure
+    type(wk_basis_t), intent(in) :: basis
+    logical, intent(in) :: is_init, is_restart_mode
+    integer, intent(in) :: H1_alpha_desc(desc_size)
+    real(8), intent(in) :: t, temperature, delta_time, perturb_interval
+    real(8), intent(inout) :: dv_atom_perturb(:)
+    real(8), intent(out) :: H1_alpha(:, :)
+
+    real(8) :: H1_lcao_diag(basis%dim)
+
+    call make_H1_harmonic_aux(structure, basis, &
+       is_init, is_restart_mode, &
+       t, temperature, delta_time, perturb_interval, &
+       dv_atom_perturb, H1_lcao_diag)
     call change_basis_lcao_diag_to_alpha(basis, H1_lcao_diag, H1_alpha, H1_alpha_desc)
-
-    wtime_end = mpi_wtime()
-    call add_event('make_H1_harmonic:change_basis', wtime_end - wtime_start)
   end subroutine make_H1_harmonic
 
 

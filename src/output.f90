@@ -210,10 +210,26 @@ contains
     call fson_value_add(setting_in_fson, setting_elem)
     if (setting%is_multistep_input_mode) then
       setting_elem => fson_value_create()
+      call fson_set_name('multistep_kind', setting_elem)
+      call fson_set_as_string(trim(setting%multistep_kind), setting_elem)
+      call fson_value_add(setting_in_fson, setting_elem)
+      setting_elem => fson_value_create()
       call fson_set_name('multistep_input_read_interval', setting_elem)
       setting_elem%value_type = TYPE_REAL
       setting_elem%value_real = setting%multistep_input_read_interval
       call fson_value_add(setting_in_fson, setting_elem)
+      if (trim(setting%multistep_kind) == 'harmonic') then
+        setting_elem => fson_value_create()
+        call fson_set_name('perturb_interval', setting_elem)
+        setting_elem%value_type = TYPE_REAL
+        setting_elem%value_real = setting%perturb_interval
+        call fson_value_add(setting_in_fson, setting_elem)
+        setting_elem => fson_value_create()
+        call fson_set_name('temperature', setting_elem)
+        setting_elem%value_type = TYPE_REAL
+        setting_elem%value_real = setting%temperature
+        call fson_value_add(setting_in_fson, setting_elem)
+      end if
     end if
 
     ! Set delta_t and limit_t.

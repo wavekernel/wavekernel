@@ -307,6 +307,26 @@ contains
   end subroutine print_sparse_matrix
 
 
+  subroutine print_sparse_matrix_diag(name, matrix, iunit)
+    character(len=*), intent(in) :: name
+    type(sparse_mat), intent(in) :: matrix
+    integer, intent(in) :: iunit
+
+    integer :: k, i, j
+
+    write(iunit, '(A)') '%%MatrixMarket matrix coordinate real symmetric'
+    write(iunit, '(A)') '%'
+    write(iunit, *) matrix%size, matrix%size, matrix%num_non_zeros
+    do k = 1, matrix%num_non_zeros
+      i = matrix%suffix(1, k)
+      j = matrix%suffix(2, k)
+      if (i == j) then
+        write(iunit, *) i, j, matrix%value(k)
+      end if
+    end do
+  end subroutine print_sparse_matrix_diag
+
+
   subroutine add_diag_to_sparse_matrix(dim, diag, A)
     integer, intent(in) :: dim
     real(8), intent(in) :: diag(dim)
@@ -320,7 +340,7 @@ contains
       j = A%suffix(1, i)
       if (j == A%suffix(2, i)) then
         A%value(i) = A%value(i) + diag(j)
-        is_added(i) = .true.
+        is_added(j) = .true.
       end if
     end do
 

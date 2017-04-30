@@ -45,7 +45,8 @@ module wk_setting_m
          restart_filename = '', &
          filter_mode = 'all', &
          filter_group_filename = '', &
-         re_initialize_method = 'minimize_lcao_error'
+         re_initialize_method = 'minimize_lcao_error', &
+         multistep_kind = ''
     complex(kind(0d0)), allocatable :: restart_psi(:)
     character(len=1024), allocatable :: restart_split_files_metadata(:)
     real(8), allocatable :: restart_atom_speed(:), restart_atom_perturb(:)
@@ -128,6 +129,25 @@ contains
     alpha_delta_multiple_indices(1 : i) = buf(1 : i)
     num_multiple_initials = i
   end subroutine read_alpha_delta_multiple_indices
+
+
+  subroutine read_harmonic_parameter(index_arg, setting)
+    integer, intent(in) :: index_arg
+    type(wk_setting_t), intent(inout) :: setting
+
+    integer :: i
+    character(len=1024) :: argv
+
+    call getarg(index_arg, argv)
+    i = index(argv, ',')
+    if (i == 0) then
+      stop 'missing comma in harmonic oscillator type perturbation specification'
+    else
+      read(argv(1 : i - 1), *) setting%temperature
+      read(argv(i + 1 :), *) setting%perturb_interval
+      setting%temperature = setting%temperature * kAuPerKelvin
+    end if
+  end subroutine read_harmonic_parameter
 
 
   subroutine read_setting(setting)
@@ -238,15 +258,7 @@ contains
             setting%temperature = setting%temperature * kAuPerKelvin
             index_arg = index_arg + 2
           else if (trim(setting%h1_type) == 'harmonic' .or. trim(setting%h1_type) == 'harmonic_for_nn_exciton') then
-            call getarg(index_arg + 2, argv)
-            i = index(argv, ',')
-            if (i == 0) then
-              stop 'missing comma in harmonic oscillator type perturbation specification'
-            else
-              read(argv(1 : i - 1), *) setting%temperature
-              read(argv(i + 1 :), *) setting%perturb_interval
-              setting%temperature = setting%temperature * kAuPerKelvin
-            end if
+            call read_harmonic_parameter(index_arg + 2, setting)
             index_arg = index_arg + 2
           else
             stop 'unknown H1 function type'
@@ -324,13 +336,21 @@ contains
         case ('b')
           setting%is_binary_output_mode = .true.
         case ('m')
-          call getarg(index_arg + 1, argv)
-          read(argv, *) setting%multistep_input_read_interval
-          if (setting%multistep_input_read_interval <= 0.0d0) then
-            stop 'invalid multistep_input_read_interval'
-          end if
           setting%is_multistep_input_mode = .true.
-          index_arg = index_arg + 1
+          call getarg(index_arg + 1, setting%multistep_kind)
+          if (trim(setting%multistep_kind) == 'file') then
+            call getarg(index_arg + 2, argv)
+            read(argv, *) setting%multistep_input_read_interval
+            if (setting%multistep_input_read_interval <= 0.0d0) then
+              stop 'invalid multistep_input_read_interval'
+            end if
+          else if (trim(setting%multistep_kind) == 'harmonic') then
+            call read_harmonic_parameter(index_arg + 2, setting)
+            setting%multistep_input_read_interval = setting%perturb_interval
+          else
+            stop 'invalid multistep_kind (available: file or harmonic)'
+          end if
+          index_arg = index_arg + 2
         case ('-block-size')
           call getarg(index_arg + 1, argv)
           read(argv, *) g_wk_block_size
@@ -760,6 +780,17 @@ contains
     if (allocated(setting%alpha_delta_multiple_indices)) then
       print *, 'alpha_delta_multiple_indices: ', setting%alpha_delta_multiple_indices(:)
     end if
+    if (setting%is_multistep_input_mode) then
+      print *, 'is_multistep_input_mode: true'
+      print *, 'multistep_kind ', trim(setting%multistep_kind)
+      if (trim(setting%multistep_kind) == 'harmonic') then
+        print *, 'temperature: ', setting%temperature
+        print *, 'perturb_interval: ', setting%perturb_interval
+        print *, 'multistep_input_read_interval: ', setting%multistep_input_read_interval
+      end if
+    else
+      print *, 'is_multistep_input_mode: false'
+    end if
   end subroutine print_setting
 
 
@@ -767,7 +798,7 @@ contains
     use mpi
     integer, intent(in) :: root
     type(wk_setting_t), intent(inout) :: setting
-    integer, parameter :: num_real = 18, num_integer = 17, num_logical = 8, num_character = 16
+    integer, parameter :: num_real = 18, num_integer = 17, num_logical = 8, num_character = 17
     real(8) :: buf_real(num_real)
     integer :: buf_integer(num_integer), my_rank, ierr, size_psi, size_split_files_metadata, size_atom_speed, size_atom_perturb
     logical :: buf_logical(num_logical)
@@ -860,6 +891,7 @@ contains
       buf_character(14) = setting%filter_mode
       buf_character(15) = setting%filter_group_filename
       buf_character(16) = setting%re_initialize_method
+      buf_character(17) = setting%multistep_kind
       buf_character(num_character + 1 : num_character + size_split_files_metadata) = &
            setting%restart_split_files_metadata(1 : size_split_files_metadata)
     else
@@ -931,6 +963,7 @@ contains
       setting%filter_mode = buf_character(14)
       setting%filter_group_filename = buf_character(15)
       setting%re_initialize_method = buf_character(16)
+      setting%multistep_kind = buf_character(17)
       setting%restart_split_files_metadata(1 : size_split_files_metadata) = &
            buf_character(num_character + 1 : num_character + size_split_files_metadata)
     end if
@@ -952,7 +985,8 @@ contains
     print *, '  -f <m>,<n>  Enable eigenstate filtering using from m-th to n-th (inclusive) generalized eigenvectors'
     print *, '  -d <float>  Specify time step width in atomic unit (Default: 0.1)'
     print *, '  -t <float>  Specify time simulation ends in atomic unit (Default: 1.0)'
-    print *, '  -m <float>  Enable multiple input step mode and specify its time invertal in atomic unit (Default: disabled)'
+    print *, '  -m (file <float>|kind <float>,<float>)'
+    print *, '    Enable multiple input step mode and specify its time invertal in atomic unit (Default: disabled)'
     print *, '  -k <float>  Multiply phase factor to LCAO represented ', &
          'initial state and specify wavenumber (for x axis only). Must be used with -a'
     print *, '  -g <file>  Specify group id file, which is used in -i local_alpha_delta_group'
