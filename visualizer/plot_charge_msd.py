@@ -76,7 +76,6 @@ def plot_diffusion_coef(ts, msds, label, time_start_diffusion, time_end_diffusio
     pylab.plot(ts_new[0:n:n-1], ys_hat[0:n:n-1], 'x-', label=label, markersize=10)
     return mbt, rmse
 
-#g_step_size = 1
 def get_window_averaged_msds(ts, msds, window_width):
     new_ts = []
     new_msds = []
@@ -87,19 +86,6 @@ def get_window_averaged_msds(ts, msds, window_width):
             new_msds.append(msd)
             new_ts.append(t)
             t_prev = t
-    ## Get a set of windowed MSD time series.
-    #msdss_window = []
-    #n = len(msds)
-    #i = 0
-    #while i + window_width <= n:
-    #    msds_window = msds[i : i + window_width]
-    #    msdss_window.append(msds_window)
-    #    i += g_step_size
-    ## Average
-    #msds_avg = [0.] * window_width
-    #for msds_window in msdss_window:
-    #    for j in range(window_width):
-    #        msds_avg[j] += msds_window[j] / len(msdss_window)
     n = len(new_msds)
     m = n - window_width + 1
     msds_avg = [0.] * m
