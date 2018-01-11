@@ -271,7 +271,7 @@ if __name__=="__main__":
     wave_center_msds = wave_center_msd(means)
 
     header = re.sub("\.[^.]+$", "", wavepacket_out_path)
-    filename_charges_on_atoms = header+"_boundry_charge_moment.json"
+    filename_charges_on_atoms = header+"_periodic_charge_moment.json"
     result_charges_on_atoms = {"tb_energy_deviations":tb_energy_deviations,
                                "msds":msds,
                                "ts":times,
