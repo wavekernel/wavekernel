@@ -186,7 +186,7 @@ def calculation(charges_on_atoms,input_step,structures_list,step_num,Ls) :
             
             msd_x += charge*x**2
             msd_y += charge*y**2
-            msd_z += charge*x**2
+            msd_z += charge*z**2
         msd = msd_x + msd_y + msd_z
         means.append( [mean_x,mean_y,mean_z] )
         msds.append( [msd_x,msd_y,msd_z,msd] )
