@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config name="Polymer_PPE_144atom_wp">
+
+<system>
+  <cluster structure="Polymer_PPE_144atom.xml" />
+  <boundary x="nonperiodic" y="nonperiodic" z="nonperiodic" />
+  <element  name="C" model="geno"  filename="C.xml"> </element>
+  <element  name="H" model="geno"  filename="H.xml"> </element>
+  <temperature unit="kelvin"> 500 </temperature>
+  <heatbath_mass mode="on">
+    <mass_per_atom unit="a.u."> 25.0d0 </mass_per_atom>
+  </heatbath_mass>
+</system>
+
+<calc mode="dynamics">
+  <solver scheme="eigen_mpi"> </solver>
+  <genoOption>
+   <CSC_method> ELSTNER </CSC_method>
+   <CSC_max_loop_count> 0 </CSC_max_loop_count>
+   <CSC_charge_convergence>  1d-5 </CSC_charge_convergence>
+   <CSC_charge_mixing_ratio> 0.1 </CSC_charge_mixing_ratio>
+  </genoOption>
+  <dynamics scheme="velocity verlet">
+   <delta unit="a.u."> 40.00 </delta>
+   <total unit="a.u."> 4000.00 </total>
+  </dynamics>
+  <use_integer_elec_num mode="on" />
+
+  <wavekernel mode="on">
+    <delta_t> 4.0 </delta_t>
+    <initialization type="alpha_delta">
+      <alpha_delta_index> 213 </alpha_delta_index>
+    </initialization>
+    <filter type="all">
+      <fst_filter> 1 </fst_filter>
+      <end_filter> 213 </end_filter>
+    </filter>
+    <re_initialize type="minimize_lcao_error_matrix_suppress">
+      <suppress_const>100.000000</suppress_const>
+    </re_initialize>
+    <perturbation type="zero_damp">
+      <eigenstate_damp_constant> 60.000000 </eigenstate_damp_constant>
+    </perturbation>
+    <wavekernel_output split="on" format="binary">
+      <filename>out.json</filename>
+      <output_interval> 5 </output_interval>
+      <num_steps_per_output_split>1000</num_steps_per_output_split>
+    </wavekernel_output>
+  </wavekernel>
+</calc>
+
+<output>
+  <main filename="Output.txt" />
+  <restart  filename="Polymer_PPE_144atom_restart.xml" interval="10" append_mode="on" />
+  <position filename="Polymer_PPE_144atom_position.xyz" interval="10" />
+  <basis_info filename="Polymer_PPE_144atom_basis_info.txt" />
+</output>
+
+</config>
