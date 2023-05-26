@@ -4,10 +4,10 @@ from multiprocessing import Pool, cpu_count, current_process
 import time
 from itertools import chain
 
-kPsecPerAu = 2.418884326505e-5  # Time
-kFsecPerAu = 2.418884326505e-2  # Time
-AuPerOng = 0.5291772489999785 
-OngPerAu = 1.889725988579
+kFsecPerAu = 1.0d0*(124.06948d0/3.0d0)  # Time
+kPsecPerAu = kFsecPerAu*10d-3  # Time
+AuPerOng = 0.529177d0 
+OngPerAu = 1.0d0/AuPerOng
 kSizeOfReal = 8
 
 def str2list(string):
