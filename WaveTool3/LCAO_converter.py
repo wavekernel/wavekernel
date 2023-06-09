@@ -4,10 +4,10 @@ from multiprocessing import Pool, cpu_count, current_process
 import time
 from itertools import chain
 
-kFsecPerAu = 1.0d0*(124.06948d0/3.0d0)  # Time
-kPsecPerAu = kFsecPerAu*10d-3  # Time
-AuPerOng = 0.529177d0 
-OngPerAu = 1.0d0/AuPerOng
+kFsecPerAu = 1.0/(124.06948/3.0)  # Time
+kPsecPerAu = kFsecPerAu*10**(-3)  # Time
+AuPerOng = 0.529177 
+OngPerAu = 1.0/AuPerOng
 kSizeOfReal = 8
 
 def str2list(string):
@@ -77,12 +77,16 @@ def read_json(metadata):
         with open(os.path.join(Split_dir, filename), "r") as fp:
             states_split = json.load(fp)
         for states in states_split["states"]:
+            #print(states["is_after_matrix_replace"])
             step = states["step_num"]
             if step % Stride == 0 and m_num <= step and step <= M_num and \
                not states["is_after_matrix_replace"]:
+                #print('join!!!')
                 #states_joined.append(states_split[step - first])
                 states_joined += [get_elements(
                     states,Is_little_endian,Split_dir)]
+    with open('states_joined.txt', 'w') as f:
+        print(*states_joined, file=f)
     return states_joined
 
 def read_json_target(metadata):
@@ -190,6 +194,10 @@ def print_wavefunction(LCAO_header, position_data,
 def LCAO_converter(wave_out, position_data, out_dir,periodic,basis_path):
     header,matrix_num = read_basis(basis_path)#LCAO_header(position_data,periodic)
     states = wave_out["states"]
+    '''
+    with open('states.txt', 'w') as f:
+        print(*states, file=f)
+    '''
     base_number = wave_out["condition"]["dim"]
     if wave_out["setting"]["is_multistep_input_mode"]:
         multistep_input_mode = True
